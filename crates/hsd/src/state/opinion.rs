@@ -112,10 +112,16 @@ impl PrimOpinions {
         value: Opinion<Property>,
         stamp: Stamp,
     ) -> bool {
-        if self.props.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
+        match self.props.get_mut(name) {
+            Some((_, old)) if stamp < *old => false,
+            Some(slot) => {
+                *slot = (value, stamp);
+                true
+            }
+            None => {
+                self.props.insert(SmolStr::new(name), (value, stamp));
+                true
+            }
         }
-        self.props.insert(SmolStr::new(name), (value, stamp));
-        true
     }
 }

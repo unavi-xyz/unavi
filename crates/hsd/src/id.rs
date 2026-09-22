@@ -9,6 +9,7 @@ use std::{
 
 use base64::{
     Engine as _,
+    display::Base64Display,
     engine::general_purpose::URL_SAFE_NO_PAD,
 };
 use rand::Rng;
@@ -26,7 +27,7 @@ pub enum IdError {
     #[error("expected {PRIM_ID_CHARS} base64url characters, got {0}")]
     Length(usize),
     #[error(transparent)]
-    Parse(#[from] base64::DecodeError),
+    Parse(#[from] base64::DecodeSliceError),
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -53,7 +54,9 @@ impl PrimId {
 
 impl Display for PrimId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&URL_SAFE_NO_PAD.encode(self.0))
+        // Writes the base64 straight into the formatter; `encode` would build
+        // a 22-byte `String` to hand back.
+        write!(f, "{}", Base64Display::new(&self.0, &URL_SAFE_NO_PAD))
     }
 }
 
@@ -70,8 +73,11 @@ impl FromStr for PrimId {
         if s.len() != PRIM_ID_CHARS {
             return Err(IdError::Length(s.len()));
         }
-        let bytes = URL_SAFE_NO_PAD.decode(s)?;
-        let bytes: [u8; PRIM_ID_BYTES] = bytes.try_into().map_err(|_| IdError::Length(s.len()))?;
+        let mut bytes = [0u8; PRIM_ID_BYTES];
+        let written = URL_SAFE_NO_PAD.decode_slice(s, &mut bytes)?;
+        if written != PRIM_ID_BYTES {
+            return Err(IdError::Length(written));
+        }
         Ok(Self(bytes))
     }
 }

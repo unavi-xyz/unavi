@@ -2,10 +2,7 @@
 //! arrive unordered — a child may be seen before its parent — so every path
 //! here has to be order-independent.
 
-use std::collections::{
-    BTreeMap,
-    HashSet,
-};
+use std::collections::BTreeMap;
 
 use crate::{
     attributes::{
@@ -165,12 +162,10 @@ impl HsdState {
         let Some(document) = self.layers.get(LayerId::Document.idx()) else {
             return out;
         };
-        let mut sites = HashSet::new();
         for (prim, opinions) in document.prims() {
             let Some(parent) = opinions.parent().and_then(|(o, _)| o.value()) else {
                 continue;
             };
-            sites.insert(prim);
             out.insert(
                 key::prop(prim, ParentAttr::KEY),
                 ParentAttr::to_wire(Some(*parent)),
@@ -191,7 +186,11 @@ impl HsdState {
         // speaks for, so one whose site the document layer does not state is
         // absent for the same reason a script-created prim is.
         for (site, layer) in &self.references {
-            if !sites.contains(site) {
+            let stated = document
+                .get(*site)
+                .and_then(|opinions| opinions.parent())
+                .is_some_and(|(opinion, _)| opinion.value().is_some());
+            if !stated {
                 continue;
             }
             for (target, opinions) in layer.prims() {

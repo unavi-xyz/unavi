@@ -1,14 +1,14 @@
 //! Document key layout.
 //!
 //! iroh-docs applies Willow prefix semantics: an entry removes all of its
-//! author's older entries under its own key as a prefix. Two rules follow, and
-//! both are enforced here rather than by convention.
+//! author's older entries under its own key as a prefix.
+//!
+//! Two rules, and both are enforced here rather than by convention:
 //!
 //! 1. No data lives at a key that prefixes another key. A property either holds
 //!    its value at `p/<prim>/<name>/` or owns the namespace below it, never
-//!    both. Which of the two a property uses is the attribute's business; this
-//!    module only reports which shape a key has.
-//! 2. Every key ends with `/`, so `mesh:index/` cannot prefix `mesh:indices/`.
+//!    both.
+//! 2. Every key ends with `/`, so `mesh:ref/` cannot prefix `mesh:reference/`.
 
 use smol_str::SmolStr;
 
@@ -25,20 +25,13 @@ pub fn prim_prefix(prim: PrimId) -> String {
     format!("{PRIM_PREFIX}{prim}/")
 }
 
-/// A property's own key: `p/<prim>/<name>/`.
-///
-/// Data for a property that owns no namespace, and the spine for one that
-/// does — [`prop_sub`] writes beneath it. Both cannot hold at once, or rule 1
-/// is broken.
+/// A property's key: `p/<prim>/<name>/`.
 #[must_use]
 pub fn prop(prim: PrimId, name: &str) -> String {
     format!("{PRIM_PREFIX}{prim}/{name}/")
 }
 
 /// A key inside the namespace a property owns: `p/<prim>/<name>/<tail>/`.
-///
-/// `tail` may hold `/` — how a property divides its own namespace is its
-/// business, and [`parse`] hands the whole remainder back undivided.
 #[must_use]
 pub fn prop_sub(prim: PrimId, name: &str, tail: &str) -> String {
     format!("{PRIM_PREFIX}{prim}/{name}/{tail}/")
@@ -47,14 +40,10 @@ pub fn prop_sub(prim: PrimId, name: &str, tail: &str) -> String {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Key {
     Meta,
-    /// A property's own key, holding its value unless the property owns a
-    /// namespace instead.
     Prop {
         prim: PrimId,
         name: SmolStr,
     },
-    /// A key inside the namespace `name` owns. Only that attribute knows what
-    /// `tail` means, so it travels uninterpreted.
     PropSub {
         prim: PrimId,
         name: SmolStr,
@@ -63,8 +52,7 @@ pub enum Key {
 }
 
 /// Parses a document key, returning `None` for anything this format does not
-/// define. Unrecognized keys are ignored rather than rejected, so a client can
-/// sync a document written by a newer one.
+/// define. Unrecognized keys are ignored rather than rejected.
 #[must_use]
 pub fn parse(key: &str) -> Option<Key> {
     if key == META {

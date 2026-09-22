@@ -11,7 +11,12 @@ use bevy_msdf::{
 };
 use hsd::attributes::{
     material::ColorVec,
-    text::TextAttr,
+    text::{
+        TextAlign,
+        TextAnchor,
+        TextAttr,
+        TextBillboard,
+    },
 };
 use msdf::layout::Align;
 use rstest::rstest;
@@ -99,15 +104,15 @@ fn test_text_settings_reach_the_renderer(mut ctx: TestContext) {
         &TextAttr {
             value:         "Atrium".to_string(),
             size:          Some(0.05),
-            align:         Some("center".to_string()),
-            anchor:        Some("middle".to_string()),
+            align:         Some(TextAlign::Center),
+            anchor:        Some(TextAnchor::Middle),
             wrap:          Some(0.4),
             line_height:   Some(1.5),
             color:         Some(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
             outline:       Some(ColorVec(vec![0.0, 0.0, 0.0, 1.0])),
             outline_width: Some(0.3),
             emissive:      Some(2.0),
-            billboard:     Some("yaw".to_string()),
+            billboard:     Some(TextBillboard::Yaw),
         },
     );
     ctx.app.update();
@@ -127,34 +132,6 @@ fn test_text_settings_reach_the_renderer(mut ctx: TestContext) {
     assert!((style.emissive - 2.0).abs() < 1.0e-6);
     assert!(style.outline.is_some());
     assert_eq!(*billboard, Billboard::Yaw);
-}
-
-/// A newer client's variant must not cost the reader its text.
-#[traced_test]
-#[rstest]
-fn test_an_unknown_variant_still_draws(mut ctx: TestContext) {
-    let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &TextAttr {
-            value: "Garden".to_string(),
-            align: Some("justify".to_string()),
-            billboard: Some("spherical".to_string()),
-            ..Default::default()
-        },
-    );
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    let mut query = world.query::<(&MsdfText, Option<&Billboard>)>();
-    let found = query.query(world).into_iter().collect::<Vec<_>>();
-    assert_eq!(found.len(), 1);
-    assert_eq!(
-        found[0].0.align,
-        Align::Left,
-        "falls back rather than fails"
-    );
-    assert!(found[0].1.is_none());
 }
 
 /// Characters no registered face has a glyph for are reported rather than

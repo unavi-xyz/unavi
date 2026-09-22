@@ -241,14 +241,14 @@ fn apply_attr(
 ) {
     standard.base_color = color_from_color_vec(attr.base_color.as_ref()).unwrap_or(Color::WHITE);
 
-    standard.alpha_mode = match attr.alpha_mode.as_deref() {
-        Some("Add") => AlphaMode::Add,
-        Some("Blend") => AlphaMode::Blend,
-        Some("Mask") => AlphaMode::Mask(attr.alpha_cutoff.unwrap_or(0.5) as f32),
-        Some("Multiply") => AlphaMode::Multiply,
-        Some("Opaque") => AlphaMode::Opaque,
-        Some("Premultiplied") => AlphaMode::Premultiplied,
-        _ => {
+    standard.alpha_mode = match attr.alpha_mode {
+        Some(material::AlphaMode::Add) => AlphaMode::Add,
+        Some(material::AlphaMode::Blend) => AlphaMode::Blend,
+        Some(material::AlphaMode::Mask) => AlphaMode::Mask(attr.alpha_cutoff.unwrap_or(0.5) as f32),
+        Some(material::AlphaMode::Multiply) => AlphaMode::Multiply,
+        Some(material::AlphaMode::Opaque) => AlphaMode::Opaque,
+        Some(material::AlphaMode::Premultiplied) => AlphaMode::Premultiplied,
+        None => {
             if standard.base_color.alpha() < 1.0 {
                 AlphaMode::Blend
             } else {

@@ -1,5 +1,3 @@
-//! A script is a wasm component attached to a prim.
-
 use serde::{
     Deserialize,
     Serialize,

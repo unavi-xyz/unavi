@@ -11,7 +11,12 @@ use bevy_msdf::{
 use hsd::attributes::{
     Attribute,
     material::ColorVec,
-    text::TextAttr,
+    text::{
+        TextAlign,
+        TextAnchor,
+        TextAttr,
+        TextBillboard,
+    },
 };
 use msdf::layout::{
     Align,
@@ -78,23 +83,20 @@ fn color(value: Option<&ColorVec>, fallback: Color) -> Color {
     })
 }
 
-/// An unrecognized variant falls back to the default rather than refusing the
-/// prim: the payload is stored and re-served untouched, so a document authored
-/// against a newer build still draws its text.
-fn align(value: Option<&str>) -> Align {
+const fn align(value: Option<TextAlign>) -> Align {
     match value {
-        Some("center") => Align::Center,
-        Some("right") => Align::Right,
-        _ => Align::Left,
+        Some(TextAlign::Center) => Align::Center,
+        Some(TextAlign::Right) => Align::Right,
+        Some(TextAlign::Left) | None => Align::Left,
     }
 }
 
-fn anchor(value: Option<&str>) -> Anchor {
+const fn anchor(value: Option<TextAnchor>) -> Anchor {
     match value {
-        Some("top") => Anchor::Top,
-        Some("middle") => Anchor::Middle,
-        Some("bottom") => Anchor::Bottom,
-        _ => Anchor::Baseline,
+        Some(TextAnchor::Top) => Anchor::Top,
+        Some(TextAnchor::Middle) => Anchor::Middle,
+        Some(TextAnchor::Bottom) => Anchor::Bottom,
+        Some(TextAnchor::Baseline) | None => Anchor::Baseline,
     }
 }
 
@@ -117,11 +119,11 @@ fn truncated(value: &str) -> SmolStr {
     }
 }
 
-fn billboard(value: Option<&str>) -> Option<Billboard> {
+const fn billboard(value: Option<TextBillboard>) -> Option<Billboard> {
     match value {
-        Some("yaw") => Some(Billboard::Yaw),
-        Some("full") => Some(Billboard::Full),
-        _ => None,
+        Some(TextBillboard::Yaw) => Some(Billboard::Yaw),
+        Some(TextBillboard::Full) => Some(Billboard::Full),
+        Some(TextBillboard::None) | None => None,
     }
 }
 
@@ -138,8 +140,8 @@ pub fn apply_text(changed: Query<(Entity, &TextData), Changed<TextData>>, mut co
             MsdfText {
                 value:       truncated(&attr.value),
                 size:        scalar(attr.size, DEFAULT_SIZE, 0.0..=MAX_SIZE),
-                align:       align(attr.align.as_deref()),
-                anchor:      anchor(attr.anchor.as_deref()),
+                align:       align(attr.align),
+                anchor:      anchor(attr.anchor),
                 wrap:        attr
                     .wrap
                     .map(|wrap| scalar(Some(wrap), 0.0, 0.0..=MAX_SIZE))
@@ -154,7 +156,7 @@ pub fn apply_text(changed: Query<(Entity, &TextData), Changed<TextData>>, mut co
             },
         ));
 
-        match billboard(attr.billboard.as_deref()) {
+        match billboard(attr.billboard) {
             Some(billboard) => {
                 commands.entity(entity).insert(billboard);
             }
@@ -170,21 +172,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn an_unknown_variant_falls_back_rather_than_refusing() {
-        assert_eq!(align(Some("justify")), Align::Left);
-        assert_eq!(anchor(Some("hanging")), Anchor::Baseline);
-        assert_eq!(billboard(Some("spherical")), None);
-    }
-
-    #[test]
     fn every_variant_the_format_names_is_understood() {
-        assert_eq!(align(Some("center")), Align::Center);
-        assert_eq!(align(Some("right")), Align::Right);
-        assert_eq!(anchor(Some("middle")), Anchor::Middle);
-        assert_eq!(anchor(Some("top")), Anchor::Top);
-        assert_eq!(anchor(Some("bottom")), Anchor::Bottom);
-        assert_eq!(billboard(Some("yaw")), Some(Billboard::Yaw));
-        assert_eq!(billboard(Some("full")), Some(Billboard::Full));
+        assert_eq!(align(None), Align::Left);
+        assert_eq!(align(Some(TextAlign::Center)), Align::Center);
+        assert_eq!(align(Some(TextAlign::Right)), Align::Right);
+        assert_eq!(anchor(None), Anchor::Baseline);
+        assert_eq!(anchor(Some(TextAnchor::Middle)), Anchor::Middle);
+        assert_eq!(anchor(Some(TextAnchor::Top)), Anchor::Top);
+        assert_eq!(anchor(Some(TextAnchor::Bottom)), Anchor::Bottom);
+        assert_eq!(billboard(None), None);
+        assert_eq!(billboard(Some(TextBillboard::Yaw)), Some(Billboard::Yaw));
+        assert_eq!(billboard(Some(TextBillboard::Full)), Some(Billboard::Full));
     }
 
     #[test]

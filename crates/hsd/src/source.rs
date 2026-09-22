@@ -17,6 +17,7 @@ use crate::attributes::{
         AddressMode,
         FilterMode,
     },
+    material::AlphaMode,
     material_graph::value::GraphValue,
 };
 
@@ -105,7 +106,7 @@ pub struct SourceImage {
 #[serde(default)]
 pub struct SourceMaterial {
     pub alpha_cutoff:               Option<f64>,
-    pub alpha_mode:                 Option<String>,
+    pub alpha_mode:                 Option<AlphaMode>,
     pub base_color:                 Option<Vec<f64>>,
     pub base_color_texture:         Option<String>,
     pub double_sided:               Option<bool>,

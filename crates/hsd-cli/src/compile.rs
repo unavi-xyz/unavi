@@ -286,7 +286,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             id,
             &MaterialAttr {
                 alpha_cutoff: mat.alpha_cutoff,
-                alpha_mode:   mat.alpha_mode.clone(),
+                alpha_mode:   mat.alpha_mode,
                 base_color:   mat.base_color.clone().map(ColorVec),
                 double_sided: mat.double_sided,
                 emissive:     mat.emissive.clone().map(ColorVec),

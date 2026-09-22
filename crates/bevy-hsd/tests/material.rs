@@ -36,7 +36,7 @@ fn test_material_lifecycle(mut ctx: TestContext) {
         root,
         &MaterialAttr {
             base_color: Some(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
-            alpha_mode: Some("Blend".to_string()),
+            alpha_mode: Some(material::AlphaMode::Blend),
             metallic: Some(0.7),
             roughness: Some(0.3),
             ..Default::default()

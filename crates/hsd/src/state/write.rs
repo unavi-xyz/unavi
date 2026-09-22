@@ -59,7 +59,7 @@ impl HsdState {
         if !key::is_valid_name(name) || name == ParentAttr::KEY {
             return Err(StateError::Name(name.to_owned()));
         }
-        let stamp = Stamp::now(&value.encode());
+        let stamp = Stamp::for_property(&value);
         self.write_property(LayerId::Runtime, prim, name, Some(value), stamp);
         Ok(())
     }

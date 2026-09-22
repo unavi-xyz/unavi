@@ -9,12 +9,27 @@ use crate::attributes::Attribute;
 #[serde(transparent)]
 pub struct ColorVec(pub Vec<f64>);
 
+/// How a material composites against what is already drawn.
+///
+/// [`Self::Mask`] carries no cutoff of its own: the threshold is the sibling
+/// [`MaterialAttr::alpha_cutoff`] field, so the two can be set independently.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AlphaMode {
+    Add,
+    Blend,
+    Mask,
+    Multiply,
+    #[default]
+    Opaque,
+    Premultiplied,
+}
+
 /// Texture slots are relationship properties (`material:base_color_texture`
 /// and friends), not fields of this payload.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MaterialAttr {
     pub alpha_cutoff: Option<f64>,
-    pub alpha_mode:   Option<String>,
+    pub alpha_mode:   Option<AlphaMode>,
     pub base_color:   Option<ColorVec>,
     pub double_sided: Option<bool>,
     pub emissive:     Option<ColorVec>,

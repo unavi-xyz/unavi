@@ -50,11 +50,24 @@ impl PrimState {
     pub(super) fn set_property(&mut self, name: &str, value: Option<Property>) {
         match value {
             Some(value) => {
-                self.props.insert(SmolStr::new(name), value);
+                // Update in place where the key exists: `insert` would build a
+                // fresh `SmolStr` and drop it, since a `BTreeMap` keeps the
+                // key it already had.
+                if let Some(slot) = self.props.get_mut(name) {
+                    *slot = value;
+                } else {
+                    self.props.insert(SmolStr::new(name), value);
+                }
             }
             None => {
                 self.props.remove(name);
             }
         }
+    }
+
+    /// The stored key equal to `name`, so an event can clone the interned
+    /// string instead of building a fresh one.
+    pub(super) fn property_key(&self, name: &str) -> Option<SmolStr> {
+        self.props.get_key_value(name).map(|(key, _)| key.clone())
     }
 }

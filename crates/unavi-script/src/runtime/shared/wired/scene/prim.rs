@@ -25,6 +25,7 @@ use hsd::{
         gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::{
+            AlphaMode,
             ColorVec,
             MaterialAttr,
         },
@@ -55,7 +56,12 @@ use hsd::{
             RigidBodyKind,
         },
         spawn::SpawnAttr,
-        text::TextAttr,
+        text::{
+            TextAlign,
+            TextAnchor,
+            TextAttr,
+            TextBillboard,
+        },
         xform::XformAttr,
     },
     bounds::{
@@ -858,14 +864,13 @@ const fn prim_to_graph_value(value: PrimGraphValue) -> GraphValue {
 fn material_attr_to_prim(attr: MaterialAttr) -> PrimMaterial {
     PrimMaterial {
         alpha_cutoff: attr.alpha_cutoff.map(|v| v as f32),
-        alpha_mode:   attr.alpha_mode.and_then(|s| match s.as_str() {
-            "add" => Some(PrimAlphaMode::Add),
-            "blend" => Some(PrimAlphaMode::Blend),
-            "mask" => Some(PrimAlphaMode::Mask),
-            "multiply" => Some(PrimAlphaMode::Multiply),
-            "opaque" => Some(PrimAlphaMode::Opaque),
-            "premultiplied" => Some(PrimAlphaMode::PreMultiplied),
-            _ => None,
+        alpha_mode:   attr.alpha_mode.map(|mode| match mode {
+            AlphaMode::Add => PrimAlphaMode::Add,
+            AlphaMode::Blend => PrimAlphaMode::Blend,
+            AlphaMode::Mask => PrimAlphaMode::Mask,
+            AlphaMode::Multiply => PrimAlphaMode::Multiply,
+            AlphaMode::Opaque => PrimAlphaMode::Opaque,
+            AlphaMode::Premultiplied => PrimAlphaMode::PreMultiplied,
         }),
         base_color:   attr.base_color.map(color_vec_to_prim),
         double_sided: attr.double_sided,
@@ -878,16 +883,13 @@ fn material_attr_to_prim(attr: MaterialAttr) -> PrimMaterial {
 fn prim_to_material_attr(m: PrimMaterial) -> MaterialAttr {
     MaterialAttr {
         alpha_cutoff: m.alpha_cutoff.map(f64::from),
-        alpha_mode:   m.alpha_mode.map(|mode| {
-            match mode {
-                PrimAlphaMode::Add => "add",
-                PrimAlphaMode::Blend => "blend",
-                PrimAlphaMode::Mask => "mask",
-                PrimAlphaMode::Multiply => "multiply",
-                PrimAlphaMode::Opaque => "opaque",
-                PrimAlphaMode::PreMultiplied => "premultiplied",
-            }
-            .to_string()
+        alpha_mode:   m.alpha_mode.map(|mode| match mode {
+            PrimAlphaMode::Add => AlphaMode::Add,
+            PrimAlphaMode::Blend => AlphaMode::Blend,
+            PrimAlphaMode::Mask => AlphaMode::Mask,
+            PrimAlphaMode::Multiply => AlphaMode::Multiply,
+            PrimAlphaMode::Opaque => AlphaMode::Opaque,
+            PrimAlphaMode::PreMultiplied => AlphaMode::Premultiplied,
         }),
         base_color:   m.base_color.map(prim_color_to_vec),
         double_sided: m.double_sided,
@@ -922,18 +924,16 @@ fn text_attr_to_prim(attr: TextAttr) -> PrimText {
     PrimText {
         value:         attr.value,
         size:          attr.size.map(|v| v as f32),
-        align:         attr.align.and_then(|s| match s.as_str() {
-            "left" => Some(PrimTextAlign::Left),
-            "center" => Some(PrimTextAlign::Center),
-            "right" => Some(PrimTextAlign::Right),
-            _ => None,
+        align:         attr.align.map(|align| match align {
+            TextAlign::Left => PrimTextAlign::Left,
+            TextAlign::Center => PrimTextAlign::Center,
+            TextAlign::Right => PrimTextAlign::Right,
         }),
-        anchor:        attr.anchor.and_then(|s| match s.as_str() {
-            "baseline" => Some(PrimTextAnchor::Baseline),
-            "top" => Some(PrimTextAnchor::Top),
-            "middle" => Some(PrimTextAnchor::Middle),
-            "bottom" => Some(PrimTextAnchor::Bottom),
-            _ => None,
+        anchor:        attr.anchor.map(|anchor| match anchor {
+            TextAnchor::Baseline => PrimTextAnchor::Baseline,
+            TextAnchor::Top => PrimTextAnchor::Top,
+            TextAnchor::Middle => PrimTextAnchor::Middle,
+            TextAnchor::Bottom => PrimTextAnchor::Bottom,
         }),
         wrap:          attr.wrap.map(|v| v as f32),
         line_height:   attr.line_height.map(|v| v as f32),
@@ -941,11 +941,10 @@ fn text_attr_to_prim(attr: TextAttr) -> PrimText {
         outline:       attr.outline.map(color_vec_to_prim),
         outline_width: attr.outline_width.map(|v| v as f32),
         emissive:      attr.emissive.map(|v| v as f32),
-        billboard:     attr.billboard.and_then(|s| match s.as_str() {
-            "none" => Some(PrimTextBillboard::None),
-            "yaw" => Some(PrimTextBillboard::Yaw),
-            "full" => Some(PrimTextBillboard::Full),
-            _ => None,
+        billboard:     attr.billboard.map(|billboard| match billboard {
+            TextBillboard::None => PrimTextBillboard::None,
+            TextBillboard::Yaw => PrimTextBillboard::Yaw,
+            TextBillboard::Full => PrimTextBillboard::Full,
         }),
     }
 }
@@ -954,22 +953,16 @@ fn prim_to_text_attr(t: PrimText) -> TextAttr {
     TextAttr {
         value:         t.value,
         size:          t.size.map(f64::from),
-        align:         t.align.map(|align| {
-            match align {
-                PrimTextAlign::Left => "left",
-                PrimTextAlign::Center => "center",
-                PrimTextAlign::Right => "right",
-            }
-            .to_string()
+        align:         t.align.map(|align| match align {
+            PrimTextAlign::Left => TextAlign::Left,
+            PrimTextAlign::Center => TextAlign::Center,
+            PrimTextAlign::Right => TextAlign::Right,
         }),
-        anchor:        t.anchor.map(|anchor| {
-            match anchor {
-                PrimTextAnchor::Baseline => "baseline",
-                PrimTextAnchor::Top => "top",
-                PrimTextAnchor::Middle => "middle",
-                PrimTextAnchor::Bottom => "bottom",
-            }
-            .to_string()
+        anchor:        t.anchor.map(|anchor| match anchor {
+            PrimTextAnchor::Baseline => TextAnchor::Baseline,
+            PrimTextAnchor::Top => TextAnchor::Top,
+            PrimTextAnchor::Middle => TextAnchor::Middle,
+            PrimTextAnchor::Bottom => TextAnchor::Bottom,
         }),
         wrap:          t.wrap.map(f64::from),
         line_height:   t.line_height.map(f64::from),
@@ -977,13 +970,10 @@ fn prim_to_text_attr(t: PrimText) -> TextAttr {
         outline:       t.outline.map(prim_color_to_vec),
         outline_width: t.outline_width.map(f64::from),
         emissive:      t.emissive.map(f64::from),
-        billboard:     t.billboard.map(|billboard| {
-            match billboard {
-                PrimTextBillboard::None => "none",
-                PrimTextBillboard::Yaw => "yaw",
-                PrimTextBillboard::Full => "full",
-            }
-            .to_string()
+        billboard:     t.billboard.map(|billboard| match billboard {
+            PrimTextBillboard::None => TextBillboard::None,
+            PrimTextBillboard::Yaw => TextBillboard::Yaw,
+            PrimTextBillboard::Full => TextBillboard::Full,
         }),
     }
 }

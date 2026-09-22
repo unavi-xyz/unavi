@@ -3,6 +3,8 @@ use web_time::{
     UNIX_EPOCH,
 };
 
+use crate::property::Property;
+
 /// Orders concurrent writes to one key exactly as iroh-docs orders entries at
 /// read time, so a live-applied entry and a re-read of the same document
 /// agree on the winner.
@@ -25,6 +27,30 @@ impl Stamp {
     #[must_use]
     pub fn now(value: &[u8]) -> Self {
         Self::new(now_micros(), value)
+    }
+
+    /// The content hash of `property`'s wire form, without encoding it to a
+    /// scratch `Vec` first.
+    #[must_use]
+    pub fn for_property(property: &Property) -> Self {
+        let mut hasher = blake3::Hasher::new();
+        property.hash_into(&mut hasher);
+        Self {
+            timestamp: now_micros(),
+            content:   *hasher.finalize().as_bytes(),
+        }
+    }
+
+    /// The content hash of an attribute payload's wire form, without encoding
+    /// it to a scratch `Vec` first.
+    #[must_use]
+    pub fn for_attribute(payload: &[u8]) -> Self {
+        let mut hasher = blake3::Hasher::new();
+        Property::hash_attribute_into(&mut hasher, payload);
+        Self {
+            timestamp: now_micros(),
+            content:   *hasher.finalize().as_bytes(),
+        }
     }
 }
 

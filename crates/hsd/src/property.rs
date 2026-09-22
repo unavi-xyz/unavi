@@ -52,6 +52,28 @@ impl Property {
         }
     }
 
+    /// Feeds the bytes [`Self::encode`] would produce into `hasher` without
+    /// building them.
+    pub fn hash_into(&self, hasher: &mut blake3::Hasher) {
+        match self {
+            Self::Attribute(payload) => {
+                hasher.update(&[TAG_ATTRIBUTE]);
+                hasher.update(payload);
+            }
+            Self::Relationship(target) => {
+                hasher.update(&[TAG_RELATIONSHIP]);
+                hasher.update(&target.0);
+            }
+        }
+    }
+
+    /// The [`Self::Attribute`] hash for a payload already held in a stack
+    /// buffer, so a small attribute need not become a `Vec` just to be hashed.
+    pub fn hash_attribute_into(hasher: &mut blake3::Hasher, payload: &[u8]) {
+        hasher.update(&[TAG_ATTRIBUTE]);
+        hasher.update(payload);
+    }
+
     pub fn decode(bytes: &[u8]) -> Result<Self, PropertyError> {
         let (tag, rest) = bytes.split_first().ok_or(PropertyError::Empty)?;
         match *tag {

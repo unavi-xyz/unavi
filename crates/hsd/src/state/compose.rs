@@ -1,16 +1,16 @@
 //! The layer-to-view engine: every write path funnels into `write_*`, which
 //! settles the composed view and the events a consumer would apply.
 
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+use std::collections::HashSet;
 
 use smol_str::SmolStr;
 
 use crate::{
     attributes::parent::ParentAttr,
-    id::PrimId,
+    id::{
+        PRIM_ID_BYTES,
+        PrimId,
+    },
     property::Property,
     state::{
         HsdState,
@@ -35,20 +35,38 @@ enum Placement {
     Unrealized,
 }
 
+/// The strongest opinion on a key, or `None` where every layer is silent and
+/// where the strongest opinion is `Blocked` — `Blocked` stops the walk rather
+/// than falling through.
+///
+/// Takes `layers` rather than `&self` so the caller can hold this borrow
+/// against `resolved` at the same time: it is the layers, not the whole state,
+/// that this reads.
+fn resolve_property<'a>(layers: &'a [Layer], prim: PrimId, name: &str) -> Option<&'a Property> {
+    layers
+        .iter()
+        .rev()
+        .find_map(|layer| layer.get(prim)?.property(name))
+        .and_then(|opinion| opinion.value())
+}
+
+/// The stamp a local parent write gets when the caller has none. Hashing the
+/// payload out of a stack buffer avoids `ParentAttr::to_wire`'s two
+/// allocations.
+fn parent_stamp(parent: Option<ParentAttr>) -> Stamp {
+    let Some(parent) = parent else {
+        return Stamp::now(&[]);
+    };
+    let mut buf = [0u8; PRIM_ID_BYTES + 1];
+    postcard::to_slice(&parent, &mut buf).map_or_else(
+        |_| Stamp::now(&ParentAttr::to_wire(Some(parent))),
+        |encoded| Stamp::for_attribute(encoded),
+    )
+}
+
 impl HsdState {
     pub(super) fn layer(&mut self, id: LayerId) -> &mut Layer {
         &mut self.layers[id.idx()]
-    }
-
-    /// The strongest opinion on a key, or `None` where every layer is silent
-    /// and where the strongest opinion is `Blocked` — `Blocked` stops the walk
-    /// rather than falling through.
-    fn resolve_property(&self, prim: PrimId, name: &str) -> Option<Property> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|layer| layer.get(prim)?.property(name))
-            .and_then(|opinion| opinion.value().cloned())
     }
 
     fn resolve_parent(&self, prim: PrimId) -> (Option<ParentAttr>, Stamp) {
@@ -69,7 +87,7 @@ impl HsdState {
         parent: Option<ParentAttr>,
         stamp: Option<Stamp>,
     ) {
-        let stamp = stamp.unwrap_or_else(|| Stamp::now(&ParentAttr::to_wire(parent)));
+        let stamp = stamp.unwrap_or_else(|| parent_stamp(parent));
 
         if !self
             .layer(layer)
@@ -127,19 +145,21 @@ impl HsdState {
     /// and nothing else: the composed value did not move, so there is nothing
     /// to apply.
     pub(super) fn settle_property(&mut self, prim: PrimId, name: &str) {
-        let resolved = self.resolve_property(prim, name);
+        // Compare against the layers by reference, so an unchanged value is
+        // never cloned — only the strongest opinion's own bytes are read.
+        let resolved = resolve_property(&self.layers, prim, name);
         let view = self.resolved.entry(prim).or_default();
-        if view.property(name) == resolved.as_ref() {
+        if view.property(name) == resolved {
             return;
         }
-        view.set_property(name, resolved.clone());
+        let value = resolved.cloned();
+        view.set_property(name, value.clone());
 
         if self.realized.contains_key(&prim) {
-            self.events.push(SceneEvent::Property {
-                prim,
-                name: SmolStr::new(name),
-                value: resolved,
-            });
+            let name = view
+                .property_key(name)
+                .unwrap_or_else(|| SmolStr::new(name));
+            self.events.push(SceneEvent::Property { prim, name, value });
         }
     }
 
@@ -148,13 +168,16 @@ impl HsdState {
     fn refresh(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
         let mut stack = vec![root];
+        // Reused across every prim this walk touches, so `placement` does not
+        // allocate per prim.
+        let mut chain = Vec::new();
 
         while let Some(prim) = stack.pop() {
             if !seen.insert(prim) {
                 continue;
             }
 
-            let placement = self.placement(prim);
+            let placement = self.placement(prim, &mut chain);
             let previous = self.realized.get(&prim).copied();
 
             let changed = match placement {
@@ -217,7 +240,7 @@ impl HsdState {
 
     /// LWW parent pointers can form cycles; the cycle breaks at its
     /// greatest-stamped member, which every peer computes identically.
-    fn placement(&self, prim: PrimId) -> Placement {
+    fn placement(&self, prim: PrimId, chain: &mut Vec<PrimId>) -> Placement {
         let Some(state) = self.resolved.get(&prim) else {
             return Placement::Unrealized;
         };
@@ -232,11 +255,14 @@ impl HsdState {
             Some(ParentAttr::Prim(parent)) => parent,
         };
 
-        let mut chain = vec![prim];
-        let mut seen = HashMap::from([(prim, 0usize)]);
+        // `chain` holds the visited prims in order, so a lookup by index is
+        // the whole cycle check — the map it replaces bought nothing on a
+        // chain this short and allocated on every call.
+        chain.clear();
+        chain.push(prim);
         let mut current = parent;
         loop {
-            if let Some(&index) = seen.get(&current) {
+            if let Some(index) = chain.iter().position(|&id| id == current) {
                 let breaker = chain[index..]
                     .iter()
                     .copied()
@@ -251,7 +277,6 @@ impl HsdState {
             if chain.len() >= MAX_PRIM_DEPTH {
                 return Placement::Unrealized;
             }
-            seen.insert(current, chain.len());
             chain.push(current);
 
             match self.resolved.get(&current).and_then(|s| s.parent) {

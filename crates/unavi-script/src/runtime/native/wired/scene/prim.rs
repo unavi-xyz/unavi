@@ -528,19 +528,19 @@ impl HostPrim for Runtime {
         ))
     }
 
-    async fn prefab(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
-        shared::wired::scene::prim::prefab(&self.api, self_.rep())
+    async fn reference(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
+        shared::wired::scene::prim::reference(&self.api, self_.rep())
             .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn set_prefab(
+    async fn set_reference(
         &mut self,
         self_: Resource<PrimRes>,
         value: Option<Vec<u8>>,
     ) -> wasmtime::Result<Result<(), Error>> {
         Ok(lower(
-            shared::wired::scene::prim::set_prefab(&self.api, self_.rep(), value).await,
+            shared::wired::scene::prim::set_reference(&self.api, self_.rep(), value).await,
         ))
     }
 

@@ -154,16 +154,16 @@ impl PrimHandle {
             .map_err(raise)
     }
 
-    pub async fn prefab(&self) -> JsValue {
-        match shared::wired::scene::prim::prefab(&self.api, self.rep).await {
+    pub async fn reference(&self) -> JsValue {
+        match shared::wired::scene::prim::reference(&self.api, self.rep).await {
             Ok(Some(b)) => js_sys::Uint8Array::from(b.as_slice()).into(),
             _ => JsValue::UNDEFINED,
         }
     }
 
-    #[wasm_bindgen(js_name = "setPrefab")]
-    pub async fn set_prefab(&self, value: JsValue) -> Result<(), JsValue> {
-        shared::wired::scene::prim::set_prefab(&self.api, self.rep, js_to_bytes(&value))
+    #[wasm_bindgen(js_name = "setReference")]
+    pub async fn set_reference(&self, value: JsValue) -> Result<(), JsValue> {
+        shared::wired::scene::prim::set_reference(&self.api, self.rep, js_to_bytes(&value))
             .await
             .map_err(raise)
     }

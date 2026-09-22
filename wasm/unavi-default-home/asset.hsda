@@ -2,7 +2,7 @@
     (
         attributes: (
             name: "gate",
-            prefab: "../unavi-gate/asset.hsda",
+            reference: "../unavi-gate/asset.hsda",
             xform: (
                 translation: [
                     0.0,

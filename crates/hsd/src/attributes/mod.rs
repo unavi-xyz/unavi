@@ -36,7 +36,6 @@ pub trait Attribute: Serialize + DeserializeOwned {
 
 /// Slots, the `p/<prim>/<slot>/` entries whose value is the raw data.
 pub mod slots {
-    pub const PREFAB: &str = "prefab";
     pub const SCRIPT: &str = "script";
     pub const IMAGE_DATA: &str = "image:data";
     pub const MESH_INDICES: &str = "mesh:indices";
@@ -67,7 +66,6 @@ pub mod slots {
     #[must_use]
     pub fn is_slot_name(name: &str) -> bool {
         const STATIC: &[&str] = &[
-            PREFAB,
             SCRIPT,
             IMAGE_DATA,
             MESH_INDICES,

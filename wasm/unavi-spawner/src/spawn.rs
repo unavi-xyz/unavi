@@ -30,7 +30,7 @@ const MIN_DIST: f32 = 1.2;
 /// first thing it hits.
 const RAY_START: f32 = 0.4;
 
-/// Instantiates the selected prefab as its own published document, on
+/// Instantiates the selected shape as its own published document, on
 /// whatever is being pointed at.
 pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     let doc = create_document()?;

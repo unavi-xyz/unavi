@@ -8,7 +8,7 @@ use crate::{
     attributes::{
         collider::HsdCollider,
         image::HsdImage,
-        prefab::HsdPrefab,
+        reference::HsdRef,
     },
 };
 
@@ -29,7 +29,7 @@ pub fn evaluate_hsd_loaded(
         Option<&DisabledCollider>,
         Option<&Mesh3d>,
         Option<&HsdImage>,
-        Option<&HsdPrefab>,
+        Option<&HsdRef>,
         Option<&Children>,
     )>,
     loaded_docs: Query<(), (With<Hsd>, With<HsdLoaded>)>,
@@ -37,14 +37,14 @@ pub fn evaluate_hsd_loaded(
 ) {
     for doc in &docs {
         let ready = prims.iter().filter(|(child, ..)| child.0 == doc).all(
-            |(_, hsd_collider, collider, disabled, mesh, image, prefab, children)| {
+            |(_, hsd_collider, collider, disabled, mesh, image, reference, children)| {
                 let collider_ready =
                     hsd_collider.is_none() || collider.is_some() || disabled.is_some();
                 let mesh_ready = mesh.is_none_or(|m| m.0 != Handle::default());
                 let image_ready = image.is_none_or(|i| i.0 != Handle::default());
-                let prefab_ready = prefab.is_none()
+                let reference_ready = reference.is_none()
                     || children.is_some_and(|c| c.iter().any(|e| loaded_docs.contains(e)));
-                collider_ready && mesh_ready && image_ready && prefab_ready
+                collider_ready && mesh_ready && image_ready && reference_ready
             },
         );
 

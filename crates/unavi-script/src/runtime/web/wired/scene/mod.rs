@@ -82,13 +82,10 @@ impl Runtime {
             .map_err(raise)
     }
 
-    #[wasm_bindgen(js_name = "wiredSceneCreateDocumentFromPrefab")]
-    pub async fn wired_scene_create_document_from_prefab(
-        &self,
-        prefab: Vec<u8>,
-    ) -> Result<DocHandle, JsValue> {
+    #[wasm_bindgen(js_name = "wiredSceneCopyDocument")]
+    pub async fn wired_scene_copy_document(&self, id: Vec<u8>) -> Result<DocHandle, JsValue> {
         self.api.require(ApiName::CreateDocument).map_err(raise)?;
-        let rep = shared::wired::scene::create_document_from_prefab(&self.api, prefab)
+        let rep = shared::wired::scene::copy_document(&self.api, id)
             .await
             .map_err(raise)?;
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))

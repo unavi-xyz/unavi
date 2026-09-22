@@ -16,9 +16,10 @@ interface api {
   create-document: func() -> result<document, error>;
   remove-document: func(id: document-id) -> result<_, error>;
 
-  /// Instances a compiled blob as an owned, shared document, unlike a prim's
-  /// `prefab` slot which stays local.
-  create-document-from-prefab: func(prefab: blob-id) -> result<document, error>;
+  /// Mints an independent document holding what `id` has authored, which the
+  /// two then diverge from. A copy, not a reference: the copy's scripts see
+  /// the copy's prims, which is what a template is for.
+  copy-document: func(id: document-id) -> result<document, error>;
 
   /// Hands the document to the space, after which it replicates to everyone
   /// present and the script loses exclusive write access.
@@ -481,10 +482,12 @@ interface types {
     name:     func() -> option<string>;
     set-name: func(value: option<string>) -> result<_, error>;
 
-    /// The compiled document instanced as a child of this prim. Setting it
-    /// spawns the instance; clearing it or deleting the prim tears it down.
-    prefab:     func() -> option<blob-id>;
-    set-prefab: func(value: option<blob-id>) -> result<_, error>;
+    /// The document this prim stands for, realized as a child of it. Setting
+    /// it realizes the target; clearing it or deleting the prim tears it down.
+    /// The target resolves to its current state — a reference is not pinned to
+    /// a version.
+    reference:     func() -> option<document-id>;
+    set-reference: func(value: option<document-id>) -> result<_, error>;
 
     xform:     func() -> option<transform>;
     set-xform: func(value: option<transform>) -> result<_, error>;

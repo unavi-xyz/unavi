@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::{
     asset::{
         AssetLoader,
@@ -30,11 +32,9 @@ use crate::{
     Hsd,
     HsdDocId,
     HsdNamespace,
+    HsdSource,
     Prim,
-    attributes::{
-        prefab::HsdPrefab,
-        reference::HsdRef,
-    },
+    attributes::reference::HsdRef,
     document,
 };
 
@@ -122,11 +122,32 @@ async fn build_and_instance(
     entity: Entity,
     on_load: Option<OnLoadFn>,
 ) -> anyhow::Result<()> {
+    // A placeholder means nothing outside the package carrying it, so every
+    // document it names gets a namespace here and the references are rewritten
+    // to what comes back. Minting is one pass before any write, because a
+    // sub-document may reference a sibling minted after it.
+    let mut minted = HashMap::new();
+    let mut docs = Vec::with_capacity(package.documents.len());
+    for (placeholder, entries) in package.documents {
+        let doc = store.create().await?;
+        minted.insert(placeholder, DocId(*doc.id().as_bytes()));
+        docs.push((doc, entries));
+    }
+
+    for (doc, mut entries) in docs {
+        Package::rewrite_refs(&mut entries, &minted)?;
+        for (key, value) in entries {
+            doc.set(key, value).await?;
+        }
+    }
+
     let doc = store.create().await?;
     let namespace = doc.id();
 
+    let mut entries = package.entries;
+    Package::rewrite_refs(&mut entries, &minted)?;
     // Package entries carry inline bytes, so there is nothing to fetch.
-    for (key, value) in package.entries {
+    for (key, value) in entries {
         doc.set(key, value).await?;
     }
 
@@ -150,91 +171,6 @@ async fn build_and_instance(
     }
 
     Ok(())
-}
-
-/// Records which prefab a prim has instanced, so a change re-instances and a
-/// removal tears down.
-#[derive(Component)]
-pub struct PrefabLoaded(pub blake3::Hash);
-
-/// Instancing is declarative: the instance exists because the prim carries the
-/// slot.
-///
-/// The instance's id is derived rather than minted, so every peer computes the
-/// same one and the prefab's `wired:kv` state and portal receptors converge.
-pub fn instance_prefabs(
-    prefabs: Query<(
-        Entity,
-        &Prim,
-        &HsdPrefab,
-        &crate::HsdChild,
-        Option<&PrefabLoaded>,
-        Option<&Children>,
-    )>,
-    detached: Query<(Entity, Option<&Children>), (With<PrefabLoaded>, Without<HsdPrefab>)>,
-    hsd_docs: Query<(), With<Hsd>>,
-    parent_ids: Query<&HsdDocId>,
-    mut commands: Commands,
-) {
-    for (prim_ent, children) in &detached {
-        despawn_instances(&mut commands, &hsd_docs, children);
-        commands.entity(prim_ent).remove::<PrefabLoaded>();
-    }
-
-    for (prim_ent, prim, prefab, doc_child, loaded, children) in &prefabs {
-        let expected = blake3::hash(&prefab.0);
-        if let Some(loaded) = loaded {
-            if loaded.0 == expected {
-                continue;
-            }
-            despawn_instances(&mut commands, &hsd_docs, children);
-        }
-
-        let Ok(parent_id) = parent_ids.get(doc_child.0) else {
-            continue;
-        };
-        let doc_id = DocId::instance(parent_id.0, prim.0);
-
-        commands.entity(prim_ent).insert(PrefabLoaded(expected));
-
-        let bytes = prefab.0.clone();
-
-        spawn_async_task(async move {
-            let state = match unpack_prefab(&bytes) {
-                Ok(state) => state,
-                Err(err) => {
-                    warn!(?err, "failed to instance prefab");
-                    let _ = AsyncCommands::default()
-                        .push(move |world: &mut World| {
-                            if let Ok(mut e) = world.get_entity_mut(prim_ent) {
-                                e.remove::<PrefabLoaded>();
-                            }
-                        })
-                        .send()
-                        .await;
-                    return;
-                }
-            };
-
-            let _ = AsyncCommands::default()
-                .push(move |world: &mut World| {
-                    let current = world
-                        .get_entity(prim_ent)
-                        .ok()
-                        .and_then(|e| e.get::<PrefabLoaded>().map(|l| l.0));
-                    if current == Some(expected) {
-                        world.spawn((Hsd::new(state), HsdDocId(doc_id), ChildOf(prim_ent)));
-                    }
-                })
-                .send()
-                .await;
-        });
-    }
-}
-
-pub fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<hsd::state::SceneState> {
-    let package = Package::decode(bytes)?;
-    document::unpack_into_state(package)
 }
 
 /// The document a prim has realized, so a change re-realizes and a removal
@@ -331,6 +267,7 @@ async fn realize_ref(
                 world.spawn((
                     Hsd::new(state),
                     HsdDocId(site),
+                    HsdSource(target),
                     HsdNamespace(doc),
                     ChildOf(prim_ent),
                 ));

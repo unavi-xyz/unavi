@@ -111,8 +111,8 @@ const fn decode_char(c: char) -> Result<u8, IdError> {
 }
 
 /// Identifies an HSD document. For a shared document it is the
-/// [`NamespaceId`](iroh_docs::NamespaceId); for a prefab instance it is derived
-/// so every peer computes the same id for the same instance.
+/// [`NamespaceId`](iroh_docs::NamespaceId); for a reference site it is derived
+/// so every peer computes the same id for the same site.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct DocId(pub [u8; 32]);

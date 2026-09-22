@@ -83,19 +83,17 @@ impl bindings::wired::scene::api::Host for Runtime {
             .map_err(Into::into))
     }
 
-    async fn create_document_from_prefab(
+    async fn copy_document(
         &mut self,
-        prefab: Vec<u8>,
+        id: Vec<u8>,
     ) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
         if let Err(err) = self.api.require(ApiName::CreateDocument) {
             return Ok(Err(err.into()));
         }
-        Ok(
-            shared::wired::scene::create_document_from_prefab(&self.api, prefab)
-                .await
-                .map(Resource::new_own)
-                .map_err(Into::into),
-        )
+        Ok(shared::wired::scene::copy_document(&self.api, id)
+            .await
+            .map(Resource::new_own)
+            .map_err(Into::into))
     }
 
     async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {

@@ -9,7 +9,7 @@
             (
                 attributes: (
                     name: "beacon_template",
-                    prefab: "../unavi-beacon/asset.hsda",
+                    reference: "../unavi-beacon/asset.hsda",
                     xform: (
                         scale: [
                             0.0,

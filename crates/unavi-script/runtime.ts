@@ -211,7 +211,7 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:scene/api": {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
-      createDocumentFromPrefab: rt.wiredSceneCreateDocumentFromPrefab.bind(rt),
+      copyDocument: rt.wiredSceneCopyDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
       removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
       saveDocument: rt.wiredSceneSaveDocument.bind(rt),

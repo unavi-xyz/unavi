@@ -348,7 +348,7 @@ impl SceneState {
     }
 }
 
-/// Applying entries, from the document or from a compiled prefab. Entries
+/// Applying entries, from the document or from a compiled package. Entries
 /// arrive unordered — a child may be seen before its parent — so every path
 /// here has to be order-independent.
 impl SceneState {

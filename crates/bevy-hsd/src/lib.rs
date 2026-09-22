@@ -68,7 +68,6 @@ impl Plugin for HsdPlugin {
                         diff::discard_held_events,
                         diff::drain_scene_events,
                         attributes::script::track_script,
-                        attributes::prefab::track_prefab,
                         attributes::material_graph::track_material_graph,
                         attributes::xform::apply_xform,
                         attributes::name::apply_name,
@@ -90,7 +89,6 @@ impl Plugin for HsdPlugin {
                         attributes::material_graph::rebuild_material_graph,
                         attributes::material_graph::apply_graph_overrides,
                         load::instance_hsd,
-                        load::instance_prefabs,
                         load::instance_refs,
                     )
                         .chain(),
@@ -138,10 +136,17 @@ impl Hsd {
 #[derive(Component, Clone)]
 pub struct HsdHeld(pub Arc<Mutex<SceneState>>);
 
-/// A namespace-backed document's id is its namespace; a prefab instance
+/// A namespace-backed document's id is its namespace; a reference site
 /// derives one.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct HsdDocId(pub DocId);
+
+/// The document a realized reference stands for.
+///
+/// Its [`HsdDocId`] is the reference *site*, since two prims may name one
+/// document; this is what says which document that is.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct HsdSource(pub DocId);
 
 /// Present only on namespace-backed documents, which can be written to storage
 /// and shared.

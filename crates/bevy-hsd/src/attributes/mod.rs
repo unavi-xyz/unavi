@@ -15,7 +15,6 @@ pub mod material_source;
 pub mod mesh;
 pub mod name;
 pub mod portal;
-pub mod prefab;
 pub mod reference;
 pub mod rigid_body;
 pub mod script;

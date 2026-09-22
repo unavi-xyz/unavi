@@ -1,9 +1,15 @@
-//! `.hsdz`: a compiled document as one self-contained blob.
+//! `.hsdz`: a compiled document and everything it references, as one
+//! self-contained blob.
 //!
-//! A package is only the document's entries — no bloom store to reconcile
-//! during replication, no published set to preserve.
+//! A package is entries — no bloom store to reconcile during replication, no
+//! published set to preserve. Documents the root references travel beside it
+//! rather than nested inside its prims, so a reference costs 32 bytes in the
+//! root and the target is stored once however many prims name it.
 
-use std::collections::BTreeMap;
+use std::collections::{
+    BTreeMap,
+    HashMap,
+};
 
 use serde::{
     Deserialize,
@@ -11,7 +17,19 @@ use serde::{
 };
 use thiserror::Error;
 
-use crate::meta::VERSION;
+use crate::{
+    attributes::{
+        Attribute,
+        reference::ReferenceAttr,
+    },
+    id::DocId,
+    key,
+    meta::VERSION,
+    property::{
+        Property,
+        PropertyError,
+    },
+};
 
 pub const MAGIC: &[u8; 4] = b"HSDZ";
 pub const EXTENSION: &str = "hsdz";
@@ -24,23 +42,75 @@ pub enum PackageError {
     Version(u16),
     #[error("postcard {0}")]
     Postcard(#[from] postcard::Error),
+    #[error("property {0}")]
+    Property(#[from] PropertyError),
+    #[error("reference to {0}, which the package does not carry")]
+    Dangling(DocId),
 }
 
 /// Entries sorted by key, so an unchanged input compiles to identical bytes
 /// and its hash is stable across rebuilds.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Package {
-    pub version: u16,
-    pub entries: Vec<(String, Vec<u8>)>,
+    pub version:   u16,
+    /// The root document.
+    pub entries:   Vec<(String, Vec<u8>)>,
+    /// Every document referenced from the root or from another of these, under
+    /// the placeholder id its `ref` entries name. Flat rather than nested, so
+    /// minting is one pass and two prims naming one file share a document.
+    pub documents: Vec<(DocId, Vec<(String, Vec<u8>)>)>,
 }
 
 impl Package {
     #[must_use]
     pub fn new(entries: BTreeMap<String, Vec<u8>>) -> Self {
         Self {
-            version: VERSION,
-            entries: entries.into_iter().collect(),
+            version:   VERSION,
+            entries:   entries.into_iter().collect(),
+            documents: Vec::new(),
         }
+    }
+
+    /// The placeholder a compiled file's document is carried under.
+    ///
+    /// Derived from the file's identity rather than minted, so compiling twice
+    /// gives the same package bytes and two prims naming one file resolve to
+    /// one entry.
+    #[must_use]
+    pub fn placeholder(source: &str) -> DocId {
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(b"hsd:package-doc");
+        hasher.update(source.as_bytes());
+        DocId(*hasher.finalize().as_bytes())
+    }
+
+    /// Rewrites every `ref` value in `entries` through `minted`.
+    ///
+    /// A placeholder is meaningless outside the package that carries it, so a
+    /// reference the map does not answer is an error rather than a value
+    /// written through: it would name a namespace nobody can ever serve.
+    pub fn rewrite_refs(
+        entries: &mut [(String, Vec<u8>)],
+        minted: &HashMap<DocId, DocId>,
+    ) -> Result<(), PackageError> {
+        for (raw, value) in entries {
+            let Some(key::Key::Prop { name, .. }) = key::parse(raw) else {
+                continue;
+            };
+            if name != ReferenceAttr::KEY {
+                continue;
+            }
+            let Property::Attribute(payload) = Property::decode(value)? else {
+                continue;
+            };
+            let placeholder = ReferenceAttr::decode(&payload)?.0;
+            let target = minted
+                .get(&placeholder)
+                .copied()
+                .ok_or(PackageError::Dangling(placeholder))?;
+            *value = Property::Attribute(ReferenceAttr(target).encode()?).encode();
+        }
+        Ok(())
     }
 
     pub fn encode(&self) -> Result<Vec<u8>, PackageError> {

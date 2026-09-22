@@ -27,7 +27,7 @@ pub fn register_document(
     policy.update(doc.0, |record| record.host = Some(host));
 }
 
-/// The document that composed this one in, for a prefab instance.
+/// The document that composed this one in, for a reference site.
 fn host_of(
     parent: Option<&ChildOf>,
     prims: &Query<&HsdChild>,

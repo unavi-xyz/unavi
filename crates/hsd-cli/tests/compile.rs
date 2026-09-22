@@ -1,8 +1,11 @@
 mod common;
 
-use std::path::{
-    Path,
-    PathBuf,
+use std::{
+    collections::HashMap,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 use common::{
@@ -10,9 +13,18 @@ use common::{
     prim_named,
     realize,
 };
-use hsd::attributes::{
-    material,
-    slots,
+use hsd::{
+    attributes::{
+        material,
+        reference::ReferenceAttr,
+        slots,
+    },
+    id::DocId,
+    package::Package,
+    state::{
+        SceneState,
+        entry::Entry,
+    },
 };
 
 const SOURCE: &str = r#"[
@@ -100,4 +112,119 @@ fn a_duplicate_name_fails_the_build() {
     let source = SOURCE.replace("name: \"cube\"", "name: \"tex\"");
     let err = compile(&write_source("duplicate", &source)).expect_err("should fail");
     assert!(err.to_string().contains("duplicate"), "{err}");
+}
+
+const TARGET: &str = r#"[(attributes: (name: "chair"))]"#;
+
+/// Two prims naming one file, so the package has to carry the target once and
+/// both references have to name that one copy.
+const REFERENCING: &str = r#"[
+    (
+        attributes: (name: "room"),
+        children: [
+            (attributes: (name: "left", reference: "chair/asset.hsda")),
+            (attributes: (name: "right", reference: "chair/asset.hsda")),
+        ],
+    ),
+]"#;
+
+fn write_referencing(case: &str) -> PathBuf {
+    let input = write_source(case, REFERENCING);
+    let target_dir = input.parent().expect("case dir has a parent").join("chair");
+    std::fs::create_dir_all(&target_dir).expect("create target dir");
+    std::fs::write(target_dir.join("asset.hsda"), TARGET).expect("write target");
+    input
+}
+
+#[test]
+fn a_referenced_file_is_carried_beside_the_root_rather_than_inside_it() {
+    let package = compile(&write_referencing("reference")).expect("compile");
+
+    assert_eq!(
+        package.documents.len(),
+        1,
+        "two prims naming one file share one copy of it; that is the dedup a \
+         reference buys over an embedded package"
+    );
+
+    let state = realize(&package);
+    let left = state
+        .attribute::<ReferenceAttr>(prim_named(&state, "left"))
+        .expect("left references something")
+        .expect("decodes");
+    let right = state
+        .attribute::<ReferenceAttr>(prim_named(&state, "right"))
+        .expect("right references something")
+        .expect("decodes");
+
+    assert_eq!(left, right, "both name the same placeholder");
+    assert_eq!(
+        left.0, package.documents[0].0,
+        "and the placeholder is the one the package carries"
+    );
+}
+
+#[test]
+fn a_reference_costs_an_id_rather_than_the_target() {
+    let package = compile(&write_referencing("reference-size")).expect("compile");
+
+    let refs: Vec<_> = package
+        .entries
+        .iter()
+        .filter(|(key, _)| key.ends_with("/ref/"))
+        .collect();
+    assert_eq!(refs.len(), 2, "one reference entry per referencing prim");
+    for (_, value) in refs {
+        assert_eq!(
+            value.len(),
+            33,
+            "an id and its property tag, against the whole target an embedded \
+             package used to carry"
+        );
+    }
+
+    assert!(
+        !package.documents[0].1.is_empty(),
+        "and the target is carried, once, beside the root"
+    );
+}
+
+/// Placeholders are meaningless outside the package that carries them, so a
+/// reference the map cannot answer must fail rather than be written through to
+/// name a namespace nobody can serve.
+#[test]
+fn rewriting_refuses_a_reference_the_package_does_not_carry() {
+    let package = compile(&write_referencing("reference-dangling")).expect("compile");
+    let mut entries = package.entries;
+
+    assert!(
+        Package::rewrite_refs(&mut entries, &HashMap::new()).is_err(),
+        "an unmapped placeholder is an error, not a value written through"
+    );
+}
+
+#[test]
+fn rewriting_replaces_every_reference_with_its_minted_id() {
+    let package = compile(&write_referencing("reference-rewrite")).expect("compile");
+    let placeholder = package.documents[0].0;
+    let minted = DocId([9; 32]);
+
+    let mut entries = package.entries;
+    Package::rewrite_refs(&mut entries, &HashMap::from([(placeholder, minted)])).expect("rewrite");
+
+    let mut state = SceneState::new();
+    for (key, value) in entries {
+        state.apply(&Entry::new(key, value, 1)).expect("apply");
+    }
+
+    for name in ["left", "right"] {
+        assert_eq!(
+            state
+                .attribute::<ReferenceAttr>(prim_named(&state, name))
+                .expect("references something")
+                .expect("decodes")
+                .0,
+            minted
+        );
+    }
 }

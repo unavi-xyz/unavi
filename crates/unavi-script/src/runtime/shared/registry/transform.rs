@@ -111,7 +111,7 @@ impl TransformSnapshots {
     }
 }
 
-/// Keyed by document id rather than namespace: a prefab instance has an id
+/// Keyed by document id rather than namespace: a reference site has an id
 /// from birth but no namespace at all.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {

@@ -23,7 +23,7 @@ const fn hidden() -> Transform {
     }
 }
 
-/// A spinning cube above the artifact previewing the prefab; the
+/// A spinning cube above the artifact previewing the shape; the
 /// camera-anchored `root` carries orientation so the local spin needs no
 /// composition.
 pub struct Preview {

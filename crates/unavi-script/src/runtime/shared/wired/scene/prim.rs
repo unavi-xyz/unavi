@@ -45,6 +45,7 @@ use hsd::{
             PortalDestination,
             PortalReceptor,
         },
+        reference::ReferenceAttr,
         rigid_body::{
             RigidBodyAttr,
             RigidBodyKind,
@@ -416,18 +417,27 @@ pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Res
     }
 }
 
-pub async fn prefab(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
+pub async fn reference(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
     let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
-    prim.slot(slots::PREFAB)
+    Ok(prim
+        .read_attr::<ReferenceAttr>()?
+        .map(|target| target.0.0.to_vec()))
 }
 
-pub async fn set_prefab(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
+pub async fn set_reference(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    prim.set_slot(slots::PREFAB, value)
+    let target = value
+        .map(|bytes| {
+            <[u8; 32]>::try_from(bytes.as_slice())
+                .map(|bytes| ReferenceAttr(DocId(bytes)))
+                .map_err(|_| anyhow::anyhow!("document id must be 32 bytes"))
+        })
+        .transpose()?;
+    prim.write_or_clear(target)
 }
 
 pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {

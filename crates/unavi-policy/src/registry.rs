@@ -21,7 +21,7 @@ const MAX_HOST_DEPTH: usize = 16;
 pub struct Record {
     /// The space this document was registered into locally.
     pub space: Option<DocId>,
-    /// The document that composed this one in: the host of a prefab instance,
+    /// The document that composed this one in: the host of a reference site,
     /// or the document whose script created it. Authorship and the space both
     /// resolve through it.
     pub host:  Option<DocId>,
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(
             policy.registered_space(nested),
             Some(space),
-            "a prefab inside a prefab stands where its host stands"
+            "a reference inside a reference stands where its host stands"
         );
     }
 

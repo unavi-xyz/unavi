@@ -40,6 +40,7 @@ use hsd::{
             validate::validate,
         },
         name::NameAttr,
+        reference::ReferenceAttr,
         rigid_body::{
             RigidBodyAttr,
             RigidBodyKind,
@@ -48,7 +49,10 @@ use hsd::{
         spawn::SpawnAttr,
         xform::XformAttr,
     },
-    id::PrimId,
+    id::{
+        DocId,
+        PrimId,
+    },
     key,
     meta::DocMeta,
     package::Package,
@@ -87,8 +91,8 @@ fn source_identity(input_abs: &Path) -> Result<String> {
 }
 
 /// A build-time id is derived rather than minted, so every peer instancing
-/// the prefab computes byte-identical prim ids and a cross-peer reference to
-/// an authored prim resolves.
+/// a file computes byte-identical prim ids and a cross-peer reference to an
+/// authored prim resolves.
 fn derive_prim_id(source: &str, path: &[usize]) -> PrimId {
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"hsd:prim");
@@ -108,8 +112,8 @@ pub fn output_name(input_abs: &Path) -> String {
     )
 }
 
-/// Compiles a `.hsda` file into a package, recursively compiling any prefabs
-/// it names.
+/// Compiles a `.hsda` file into a package, recursively compiling every file it
+/// references.
 pub fn compile_file<S: std::hash::BuildHasher>(
     input: &Path,
     built: &mut HashMap<String, Vec<u8>, S>,
@@ -135,6 +139,7 @@ pub fn compile_file<S: std::hash::BuildHasher>(
         input_dir,
         names,
         entries: BTreeMap::new(),
+        documents: BTreeMap::new(),
         built,
     };
     compiler.entries.insert(
@@ -143,7 +148,9 @@ pub fn compile_file<S: std::hash::BuildHasher>(
     );
     compiler.emit(&doc.0, Parent::Root, &mut Vec::new())?;
 
-    Ok(Package::new(compiler.entries))
+    let mut package = Package::new(compiler.entries);
+    package.documents = compiler.documents.into_iter().collect();
+    Ok(package)
 }
 
 fn index_names(
@@ -171,6 +178,10 @@ struct Compiler<'a, S: std::hash::BuildHasher> {
     input_dir: PathBuf,
     names:     HashMap<String, PrimId>,
     entries:   BTreeMap<String, Vec<u8>>,
+    /// Documents this file references, and everything they reference, flat and
+    /// keyed so two prims naming one file share a copy. Ordered, so an
+    /// unchanged input still compiles to identical bytes.
+    documents: BTreeMap<DocId, Vec<(String, Vec<u8>)>>,
     built:     &'a mut HashMap<String, Vec<u8>, S>,
 }
 
@@ -231,9 +242,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             let bytes = self.compile_script(rel)?;
             self.set_slot(id, slots::SCRIPT, bytes);
         }
-        if let Some(rel) = &attrs.prefab {
-            let bytes = self.compile_prefab(rel)?;
-            self.set_slot(id, slots::PREFAB, bytes);
+        if let Some(rel) = &attrs.reference {
+            let target = self.compile_reference(rel)?;
+            self.set_attribute(id, &ReferenceAttr(target))?;
         }
         Ok(())
     }
@@ -322,11 +333,21 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         build_wasm_for_crate(crate_dir, self.built)
     }
 
-    fn compile_prefab(&mut self, rel: &str) -> Result<Vec<u8>> {
+    /// Compiles the referenced file into a document carried beside the root,
+    /// and answers the placeholder that names it.
+    ///
+    /// Its own referenced documents are hoisted rather than nested: the list
+    /// is flat so that minting at load is one pass, and so that two files
+    /// naming one file share a single copy of it.
+    fn compile_reference(&mut self, rel: &str) -> Result<DocId> {
         let path = self.input_dir.join(rel);
         let package = compile_file(&path, self.built)
-            .with_context(|| format!("compiling prefab {}", path.display()))?;
-        package.encode().context("encoding prefab package")
+            .with_context(|| format!("compiling reference {}", path.display()))?;
+        let placeholder = Package::placeholder(&source_identity(&std::fs::canonicalize(&path)?)?);
+
+        self.documents.extend(package.documents);
+        self.documents.insert(placeholder, package.entries);
+        Ok(placeholder)
     }
 
     /// A dangling reference in hand-written source is an author bug, so it

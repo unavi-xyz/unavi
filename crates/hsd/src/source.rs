@@ -1,6 +1,7 @@
 //! `.hsda`: the authoring tier, and the only hand-written one.
 //!
-//! Human names, relative paths to script crates, images and nested prefabs.
+//! Human names, and relative paths to script crates, images and referenced
+//! documents.
 //! Compilation replaces every path with content, so this is source, not a
 //! round-trip of the compiled package.
 
@@ -61,8 +62,9 @@ pub struct SourceAttributes {
     pub material:       Option<SourceMaterial>,
     pub material_graph: Option<SourceMaterialGraph>,
     pub name:           Option<String>,
-    /// Path to another `.hsda`, compiled and inlined as a nested package.
-    pub prefab:         Option<String>,
+    /// Path to another `.hsda`. Compiled into a document of its own, carried
+    /// beside the root, and named here by a reference.
+    pub reference:      Option<String>,
     pub rigid_body:     Option<SourceRigidBody>,
     /// Path to a wasm crate's `Cargo.toml`.
     pub script:         Option<String>,

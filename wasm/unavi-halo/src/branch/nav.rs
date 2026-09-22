@@ -21,7 +21,7 @@ use crate::{
         portal::api::travel,
         scene::{
             api::{
-                create_document_from_prefab,
+                copy_document,
                 self_document,
             },
             types::Document,
@@ -38,8 +38,8 @@ use crate::{
 /// namespace list and answer this prefix with nothing.
 const ACTIVE_PREFIX: &str = "active/";
 
-/// The authored prim whose `prefab` slot every beacon copies, kept at zero
-/// scale so the template itself never shows.
+/// The authored prim referencing the document every beacon is copied from,
+/// kept at zero scale so the template itself never shows.
 const TEMPLATE_PRIM_NAME: &str = "beacon_template";
 
 /// A space the registries say has people in it.
@@ -230,13 +230,16 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
         .prims()
         .into_iter()
         .find(|prim| prim.name().is_some_and(|name| name == TEMPLATE_PRIM_NAME))
-        .and_then(|prim| prim.prefab())
+        .and_then(|prim| prim.reference())
         .ok_or_else(|| anyhow::anyhow!("halo HSD is missing its {TEMPLATE_PRIM_NAME} prim"))?;
 
     // Built in full while the document is still parked, so the room sees a
     // beacon appear where it was let go rather than one arriving at the origin
     // and moving.
-    let beacon = create_document_from_prefab(&template)?;
+    // A copy rather than a reference: the beacon's script looks for a prim
+    // named for its space, and a referenced document realizes as a child, so
+    // the script would be looking in the wrong document.
+    let beacon = copy_document(&template)?;
     let prim = beacon.create_prim()?;
     // The beacon script finds itself by a prim named for its space.
     prim.set_name(Some(hex))?;

@@ -6,7 +6,6 @@
 
 use hsd::{
     key,
-    package::Package,
     state::{
         SceneState,
         entry::Entry,
@@ -48,20 +47,6 @@ pub async fn to_entry(doc: &Document, entry: &iroh_docs::Entry) -> Option<Entry>
         value,
         timestamp: entry.timestamp(),
     })
-}
-
-/// Unpacks a package straight into state, for a prefab instance that has no
-/// namespace and so no entries of its own.
-pub fn unpack_into_state(package: Package) -> anyhow::Result<SceneState> {
-    let mut state = SceneState::new();
-    for (key, value) in package.entries {
-        state.apply(&Entry {
-            key,
-            value,
-            timestamp: 0,
-        })?;
-    }
-    Ok(state)
 }
 
 /// Applies one `SceneState` change to the document backing it.

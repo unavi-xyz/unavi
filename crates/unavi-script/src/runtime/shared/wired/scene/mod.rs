@@ -9,6 +9,7 @@ use bevy_hsd::{
     HsdDocId,
     HsdHeld,
     HsdNamespace,
+    HsdSource,
     document as hsd_document,
 };
 use bevy_iroh::store::LocalStore;
@@ -17,6 +18,7 @@ use hsd::{
     key,
     state::{
         SceneState,
+        entry::Entry,
         save,
     },
 };
@@ -115,7 +117,8 @@ async fn serve_namespace(ns: NamespaceId) -> anyhow::Result<()> {
 
 /// The namespace backing a document.
 ///
-/// A prefab instance derives its id and has no namespace at all.
+/// A reference site is keyed by a derived id but backed by the target's
+/// namespace, so it answers with the target's.
 async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
@@ -415,11 +418,64 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
     mint_document(api, SceneState::new()).await
 }
 
-/// Unpacks a prefab into a document with a namespace of its own.
-pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u32, ScriptError> {
-    let state = unpack_prefab(&prefab).map_err(|err| ScriptError::other(err.to_string()))?;
+/// Mints an independent document holding what `id` has authored.
+///
+/// A copy, not a reference: the two diverge from here, and the copy's scripts
+/// see the copy's prims. That is what a template is for, and what a reference
+/// deliberately is not — a reference realizes the target as a child document,
+/// so a script inside it would look for its siblings in the wrong place.
+///
+/// Only the document layer travels. A copy of what someone's script happened
+/// to be computing this frame is not what "copy this template" means.
+pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
+    let id = doc_id(&id).map_err(|err| ScriptError::other(err.to_string()))?;
+    let entries = source_entries(api, id)
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?
+        .ok_or_else(|| ScriptError::other(format!("no document {id} to copy")))?;
+
+    let mut state = SceneState::new();
+    for (key, value) in entries {
+        state
+            .apply(&Entry {
+                key,
+                value,
+                timestamp: 0,
+            })
+            .map_err(|err| ScriptError::other(err.to_string()))?;
+    }
 
     mint_document(api, state).await
+}
+
+/// The authored entries of `id`, looked up by document id and then by the
+/// reference sites realizing it, since a realized reference is keyed by its
+/// site rather than by the document it stands for.
+async fn source_entries(
+    _api: &Api,
+    id: DocId,
+) -> anyhow::Result<Option<std::collections::BTreeMap<String, Vec<u8>>>> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let by_id = world
+                .query::<(&HsdDocId, &Hsd)>()
+                .iter(world)
+                .find(|(doc, _)| doc.0 == id)
+                .map(|(_, live)| Arc::clone(&live.0));
+            let state = by_id.or_else(|| {
+                world
+                    .query::<(&HsdSource, &Hsd)>()
+                    .iter(world)
+                    .find(|(source, _)| source.0 == id)
+                    .map(|(_, live)| Arc::clone(&live.0))
+            });
+            let entries = state.and_then(|state| state.lock().ok().map(|s| s.entries()));
+            tx.try_send(entries).ok();
+        })
+        .send()
+        .await?;
+    Ok(rx.recv().await?)
 }
 
 async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError> {
@@ -441,8 +497,4 @@ async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError>
         },
         &api.quota,
     )?)
-}
-
-fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<SceneState> {
-    bevy_hsd::load::unpack_prefab(bytes)
 }

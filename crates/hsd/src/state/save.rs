@@ -115,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    fn a_slot_entry_writes_its_bytes() {
+    fn a_new_key_writes_its_bytes() {
         let mut current = base();
         current.insert("p/a/script/".to_owned(), vec![9, 9, 9]);
         assert_eq!(

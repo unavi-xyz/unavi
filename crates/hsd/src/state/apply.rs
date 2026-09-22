@@ -8,7 +8,6 @@ use std::collections::{
 };
 
 use crate::{
-    attributes::slots::is_slot_name,
     id::PrimId,
     key,
     meta::DocMeta,
@@ -62,15 +61,10 @@ impl HsdState {
                 };
                 self.write_parent(layer, prim, parent, Some(stamp));
             }
-            Some(key::Key::Prop { prim, name }) if is_slot_name(&name) => {
-                let value = if empty {
-                    None
-                } else {
-                    Some(entry.value.clone())
-                };
-                self.write_slot(layer, prim, &name, value, stamp);
-            }
             Some(key::Key::Prop { prim, name }) => {
+                // The tag says whether the value is a property or a blob, so
+                // no name list classifies it and a value this build has never
+                // heard of travels as bytes.
                 let value = if empty {
                     None
                 } else {
@@ -101,11 +95,6 @@ impl HsdState {
             key::PARENT => {
                 if layer.take_parent(prim).is_some() {
                     self.settle_parent(prim);
-                }
-            }
-            name if is_slot_name(name) => {
-                if layer.take_slot(prim, name).is_some() {
-                    self.settle_slot(prim, name);
                 }
             }
             name => {
@@ -149,9 +138,6 @@ impl HsdState {
             out.insert(key::parent(prim), parent.encode());
             for (name, value) in opinions.set_properties() {
                 out.insert(key::prop(prim, name), value.encode());
-            }
-            for (name, value) in opinions.set_slots() {
-                out.insert(key::prop(prim, name), value.to_vec());
             }
         }
 

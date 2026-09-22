@@ -6,17 +6,20 @@ use common::{
     input,
     node,
 };
-use hsd::attributes::material_graph::{
-    ShaderGraph,
-    graph::{
-        DisplacementGraph,
-        LitOutput,
-        SurfaceGraph,
-        SurfaceOutput,
-        UnlitOutput,
+use hsd::attributes::{
+    Attribute,
+    material_graph::{
+        ShaderGraph,
+        graph::{
+            DisplacementGraph,
+            LitOutput,
+            SurfaceGraph,
+            SurfaceOutput,
+            UnlitOutput,
+        },
+        node::Node,
+        value::GraphValue,
     },
-    node::Node,
-    value::GraphValue,
 };
 
 /// Cross-prim dedup depends on this: two structurally identical graphs

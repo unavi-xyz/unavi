@@ -22,8 +22,12 @@ pub enum FilterMode {
     Nearest,
 }
 
-/// Sampler settings only; the encoded image is the `image:data` slot.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Sampler settings and the encoded image bytes.
+///
+/// The bytes are a field of the payload, not a separate key: an entry value is
+/// already a blob, so a sibling key buys no storage. See
+/// `docs/designs/hsd-attribute-fields.md`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImageAttr {
     pub address_mode_u: Option<AddressMode>,
     pub address_mode_v: Option<AddressMode>,
@@ -32,6 +36,7 @@ pub struct ImageAttr {
     pub min_filter:     Option<FilterMode>,
     pub mipmap_filter:  Option<FilterMode>,
     pub srgb:           Option<bool>,
+    pub data:           Vec<u8>,
 }
 
 impl Attribute for ImageAttr {

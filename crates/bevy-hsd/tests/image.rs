@@ -6,13 +6,10 @@ use bevy::{
     render::render_resource::TextureFormat,
 };
 use bevy_hsd::attributes::image::HsdImage;
-use hsd::attributes::{
-    image::{
-        AddressMode,
-        FilterMode,
-        ImageAttr,
-    },
-    slots,
+use hsd::attributes::image::{
+    AddressMode,
+    FilterMode,
+    ImageAttr,
 };
 use image::{
     ImageFormat,
@@ -30,7 +27,7 @@ mod common;
 fn test_image_lifecycle(mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(root, &ImageAttr::default());
-    ctx.set_slot(root, slots::IMAGE_DATA, b"png".to_vec());
+    ctx.set_image_data(root, b"png".to_vec());
 
     ctx.app.update();
 
@@ -72,7 +69,7 @@ fn test_image_blob_load(#[from(ctx_blobs)] mut ctx: TestContext) {
             ..Default::default()
         },
     );
-    ctx.set_slot(root, slots::IMAGE_DATA, png_bytes);
+    ctx.set_image_data(root, png_bytes);
 
     let mut handle: Option<Handle<Image>> = None;
     ctx.tick_until(|world| {
@@ -118,7 +115,7 @@ fn test_oversized_image_is_refused(mut ctx: TestContext) {
 
     let root = ctx.create_prim();
     ctx.set_attr(root, &ImageAttr::default());
-    ctx.set_slot(root, slots::IMAGE_DATA, bytes.into_inner());
+    ctx.set_image_data(root, bytes.into_inner());
 
     ctx.app.update();
 
@@ -146,7 +143,7 @@ fn test_image_within_the_cap_loads(mut ctx: TestContext) {
 
     let root = ctx.create_prim();
     ctx.set_attr(root, &ImageAttr::default());
-    ctx.set_slot(root, slots::IMAGE_DATA, bytes.into_inner());
+    ctx.set_image_data(root, bytes.into_inner());
 
     ctx.app.update();
 

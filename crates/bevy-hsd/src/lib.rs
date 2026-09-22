@@ -70,8 +70,6 @@ impl Plugin for HsdPlugin {
                         load::apply_ref_overrides,
                         diff::discard_held_events,
                         diff::drain_scene_events,
-                        attributes::script::track_script,
-                        attributes::material_graph::track_material_graph,
                         attributes::xform::apply_xform,
                         attributes::name::apply_name,
                         attributes::gravity_scale::apply_gravity_scale,
@@ -179,11 +177,6 @@ pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
 /// byte rather than by name.
 #[derive(Component, Default, Debug)]
 pub struct HsdRelationships(pub BTreeMap<SmolStr, PrimId>);
-
-/// A prim's slots, held inline as bytes. A document loads in full before it
-/// realizes, so no slot value is a deferred reference.
-#[derive(Component, Default, Debug)]
-pub struct HsdSlots(pub BTreeMap<SmolStr, Vec<u8>>);
 
 /// Pauses event draining while a batched writer holds it, so the batch's
 /// writes reach the world atomically instead of tearing across frames.

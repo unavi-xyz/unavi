@@ -9,6 +9,7 @@ use crate::{
             MaterialAttr,
         },
         name::NameAttr,
+        script::ScriptAttr,
         xform::XformAttr,
     },
     id::PrimId,
@@ -380,45 +381,31 @@ fn a_script_editing_a_document_prim_changes_what_is_drawn_not_what_is_kept() {
 }
 
 #[test]
-fn a_slot_is_tracked_as_inline_bytes() {
-    let mut state = HsdState::new();
+fn an_attribute_carrying_bytes_round_trips() {
+    // Bulk bytes are a field of the attribute payload, so a value holding them
+    // is one property like any other.
     let payload = vec![9; 1024];
+    let mut state = HsdState::new();
     apply(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
     apply(
         &mut state,
-        &[Entry::new(
-            key::prop(prim(1), "mesh:POSITION"),
-            payload.clone(),
-            2,
-        )],
+        &[attr_entry(prim(1), &ScriptAttr(payload.clone()), 2)],
     );
 
     assert_eq!(
-        state.get(prim(1)).expect("prim").slot("mesh:POSITION"),
-        Some(payload.as_slice())
+        state
+            .attribute::<ScriptAttr>(prim(1))
+            .expect("script")
+            .expect("decodes")
+            .0,
+        payload
     );
-    assert!(state.drain_events().contains(&SceneEvent::Slot {
-        prim:  prim(1),
-        name:  "mesh:POSITION".into(),
-        value: Some(payload),
-    }));
-}
-
-#[test]
-fn a_zero_size_slot_entry_reads_as_absence() {
-    let mut state = HsdState::new();
-    apply(
-        &mut state,
-        &[
-            root_entry(prim(1), 1),
-            Entry::new(key::prop(prim(1), "script"), vec![1; 64], 2),
-            Entry::new(key::prop(prim(1), "script"), Vec::new(), 3),
-        ],
+    assert_eq!(
+        state.entries().get(&key::prop(prim(1), ScriptAttr::KEY)),
+        Some(&Property::Attribute(ScriptAttr(payload).encode().expect("encode")).encode()),
     );
-
-    assert_eq!(state.get(prim(1)).expect("prim").slot("script"), None);
 }
 
 #[test]
@@ -485,7 +472,7 @@ fn the_save_set_round_trips_through_a_fresh_state() {
             root_entry(prim(1), 1),
             child_entry(prim(2), prim(1), 2),
             attr_entry(prim(2), &NameAttr("kept".into()), 3),
-            Entry::new(key::prop(prim(2), "script"), vec![7; 32], 4),
+            attr_entry(prim(2), &ScriptAttr(vec![7; 32]), 4),
         ],
     );
 

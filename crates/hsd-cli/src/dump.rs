@@ -19,12 +19,15 @@ use hsd::{
         gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::MaterialAttr,
-        material_graph::overrides::GraphOverridesAttr,
+        material_graph::{
+            ShaderGraph,
+            overrides::GraphOverridesAttr,
+        },
         mesh::MeshAttr,
         name::NameAttr,
         portal::PortalAttr,
         rigid_body::RigidBodyAttr,
-        slots,
+        script::ScriptAttr,
         spawn::SpawnAttr,
         xform::XformAttr,
     },
@@ -46,8 +49,6 @@ struct DumpPrim {
     attributes:    BTreeMap<String, String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     relationships: BTreeMap<String, String>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    slots:         BTreeMap<String, String>,
     /// What this prim says about the prims of the document it references,
     /// keyed by target prim.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -61,7 +62,6 @@ struct Node {
     parent:        Option<Parent>,
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
-    slots:         BTreeMap<String, String>,
     overrides:     BTreeMap<String, BTreeMap<String, String>>,
 }
 
@@ -75,13 +75,6 @@ pub fn dump_file(input: &Path) -> Result<String> {
         match key::parse(raw) {
             Some(key::Key::Prop { prim, name }) if name == key::PARENT => {
                 nodes.entry(prim).or_default().parent = Some(Parent::decode(value)?);
-            }
-            Some(key::Key::Prop { prim, name }) if slots::is_slot_name(&name) => {
-                nodes
-                    .entry(prim)
-                    .or_default()
-                    .slots
-                    .insert(name.to_string(), format!("{} bytes", value.len()));
             }
             Some(key::Key::Prop { prim, name }) => {
                 let node = nodes.entry(prim).or_default();
@@ -125,7 +118,6 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
             id:            id.to_string(),
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
-            slots:         node.slots.clone(),
             overrides:     node.overrides.clone(),
             children:      build(nodes, Some(*id)),
         })
@@ -140,9 +132,6 @@ fn render_override(name: &str, value: &[u8]) -> Result<String> {
     }
     if name == key::PARENT {
         return Ok(format!("{:?}", Parent::decode(value)?));
-    }
-    if slots::is_slot_name(name) {
-        return Ok(format!("{} bytes", value.len()));
     }
     Ok(match Property::decode(value)? {
         Property::Relationship(target) => target.to_string(),
@@ -163,10 +152,12 @@ fn render(name: &str, payload: &[u8]) -> String {
         ImageAttr::KEY => show::<ImageAttr>(payload),
         MaterialAttr::KEY => show::<MaterialAttr>(payload),
         GraphOverridesAttr::KEY => show::<GraphOverridesAttr>(payload),
+        ShaderGraph::KEY => show::<ShaderGraph>(payload),
         MeshAttr::KEY => show::<MeshAttr>(payload),
         NameAttr::KEY => show::<NameAttr>(payload),
         PortalAttr::KEY => show::<PortalAttr>(payload),
         RigidBodyAttr::KEY => show::<RigidBodyAttr>(payload),
+        ScriptAttr::KEY => show::<ScriptAttr>(payload),
         SpawnAttr::KEY => show::<SpawnAttr>(payload),
         XformAttr::KEY => show::<XformAttr>(payload),
         _ => format!("<unknown, {} bytes>", payload.len()),

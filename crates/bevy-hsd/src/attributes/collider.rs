@@ -7,8 +7,10 @@ use bytemuck::{
 use hsd::{
     attributes::{
         Attribute,
-        collider::ColliderAttr,
-        slots,
+        collider::{
+            ColliderAttr,
+            ColliderKind,
+        },
     },
     bounds::MAX_MESH_ELEMENTS,
 };
@@ -20,16 +22,13 @@ use unavi_physics::{
     shape,
 };
 
-use crate::{
-    HsdSlots,
-    attributes::{
-        AttributeParser,
-        ParseError,
-        util::compute_global_transform,
-    },
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
+    util::compute_global_transform,
 };
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone)]
 pub struct ColliderData(pub ColliderAttr);
 
 #[derive(Component)]
@@ -65,40 +64,36 @@ impl AttributeParser for ColliderParser {
 }
 
 pub fn rebuild_collider(
-    changed: Query<
-        (Entity, &ColliderData, Option<&HsdSlots>),
-        Or<(Changed<ColliderData>, Changed<HsdSlots>)>,
-    >,
+    changed: Query<(Entity, &ColliderData), Changed<ColliderData>>,
     locals: Query<&Transform>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
-    for (prim, data, slots) in &changed {
+    for (prim, data) in &changed {
         commands.entity(prim).remove::<Collider>();
 
         let seed = compute_global_transform(prim, &locals, &parents);
+        let attr = &data.0;
 
-        let collider = match data.0 {
-            ColliderAttr::Sphere(r) => shape::sphere(r as f32),
-            ColliderAttr::Capsule { height, radius } => {
+        let collider = match attr.kind {
+            ColliderKind::Sphere(r) => shape::sphere(r as f32),
+            ColliderKind::Capsule { height, radius } => {
                 shape::capsule(radius as f32, height as f32)
             }
-            ColliderAttr::Cuboid { x, y, z } => shape::cuboid(x as f32, y as f32, z as f32),
-            ColliderAttr::Cylinder { height, radius } => {
+            ColliderKind::Cuboid { x, y, z } => shape::cuboid(x as f32, y as f32, z as f32),
+            ColliderKind::Cylinder { height, radius } => {
                 shape::cylinder(radius as f32, height as f32)
             }
-            ColliderAttr::ConvexHull => {
-                let Some(bytes) = slots.and_then(|s| s.0.get(slots::COLLIDER_VERTICES)) else {
+            ColliderKind::ConvexHull => {
+                let Some(bytes) = attr.vertices.as_deref() else {
                     continue;
                 };
                 build_convex_hull(bytes)
             }
-            ColliderAttr::Trimesh => {
-                let Some(slots) = slots else { continue };
-                let (Some(vertices), Some(indices)) = (
-                    slots.0.get(slots::COLLIDER_VERTICES),
-                    slots.0.get(slots::COLLIDER_INDICES),
-                ) else {
+            ColliderKind::Trimesh => {
+                let (Some(vertices), Some(indices)) =
+                    (attr.vertices.as_deref(), attr.indices.as_deref())
+                else {
                     continue;
                 };
                 build_trimesh(vertices, indices)

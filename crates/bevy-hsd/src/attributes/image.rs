@@ -20,16 +20,12 @@ use hsd::attributes::{
         FilterMode,
         ImageAttr,
     },
-    slots,
 };
 use image::GenericImageView;
 
-use crate::{
-    HsdSlots,
-    attributes::{
-        AttributeParser,
-        ParseError,
-    },
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
 };
 
 const MAX_TEXTURE_DIMS: u32 = 8192;
@@ -37,7 +33,7 @@ const MAX_TEXTURE_DIMS: u32 = 8192;
 /// the dimension cap admits.
 const MAX_DECODE_BYTES: u64 = 4 * (MAX_TEXTURE_DIMS as u64) * (MAX_TEXTURE_DIMS as u64);
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone)]
 pub struct ImageData(pub ImageAttr);
 
 #[derive(Component, Default)]
@@ -71,16 +67,16 @@ impl AttributeParser for ImageParser {
 }
 
 pub fn rebuild_image(
-    changed: Query<(Entity, &ImageData, &HsdSlots), Or<(Changed<ImageData>, Changed<HsdSlots>)>>,
+    changed: Query<(Entity, &ImageData), Changed<ImageData>>,
     mut image_assets: ResMut<Assets<Image>>,
     mut commands: Commands,
 ) {
-    for (prim, image, slots) in &changed {
-        let Some(bytes) = slots.0.get(slots::IMAGE_DATA) else {
-            continue;
-        };
-
+    for (prim, image) in &changed {
         let attr = &image.0;
+        let bytes = &attr.data;
+        if bytes.is_empty() {
+            continue;
+        }
         let mut sampler = ImageSamplerDescriptor::default();
         for (value, target) in [
             (attr.address_mode_u, &mut sampler.address_mode_u),

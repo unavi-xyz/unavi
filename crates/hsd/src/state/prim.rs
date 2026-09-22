@@ -22,8 +22,9 @@ pub struct PrimState {
     /// it is held rather than realized.
     pub parent:   Option<Parent>,
     parent_stamp: Stamp,
+    /// Attributes and relationships share one map; the [`Property`] variant
+    /// says which.
     props:        BTreeMap<SmolStr, Property>,
-    slots:        BTreeMap<SmolStr, Vec<u8>>,
 }
 
 impl PrimState {
@@ -34,17 +35,6 @@ impl PrimState {
 
     pub fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {
         self.props.iter()
-    }
-
-    #[must_use]
-    pub fn slot(&self, name: &str) -> Option<&[u8]> {
-        self.slots.get(name).map(Vec::as_slice)
-    }
-
-    pub fn slots(&self) -> impl Iterator<Item = (&SmolStr, &[u8])> {
-        self.slots
-            .iter()
-            .map(|(name, value)| (name, value.as_slice()))
     }
 
     /// The stamp of whichever layer won the parent key, which is what breaks a
@@ -66,17 +56,6 @@ impl PrimState {
             }
             None => {
                 self.props.remove(name);
-            }
-        }
-    }
-
-    pub(super) fn set_slot(&mut self, name: &str, value: Option<Vec<u8>>) {
-        match value {
-            Some(value) => {
-                self.slots.insert(SmolStr::new(name), value);
-            }
-            None => {
-                self.slots.remove(name);
             }
         }
     }

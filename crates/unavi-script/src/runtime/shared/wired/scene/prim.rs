@@ -18,7 +18,10 @@ use bevy::{
 use hsd::{
     attributes::{
         Attribute,
-        collider::ColliderAttr,
+        collider::{
+            ColliderAttr,
+            ColliderKind,
+        },
         gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::{
@@ -50,7 +53,6 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
-        slots,
         spawn::SpawnAttr,
         text::TextAttr,
         xform::XformAttr,
@@ -273,24 +275,52 @@ impl PrimRes {
         value.map_or_else(|| self.clear(A::KEY), |attr| self.write_attr(&attr))
     }
 
-    fn slot(&self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
-        self.with(|state| {
-            state
-                .get(self.id)
-                .and_then(|p| p.slot(name))
-                .map(ToOwned::to_owned)
-        })
+    /// Reads the attribute (or `default`), applies `f`, and writes it back.
+    ///
+    /// The read-modify-write a bulk field needs: topology and streams share one
+    /// entry, so setting one has to preserve the others.
+    fn update_attr<A: Attribute>(&self, default: A, f: impl FnOnce(&mut A)) -> anyhow::Result<()> {
+        self.with(|state| -> anyhow::Result<()> {
+            let mut attr = state
+                .attribute::<A>(self.id)
+                .transpose()?
+                .unwrap_or(default);
+            f(&mut attr);
+            state.set_attribute(self.id, &attr)?;
+            Ok(())
+        })?
     }
 
-    fn set_slot(&self, name: &str, value: Option<Vec<u8>>) -> anyhow::Result<()> {
-        self.with(|state| {
-            let Some(value) = value else {
-                state.remove_slot(self.id, name);
-                return Ok(());
-            };
-            state.set_slot(self.id, name, value)
-        })??;
-        Ok(())
+    /// Sets the collider kind, creating the attribute when the prim has none
+    /// and keeping any buffers already set.
+    fn set_collider_kind(&self, kind: ColliderKind) -> anyhow::Result<()> {
+        self.with(|state| -> anyhow::Result<()> {
+            let mut attr = state
+                .attribute::<ColliderAttr>(self.id)
+                .transpose()?
+                .unwrap_or(ColliderAttr {
+                    kind,
+                    vertices: None,
+                    indices: None,
+                });
+            attr.kind = kind;
+            state.set_attribute(self.id, &attr)?;
+            Ok(())
+        })?
+    }
+
+    /// Sets a collider buffer. A prim with no collider has nowhere to put it,
+    /// so this errors rather than silently dropping it.
+    fn set_collider_buffer(&self, f: impl FnOnce(&mut ColliderAttr)) -> anyhow::Result<()> {
+        self.with(|state| -> anyhow::Result<()> {
+            let mut attr = state
+                .attribute::<ColliderAttr>(self.id)
+                .transpose()?
+                .ok_or_else(|| anyhow::anyhow!("prim has no collider to set buffers on"))?;
+            f(&mut attr);
+            state.set_attribute(self.id, &attr)?;
+            Ok(())
+        })?
     }
 }
 
@@ -602,32 +632,14 @@ pub async fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
 pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    prim.write_or_clear(value.map(|m| MeshAttr {
-        topology: topology_from_prim(m.topology),
-    }))
-}
-
-/// Writes a buffer to the prim's slot entry; attribute and buffers are
-/// separate entries.
-async fn set_buffer(
-    api: &Api,
-    prim: &PrimRes,
-    slot: &str,
-    bytes: Option<Vec<u8>>,
-) -> anyhow::Result<()> {
-    if bytes.is_some() {
-        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
-    }
-    prim.set_slot(slot, bytes)
-}
-
-/// A prim renders only with both its attribute and buffers; writing a buffer
-/// implies the attribute with default topology.
-fn ensure_mesh_attr(prim: &PrimRes) -> anyhow::Result<()> {
-    if prim.read_attr::<MeshAttr>()?.is_some() {
-        return Ok(());
-    }
-    prim.write_attr(&MeshAttr::default())
+    value.map_or_else(
+        || prim.clear(MeshAttr::KEY),
+        |mesh| {
+            prim.update_attr(MeshAttr::default(), |attr| {
+                attr.topology = topology_from_prim(mesh.topology);
+            })
+        },
+    )
 }
 
 pub async fn set_mesh_stream(
@@ -642,12 +654,19 @@ pub async fn set_mesh_stream(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
-            ensure_mesh_attr(&prim)?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(f32s_to_bytes(&v))
         }
         None => None,
     };
-    set_buffer(api, &prim, &slots::mesh_attribute(&key), bytes).await
+    prim.update_attr(MeshAttr::default(), |mesh| match bytes {
+        Some(bytes) => {
+            mesh.streams.insert(key, bytes);
+        }
+        None => {
+            mesh.streams.remove(&key);
+        }
+    })
 }
 
 pub async fn set_mesh_indices_u32(
@@ -660,16 +679,16 @@ pub async fn set_mesh_indices_u32(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
-            ensure_mesh_attr(&prim)?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(u32s_to_bytes(&v))
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::MESH_INDICES, bytes).await
+    prim.update_attr(MeshAttr::default(), |mesh| mesh.indices = bytes)
 }
 
-/// Reads a vertex stream back out of the prim's slot entry. A proxy's streams
-/// are not present locally, so it reads as having none.
+/// Reads a vertex stream back out of the prim's mesh attribute. A proxy's
+/// streams are not present locally, so it reads as having none.
 pub async fn mesh_stream(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<Vec<f32>>> {
     let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
@@ -677,8 +696,8 @@ pub async fn mesh_stream(api: &Api, rep: u32, key: String) -> anyhow::Result<Opt
     }
     anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
     Ok(prim
-        .slot(&slots::mesh_attribute(&key))?
-        .map(|bytes| bytes_to_f32s(&bytes)))
+        .read_attr::<MeshAttr>()?
+        .and_then(|mesh| mesh.streams.get(&key).map(|bytes| bytes_to_f32s(bytes))))
 }
 
 pub async fn set_collider_vertices(
@@ -691,11 +710,12 @@ pub async fn set_collider_vertices(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider vertices too large");
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(f32s_to_bytes(&v))
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_VERTICES, bytes).await
+    prim.set_collider_buffer(|c| c.vertices = bytes)
 }
 
 pub async fn set_collider_indices(
@@ -708,17 +728,23 @@ pub async fn set_collider_indices(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider indices too large");
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(u32s_to_bytes(&v))
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_INDICES, bytes).await
+    prim.set_collider_buffer(|c| c.indices = bytes)
 }
 
 pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    set_buffer(api, &prim, slots::IMAGE_DATA, bytes).await
+    if bytes.is_some() {
+        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+    }
+    prim.update_attr(ImageAttr::default(), |image| {
+        image.data = bytes.unwrap_or_default();
+    })
 }
 
 const fn topology_to_prim(t: Topology) -> PrimTopology {
@@ -767,14 +793,11 @@ pub async fn set_material_graph(
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
 
-    let bytes = match value {
-        Some(graph) => {
-            validate(&graph)?;
-            Some(graph.encode()?)
-        }
-        None => None,
-    };
-    set_buffer(api, &prim, slots::MATERIAL_GRAPH_DATA, bytes).await
+    if let Some(graph) = &value {
+        validate(graph)?;
+        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+    }
+    prim.write_or_clear(value)
 }
 
 pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, PrimGraphValue)>> {
@@ -997,7 +1020,22 @@ pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<ImageAttr>> {
 pub async fn set_image(api: &Api, rep: u32, value: Option<ImageAttr>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    prim.write_or_clear(value)
+    // Sampler settings only: keep the bytes `set-image-data` already put in
+    // the same payload.
+    value.map_or_else(
+        || prim.clear(ImageAttr::KEY),
+        |value| {
+            prim.update_attr(ImageAttr::default(), |image| {
+                image.address_mode_u = value.address_mode_u;
+                image.address_mode_v = value.address_mode_v;
+                image.address_mode_w = value.address_mode_w;
+                image.mag_filter = value.mag_filter;
+                image.min_filter = value.min_filter;
+                image.mipmap_filter = value.mipmap_filter;
+                image.srgb = value.srgb;
+            })
+        },
+    )
 }
 
 pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {
@@ -1005,43 +1043,50 @@ pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider
     if prim.is_proxy {
         return Ok(None);
     }
-    Ok(prim.read_attr::<ColliderAttr>()?.map(|c| match c {
-        ColliderAttr::Capsule { height, radius } => PrimCollider::Capsule {
+    Ok(prim.read_attr::<ColliderAttr>()?.map(|c| match c.kind {
+        ColliderKind::Capsule { height, radius } => PrimCollider::Capsule {
             height: height as f32,
             radius: radius as f32,
         },
-        ColliderAttr::ConvexHull => PrimCollider::ConvexHull,
-        ColliderAttr::Cuboid { x, y, z } => PrimCollider::Cuboid([x as f32, y as f32, z as f32]),
-        ColliderAttr::Cylinder { height, radius } => PrimCollider::Cylinder {
+        ColliderKind::ConvexHull => PrimCollider::ConvexHull,
+        ColliderKind::Cuboid { x, y, z } => PrimCollider::Cuboid([x as f32, y as f32, z as f32]),
+        ColliderKind::Cylinder { height, radius } => PrimCollider::Cylinder {
             height: height as f32,
             radius: radius as f32,
         },
-        ColliderAttr::Sphere(r) => PrimCollider::Sphere(r as f32),
-        ColliderAttr::Trimesh => PrimCollider::Trimesh,
+        ColliderKind::Sphere(r) => PrimCollider::Sphere(r as f32),
+        ColliderKind::Trimesh => PrimCollider::Trimesh,
     }))
 }
 
 pub async fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    prim.write_or_clear(value.map(|c| match c {
-        PrimCollider::Capsule { height, radius } => ColliderAttr::Capsule {
+    value.map_or_else(
+        || prim.clear(ColliderAttr::KEY),
+        |value| prim.set_collider_kind(prim_to_collider_kind(value)),
+    )
+}
+
+fn prim_to_collider_kind(c: PrimCollider) -> ColliderKind {
+    match c {
+        PrimCollider::Capsule { height, radius } => ColliderKind::Capsule {
             height: f64::from(height),
             radius: f64::from(radius),
         },
-        PrimCollider::ConvexHull => ColliderAttr::ConvexHull,
-        PrimCollider::Cuboid([x, y, z]) => ColliderAttr::Cuboid {
+        PrimCollider::ConvexHull => ColliderKind::ConvexHull,
+        PrimCollider::Cuboid([x, y, z]) => ColliderKind::Cuboid {
             x: f64::from(x),
             y: f64::from(y),
             z: f64::from(z),
         },
-        PrimCollider::Cylinder { height, radius } => ColliderAttr::Cylinder {
+        PrimCollider::Cylinder { height, radius } => ColliderKind::Cylinder {
             height: f64::from(height),
             radius: f64::from(radius),
         },
-        PrimCollider::Sphere(r) => ColliderAttr::Sphere(f64::from(r)),
-        PrimCollider::Trimesh => ColliderAttr::Trimesh,
-    }))
+        PrimCollider::Sphere(r) => ColliderKind::Sphere(f64::from(r)),
+        PrimCollider::Trimesh => ColliderKind::Trimesh,
+    }
 }
 
 pub async fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<PrimRigidBody>> {
@@ -1238,30 +1283,36 @@ mod tests {
     }
 
     #[test]
-    fn first_buffer_defaults_the_mesh_attr() {
+    fn first_stream_defaults_the_mesh_attr() {
         let prim = prim_res();
-        ensure_mesh_attr(&prim).expect("ensure mesh attr");
-        assert_eq!(
-            prim.read_attr::<MeshAttr>().expect("read mesh attr"),
-            Some(MeshAttr {
-                topology: Topology::TriangleList,
-            })
-        );
+        prim.update_attr(MeshAttr::default(), |mesh| {
+            mesh.streams.insert("POSITION".to_owned(), vec![0; 12]);
+        })
+        .expect("update mesh");
+        let mesh = prim
+            .read_attr::<MeshAttr>()
+            .expect("read mesh attr")
+            .expect("present");
+        assert_eq!(mesh.topology, Topology::TriangleList);
+        assert!(mesh.streams.contains_key("POSITION"));
     }
 
     #[test]
-    fn an_authored_topology_survives_a_buffer_write() {
+    fn an_authored_topology_survives_a_stream_write() {
         let prim = prim_res();
         prim.write_attr(&MeshAttr {
             topology: Topology::LineList,
+            ..Default::default()
         })
         .expect("write mesh attr");
-        ensure_mesh_attr(&prim).expect("ensure mesh attr");
-        assert_eq!(
-            prim.read_attr::<MeshAttr>().expect("read mesh attr"),
-            Some(MeshAttr {
-                topology: Topology::LineList,
-            })
-        );
+        prim.update_attr(MeshAttr::default(), |mesh| {
+            mesh.streams.insert("POSITION".to_owned(), vec![0; 12]);
+        })
+        .expect("update mesh");
+        let mesh = prim
+            .read_attr::<MeshAttr>()
+            .expect("read mesh attr")
+            .expect("present");
+        assert_eq!(mesh.topology, Topology::LineList);
     }
 }

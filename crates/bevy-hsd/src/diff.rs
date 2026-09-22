@@ -18,7 +18,6 @@ use crate::{
     HsdHeld,
     HsdPrimIndex,
     HsdRelationships,
-    HsdSlots,
     Prim,
     attributes::PARSERS,
     loaded::HsdSnapshotDrained,
@@ -40,12 +39,11 @@ pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: C
 /// Per-prim maps accumulated across a whole batch.
 ///
 /// Writes go through `Commands`, invisible until the next sync point, so two
-/// slots written in one batch would otherwise clobber each other. Each map
-/// seeds from the live component the first time its prim is touched.
+/// relationship writes in one batch would otherwise clobber each other. Each
+/// map seeds from the live component the first time its prim is touched.
 #[derive(Default)]
 struct Staged {
-    rels:  HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
-    slots: HashMap<Entity, BTreeMap<SmolStr, Vec<u8>>>,
+    rels: HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
 }
 
 impl Staged {
@@ -57,16 +55,6 @@ impl Staged {
         self.rels
             .entry(prim_ent)
             .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
-    }
-
-    fn slots<'a>(
-        &'a mut self,
-        prim_ent: Entity,
-        live: &Query<&HsdSlots>,
-    ) -> &'a mut BTreeMap<SmolStr, Vec<u8>> {
-        self.slots
-            .entry(prim_ent)
-            .or_insert_with(|| live.get(prim_ent).map(|s| s.0.clone()).unwrap_or_default())
     }
 }
 
@@ -86,7 +74,6 @@ pub fn drain_scene_events(
     docs: Query<(Entity, &Hsd, Option<&HsdCommitGate>)>,
     mut indices: Query<&mut HsdPrimIndex>,
     rels_now: Query<&HsdRelationships>,
-    slots_now: Query<&HsdSlots>,
     drained: Query<(), With<HsdSnapshotDrained>>,
     mut commands: Commands,
 ) {
@@ -117,7 +104,6 @@ pub fn drain_scene_events(
                 &mut index,
                 &mut staged,
                 &rels_now,
-                &slots_now,
                 &mut commands,
             );
         }
@@ -128,12 +114,6 @@ pub fn drain_scene_events(
                 continue;
             }
             commands.entity(prim_ent).insert(HsdRelationships(rels));
-        }
-        for (prim_ent, slots) in staged.slots {
-            if slots_now.get(prim_ent).is_ok_and(|live| live.0 == slots) {
-                continue;
-            }
-            commands.entity(prim_ent).insert(HsdSlots(slots));
         }
 
         if !drained.contains(doc_ent) {
@@ -148,7 +128,6 @@ fn process_event(
     index: &mut HsdPrimIndex,
     staged: &mut Staged,
     rels_now: &Query<&HsdRelationships>,
-    slots_now: &Query<&HsdSlots>,
     commands: &mut Commands,
 ) {
     match event {
@@ -171,7 +150,6 @@ fn process_event(
                 return;
             };
             staged.rels.remove(&prim_ent);
-            staged.slots.remove(&prim_ent);
             commands.entity(prim_ent).despawn();
         }
         SceneEvent::Property { prim, name, value } => {
@@ -180,21 +158,6 @@ fn process_event(
                 return;
             };
             apply_property(commands, staged, rels_now, prim_ent, &name, value);
-        }
-        SceneEvent::Slot { prim, name, value } => {
-            let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!(%prim, "prim not found for slot {name}");
-                return;
-            };
-            let slots = staged.slots(prim_ent, slots_now);
-            match value {
-                Some(value) => {
-                    slots.insert(name, value);
-                }
-                None => {
-                    slots.remove(&name);
-                }
-            }
         }
     }
 }

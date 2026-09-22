@@ -23,6 +23,7 @@ use bevy::{
 use hsd::attributes::{
     Attribute,
     material_graph::{
+        self,
         MAX_PUBLIC_INPUTS,
         MAX_TEXTURE_SAMPLES,
         ShaderGraph,
@@ -37,14 +38,12 @@ use hsd::attributes::{
         validate::validate,
         value::GraphValue,
     },
-    slots,
 };
 
 use crate::{
     Hsd,
     HsdChild,
     HsdRelationships,
-    HsdSlots,
     attributes::{
         AttributeParser,
         ParseError,
@@ -99,29 +98,34 @@ impl AttributeParser for ShaderGraphOverridesParser {
     }
 }
 
-/// A prim's compiled-graph slot.
-///
-/// `GraphOverridesAttr` is optional, present only when a prim overrides a
-/// public input, so tracking `HsdSlots` directly is the only trigger that
-/// catches the common no-overrides case.
+/// A prim's compiled graph, held as its encoded payload.
 #[derive(Component, Debug, Clone)]
 pub struct HsdMaterialGraphSlot(pub Vec<u8>);
 
-pub fn track_material_graph(
-    changed: Query<(Entity, &HsdSlots), Changed<HsdSlots>>,
-    mut commands: Commands,
-) {
-    for (entity, slots) in &changed {
-        match slots.0.get(slots::MATERIAL_GRAPH_DATA) {
-            Some(bytes) => {
+pub struct ShaderGraphParser;
+
+impl AttributeParser for ShaderGraphParser {
+    fn key(&self) -> &'static str {
+        ShaderGraph::KEY
+    }
+
+    fn lifecycle(
+        &self,
+        commands: &mut Commands,
+        prim: Entity,
+        payload: Option<&[u8]>,
+    ) -> Result<(), ParseError> {
+        match payload {
+            Some(payload) => {
                 commands
-                    .entity(entity)
-                    .insert(HsdMaterialGraphSlot(bytes.clone()));
+                    .entity(prim)
+                    .insert(HsdMaterialGraphSlot(payload.to_vec()));
             }
             None => {
-                commands.entity(entity).remove::<HsdMaterialGraphSlot>();
+                commands.entity(prim).remove::<HsdMaterialGraphSlot>();
             }
         }
+        Ok(())
     }
 }
 
@@ -316,7 +320,7 @@ fn resolve_textures(
     };
 
     for (slot, handle) in out.iter_mut().enumerate() {
-        let name = slots::material_graph_texture(slot as u8);
+        let name = material_graph::texture(slot as u8);
         *handle = rels
             .0
             .get(name.as_str())

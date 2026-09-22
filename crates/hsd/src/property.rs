@@ -25,7 +25,9 @@ pub enum PropertyError {
 
 /// Either typed data or a reference to another prim, as in USD.
 ///
-/// Both share one namespace on the prim, told apart by a leading tag byte.
+/// Both share one namespace on the prim, told apart by a leading tag byte. A
+/// property's kind is its attribute type, not a name list or a value tag:
+/// bulk bytes are fields of the attribute payload, never a separate property.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Property {
     Attribute(Vec<u8>),

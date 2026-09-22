@@ -1,26 +1,40 @@
-//! A script has no attribute payload: the wasm component *is* its
-//! `p/<prim>/script/` entry, and presence of that entry is what attaches it.
-
 use bevy::prelude::*;
-use hsd::attributes::slots;
+use hsd::attributes::{
+    Attribute,
+    script::ScriptAttr,
+};
 
-use crate::HsdSlots;
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
+};
 
 #[derive(Component, Debug, Clone)]
 pub struct HsdScript(pub Vec<u8>);
 
-pub fn track_script(
-    changed: Query<(Entity, &HsdSlots), Changed<HsdSlots>>,
-    mut commands: Commands,
-) {
-    for (entity, slots) in &changed {
-        match slots.0.get(slots::SCRIPT) {
-            Some(bytes) => {
-                commands.entity(entity).insert(HsdScript(bytes.clone()));
+pub struct ScriptParser;
+
+impl AttributeParser for ScriptParser {
+    fn key(&self) -> &'static str {
+        ScriptAttr::KEY
+    }
+
+    fn lifecycle(
+        &self,
+        commands: &mut Commands,
+        prim: Entity,
+        payload: Option<&[u8]>,
+    ) -> Result<(), ParseError> {
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert(HsdScript(ScriptAttr::decode(payload)?.0));
             }
             None => {
-                commands.entity(entity).remove::<HsdScript>();
+                commands.entity(prim).remove::<HsdScript>();
             }
         }
+        Ok(())
     }
 }

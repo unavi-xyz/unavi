@@ -15,7 +15,6 @@ use hsd::attributes::{
         ColorVec,
         MaterialAttr,
     },
-    slots,
 };
 use image::{
     ImageFormat,
@@ -76,7 +75,7 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     assert!(q.iter(world).next().is_none());
 }
 
-/// A texture slot is a relationship, not a hash inside the material payload:
+/// A texture slot is a relationship, not a field of the material payload:
 /// one property namespace, one home for a cross-prim reference.
 #[traced_test]
 #[rstest]
@@ -99,7 +98,7 @@ fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
             ..Default::default()
         },
     );
-    ctx.set_slot(image_prim, slots::IMAGE_DATA, png);
+    ctx.set_image_data(image_prim, png);
 
     let material_prim = ctx.create_prim();
     ctx.set_attr(material_prim, &MaterialAttr::default());

@@ -3,7 +3,6 @@
 use smol_str::SmolStr;
 
 use crate::{
-    attributes::slots::is_slot_name,
     id::PrimId,
     key,
     property::{
@@ -53,7 +52,6 @@ impl HsdState {
             }
             let promoted = match name.as_str() {
                 key::PARENT => self.commit_parent(layer, *prim),
-                name if is_slot_name(name) => self.commit_slot(layer, *prim, name),
                 name => self.commit_property(layer, *prim, name),
             };
             if let Some(site) = site
@@ -90,16 +88,6 @@ impl HsdState {
         Some((value, stamp.timestamp))
     }
 
-    fn commit_slot(&mut self, target: LayerId, prim: PrimId, name: &str) -> Option<(Vec<u8>, u64)> {
-        let (opinion, stamp) = self.take_live_slot(prim, name)?;
-        let value = opinion.value().cloned().unwrap_or_default();
-        self.layer(target)
-            .entry(prim)
-            .set_slot(name, opinion, stamp);
-        self.settle_slot(prim, name);
-        Some((value, stamp.timestamp))
-    }
-
     /// Promoting a parent opinion re-settles the prim, exactly as any parent
     /// write would: realization, sibling index and the subtree beneath it all
     /// answer to where the key resolves.
@@ -120,10 +108,6 @@ impl HsdState {
         name: &str,
     ) -> Option<(Opinion<Property>, Stamp)> {
         self.take_live(prim, |layer, id| layer.take_property(id, name))
-    }
-
-    fn take_live_slot(&mut self, prim: PrimId, name: &str) -> Option<(Opinion<Vec<u8>>, Stamp)> {
-        self.take_live(prim, |layer, id| layer.take_slot(id, name))
     }
 
     fn take_live_parent(&mut self, prim: PrimId) -> Option<(Opinion<Parent>, Stamp)> {

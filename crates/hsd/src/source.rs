@@ -118,8 +118,8 @@ pub struct SourceMaterial {
     pub roughness:                  Option<f64>,
 }
 
-/// Path to a `.hss` file, compiled into the `material:graph_data` slot
-/// entry, plus optional per-instance overrides of the graph's public inputs.
+/// Path to a `.hss` file, compiled into the `material:graph_data` attribute,
+/// plus optional per-instance overrides of the graph's public inputs.
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]

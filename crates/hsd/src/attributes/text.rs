@@ -8,7 +8,7 @@ use crate::attributes::{
     material::ColorVec,
 };
 
-/// A string drawn in the world; a property rather than a slot.
+/// A string drawn in the world.
 ///
 /// String fields hold free-form values, so a value a newer client
 /// understands and this one does not still stores, syncs and re-serves rather

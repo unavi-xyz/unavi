@@ -13,6 +13,7 @@ pub mod name;
 pub mod portal;
 pub mod reference;
 pub mod rigid_body;
+pub mod script;
 pub mod spawn;
 pub mod text;
 pub mod xform;
@@ -26,48 +27,5 @@ pub trait Attribute: Serialize + DeserializeOwned {
 
     fn decode(bytes: &[u8]) -> Result<Self, postcard::Error> {
         postcard::from_bytes(bytes)
-    }
-}
-
-/// Slots, the `p/<prim>/<slot>/` entries whose value is the raw data.
-pub mod slots {
-    pub const SCRIPT: &str = "script";
-    pub const IMAGE_DATA: &str = "image:data";
-    pub const MESH_INDICES: &str = "mesh:indices";
-    pub const COLLIDER_INDICES: &str = "collider:indices";
-    pub const COLLIDER_VERTICES: &str = "collider:vertices";
-    /// The compiled, validated node graph.
-    pub const MATERIAL_GRAPH_DATA: &str = "material:graph_data";
-    /// One relationship per fixed texture-sample slot a graph may use.
-    #[must_use]
-    pub fn material_graph_texture(slot: u8) -> String {
-        format!("material:graph_texture:{slot}")
-    }
-
-    #[must_use]
-    pub fn mesh_attribute(name: &str) -> String {
-        format!("mesh:{name}")
-    }
-
-    #[must_use]
-    pub fn mesh_attribute_name(slot: &str) -> Option<&str> {
-        let name = slot.strip_prefix("mesh:")?;
-        (name != "indices").then_some(name)
-    }
-
-    /// Whether `name` is a known raw-data slot rather than a property. A
-    /// slot's value is opaque bytes; a property's value is a postcard
-    /// `Property`.
-    #[must_use]
-    pub fn is_slot_name(name: &str) -> bool {
-        const STATIC: &[&str] = &[
-            SCRIPT,
-            IMAGE_DATA,
-            MESH_INDICES,
-            COLLIDER_INDICES,
-            COLLIDER_VERTICES,
-            MATERIAL_GRAPH_DATA,
-        ];
-        STATIC.contains(&name) || name.starts_with("mesh:")
     }
 }

@@ -362,6 +362,7 @@ fn image_shared(img: Image) -> ImageAttr {
         min_filter:     img.min_filter.map(filter_mode_shared),
         mipmap_filter:  img.mipmap_filter.map(filter_mode_shared),
         srgb:           img.srgb,
+        data:           Vec::new(),
     }
 }
 

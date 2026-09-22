@@ -12,15 +12,16 @@
 //! [`graph::DisplacementGraph`] computes a vertex-stage position/normal
 //! offset.
 //!
-//! The compiled graph is slot content (`material:graph_data`), never an
-//! attribute payload; [`overrides::GraphOverridesAttr`] is the small
-//! attribute that names the same prim's per-instance tint of the graph's
-//! public inputs.
+//! The compiled graph is the `material:graph_data` attribute payload;
+//! [`overrides::GraphOverridesAttr`] is the small attribute that names the
+//! same prim's per-instance tint of the graph's public inputs.
 
 use serde::{
     Deserialize,
     Serialize,
 };
+
+use crate::attributes::Attribute;
 
 pub mod graph;
 pub mod node;
@@ -40,8 +41,14 @@ pub const MAX_TEXTURE_SAMPLES: usize = 4;
 /// `AsBindGroup` (one `vec4` slot per input).
 pub const MAX_PUBLIC_INPUTS: usize = 16;
 
-/// A compiled, closed shader graph. This is slot content
-/// (`material:graph_data`), never an attribute payload — see the module docs.
+/// One relationship per fixed texture-sample slot a graph may use.
+#[must_use]
+pub fn texture(slot: u8) -> String {
+    format!("material:graph_texture:{slot}")
+}
+
+/// A compiled, closed shader graph. This is the `material:graph_data`
+/// attribute payload — see the module docs.
 ///
 /// No field here may become a `HashMap`: dedup across prims depends on
 /// [`Self::encode`] producing byte-identical output for structurally
@@ -59,12 +66,6 @@ pub struct ShaderGraph {
     pub displacement:  Option<graph::DisplacementGraph>,
 }
 
-impl ShaderGraph {
-    pub fn encode(&self) -> Result<Vec<u8>, postcard::Error> {
-        postcard::to_stdvec(self)
-    }
-
-    pub fn decode(bytes: &[u8]) -> Result<Self, postcard::Error> {
-        postcard::from_bytes(bytes)
-    }
+impl Attribute for ShaderGraph {
+    const KEY: &'static str = "material:graph_data";
 }

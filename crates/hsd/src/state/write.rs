@@ -82,18 +82,4 @@ impl HsdState {
         let stamp = Stamp::now(&[]);
         self.write_property(LayerId::Runtime, prim, name, None, stamp);
     }
-
-    pub fn set_slot(&mut self, prim: PrimId, name: &str, value: Vec<u8>) -> Result<(), StateError> {
-        if !key::is_valid_name(name) {
-            return Err(StateError::Name(name.to_owned()));
-        }
-        let stamp = Stamp::now(&value);
-        self.write_slot(LayerId::Runtime, prim, name, Some(value), stamp);
-        Ok(())
-    }
-
-    pub fn remove_slot(&mut self, prim: PrimId, name: &str) {
-        let stamp = Stamp::now(&[]);
-        self.write_slot(LayerId::Runtime, prim, name, None, stamp);
-    }
 }

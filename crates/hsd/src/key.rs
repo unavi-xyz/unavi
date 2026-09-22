@@ -103,8 +103,8 @@ pub fn parse(key: &str) -> Option<Key> {
     })
 }
 
-/// A property or slot name may not be empty or contain a `/`, since either
-/// would let one key prefix another.
+/// A property name may not be empty or contain a `/`, since either would let
+/// one key prefix another.
 #[must_use]
 pub fn is_valid_name(name: &str) -> bool {
     !name.is_empty() && !name.contains('/')

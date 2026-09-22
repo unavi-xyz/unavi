@@ -20,21 +20,17 @@ use hsd::{
             MeshAttr,
             Topology,
         },
-        slots,
     },
     bounds::MAX_MESH_ELEMENTS,
 };
 use thiserror::Error;
 
-use crate::{
-    HsdSlots,
-    attributes::{
-        AttributeParser,
-        ParseError,
-    },
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
 };
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone)]
 pub struct MeshData(pub MeshAttr);
 
 pub struct MeshParser;
@@ -64,15 +60,15 @@ impl AttributeParser for MeshParser {
     }
 }
 
-/// Rebuilds on either half changing, since the topology attribute and the
-/// vertex buffers are separate entries and arrive in no particular order.
+/// Rebuilds when the mesh attribute changes. Topology and buffers share one
+/// entry, so there is no second half to wait for.
 pub fn rebuild_mesh(
-    changed: Query<(Entity, &MeshData, &HsdSlots), Or<(Changed<MeshData>, Changed<HsdSlots>)>>,
+    changed: Query<(Entity, &MeshData), Changed<MeshData>>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut commands: Commands,
 ) {
-    for (prim, data, slots) in &changed {
-        match build_mesh(data.0.topology, slots) {
+    for (prim, data) in &changed {
+        match build_mesh(&data.0) {
             Ok(mesh) => {
                 let handle = mesh_assets.add(mesh);
                 commands.entity(prim).insert(Mesh3d(handle));
@@ -107,22 +103,19 @@ enum MeshRejected {
     IndexOutOfBounds { index: u32, vertices: usize },
 }
 
-fn build_mesh(topology: Topology, slots: &HsdSlots) -> Result<Mesh, MeshRejected> {
+fn build_mesh(data: &MeshAttr) -> Result<Mesh, MeshRejected> {
     let mut mesh = Mesh::new(
-        topology_to_primitive(topology),
+        topology_to_primitive(data.topology),
         RenderAssetUsages::default(),
     );
 
-    let positions = slots
-        .0
-        .get(slots::mesh_attribute("POSITION").as_str())
+    let positions = data
+        .streams
+        .get("POSITION")
         .ok_or(MeshRejected::NoPosition)?;
     let vertices = checked::<[f32; 3]>("POSITION", positions)?.len();
 
-    for (slot_name, bytes) in &slots.0 {
-        let Some(name) = slots::mesh_attribute_name(slot_name) else {
-            continue;
-        };
+    for (name, bytes) in &data.streams {
         let Some((attr, kind)) = mesh_attr_id(name) else {
             continue;
         };
@@ -149,7 +142,7 @@ fn build_mesh(topology: Topology, slots: &HsdSlots) -> Result<Mesh, MeshRejected
         mesh.insert_attribute(attr, values);
     }
 
-    if let Some(bytes) = slots.0.get(slots::MESH_INDICES) {
+    if let Some(bytes) = &data.indices {
         let indices = checked::<u32>("indices", bytes)?;
         if let Some(&index) = indices
             .iter()

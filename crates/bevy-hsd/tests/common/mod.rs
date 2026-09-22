@@ -25,6 +25,8 @@ use bevy_msdf::font::RegisterFont;
 use hsd::{
     attributes::{
         Attribute,
+        collider::ColliderAttr,
+        image::ImageAttr,
         material_graph::{
             ShaderGraph,
             graph::{
@@ -39,6 +41,7 @@ use hsd::{
             },
             value::GraphValue,
         },
+        mesh::MeshAttr,
     },
     id::PrimId,
     state::{
@@ -244,6 +247,49 @@ impl TestContext {
         self.with_state(|state| state.remove_property(prim, A::KEY));
     }
 
+    /// Reads an existing attribute, applies `f`, and writes it back. The
+    /// read-modify-write a bulk field needs now that it shares one entry with
+    /// the rest of the attribute.
+    fn update_attr<A: Attribute>(&self, prim: PrimId, f: impl FnOnce(&mut A)) {
+        self.with_state(|state| {
+            let mut attr = state
+                .attribute::<A>(prim)
+                .expect("attribute present")
+                .expect("decode attribute");
+            f(&mut attr);
+            state.set_attribute(prim, &attr).expect("set attribute");
+        });
+    }
+
+    pub fn set_mesh_stream(&self, prim: PrimId, name: &str, bytes: Vec<u8>) {
+        self.update_attr::<MeshAttr>(prim, |mesh| {
+            mesh.streams.insert(name.to_owned(), bytes);
+        });
+    }
+
+    pub fn set_mesh_indices(&self, prim: PrimId, bytes: Vec<u8>) {
+        self.update_attr::<MeshAttr>(prim, |mesh| mesh.indices = Some(bytes));
+    }
+
+    pub fn set_image_data(&self, prim: PrimId, bytes: Vec<u8>) {
+        self.update_attr::<ImageAttr>(prim, |image| image.data = bytes);
+    }
+
+    pub fn set_collider_vertices(&self, prim: PrimId, bytes: Vec<u8>) {
+        self.update_attr::<ColliderAttr>(prim, |c| c.vertices = Some(bytes));
+    }
+
+    pub fn set_collider_indices(&self, prim: PrimId, bytes: Vec<u8>) {
+        self.update_attr::<ColliderAttr>(prim, |c| c.indices = Some(bytes));
+    }
+
+    /// Sets a prim's `material:graph_data` attribute from its encoded payload,
+    /// which is the shape the graph tests build.
+    pub fn set_shader_graph(&self, prim: PrimId, bytes: Vec<u8>) {
+        let graph = ShaderGraph::decode(&bytes).expect("decode graph");
+        self.set_attr(prim, &graph);
+    }
+
     pub fn set_relationship(&self, prim: PrimId, name: &str, target: PrimId) {
         self.with_state(|state| {
             state
@@ -254,14 +300,6 @@ impl TestContext {
 
     pub fn remove_property(&self, prim: PrimId, name: &str) {
         self.with_state(|state| state.remove_property(prim, name));
-    }
-
-    pub fn set_slot(&self, prim: PrimId, slot: &str, bytes: Vec<u8>) {
-        self.with_state(|state| state.set_slot(prim, slot, bytes).expect("set slot"));
-    }
-
-    pub fn remove_slot(&self, prim: PrimId, slot: &str) {
-        self.with_state(|state| state.remove_slot(prim, slot));
     }
 
     /// Tick the app until `cond` returns true; panics within the timeout.
@@ -292,8 +330,13 @@ impl TestDocument {
         self.with_state(|state| state.create_prim(None))
     }
 
-    pub fn set_slot(&self, prim: PrimId, slot: &str, bytes: Vec<u8>) {
-        self.with_state(|state| state.set_slot(prim, slot, bytes).expect("set slot"));
+    pub fn set_attr<A: Attribute>(&self, prim: PrimId, value: &A) {
+        self.with_state(|state| state.set_attribute(prim, value).expect("set attribute"));
+    }
+
+    pub fn set_shader_graph(&self, prim: PrimId, bytes: Vec<u8>) {
+        let graph = ShaderGraph::decode(&bytes).expect("decode graph");
+        self.set_attr(prim, &graph);
     }
 }
 

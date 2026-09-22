@@ -2,9 +2,9 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::HsdCollider;
 use bytemuck::cast_slice;
-use hsd::attributes::{
-    collider::ColliderAttr,
-    slots,
+use hsd::attributes::collider::{
+    ColliderAttr,
+    ColliderKind,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -13,11 +13,19 @@ use crate::common::*;
 
 mod common;
 
+const fn collider(kind: ColliderKind) -> ColliderAttr {
+    ColliderAttr {
+        kind,
+        vertices: None,
+        indices: None,
+    }
+}
+
 #[traced_test]
 #[rstest]
 fn test_collider_lifecycle(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(root, &ColliderAttr::Sphere(0.5));
+    ctx.set_attr(root, &collider(ColliderKind::Sphere(0.5)));
 
     ctx.app.update();
 
@@ -49,7 +57,7 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
 fn test_collider_invalid_sphere(mut ctx: TestContext) {
     for bad_r in [0.0_f64, -1.0, f64::NAN, f64::INFINITY] {
         let root = ctx.create_prim();
-        ctx.set_attr(root, &ColliderAttr::Sphere(bad_r));
+        ctx.set_attr(root, &collider(ColliderKind::Sphere(bad_r)));
 
         ctx.app.update();
 
@@ -74,7 +82,7 @@ fn test_collider_invalid_sphere(mut ctx: TestContext) {
 fn test_collider_invalid_cuboid(mut ctx: TestContext) {
     for (x, y, z) in [(0.0_f64, 1.0, 1.0), (1.0, -1.0, 1.0), (1.0, 1.0, f64::NAN)] {
         let root = ctx.create_prim();
-        ctx.set_attr(root, &ColliderAttr::Cuboid { x, y, z });
+        ctx.set_attr(root, &collider(ColliderKind::Cuboid { x, y, z }));
 
         ctx.app.update();
 
@@ -89,8 +97,6 @@ fn test_collider_invalid_cuboid(mut ctx: TestContext) {
     }
 }
 
-/// The shape and its buffers are separate entries and arrive in no fixed
-/// order, so the collider must build once both halves are present.
 #[traced_test]
 #[rstest]
 fn test_collider_trimesh(#[from(ctx)] mut ctx: TestContext) {
@@ -106,9 +112,9 @@ fn test_collider_trimesh(#[from(ctx)] mut ctx: TestContext) {
     let indices = cast_slice::<[u32; 3], u8>(&IDXS).to_vec();
 
     let root = ctx.create_prim();
-    ctx.set_slot(root, slots::COLLIDER_VERTICES, vertices);
-    ctx.set_attr(root, &ColliderAttr::Trimesh);
-    ctx.set_slot(root, slots::COLLIDER_INDICES, indices);
+    ctx.set_attr(root, &collider(ColliderKind::Trimesh));
+    ctx.set_collider_vertices(root, vertices);
+    ctx.set_collider_indices(root, indices);
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
 }

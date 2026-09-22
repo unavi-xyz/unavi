@@ -53,14 +53,6 @@ impl HsdState {
             .and_then(|opinion| opinion.value().cloned())
     }
 
-    fn resolve_slot(&self, prim: PrimId, name: &str) -> Option<Vec<u8>> {
-        self.layers
-            .values()
-            .rev()
-            .find_map(|layer| layer.get(prim)?.slot(name))
-            .and_then(|opinion| opinion.value().cloned())
-    }
-
     fn resolve_parent(&self, prim: PrimId) -> (Option<Parent>, Stamp) {
         self.layers
             .values()
@@ -154,41 +146,6 @@ impl HsdState {
         }
     }
 
-    pub(super) fn write_slot(
-        &mut self,
-        layer: LayerId,
-        prim: PrimId,
-        name: &str,
-        value: Option<Vec<u8>>,
-        stamp: Stamp,
-    ) {
-        if !self
-            .layer(layer)
-            .entry(prim)
-            .set_slot(name, value.into(), stamp)
-        {
-            return;
-        }
-        self.settle_slot(prim, name);
-    }
-
-    pub(super) fn settle_slot(&mut self, prim: PrimId, name: &str) {
-        let resolved = self.resolve_slot(prim, name);
-        let view = self.resolved.entry(prim).or_default();
-        if view.slot(name) == resolved.as_deref() {
-            return;
-        }
-        view.set_slot(name, resolved.clone());
-
-        if self.realized.contains_key(&prim) {
-            self.events.push(SceneEvent::Slot {
-                prim,
-                name: SmolStr::new(name),
-                value: resolved,
-            });
-        }
-    }
-
     /// Recomputes realization for `root` and, if it changed, everything under
     /// it. Cycles are visited once thanks to `seen`.
     fn refresh(&mut self, root: PrimId) {
@@ -247,24 +204,13 @@ impl HsdState {
         let Some(state) = self.resolved.get(&prim) else {
             return;
         };
-        let props = state
+        let values = state
             .properties()
             .map(|(name, value)| (name.clone(), value.clone()))
             .collect::<Vec<_>>();
-        let slots = state
-            .slots()
-            .map(|(name, value)| (name.clone(), value.to_vec()))
-            .collect::<Vec<_>>();
 
-        for (name, value) in props {
+        for (name, value) in values {
             self.events.push(SceneEvent::Property {
-                prim,
-                name,
-                value: Some(value),
-            });
-        }
-        for (name, value) in slots {
-            self.events.push(SceneEvent::Slot {
                 prim,
                 name,
                 value: Some(value),

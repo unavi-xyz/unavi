@@ -13,6 +13,7 @@ use bevy_hsd::attributes::material_graph::{
     ShaderGraphOverridesData,
 };
 use hsd::attributes::{
+    Attribute,
     material,
     material_graph::{
         ShaderGraph,
@@ -31,7 +32,6 @@ use hsd::attributes::{
         overrides::GraphOverridesAttr,
         value::GraphValue,
     },
-    slots,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -84,15 +84,15 @@ fn distinct_graph(step: usize) -> ShaderGraph {
     graph
 }
 
-/// No `GraphOverridesAttr` set: `HsdSlots` alone must trigger the pipeline,
-/// since that attribute is optional and this is the common case.
+/// No `GraphOverridesAttr` set: the graph attribute alone must trigger the
+/// pipeline, since overrides are optional and this is the common case.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_without_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
-    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(prim, bytes);
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
@@ -127,7 +127,7 @@ fn test_shader_graph_with_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
-    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(prim, bytes);
     ctx.set_attr(
         prim,
         &GraphOverridesAttr {
@@ -163,9 +163,9 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_blobs)] mut 
     let bytes = glow_graph().encode().expect("encode graph");
 
     let a = ctx.create_prim();
-    ctx.set_slot(a, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+    ctx.set_shader_graph(a, bytes.clone());
     let b = ctx.create_prim();
-    ctx.set_slot(b, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(b, bytes);
 
     let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
     ctx.tick_until(|world| {
@@ -194,11 +194,11 @@ fn a_graph_compiles_once_across_documents(#[from(ctx_blobs)] mut ctx: TestContex
     let bytes = glow_graph().encode().expect("encode graph");
 
     let here = ctx.create_prim();
-    ctx.set_slot(here, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+    ctx.set_shader_graph(here, bytes.clone());
 
     let elsewhere = ctx.spawn_document();
     let there = elsewhere.create_prim();
-    elsewhere.set_slot(there, slots::MATERIAL_GRAPH_DATA, bytes);
+    elsewhere.set_shader_graph(there, bytes);
 
     let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
     ctx.tick_until(|world| {
@@ -222,11 +222,7 @@ fn a_graph_compiles_once_across_documents(#[from(ctx_blobs)] mut ctx: TestContex
 fn the_program_cap_is_charged_per_document(#[from(ctx_blobs)] mut ctx: TestContext) {
     for step in 0..MAX_SHADER_PROGRAMS {
         let prim = ctx.create_prim();
-        ctx.set_slot(
-            prim,
-            slots::MATERIAL_GRAPH_DATA,
-            distinct_graph(step).encode().expect("encode graph"),
-        );
+        ctx.set_shader_graph(prim, distinct_graph(step).encode().expect("encode graph"));
     }
     ctx.tick_until(|world| {
         world.query::<&HsdShaderGraphMaterial>().iter(world).count() == MAX_SHADER_PROGRAMS
@@ -234,9 +230,8 @@ fn the_program_cap_is_charged_per_document(#[from(ctx_blobs)] mut ctx: TestConte
 
     let elsewhere = ctx.spawn_document();
     let there = elsewhere.create_prim();
-    elsewhere.set_slot(
+    elsewhere.set_shader_graph(
         there,
-        slots::MATERIAL_GRAPH_DATA,
         distinct_graph(MAX_SHADER_PROGRAMS)
             .encode()
             .expect("encode graph"),
@@ -262,11 +257,11 @@ fn dropping_one_document_keeps_a_graph_another_still_holds(
     let bytes = glow_graph().encode().expect("encode graph");
 
     let kept = ctx.create_prim();
-    ctx.set_slot(kept, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+    ctx.set_shader_graph(kept, bytes.clone());
 
     let leaving = ctx.spawn_document();
     let doomed = leaving.create_prim();
-    leaving.set_slot(doomed, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+    leaving.set_shader_graph(doomed, bytes.clone());
 
     ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
     let before = fragment_shaders(&mut ctx).pop().expect("a compiled shader");
@@ -275,7 +270,7 @@ fn dropping_one_document_keeps_a_graph_another_still_holds(
     ctx.app.update();
 
     let again = ctx.create_prim();
-    ctx.set_slot(again, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(again, bytes);
     ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
 
     let after = fragment_shaders(&mut ctx);
@@ -300,15 +295,15 @@ fn fragment_shaders(ctx: &mut TestContext) -> Vec<Handle<Shader>> {
         .collect()
 }
 
-/// Removing the slot removes the built material, as `ImageAttr`/`MaterialAttr`
-/// removal does.
+/// Removing the graph attribute removes the built material, as
+/// `ImageAttr`/`MaterialAttr` removal does.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_removed_when_slot_removed(#[from(ctx_blobs)] mut ctx: TestContext) {
+fn test_shader_graph_removed_when_removed(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
-    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(prim, bytes);
 
     ctx.tick_until(|world| {
         world
@@ -318,7 +313,7 @@ fn test_shader_graph_removed_when_slot_removed(#[from(ctx_blobs)] mut ctx: TestC
             .is_some()
     });
 
-    ctx.remove_slot(prim, slots::MATERIAL_GRAPH_DATA);
+    ctx.remove_attr::<ShaderGraph>(prim);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -353,7 +348,7 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
     let bytes = graph.encode().expect("encode graph");
 
     let prim = ctx.create_prim();
-    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(prim, bytes);
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
@@ -390,7 +385,7 @@ fn blend_and_cull_reach_the_material(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = graph.encode().expect("encode graph");
 
     let prim = ctx.create_prim();
-    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(prim, bytes);
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
@@ -418,7 +413,7 @@ fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestCo
     let bytes = glow_graph().encode().expect("encode graph");
 
     let template = ctx.create_prim();
-    ctx.set_slot(template, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.set_shader_graph(template, bytes);
 
     let beam = ctx.create_prim();
     ctx.set_relationship(beam, material::BINDING, template);

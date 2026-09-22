@@ -23,7 +23,10 @@ use anyhow::{
 use hsd::{
     attributes::{
         Attribute,
-        collider::ColliderAttr,
+        collider::{
+            ColliderAttr,
+            ColliderKind,
+        },
         gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::{
@@ -32,6 +35,7 @@ use hsd::{
             MaterialAttr,
         },
         material_graph::{
+            ShaderGraph,
             overrides::{
                 GraphOverridesAttr,
                 validate_overrides,
@@ -45,7 +49,7 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
-        slots,
+        script::ScriptAttr,
         spawn::SpawnAttr,
         xform::XformAttr,
     },
@@ -240,7 +244,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         }
         if let Some(rel) = &attrs.script {
             let bytes = self.compile_script(rel)?;
-            self.set_slot(id, slots::SCRIPT, bytes);
+            self.set_attribute(id, &ScriptAttr(bytes))?;
         }
         if let Some(rel) = &attrs.reference {
             let target = self.compile_reference(rel)?;
@@ -253,7 +257,6 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         let path = self.input_dir.join(&image.data);
         let bytes =
             std::fs::read(&path).with_context(|| format!("reading image {}", path.display()))?;
-        self.set_slot(id, slots::IMAGE_DATA, bytes);
         self.set_attribute(
             id,
             &ImageAttr {
@@ -264,6 +267,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
                 min_filter:     image.min_filter,
                 mipmap_filter:  image.mipmap_filter,
                 srgb:           image.srgb,
+                data:           bytes,
             },
         )
     }
@@ -300,19 +304,17 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         Ok(())
     }
 
-    /// Compiles a `.hss` (Hyper-Space Shader) file to slot content and, if
-    /// the prim specifies overrides, an attribute alongside it. The graph
-    /// itself never appears in the attribute payload — see
-    /// `hsd::attributes::material_graph`.
+    /// Compiles a `.hss` (Hyper-Space Shader) file to the
+    /// `material:graph_data` attribute and, if the prim specifies overrides, a
+    /// second attribute alongside it.
     fn emit_material_graph(&mut self, id: PrimId, graph: &SourceMaterialGraph) -> Result<()> {
         let path = self.input_dir.join(&graph.path);
         let src = std::fs::read_to_string(&path)
             .with_context(|| format!("reading shader graph {}", path.display()))?;
-        let parsed =
+        let parsed: ShaderGraph =
             parse_hss(&src).with_context(|| format!("parsing shader graph {}", path.display()))?;
         validate(&parsed).with_context(|| format!("validating shader graph {}", path.display()))?;
-        let bytes = parsed.encode().context("encoding shader graph")?;
-        self.set_slot(id, slots::MATERIAL_GRAPH_DATA, bytes);
+        self.set_attribute(id, &parsed)?;
 
         if !graph.overrides.is_empty() {
             let overrides = GraphOverridesAttr {
@@ -370,18 +372,19 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
     fn set_property(&mut self, id: PrimId, name: &str, value: Property) {
         self.entries.insert(key::prop(id, name), value.encode());
     }
-
-    fn set_slot(&mut self, id: PrimId, slot: &str, bytes: Vec<u8>) {
-        self.entries.insert(key::prop(id, slot), bytes);
-    }
 }
 
 const fn compile_collider(c: &SourceCollider) -> ColliderAttr {
-    match *c {
-        SourceCollider::Capsule { height, radius } => ColliderAttr::Capsule { height, radius },
-        SourceCollider::Cuboid { x, y, z } => ColliderAttr::Cuboid { x, y, z },
-        SourceCollider::Cylinder { height, radius } => ColliderAttr::Cylinder { height, radius },
-        SourceCollider::Sphere(r) => ColliderAttr::Sphere(r),
+    let kind = match *c {
+        SourceCollider::Capsule { height, radius } => ColliderKind::Capsule { height, radius },
+        SourceCollider::Cuboid { x, y, z } => ColliderKind::Cuboid { x, y, z },
+        SourceCollider::Cylinder { height, radius } => ColliderKind::Cylinder { height, radius },
+        SourceCollider::Sphere(r) => ColliderKind::Sphere(r),
+    };
+    ColliderAttr {
+        kind,
+        vertices: None,
+        indices: None,
     }
 }
 

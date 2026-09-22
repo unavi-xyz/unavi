@@ -43,8 +43,10 @@ impl<T> From<Option<T>> for Opinion<T> {
 #[derive(Debug, Clone)]
 pub(super) struct PrimOpinions {
     parent: Option<(Opinion<Parent>, Stamp)>,
+    /// Attributes, relationships and blobs share one map: a value's tag says
+    /// which it is, so a name has exactly one kind and no tombstone has to
+    /// guess between two.
     props:  BTreeMap<SmolStr, (Opinion<Property>, Stamp)>,
-    slots:  BTreeMap<SmolStr, (Opinion<Vec<u8>>, Stamp)>,
 }
 
 impl PrimOpinions {
@@ -52,7 +54,6 @@ impl PrimOpinions {
         Self {
             parent: None,
             props:  BTreeMap::new(),
-            slots:  BTreeMap::new(),
         }
     }
 
@@ -64,20 +65,10 @@ impl PrimOpinions {
         self.props.get(name).map(|(opinion, _)| opinion)
     }
 
-    pub(super) fn slot(&self, name: &str) -> Option<&Opinion<Vec<u8>>> {
-        self.slots.get(name).map(|(opinion, _)| opinion)
-    }
-
     /// Every property key this layer holds an opinion about, `Blocked` ones
     /// included.
     pub(super) fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Opinion<Property>)> {
         self.props
-            .iter()
-            .map(|(name, (opinion, _))| (name, opinion))
-    }
-
-    pub(super) fn slots(&self) -> impl Iterator<Item = (&SmolStr, &Opinion<Vec<u8>>)> {
-        self.slots
             .iter()
             .map(|(name, (opinion, _))| (name, opinion))
     }
@@ -90,14 +81,8 @@ impl PrimOpinions {
             .filter_map(|(name, (opinion, _))| opinion.value().map(|value| (name, value)))
     }
 
-    pub(super) fn set_slots(&self) -> impl Iterator<Item = (&SmolStr, &[u8])> {
-        self.slots.iter().filter_map(|(name, (opinion, _))| {
-            opinion.value().map(|value| (name, value.as_slice()))
-        })
-    }
-
     pub(super) fn is_empty(&self) -> bool {
-        self.parent.is_none() && self.props.is_empty() && self.slots.is_empty()
+        self.parent.is_none() && self.props.is_empty()
     }
 
     /// Removes and answers the parent opinion, or `None` when this prim has
@@ -110,10 +95,6 @@ impl PrimOpinions {
 
     pub(super) fn take_property(&mut self, name: &str) -> Option<(Opinion<Property>, Stamp)> {
         self.props.remove(name)
-    }
-
-    pub(super) fn take_slot(&mut self, name: &str) -> Option<(Opinion<Vec<u8>>, Stamp)> {
-        self.slots.remove(name)
     }
 
     /// Records an opinion, answering whether the write was accepted. A stamp
@@ -137,14 +118,6 @@ impl PrimOpinions {
             return false;
         }
         self.props.insert(SmolStr::new(name), (value, stamp));
-        true
-    }
-
-    pub(super) fn set_slot(&mut self, name: &str, value: Opinion<Vec<u8>>, stamp: Stamp) -> bool {
-        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
-        }
-        self.slots.insert(SmolStr::new(name), (value, stamp));
         true
     }
 }

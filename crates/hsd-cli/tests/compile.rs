@@ -15,9 +15,9 @@ use common::{
 };
 use hsd::{
     attributes::{
+        image::ImageAttr,
         material,
         reference::ReferenceAttr,
-        slots,
     },
     id::DocId,
     package::Package,
@@ -78,15 +78,15 @@ fn a_texture_field_compiles_to_a_relationship() {
 }
 
 #[test]
-fn an_image_file_compiles_to_a_slot_entry() {
+fn an_image_file_compiles_into_the_image_attribute() {
     let state = realize(&compile(&write_source("image", SOURCE)).expect("compile"));
 
-    let bytes = state
-        .get(prim_named(&state, "tex"))
-        .and_then(|prim| prim.slot(slots::IMAGE_DATA))
-        .expect("image slot");
+    let image = state
+        .attribute::<ImageAttr>(prim_named(&state, "tex"))
+        .expect("image attribute")
+        .expect("decodes");
 
-    assert_eq!(bytes, TEXTURE);
+    assert_eq!(image.data, TEXTURE);
 }
 
 /// Ids come from the source path and tree position, so an unchanged input

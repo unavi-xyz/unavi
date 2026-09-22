@@ -55,7 +55,6 @@ impl LayerId {
 pub(super) enum OpinionKey {
     Parent,
     Property(SmolStr),
-    Slot(SmolStr),
 }
 
 /// One layer's opinions, keyed by prim.
@@ -79,11 +78,6 @@ impl Layer {
                 opinions
                     .properties()
                     .map(|(name, _)| (*prim, OpinionKey::Property(name.clone()))),
-            );
-            out.extend(
-                opinions
-                    .slots()
-                    .map(|(name, _)| (*prim, OpinionKey::Slot(name.clone()))),
             );
         }
         out
@@ -116,19 +110,6 @@ impl Layer {
     ) -> Option<(Opinion<Property>, Stamp)> {
         let opinions = self.0.get_mut(&prim)?;
         let taken = opinions.take_property(name);
-        if opinions.is_empty() {
-            self.0.remove(&prim);
-        }
-        taken
-    }
-
-    pub(super) fn take_slot(
-        &mut self,
-        prim: PrimId,
-        name: &str,
-    ) -> Option<(Opinion<Vec<u8>>, Stamp)> {
-        let opinions = self.0.get_mut(&prim)?;
-        let taken = opinions.take_slot(name);
         if opinions.is_empty() {
             self.0.remove(&prim);
         }
@@ -172,12 +153,6 @@ impl Overrides {
                 out.push((
                     key::override_key(site, target, name),
                     opinion.value().map(Property::encode).unwrap_or_default(),
-                ));
-            }
-            for (name, opinion) in opinions.slots() {
-                out.push((
-                    key::override_key(site, target, name),
-                    opinion.value().cloned().unwrap_or_default(),
                 ));
             }
         }

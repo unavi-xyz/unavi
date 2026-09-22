@@ -41,7 +41,6 @@ use hsd::{
             MeshAttr,
             Topology,
         },
-        slots,
         xform::XformAttr,
     },
     id::PrimId,
@@ -113,14 +112,7 @@ fn populate(state: &mut HsdState) {
         (Vec3::new(1.0, 0.0, -2.0), red),
     ] {
         let prim = state.create_prim(None);
-        state
-            .set_attribute(
-                prim,
-                &MeshAttr {
-                    topology: Topology::TriangleList,
-                },
-            )
-            .expect("mesh");
+        state.set_attribute(prim, &buffers).expect("mesh");
         state
             .set_attribute(
                 prim,
@@ -134,10 +126,6 @@ fn populate(state: &mut HsdState) {
         state
             .set_relationship(prim, material::BINDING, target)
             .expect("binding");
-
-        for (slot, value) in &buffers {
-            state.set_slot(prim, slot, value.clone()).expect("slot");
-        }
     }
 
     // Two effects a fixed `MaterialAttr` cannot express, on smooth spheres: a
@@ -181,19 +169,12 @@ fn material_prim(
 
 fn shader_graph_cube(
     state: &mut HsdState,
-    buffers: &[(String, Vec<u8>)],
+    buffers: &MeshAttr,
     offset: Vec3,
     graph: ShaderGraph,
 ) -> PrimId {
     let prim = state.create_prim(None);
-    state
-        .set_attribute(
-            prim,
-            &MeshAttr {
-                topology: Topology::TriangleList,
-            },
-        )
-        .expect("mesh");
+    state.set_attribute(prim, buffers).expect("mesh");
     state
         .set_attribute(
             prim,
@@ -204,14 +185,7 @@ fn shader_graph_cube(
             },
         )
         .expect("xform");
-    for (slot, value) in buffers {
-        state.set_slot(prim, slot, value.clone()).expect("slot");
-    }
-
-    let bytes = graph.encode().expect("encode shader graph");
-    state
-        .set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes)
-        .expect("shader graph slot");
+    state.set_attribute(prim, &graph).expect("shader graph");
 
     prim
 }
@@ -277,43 +251,43 @@ fn pulse_graph() -> ShaderGraph {
     }
 }
 
-fn cube_buffers() -> Vec<(String, Vec<u8>)> {
+fn cube_buffers() -> MeshAttr {
     let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
     mesh_buffers(cube)
 }
 
 /// Smoothly-normalled sphere, so a displacement graph breathes the whole
 /// shell rather than splitting per-face vertices apart.
-fn sphere_buffers() -> Vec<(String, Vec<u8>)> {
+fn sphere_buffers() -> MeshAttr {
     mesh_buffers(Sphere::new(CUBE_SIZE / 2.0).mesh().build())
 }
 
-fn mesh_buffers(mesh: Mesh) -> Vec<(String, Vec<u8>)> {
-    let mut out = Vec::new();
+fn mesh_buffers(mesh: Mesh) -> MeshAttr {
+    let mut attr = MeshAttr {
+        topology: Topology::TriangleList,
+        ..Default::default()
+    };
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
         mesh.attribute(Mesh::ATTRIBUTE_POSITION)
     {
-        out.push((
-            slots::mesh_attribute("POSITION"),
-            cast_slice(positions).to_vec(),
-        ));
+        attr.streams
+            .insert("POSITION".to_owned(), cast_slice(positions).to_vec());
     }
     if let Some(VertexAttributeValues::Float32x3(normals)) = mesh.attribute(Mesh::ATTRIBUTE_NORMAL)
     {
-        out.push((
-            slots::mesh_attribute("NORMAL"),
-            cast_slice(normals).to_vec(),
-        ));
+        attr.streams
+            .insert("NORMAL".to_owned(), cast_slice(normals).to_vec());
     }
     if let Some(VertexAttributeValues::Float32x2(uvs)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
-        out.push((slots::mesh_attribute("UV_0"), cast_slice(uvs).to_vec()));
+        attr.streams
+            .insert("UV_0".to_owned(), cast_slice(uvs).to_vec());
     }
     if let Some(Indices::U32(idx)) = mesh.indices() {
-        out.push((slots::MESH_INDICES.to_owned(), cast_slice(idx).to_vec()));
+        attr.indices = Some(cast_slice(idx).to_vec());
     }
 
-    out
+    attr
 }
 
 fn spawn_mem_store() -> (MemStore, Blobs) {

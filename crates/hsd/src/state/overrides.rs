@@ -4,7 +4,6 @@
 use std::collections::HashSet;
 
 use crate::{
-    attributes::slots::is_slot_name,
     id::PrimId,
     key,
     property::{
@@ -53,7 +52,6 @@ impl HsdState {
             match opinion {
                 OpinionKey::Parent => self.settle_parent(prim),
                 OpinionKey::Property(name) => self.settle_property(prim, &name),
-                OpinionKey::Slot(name) => self.settle_slot(prim, &name),
             }
         }
     }
@@ -77,7 +75,6 @@ impl HsdState {
                 let parent = value.map(|bytes| Parent::decode(bytes)).transpose()?;
                 opinions.set_parent(parent.into(), stamp)
             }
-            name if is_slot_name(name) => opinions.set_slot(name, value.cloned().into(), stamp),
             name => {
                 let property = value.map(|bytes| Property::decode(bytes)).transpose()?;
                 opinions.set_property(name, property.into(), stamp)

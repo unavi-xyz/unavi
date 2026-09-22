@@ -12,6 +12,7 @@ use common::{
 };
 use hsd::{
     attributes::{
+        Attribute,
         material_graph::{
             MAX_NODES,
             ShaderGraph,
@@ -24,11 +25,11 @@ use hsd::{
             validate::validate,
             value::GraphValue,
         },
-        slots::MATERIAL_GRAPH_DATA,
     },
     id::PrimId,
     key,
     package::Package,
+    property::Property,
 };
 
 /// The checked-in example under `tests/fixtures/glow`: two prims sharing one
@@ -38,25 +39,30 @@ fn glow_fixture() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/glow/asset.hsda")
 }
 
-/// Looks a slot's raw bytes up straight from the package, since a realized
-/// [`HsdState`] and the package agree on where a slot's data lives.
-fn slot_bytes<'a>(package: &'a Package, prim: PrimId, slot: &str) -> &'a [u8] {
-    let key = key::prop(prim, slot);
-    package
+/// The compiled graph payload straight from the package, since a realized
+/// [`HsdState`] and the package agree on where the `material:graph_data`
+/// attribute lives.
+fn graph_bytes(package: &Package, prim: PrimId) -> Vec<u8> {
+    let key = key::prop(prim, ShaderGraph::KEY);
+    let value = package
         .entries
         .iter()
         .find(|(k, _)| *k == key)
-        .map_or_else(|| panic!("no slot entry at {key}"), |(_, v)| v.as_slice())
+        .map_or_else(|| panic!("no graph entry at {key}"), |(_, v)| v.as_slice());
+    match Property::decode(value).expect("decode property") {
+        Property::Attribute(payload) => payload,
+        other @ Property::Relationship(_) => panic!("expected an attribute, got {other:?}"),
+    }
 }
 
 #[test]
-fn a_shader_graph_compiles_to_a_slot_entry() {
+fn a_shader_graph_compiles_to_the_graph_attribute() {
     let package = compile(&glow_fixture()).expect("compile");
     let state = realize(&package);
     let prim = prim_named(&state, "default_glow");
 
-    let bytes = slot_bytes(&package, prim, MATERIAL_GRAPH_DATA);
-    let graph = ShaderGraph::decode(bytes).expect("decode graph");
+    let bytes = graph_bytes(&package, prim);
+    let graph = ShaderGraph::decode(&bytes).expect("decode graph");
     assert_eq!(
         graph.public_inputs,
         vec![GraphValue::Color([0.1, 0.6, 1.0, 1.0])]
@@ -94,20 +100,12 @@ fn overrides_compile_to_the_overrides_attribute() {
 /// to byte-identical `material:graph_data` entries — overrides live in the
 /// separate, small attribute, never in the slot graph bytes.
 #[test]
-fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
+fn two_prims_sharing_a_graph_get_byte_identical_graph_entries() {
     let package = compile(&glow_fixture()).expect("compile");
     let state = realize(&package);
 
-    let a = slot_bytes(
-        &package,
-        prim_named(&state, "default_glow"),
-        MATERIAL_GRAPH_DATA,
-    );
-    let b = slot_bytes(
-        &package,
-        prim_named(&state, "red_glow"),
-        MATERIAL_GRAPH_DATA,
-    );
+    let a = graph_bytes(&package, prim_named(&state, "default_glow"));
+    let b = graph_bytes(&package, prim_named(&state, "red_glow"));
 
     assert_eq!(a, b, "identical .hss source must compile byte-identically");
 }
@@ -192,8 +190,8 @@ fn a_displacement_graph_compiles() {
     let package = compile(&write_source("displacement", shader)).expect("compile");
     let state = realize(&package);
     let prim = prim_named(&state, "p");
-    let bytes = slot_bytes(&package, prim, MATERIAL_GRAPH_DATA);
-    let graph = ShaderGraph::decode(bytes).expect("decode graph");
+    let bytes = graph_bytes(&package, prim);
+    let graph = ShaderGraph::decode(&bytes).expect("decode graph");
     assert!(graph.displacement.is_some());
 }
 

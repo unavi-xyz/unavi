@@ -5,12 +5,9 @@ use bevy::{
     },
     prelude::*,
 };
-use hsd::attributes::{
-    mesh::{
-        MeshAttr,
-        Topology,
-    },
-    slots,
+use hsd::attributes::mesh::{
+    MeshAttr,
+    Topology,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -27,9 +24,10 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
         root,
         &MeshAttr {
             topology: Topology::TriangleList,
+            ..Default::default()
         },
     );
-    ctx.set_slot(root, &slots::mesh_attribute("POSITION"), vec![0u8; 36]);
+    ctx.set_mesh_stream(root, "POSITION", vec![0u8; 36]);
 
     ctx.app.update();
 
@@ -50,7 +48,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
 const POSITIONS: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
 const NORMALS: [[f32; 3]; 3] = [[0.0, 0.0, 1.0]; 3];
 const UVS: [[f32; 2]; 3] = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]];
-const INDICES: [u32; 3] = [0, 1, 2];
+const INDEX_VALUES: [u32; 3] = [0, 1, 2];
 
 #[traced_test]
 #[rstest]
@@ -58,19 +56,20 @@ fn test_mesh_build(#[from(ctx_blobs)] mut ctx: TestContext) {
     let positions = bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec();
     let normals = bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec();
     let uvs = bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec();
-    let indices = bytemuck::cast_slice::<u32, u8>(&INDICES).to_vec();
+    let indices = bytemuck::cast_slice::<u32, u8>(&INDEX_VALUES).to_vec();
 
     let root = ctx.create_prim();
     ctx.set_attr(
         root,
         &MeshAttr {
             topology: Topology::TriangleList,
+            ..Default::default()
         },
     );
-    ctx.set_slot(root, &slots::mesh_attribute("POSITION"), positions);
-    ctx.set_slot(root, &slots::mesh_attribute("NORMAL"), normals);
-    ctx.set_slot(root, &slots::mesh_attribute("UV_0"), uvs);
-    ctx.set_slot(root, slots::MESH_INDICES, indices);
+    ctx.set_mesh_stream(root, "POSITION", positions);
+    ctx.set_mesh_stream(root, "NORMAL", normals);
+    ctx.set_mesh_stream(root, "UV_0", uvs);
+    ctx.set_mesh_indices(root, indices);
 
     let mut handle: Option<Handle<Mesh>> = None;
     ctx.tick_until(|world| {
@@ -116,7 +115,7 @@ fn test_mesh_build(#[from(ctx_blobs)] mut ctx: TestContext) {
     let Some(Indices::U32(idx)) = mesh.indices() else {
         panic!("indices missing or wrong type");
     };
-    assert_eq!(idx.as_slice(), &INDICES);
+    assert_eq!(idx.as_slice(), &INDEX_VALUES);
 }
 
 /// An index past the end of the vertex buffer is an out-of-bounds GPU read at
@@ -129,18 +128,11 @@ fn test_out_of_range_indices_are_rejected(mut ctx: TestContext) {
         root,
         &MeshAttr {
             topology: Topology::TriangleList,
+            ..Default::default()
         },
     );
-    ctx.set_slot(
-        root,
-        &slots::mesh_attribute("POSITION"),
-        bytemuck::cast_slice(&POSITIONS).to_vec(),
-    );
-    ctx.set_slot(
-        root,
-        slots::MESH_INDICES,
-        bytemuck::cast_slice(&[0u32, 1, 9]).to_vec(),
-    );
+    ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
+    ctx.set_mesh_indices(root, bytemuck::cast_slice(&[0u32, 1, 9]).to_vec());
 
     ctx.app.update();
 
@@ -166,16 +158,13 @@ fn test_mismatched_attribute_lengths_are_rejected(mut ctx: TestContext) {
         root,
         &MeshAttr {
             topology: Topology::TriangleList,
+            ..Default::default()
         },
     );
-    ctx.set_slot(
+    ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
+    ctx.set_mesh_stream(
         root,
-        &slots::mesh_attribute("POSITION"),
-        bytemuck::cast_slice(&POSITIONS).to_vec(),
-    );
-    ctx.set_slot(
-        root,
-        &slots::mesh_attribute("NORMAL"),
+        "NORMAL",
         bytemuck::cast_slice(&[[0.0f32, 1.0, 0.0]]).to_vec(),
     );
 
@@ -203,18 +192,11 @@ fn test_in_range_indices_build_a_mesh(mut ctx: TestContext) {
         root,
         &MeshAttr {
             topology: Topology::TriangleList,
+            ..Default::default()
         },
     );
-    ctx.set_slot(
-        root,
-        &slots::mesh_attribute("POSITION"),
-        bytemuck::cast_slice(&POSITIONS).to_vec(),
-    );
-    ctx.set_slot(
-        root,
-        slots::MESH_INDICES,
-        bytemuck::cast_slice(&[0u32, 1, 2]).to_vec(),
-    );
+    ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
+    ctx.set_mesh_indices(root, bytemuck::cast_slice(&[0u32, 1, 2]).to_vec());
 
     ctx.app.update();
 

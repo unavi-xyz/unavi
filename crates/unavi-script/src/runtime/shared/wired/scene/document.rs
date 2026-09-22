@@ -5,8 +5,11 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
+    Hsd,
+    HsdChild,
     HsdDocId,
     HsdPrimIndex,
+    Prim,
     anchor::{
         self,
         DocAnchor,
@@ -17,8 +20,13 @@ use hsd::{
         DocId,
         PrimId,
     },
-    state::SceneState,
+    key,
+    state::{
+        CommitTarget,
+        SceneState,
+    },
 };
+use smol_str::SmolStr;
 use tokio::sync::MutexGuard;
 use unavi_policy::quota::{
     Flow,
@@ -33,7 +41,10 @@ use crate::runtime::shared::{
     Api,
     wired::scene::{
         WiredSceneApi,
+        holds_write_key,
+        namespace_of,
         prim::PrimRes,
+        save_namespace,
     },
 };
 
@@ -332,4 +343,195 @@ fn find_prim(world: &mut World, doc: DocId, prim: PrimId) -> Option<Entity> {
     world
         .get::<HsdPrimIndex>(doc_ent)
         .and_then(|index| index.0.get(&prim).copied())
+}
+
+/// Where a commit against a document lands, and what it takes to get there.
+enum Landing {
+    /// This client holds the document's own write key.
+    Document,
+    /// It holds the key of a document referencing it, so the promotion is an
+    /// override there rather than an edit of content authored elsewhere.
+    Override {
+        site:      PrimId,
+        reference: DocId,
+        state:     Arc<Mutex<SceneState>>,
+    },
+    /// It holds neither. The edit is still useful — visible to everyone
+    /// present, attributed, and gone when they leave.
+    Session,
+}
+
+/// Promotes live opinions on this document into the strongest durable layer
+/// this client can write.
+///
+/// A no-op unless this peer holds the *calling* document. Scripts run on every
+/// peer, so a tool's script calls commit on every peer, and a guest's edit
+/// must not be committed by the room owner's copy of the same script.
+/// `holder` is the latest claim else the document's author, so it is always
+/// defined where the calling document has a space at all; one with no space
+/// cannot be committed yet.
+pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow::Result<()> {
+    let doc = get_doc(api, rep).await?;
+
+    let me = api.view.me();
+    let Some(space) = api.view.space_of(api.doc_id) else {
+        return Ok(());
+    };
+    if !api.view.replicas().is_holder(space, api.doc_id, me) {
+        return Ok(());
+    }
+
+    let props = props
+        .into_iter()
+        .map(|(prim, name)| {
+            let prim = prim
+                .parse::<PrimId>()
+                .map_err(|err| anyhow::anyhow!("invalid prim id: {err}"))?;
+            anyhow::ensure!(key::is_valid_name(&name), "invalid property name {name:?}");
+            Ok((prim, SmolStr::new(name)))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    let landing = landing(doc.id).await?;
+    let entries = doc.with(|state| {
+        state.commit(
+            match &landing {
+                Landing::Document => CommitTarget::Document,
+                Landing::Override { site, .. } => CommitTarget::Override { site: *site },
+                Landing::Session => CommitTarget::Session,
+            },
+            &props,
+        )
+    })?;
+
+    // Promotion only changed live state; the durable half is the namespace
+    // write, and the session layer has none.
+    match landing {
+        Landing::Document => {
+            save_namespace(namespace_of(doc.id).await?, Arc::clone(&doc.state)).await?;
+        }
+        Landing::Override {
+            reference, state, ..
+        } => {
+            {
+                let mut referencing = state
+                    .lock()
+                    .map_err(|_| anyhow::anyhow!("scene state poisoned"))?;
+                referencing.apply_all(&entries)?;
+            }
+            save_namespace(namespace_of(reference).await?, state).await?;
+        }
+        Landing::Session => {}
+    }
+    Ok(())
+}
+
+/// Resolves where a commit against `doc` can land: its own key, else the key
+/// of the document referencing it, else nothing durable.
+///
+/// The walk is one hop by construction. An override key names a site prim and
+/// a target prim, so a document can only state an opinion about what it
+/// references directly — a room referencing a couch that references a cushion
+/// has no way to name the cushion's prims.
+async fn landing(doc: DocId) -> anyhow::Result<Landing> {
+    if holds_write_key(doc).await? {
+        return Ok(Landing::Document);
+    }
+    let Some((site, reference, state)) = reference_site(doc).await? else {
+        return Ok(Landing::Session);
+    };
+    if !holds_write_key(reference).await? {
+        return Ok(Landing::Session);
+    }
+    Ok(Landing::Override {
+        site,
+        reference,
+        state,
+    })
+}
+
+/// The prim a realized reference hangs from, and the document holding it.
+///
+/// A realized reference is spawned as a child of the prim that names it, so
+/// that prim answers both which key an override takes and whose document it
+/// belongs in.
+async fn reference_site(
+    doc: DocId,
+) -> anyhow::Result<Option<(PrimId, DocId, Arc<Mutex<SceneState>>)>> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            tx.try_send(reference_site_in(world, doc)).ok();
+        })
+        .send()
+        .await?;
+    Ok(rx.recv().await?)
+}
+
+fn reference_site_in(
+    world: &mut World,
+    doc: DocId,
+) -> Option<(PrimId, DocId, Arc<Mutex<SceneState>>)> {
+    let prim_ent = world
+        .query::<(&HsdDocId, &ChildOf)>()
+        .iter(world)
+        .find_map(|(id, parent)| (id.0 == doc).then_some(parent.0))?;
+    let site = world.get::<Prim>(prim_ent)?.0;
+    let host = world.get::<HsdChild>(prim_ent)?.0;
+    Some((
+        site,
+        world.get::<HsdDocId>(host)?.0,
+        Arc::clone(&world.get::<Hsd>(host)?.0),
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn doc(n: u8) -> DocId {
+        DocId([n; 32])
+    }
+
+    /// A document, a prim of it, and the reference that prim realizes, spawned
+    /// the way `load::realize_ref` spawns them.
+    fn realized_reference(world: &mut World) -> (PrimId, DocId, DocId) {
+        let host = doc(1);
+        let host_ent = world.spawn((Hsd::new(SceneState::new()), HsdDocId(host))).id();
+        let site = PrimId::new();
+        let prim_ent = world.spawn((Prim(site), HsdChild(host_ent))).id();
+        let child = DocId::instance(host, site);
+        world.spawn((
+            Hsd::new(SceneState::new()),
+            HsdDocId(child),
+            ChildOf(prim_ent),
+        ));
+        (site, host, child)
+    }
+
+    #[test]
+    fn a_realized_reference_answers_the_prim_and_document_holding_it() {
+        let mut world = World::new();
+        let (site, host, child) = realized_reference(&mut world);
+
+        let (found_site, found_host, _) =
+            reference_site_in(&mut world, child).expect("the site is reachable from the child");
+
+        assert_eq!(found_site, site, "which key an override takes");
+        assert_eq!(found_host, host, "and whose document it belongs in");
+    }
+
+    #[test]
+    fn a_document_nothing_references_has_no_site() {
+        let mut world = World::new();
+        realized_reference(&mut world);
+        let anchored = doc(2);
+        world.spawn((Hsd::new(SceneState::new()), HsdDocId(anchored)));
+
+        assert!(
+            reference_site_in(&mut world, anchored).is_none(),
+            "a document placed in a space is not a reference site, so a commit \
+             against it has no override to write"
+        );
+    }
 }

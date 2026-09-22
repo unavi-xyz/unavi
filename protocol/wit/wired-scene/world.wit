@@ -21,18 +21,6 @@ interface api {
   /// the copy's prims, which is what a template is for.
   copy-document: func(id: document-id) -> result<document, error>;
 
-  /// Promotes the named keys' live opinions into the strongest durable layer
-  /// this client can write, else the session layer.
-  ///
-  /// Writing and keeping are separate acts: `set-property` family calls land
-  /// in the runtime layer and evaporate with the session, and `commit` is the
-  /// only thing that makes one survive. On the client holding the calling
-  /// document, it writes the document itself; on any other client it is a
-  /// no-op, and a client holding no key for the document falls back to the
-  /// session layer. Granularity is per property, never per prim: committing a
-  /// prim would sweep up whatever a script is animating on it.
-  commit: func(props: list<tuple<prim-id, string>>) -> result<_, error>;
-
   /// Writes a document's authored content into its namespace.
   ///
   /// Script writes are live-layer opinions and are not durable; promote what
@@ -465,6 +453,23 @@ interface types {
     /// Rigid transform from this document's root frame to `other`'s root
     /// frame, or none when the two documents are not in the same space.
     offset-to: func(other: borrow<document>) -> result<option<transform>, error>;
+
+    /// Promotes the named keys' live opinions into the strongest durable layer
+    /// this client can write, else the session layer.
+    ///
+    /// Writing and keeping are separate acts: `set-property` family calls land
+    /// in the runtime layer and evaporate with the session, and `commit` is
+    /// the only thing that makes one survive. Granularity is per property,
+    /// never per prim: committing a prim would sweep up whatever a script is
+    /// animating on it.
+    ///
+    /// A no-op unless this peer holds the *calling* document, since a tool's
+    /// script runs on every peer and only the peer wielding it means anything
+    /// by the call. Where the promotion lands is then decided by what this
+    /// client holds a key for: this document, else an override in a document
+    /// referencing it, else the session layer — visible to everyone present,
+    /// attributed, and gone when they leave.
+    commit: func(props: list<tuple<prim-id, string>>) -> result<_, error>;
 
     /// Attaches this document's root to a prim, or the space root when `none`.
     /// Per-peer runtime state, never persisted.

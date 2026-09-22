@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use hsd::attributes::xform::XformAttr;
+use unavi_policy::permissions::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
@@ -112,6 +113,13 @@ impl DocHandle {
             }),
             _ => JsValue::UNDEFINED,
         }
+    }
+
+    pub async fn commit(&self, props: Vec<(String, String)>) -> Result<(), JsValue> {
+        self.api.require(ApiName::Commit).map_err(raise)?;
+        shared::wired::scene::document::commit(&self.api, self.rep, props)
+            .await
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "setAnchor")]

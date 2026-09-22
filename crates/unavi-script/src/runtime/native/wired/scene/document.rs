@@ -1,3 +1,4 @@
+use unavi_policy::permissions::ApiName;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -100,6 +101,21 @@ impl HostDocument for Runtime {
                     })
                 })
                 .map_err(|err| ScriptError::from(err).into()),
+        )
+    }
+
+    async fn commit(
+        &mut self,
+        self_: Resource<DocRes>,
+        props: Vec<(String, String)>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::Commit) {
+            return Ok(Err(err.into()));
+        }
+        Ok(
+            shared::wired::scene::document::commit(&self.api, self_.rep(), props)
+                .await
+                .map_err(|e| ScriptError::from(e).into()),
         )
     }
 

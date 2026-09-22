@@ -5324,6 +5324,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-session"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "postcard",
+ "serde",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
 name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
@@ -5364,16 +5375,6 @@ name = "example-wired-input"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "example-wired-kv"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "serde",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -13943,6 +13944,7 @@ dependencies = [
  "rand 0.9.5",
  "serde",
  "serde_vrm",
+ "smol_str 0.3.6",
  "thiserror 2.0.20",
  "time",
  "tokio",
@@ -16174,15 +16176,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-kv"
-version = "0.0.16"
-dependencies = [
- "postcard",
- "serde",
- "thiserror 2.0.20",
-]
-
-[[package]]
 name = "wired-math"
 version = "0.0.16"
 dependencies = [
@@ -16195,7 +16188,6 @@ name = "wired-prelude"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-kv",
  "wired-math",
  "wired-scene",
 ]

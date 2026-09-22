@@ -1,11 +1,17 @@
 //! Read-only views of the peer store for the dev tools state inspector.
 
-use hsd::id::DocId;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use iroh::EndpointId;
+use smol_str::SmolStr;
 
-pub struct DebugKv {
-    pub key:    String,
-    /// The cell's value bytes; `None` is a tombstone.
+/// One session opinion: what a peer said about one key of one prim.
+pub struct DebugCell {
+    pub prim:   PrimId,
+    pub name:   SmolStr,
+    /// The cell's value bytes; `None` is a blocked key.
     pub value:  Option<Vec<u8>>,
     pub at:     u64,
     pub writer: EndpointId,
@@ -21,9 +27,9 @@ pub struct DebugPeerDoc {
 
 /// What a document holds regardless of which peer wrote it.
 pub struct DebugDoc {
-    pub doc:   DocId,
-    pub space: DocId,
-    pub kv:    Vec<DebugKv>,
+    pub doc:     DocId,
+    pub space:   DocId,
+    pub session: Vec<DebugCell>,
 }
 
 pub struct DebugPeer {
@@ -34,6 +40,6 @@ pub struct DebugPeer {
 pub struct DebugSnapshot {
     /// Each peer's pins and holds.
     pub peers: Vec<DebugPeer>,
-    /// KV, which is held by documents rather than by any peer.
+    /// Session opinions, which are held by documents rather than by any peer.
     pub docs:  Vec<DebugDoc>,
 }

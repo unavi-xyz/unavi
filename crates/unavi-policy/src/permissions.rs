@@ -14,7 +14,6 @@ pub enum ApiName {
     Identity,
     Input,
     InputContext,
-    Kv,
     LocalAgent,
     Peer,
     Physics,
@@ -67,7 +66,6 @@ impl Permissions {
                 ApiName::CreateDocument,
                 ApiName::Event,
                 ApiName::Input,
-                ApiName::Kv,
                 ApiName::Peer,
                 ApiName::Portal,
                 ApiName::Scene,
@@ -113,14 +111,13 @@ impl Permissions {
 mod tests {
     use super::*;
 
-    const ALL: [ApiName; 14] = [
+    const ALL: [ApiName; 13] = [
         ApiName::Commit,
         ApiName::CreateDocument,
         ApiName::Event,
         ApiName::Identity,
         ApiName::Input,
         ApiName::InputContext,
-        ApiName::Kv,
         ApiName::LocalAgent,
         ApiName::Peer,
         ApiName::Physics,
@@ -165,7 +162,6 @@ mod tests {
             ApiName::CreateDocument,
             ApiName::Event,
             ApiName::Input,
-            ApiName::Kv,
             ApiName::Peer,
             ApiName::Portal,
             ApiName::Scene,

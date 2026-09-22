@@ -503,6 +503,25 @@ interface types {
     reference:     func() -> option<document-id>;
     set-reference: func(value: option<document-id>) -> result<_, error>;
 
+    /// What present peers say about this prim this session, keyed by property
+    /// name: replicated, attributed to whoever wrote each key, and gone when
+    /// they leave. A key nobody states, or one a peer has blocked, is absent.
+    ///
+    /// The same key space the document uses, so an opinion stated here
+    /// composes over what the document says and can be promoted into it by
+    /// `commit`.
+    session: func() -> list<tuple<string, list<u8>>>;
+
+    /// States session opinions on this prim, as one atomic batch — generated
+    /// state code flushes a whole dirty set once per tick, and a batch that
+    /// applied by halves could render half a tick.
+    ///
+    /// A value of `none` blocks its key for the session rather than stating
+    /// one. Refused on a document owned by another peer: what a peer may say
+    /// about someone else's content is the owner's to decide, and saying it
+    /// needs no hold.
+    set-session: func(values: list<tuple<string, option<list<u8>>>>) -> result<_, error>;
+
     xform:     func() -> option<transform>;
     set-xform: func(value: option<transform>) -> result<_, error>;
 

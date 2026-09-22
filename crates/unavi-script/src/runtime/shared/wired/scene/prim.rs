@@ -72,14 +72,18 @@ use hsd::{
 };
 use unavi_physics::finite;
 use unavi_policy::quota::Flow;
+use unavi_space::state::message::SessionWrite;
 
-use crate::runtime::shared::{
-    Api,
-    registry::transform::AbsoluteNodeId,
-    wired::scene::util::{
-        bytes_to_f32s,
-        f32s_to_bytes,
-        u32s_to_bytes,
+use crate::{
+    error::ScriptError,
+    runtime::shared::{
+        Api,
+        registry::transform::AbsoluteNodeId,
+        wired::scene::util::{
+            bytes_to_f32s,
+            f32s_to_bytes,
+            u32s_to_bytes,
+        },
     },
 };
 
@@ -415,6 +419,60 @@ pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Res
         }
         None => prim.clear(NameAttr::KEY),
     }
+}
+
+/// What present peers say about this prim this session.
+///
+/// Read from the session record rather than from the composed state: the
+/// record is what replication and attribution are kept in, and what a peer
+/// stated is not the same question as what the prim currently resolves to.
+pub async fn session(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
+    let prim = get_prim(api, rep).await?;
+    let Some(space) = api.view.space_of(prim.doc_id) else {
+        return Ok(Vec::new());
+    };
+    let replicas = api.view.replicas();
+    Ok(replicas
+        .session_keys(space, prim.doc_id, prim.id)
+        .into_iter()
+        .filter_map(|name| {
+            replicas
+                .session_value(space, prim.doc_id, prim.id, &name)
+                .map(|value| (name.to_string(), value))
+        })
+        .collect())
+}
+
+/// States session opinions on this prim, as one atomic batch.
+///
+/// Every write carries one stamp and lands together, so a tick's dirty set
+/// cannot render by halves. A document with no space has no session to speak
+/// of and is refused.
+pub async fn set_session(
+    api: &Api,
+    rep: u32,
+    values: Vec<(String, Option<Vec<u8>>)>,
+) -> anyhow::Result<Result<(), ScriptError>> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(&prim)?;
+    let Some(space) = api.view.space_of(prim.doc_id) else {
+        anyhow::bail!("document is not in a tracked space");
+    };
+
+    let writes = values
+        .into_iter()
+        .map(|(name, value)| SessionWrite {
+            prim: prim.id,
+            name,
+            value,
+        })
+        .collect();
+
+    Ok(api
+        .view
+        .set_session(space, prim.doc_id, writes)
+        .await
+        .map_err(Into::into))
 }
 
 pub async fn reference(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {

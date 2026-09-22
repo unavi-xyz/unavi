@@ -528,6 +528,28 @@ impl HostPrim for Runtime {
         ))
     }
 
+    async fn session(
+        &mut self,
+        self_: Resource<PrimRes>,
+    ) -> wasmtime::Result<Vec<(String, Vec<u8>)>> {
+        shared::wired::scene::prim::session(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn set_session(
+        &mut self,
+        self_: Resource<PrimRes>,
+        values: Vec<(String, Option<Vec<u8>>)>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(
+            shared::wired::scene::prim::set_session(&self.api, self_.rep(), values)
+                .await
+                .map_err(|err| ScriptError::from(err).into())
+                .and_then(|res| res.map_err(Into::into)),
+        )
+    }
+
     async fn reference(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
         shared::wired::scene::prim::reference(&self.api, self_.rep())
             .await

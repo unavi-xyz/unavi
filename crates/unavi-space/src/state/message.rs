@@ -1,4 +1,7 @@
-use hsd::id::DocId;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use serde::{
     Deserialize,
     Serialize,
@@ -29,32 +32,43 @@ pub enum StateMsg {
     ReleaseHold {
         doc: DocId,
     },
-    /// Writes `key` on `doc`. A `value` of `None` is a tombstone, which is how
-    /// a delete propagates — a cell belongs to the document, so a peer tearing
-    /// down locally never tells anyone else to drop theirs.
-    Kv {
-        doc:   DocId,
-        space: DocId,
-        key:   String,
-        value: Option<Vec<u8>>,
-        at:    u64,
+    /// What the peer says about `doc`'s prims this session, as one atomic
+    /// batch: a tick's writes are applied together or not at all, so no peer
+    /// ever draws half of one.
+    ///
+    /// A `value` of `None` blocks the key, which is how a delete propagates —
+    /// an opinion belongs to the document, so a peer tearing down locally
+    /// never tells anyone else to drop theirs.
+    Session {
+        doc:    DocId,
+        space:  DocId,
+        writes: Vec<SessionWrite>,
+        at:     u64,
     },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct DocSnapshot {
-    pub doc:   DocId,
-    pub space: DocId,
-    /// Time the source peer pinned the doc, if it does.
-    pub pin:   Option<u64>,
-    /// When the source peer last took hold of the doc, if it holds it.
-    pub hold:  Option<u64>,
-    pub kv:    Vec<KvSnapshot>,
+pub struct SessionWrite {
+    pub prim:  PrimId,
+    pub name:  String,
+    pub value: Option<Vec<u8>>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct KvSnapshot {
-    pub key:   String,
+pub struct DocSnapshot {
+    pub doc:     DocId,
+    pub space:   DocId,
+    /// Time the source peer pinned the doc, if it does.
+    pub pin:     Option<u64>,
+    /// When the source peer last took hold of the doc, if it holds it.
+    pub hold:    Option<u64>,
+    pub session: Vec<SessionSnapshot>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SessionSnapshot {
+    pub prim:  PrimId,
+    pub name:  String,
     pub value: Option<Vec<u8>>,
     pub at:    u64,
 }

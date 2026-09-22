@@ -219,25 +219,26 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
         });
     }
 
-    if !m.kv.is_empty() {
-        b.spawn(widgets::section_title("Key-Value"));
-        b.spawn(widgets::grid_node(5)).with_children(|g| {
-            for h in ["key", "writer", "size", "written", ""] {
+    if !m.session.is_empty() {
+        b.spawn(widgets::section_title("Session"));
+        b.spawn(widgets::grid_node(6)).with_children(|g| {
+            for h in ["prim", "key", "writer", "size", "written", ""] {
                 g.spawn(widgets::header_cell(h));
             }
-            for row in &m.kv {
-                g.spawn(widgets::value_text(row.key.clone()));
+            for row in &m.session {
+                g.spawn(widgets::value_text(row.prim.to_string()));
+                g.spawn(widgets::value_text(row.name.to_string()));
                 g.spawn(widgets::row_node()).with_children(|w| {
                     widgets::chip(w, row.writer.as_bytes(), Page::Peer(row.writer));
                 });
-                kv_value_cells(
+                cell_value_cells(
                     g,
                     m.doc,
-                    &row.key,
+                    &row.name,
                     row.at,
                     row.value.as_deref(),
                     expanded,
-                    5,
+                    6,
                 );
             }
         });
@@ -249,9 +250,9 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
     }
 }
 
-/// The shared tail of a KV row: size, written-ago, view toggle, and the
+/// The shared tail of a session row: size, written-ago, view toggle, and the
 /// expanded value detail spanning `cols`.
-fn kv_value_cells(
+fn cell_value_cells(
     g: &mut RelatedSpawnerCommands<ChildOf>,
     doc: NamespaceId,
     key: &str,
@@ -261,7 +262,7 @@ fn kv_value_cells(
     cols: usize,
 ) {
     let Some(value) = value else {
-        g.spawn(widgets::dim_text("tombstone"));
+        g.spawn(widgets::dim_text("blocked"));
         g.spawn((
             widgets::AgoText(at),
             widgets::value_text(widgets::fmt_ago(at)),

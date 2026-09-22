@@ -7,9 +7,13 @@ use std::{
 };
 
 use bevy::prelude::Resource;
-use hsd::id::DocId;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use iroh::EndpointId;
 use parking_lot::Mutex;
+use smol_str::SmolStr;
 use unavi_policy::{
     quota::{
         Quota,
@@ -29,18 +33,23 @@ use crate::{
     state::{
         cell::{
             Cell,
-            KvError,
+            Restored,
+            SessionError,
+            SessionKey,
+            Standing,
             cell_bytes,
         },
         message::{
             DocSnapshot,
-            KvSnapshot,
+            SessionSnapshot,
             StateMsg,
         },
     },
 };
 
-pub const KV_KEY_MAX_BYTES: usize = 256;
+/// Longest property name a session write may carry. A name is a key, and a
+/// key nobody can read back is not worth storing.
+pub const SESSION_NAME_MAX_BYTES: usize = 256;
 
 /// One peer's contribution to a document: its pin (timestamped, so the oldest
 /// pin owns the doc) and when it last took hold.
@@ -62,12 +71,12 @@ struct PeerReplica {
 }
 
 /// Per-document state shared across peers. `refs` counts the live pins,
-/// holds and KV cells keeping the presence alive; `_doc_lease`
+/// holds and session cells keeping the presence alive; `_doc_lease`
 /// charges one `Documents` unit while the doc is known locally.
 struct DocPresence {
     space:      DocId,
     _doc_lease: StockLease,
-    kv:         HashMap<String, Cell>,
+    session:    HashMap<SessionKey, Cell>,
     refs:       u32,
 }
 
@@ -102,7 +111,7 @@ impl Inner {
             v.insert(DocPresence {
                 space,
                 _doc_lease: lease,
-                kv: HashMap::new(),
+                session: HashMap::new(),
                 refs: 0,
             });
         }
@@ -223,31 +232,31 @@ impl Inner {
     /// Who may write is the whole difference between a space-owned document and
     /// a peer-owned one. Where the cell is stored is not: both land on the
     /// document.
-    fn add_kv(
+    fn add_session(
         &mut self,
         peer: EndpointId,
         doc: DocId,
         space: DocId,
-        key: String,
+        key: SessionKey,
         value: Option<Vec<u8>>,
         at: u64,
         quota: &Arc<Quota>,
-    ) -> Result<(), KvError> {
+    ) -> Result<(), SessionError> {
         if !self.is_space_owned(space, doc) && self.owner(space, doc) != Some(peer) {
-            return Err(KvError::NotOwner);
+            return Err(SessionError::NotOwner);
         }
         if !self.ensure_presence(doc, space, quota) {
-            return Err(KvError::QuotaExceeded);
+            return Err(SessionError::QuotaExceeded);
         }
 
         let new_bytes = cell_bytes(&key, value.as_deref());
         let inserted = {
             let presence = self.docs.get_mut(&doc).expect("presence ensured");
-            match presence.kv.entry(key) {
+            match presence.session.entry(key) {
                 Entry::Occupied(mut o) => {
                     if at < o.get().at {
                         Ok(false)
-                    } else if let Ok(lease) = quota.lease(Stock::KvMemory, new_bytes) {
+                    } else if let Ok(lease) = quota.lease(Stock::SessionMemory, new_bytes) {
                         let cell = o.get_mut();
                         // The outgoing version keeps its own lease and
                         // becomes the fallback; whatever it replaces is
@@ -265,11 +274,11 @@ impl Inner {
                         cell.prev = Some(Box::new(displaced));
                         Ok(false)
                     } else {
-                        Err(KvError::QuotaExceeded)
+                        Err(SessionError::QuotaExceeded)
                     }
                 }
-                Entry::Vacant(v) => quota.lease(Stock::KvMemory, new_bytes).map_or(
-                    Err(KvError::QuotaExceeded),
+                Entry::Vacant(v) => quota.lease(Stock::SessionMemory, new_bytes).map_or(
+                    Err(SessionError::QuotaExceeded),
                     |lease| {
                         v.insert(Cell {
                             at,
@@ -298,25 +307,40 @@ impl Inner {
     /// Restores each neutral cell `peer` last wrote to its prior version, or
     /// drops it when the prior version was also theirs — a peer cannot leave
     /// its own earlier write behind as the fallback.
-    fn revert_writes(&mut self, peer: EndpointId) -> usize {
+    ///
+    /// Answers what now stands on each key it touched, since the documents
+    /// composing those keys have to be told.
+    fn revert_writes(&mut self, peer: EndpointId) -> Vec<Restored> {
         let mut emptied = Vec::new();
-        let mut reverted = 0;
+        let mut restored = Vec::new();
 
         for (&doc, presence) in &mut self.docs {
             let mut dropped = 0;
-            presence.kv.retain(|_, cell| {
+            presence.session.retain(|key, cell| {
                 if cell.peer != peer {
                     return true;
                 }
-                reverted += 1;
                 // Depth is one, so at most one fallback needs examining.
                 match cell.prev.take() {
                     Some(prev) if prev.peer != peer => {
                         *cell = *prev;
+                        restored.push(Restored {
+                            doc,
+                            key: key.clone(),
+                            standing: Standing::Prior {
+                                value: cell.value.clone(),
+                                at:    cell.at,
+                            },
+                        });
                         true
                     }
                     _ => {
                         dropped += 1;
+                        restored.push(Restored {
+                            doc,
+                            key: key.clone(),
+                            standing: Standing::Gone,
+                        });
                         false
                     }
                 }
@@ -331,12 +355,12 @@ impl Inner {
                 self.dec_ref(doc);
             }
         }
-        reverted
+        restored
     }
 
-    fn remove_kv(&mut self, doc: DocId, key: &str) {
+    fn remove_session(&mut self, doc: DocId, key: &SessionKey) {
         if let Some(presence) = self.docs.get_mut(&doc)
-            && presence.kv.remove(key).is_some()
+            && presence.session.remove(key).is_some()
         {
             self.dec_ref(doc);
         }
@@ -386,11 +410,11 @@ impl Inner {
     ///
     /// One cell per key, so the last-write-wins merge already happened at write
     /// time and there is nothing to resolve here.
-    fn cell(&self, space: DocId, doc: DocId, key: &str) -> Option<Vec<u8>> {
+    fn cell(&self, space: DocId, doc: DocId, key: &SessionKey) -> Option<Vec<u8>> {
         self.docs
             .get(&doc)
             .filter(|p| p.space == space)?
-            .kv
+            .session
             .get(key)?
             .value
             .clone()
@@ -417,28 +441,29 @@ impl Inner {
                         space,
                         pin: e.pin,
                         hold: e.hold,
-                        kv: Vec::new(),
+                        session: Vec::new(),
                     },
                 );
             }
         }
         for (doc, p) in &self.docs {
-            for (key, c) in &p.kv {
+            for (key, c) in &p.session {
                 if c.peer != me {
                     continue;
                 }
                 by_doc
                     .entry(*doc)
                     .or_insert_with(|| DocSnapshot {
-                        doc:   *doc,
-                        space: p.space,
-                        pin:   None,
-                        hold:  None,
-                        kv:    Vec::new(),
+                        doc:     *doc,
+                        space:   p.space,
+                        pin:     None,
+                        hold:    None,
+                        session: Vec::new(),
                     })
-                    .kv
-                    .push(KvSnapshot {
-                        key:   key.clone(),
+                    .session
+                    .push(SessionSnapshot {
+                        prim:  key.prim,
+                        name:  key.name.to_string(),
                         value: c.value.clone(),
                         at:    c.at,
                     });
@@ -562,39 +587,46 @@ impl Replicas {
         self.0.lock().remove_hold(peer, doc);
     }
 
-    /// Applies a KV write for `peer`.
+    /// Records one session opinion for `peer`.
     ///
     /// Rejects writes to a peer-owned document by a non-owner, and drops
     /// writes that exceed quota.
-    pub fn add_kv(
+    pub(crate) fn add_session(
         &self,
         policy: &Policy,
         viewer: Option<Viewer>,
         peer: EndpointId,
         doc: DocId,
         space: DocId,
-        key: String,
+        key: SessionKey,
         value: Option<Vec<u8>>,
         at: u64,
-    ) -> Result<(), KvError> {
+    ) -> Result<(), SessionError> {
         let quota = document_quota(policy, self, viewer, doc);
         self.0
             .lock()
-            .add_kv(peer, doc, space, key, value, at, &quota)
+            .add_session(peer, doc, space, key, value, at, &quota)
     }
 
-    pub fn remove_kv(&self, doc: DocId, key: &str) {
-        self.0.lock().remove_kv(doc, key);
+    pub(crate) fn remove_session(&self, doc: DocId, prim: PrimId, name: &str) {
+        self.0.lock().remove_session(
+            doc,
+            &SessionKey {
+                prim,
+                name: SmolStr::new(name),
+            },
+        );
     }
 
-    /// Rolls back every cell whose current value came from `peer`, returning
-    /// how many changed.
+    /// Rolls back every cell whose current value came from `peer`, answering
+    /// what now stands on each key it touched.
     ///
-    /// The undo that pins and holds get from the peer's entity
-    /// cascade. Cells live on the document rather than the peer, so they need
-    /// this instead.
+    /// The undo that pins and holds get from the peer's entity cascade. Cells
+    /// live on the document rather than the peer, so they need this instead —
+    /// and the documents composing those keys have to be told, which is
+    /// [`crate::state::entities::revert_session`]'s half of the job.
     #[must_use]
-    pub fn revert_writes(&self, peer: EndpointId) -> usize {
+    pub(crate) fn revert_writes(&self, peer: EndpointId) -> Vec<Restored> {
         self.0.lock().revert_writes(peer)
     }
 
@@ -627,15 +659,30 @@ impl Replicas {
             .is_some_and(|p| p.space == space)
     }
 
+    /// What a peer said about one key of one prim, or `None` for a blocked key
+    /// or one nothing stated.
     #[must_use]
-    pub fn kv_get(&self, space: DocId, doc: DocId, key: &str) -> Option<Vec<u8>> {
-        self.0.lock().cell(space, doc, key)
+    pub fn session_value(
+        &self,
+        space: DocId,
+        doc: DocId,
+        prim: PrimId,
+        name: &str,
+    ) -> Option<Vec<u8>> {
+        self.0.lock().cell(
+            space,
+            doc,
+            &SessionKey {
+                prim,
+                name: SmolStr::new(name),
+            },
+        )
     }
 
-    /// Every key holding a live value. A tombstone is stored but reads as
-    /// absent, so it is not listed.
+    /// Every key of `prim` holding a live value. A blocked key is stored but
+    /// reads as absent, so it is not listed.
     #[must_use]
-    pub fn kv_keys(&self, space: DocId, doc: DocId) -> Vec<String> {
+    pub fn session_keys(&self, space: DocId, doc: DocId, prim: PrimId) -> Vec<SmolStr> {
         let keys = {
             let inner = self.0.lock();
             inner
@@ -644,10 +691,10 @@ impl Replicas {
                 .filter(|p| p.space == space)
                 .map(|presence| {
                     presence
-                        .kv
+                        .session
                         .iter()
-                        .filter(|(_, cell)| cell.value.is_some())
-                        .map(|(key, _)| key.clone())
+                        .filter(|(key, cell)| key.prim == prim && cell.value.is_some())
+                        .map(|(key, _)| key.name.clone())
                         .collect()
                 })
         };
@@ -655,7 +702,7 @@ impl Replicas {
     }
 
     #[must_use]
-    pub fn kv_total_bytes(&self, space: DocId, doc: DocId) -> usize {
+    pub fn session_bytes(&self, space: DocId, doc: DocId) -> usize {
         let bytes = {
             let inner = self.0.lock();
             inner
@@ -664,9 +711,11 @@ impl Replicas {
                 .filter(|p| p.space == space)
                 .map(|presence| {
                     presence
-                        .kv
+                        .session
                         .iter()
-                        .filter_map(|(key, cell)| cell.value.as_ref().map(|v| key.len() + v.len()))
+                        .filter_map(|(key, cell)| {
+                            cell.value.as_ref().map(|v| key.name.len() + v.len())
+                        })
                         .sum()
                 })
         };
@@ -746,22 +795,24 @@ impl Replicas {
         let mut docs = inner
             .docs
             .iter()
-            .filter(|(_, p)| !p.kv.is_empty())
+            .filter(|(_, p)| !p.session.is_empty())
             .map(|(doc, p)| {
-                let mut kv =
-                    p.kv.iter()
-                        .map(|(k, c)| debug::DebugKv {
-                            key:    k.clone(),
-                            value:  c.value.clone(),
-                            at:     c.at,
-                            writer: c.peer,
-                        })
-                        .collect::<Vec<_>>();
-                kv.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+                let mut session = p
+                    .session
+                    .iter()
+                    .map(|(k, c)| debug::DebugCell {
+                        prim:   k.prim,
+                        name:   k.name.clone(),
+                        value:  c.value.clone(),
+                        at:     c.at,
+                        writer: c.peer,
+                    })
+                    .collect::<Vec<_>>();
+                session.sort_unstable_by(|a, b| (a.prim, &a.name).cmp(&(b.prim, &b.name)));
                 debug::DebugDoc {
                     doc: *doc,
                     space: p.space,
-                    kv,
+                    session,
                 }
             })
             .collect::<Vec<_>>();
@@ -783,6 +834,19 @@ mod tests {
     /// point, so a key has to be derived rather than written down.
     fn peer(seed: u8) -> EndpointId {
         iroh::SecretKey::from_bytes(&[seed; 32]).public()
+    }
+
+    /// The prim these cells hang from. A session opinion is keyed by prim and
+    /// property, and every one of these tests is about one prim.
+    fn prim() -> PrimId {
+        PrimId([1; 16])
+    }
+
+    fn key(name: &str) -> SessionKey {
+        SessionKey {
+            prim: prim(),
+            name: SmolStr::new(name),
+        }
     }
 
     #[test]
@@ -831,7 +895,7 @@ mod tests {
     /// its state has to outlive them too. Cells kept under the owner's replica
     /// went with them, leaving the content behind with an empty KV.
     #[test]
-    fn kv_survives_the_owner_leaving() {
+    fn session_state_survives_the_owner_leaving() {
         let replicas = Replicas::new();
         let policy = Policy::new();
         let space = doc(b"handoff-space");
@@ -843,13 +907,13 @@ mod tests {
         assert_eq!(replicas.owner(space, doc), Some(first));
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 first,
                 doc,
                 space,
-                "colour".into(),
+                key("colour"),
                 Some(b"red".to_vec()),
                 1,
             )
@@ -863,25 +927,29 @@ mod tests {
             "ownership hands off"
         );
         assert_eq!(
-            replicas.kv_get(space, doc, "colour").as_deref(),
+            replicas
+                .session_value(space, doc, prim(), "colour")
+                .as_deref(),
             Some(&b"red"[..]),
             "the new owner inherits the state, not an empty document"
         );
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 second,
                 doc,
                 space,
-                "colour".into(),
+                key("colour"),
                 Some(b"blue".to_vec()),
                 2,
             )
             .expect("the new owner may write what it inherited");
         assert_eq!(
-            replicas.kv_get(space, doc, "colour").as_deref(),
+            replicas
+                .session_value(space, doc, prim(), "colour")
+                .as_deref(),
             Some(&b"blue"[..])
         );
     }
@@ -889,38 +957,42 @@ mod tests {
     /// Removing a key that was never written is a no-op; removing one that
     /// was releases the document's presence once nothing else references it.
     #[test]
-    fn remove_kv_is_noop_for_missing_key_and_prunes_presence_when_last() {
+    fn remove_session_is_noop_for_missing_key_and_prunes_presence_when_last() {
         let replicas = Replicas::new();
         let policy = Policy::new();
-        let space = doc(b"kv-space");
+        let space = doc(b"session-space");
         let alice = peer(2);
 
         assert_eq!(
-            replicas.add_kv(
+            replicas.add_session(
                 &policy,
                 None,
                 alice,
                 space,
                 space,
-                "link".into(),
+                key("link"),
                 Some(b"dest".to_vec()),
                 1
             ),
             Ok(())
         );
         assert_eq!(
-            replicas.kv_get(space, space, "link").as_deref(),
+            replicas
+                .session_value(space, space, prim(), "link")
+                .as_deref(),
             Some(&b"dest"[..])
         );
 
-        replicas.remove_kv(space, "missing");
+        replicas.remove_session(space, prim(), "missing");
         assert_eq!(
-            replicas.kv_get(space, space, "link").as_deref(),
+            replicas
+                .session_value(space, space, prim(), "link")
+                .as_deref(),
             Some(&b"dest"[..])
         );
 
-        replicas.remove_kv(space, "link");
-        assert_eq!(replicas.kv_get(space, space, "link"), None);
+        replicas.remove_session(space, prim(), "link");
+        assert_eq!(replicas.session_value(space, space, prim(), "link"), None);
         assert!(!replicas.has_doc(space, space));
     }
 
@@ -932,37 +1004,41 @@ mod tests {
         let (alice, mallory) = (peer(2), peer(3));
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 alice,
                 space,
                 space,
-                "sign".into(),
+                key("sign"),
                 Some(b"welcome".to_vec()),
                 1,
             )
             .expect("alice writes the sign");
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 mallory,
                 space,
                 space,
-                "sign".into(),
+                key("sign"),
                 Some(b"defaced".to_vec()),
                 2,
             )
             .expect("mallory defaces it");
         assert_eq!(
-            replicas.kv_get(space, space, "sign").as_deref(),
+            replicas
+                .session_value(space, space, prim(), "sign")
+                .as_deref(),
             Some(&b"defaced"[..])
         );
 
-        assert_eq!(replicas.revert_writes(mallory), 1);
+        assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
-            replicas.kv_get(space, space, "sign").as_deref(),
+            replicas
+                .session_value(space, space, prim(), "sign")
+                .as_deref(),
             Some(&b"welcome"[..]),
             "blocking must put back what the blocked peer wrote over"
         );
@@ -976,21 +1052,21 @@ mod tests {
         let mallory = peer(3);
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 mallory,
                 space,
                 space,
-                "spam".into(),
+                key("spam"),
                 Some(b"x".to_vec()),
                 1,
             )
             .expect("mallory writes a new cell");
 
-        assert_eq!(replicas.revert_writes(mallory), 1);
+        assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
-            replicas.kv_get(space, space, "spam"),
+            replicas.session_value(space, space, prim(), "spam"),
             None,
             "a cell with no prior version has nothing to fall back to"
         );
@@ -1008,33 +1084,33 @@ mod tests {
         let mallory = peer(3);
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 mallory,
                 space,
                 space,
-                "sign".into(),
+                key("sign"),
                 Some(b"first".to_vec()),
                 1,
             )
             .expect("first");
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 mallory,
                 space,
                 space,
-                "sign".into(),
+                key("sign"),
                 Some(b"second".to_vec()),
                 2,
             )
             .expect("second");
 
-        assert_eq!(replicas.revert_writes(mallory), 1);
+        assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
-            replicas.kv_get(space, space, "sign"),
+            replicas.session_value(space, space, prim(), "sign"),
             None,
             "falling back to the blocked peer's own earlier write undoes nothing"
         );
@@ -1048,27 +1124,29 @@ mod tests {
         let (alice, mallory) = (peer(2), peer(3));
 
         replicas
-            .add_kv(
+            .add_session(
                 &policy,
                 None,
                 alice,
                 space,
                 space,
-                "keep".into(),
+                key("keep"),
                 Some(b"mine".to_vec()),
                 1,
             )
             .expect("alice");
 
-        assert_eq!(replicas.revert_writes(mallory), 0);
+        assert!(replicas.revert_writes(mallory).is_empty());
         assert_eq!(
-            replicas.kv_get(space, space, "keep").as_deref(),
+            replicas
+                .session_value(space, space, prim(), "keep")
+                .as_deref(),
             Some(&b"mine"[..])
         );
     }
 
     #[test]
-    fn owned_kv_gated_by_ownership() {
+    fn a_peer_owned_documents_session_is_gated_by_ownership() {
         let replicas = Replicas::new();
         let policy = Policy::new();
         let space = doc(b"perm-space");
@@ -1078,32 +1156,35 @@ mod tests {
 
         assert!(replicas.add_pin(&policy, None, owner_peer, doc, space, 1));
         assert_eq!(
-            replicas.add_kv(
+            replicas.add_session(
                 &policy,
                 None,
                 owner_peer,
                 doc,
                 space,
-                "k".into(),
+                key("k"),
                 Some(b"v".to_vec()),
                 2
             ),
             Ok(())
         );
         assert!(matches!(
-            replicas.add_kv(
+            replicas.add_session(
                 &policy,
                 None,
                 other,
                 doc,
                 space,
-                "k".into(),
+                key("k"),
                 Some(b"v".to_vec()),
                 3
             ),
-            Err(KvError::NotOwner)
+            Err(SessionError::NotOwner)
         ));
-        assert_eq!(replicas.kv_get(space, doc, "k").as_deref(), Some(&b"v"[..]));
+        assert_eq!(
+            replicas.session_value(space, doc, prim(), "k").as_deref(),
+            Some(&b"v"[..])
+        );
     }
 
     #[test]
@@ -1116,25 +1197,25 @@ mod tests {
 
         assert!(replicas.add_pin(&policy, None, peer, doc, space, 1));
         assert_eq!(
-            replicas.add_kv(
+            replicas.add_session(
                 &policy,
                 None,
                 peer,
                 doc,
                 space,
-                "k".into(),
+                key("k"),
                 Some(b"value".to_vec()),
                 2
             ),
             Ok(())
         );
         let quota = document_quota(&policy, &replicas, None, doc);
-        assert!(quota.usage(Stock::KvMemory) > 0);
+        assert!(quota.usage(Stock::SessionMemory) > 0);
         assert_eq!(quota.usage(Stock::Documents), 1);
 
-        replicas.remove_kv(doc, "k");
+        replicas.remove_session(doc, prim(), "k");
         replicas.remove_pin(&policy, None, peer, doc);
-        assert_eq!(quota.usage(Stock::KvMemory), 0);
+        assert_eq!(quota.usage(Stock::SessionMemory), 0);
         assert_eq!(quota.usage(Stock::Documents), 0);
         assert!(!replicas.has_doc(space, doc));
     }

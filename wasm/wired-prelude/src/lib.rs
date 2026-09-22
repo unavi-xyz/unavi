@@ -1,4 +1,3 @@
-pub use wired_kv;
 pub use wired_math;
 pub use wired_scene;
 
@@ -31,42 +30,6 @@ macro_rules! generate {
                 "wired:scene/types/color": ::wired_prelude::wired_scene::types::Color,
             },
         });
-
-        impl ::wired_prelude::wired_kv::WiredKv for wired::kv::types::Kv {
-            fn self_kv() -> Self {
-                wired::kv::api::self_kv().expect("self_kv")
-            }
-            fn get_kv(doc_id: &[u8]) -> ::core::option::Option<Self> {
-                wired::kv::api::get_kv(doc_id).ok().flatten()
-            }
-            fn kv_get(&self, key: &str) -> ::core::option::Option<::std::vec::Vec<u8>> {
-                self.get(key)
-            }
-            fn kv_set(
-                &self,
-                key: &str,
-                value: &[u8],
-            ) -> ::core::result::Result<(), ::wired_prelude::wired_kv::TypedKvError> {
-                self.set(key, value).map_err(|e| match e {
-                    wired::error::types::Error::QuotaFlow =>
-                        ::wired_prelude::wired_kv::TypedKvError::QuotaFlow,
-                    wired::error::types::Error::QuotaStock =>
-                        ::wired_prelude::wired_kv::TypedKvError::QuotaStock,
-                    wired::error::types::Error::Permission =>
-                        ::wired_prelude::wired_kv::TypedKvError::Permission,
-                    wired::error::types::Error::Forbidden =>
-                        ::wired_prelude::wired_kv::TypedKvError::Forbidden,
-                    wired::error::types::Error::Other(detail) =>
-                        ::wired_prelude::wired_kv::TypedKvError::Other(detail),
-                })
-            }
-            fn kv_delete(&self, key: &str) {
-                let _ = self.delete(key);
-            }
-            fn kv_keys(&self) -> ::std::vec::Vec<::std::string::String> {
-                self.keys()
-            }
-        }
     };
 }
 

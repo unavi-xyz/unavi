@@ -67,7 +67,7 @@ fn doc_id(bytes: &[u8]) -> anyhow::Result<DocId> {
 }
 
 /// Mints a namespace so a document has a stable id from birth. Portal
-/// receptors and `wired:kv` keys are keyed by that id, so it must never be
+/// receptors and session opinions are keyed by that id, so it must never be
 /// remapped later — the cost is a `drop_doc` obligation on despawn.
 async fn create_namespace() -> anyhow::Result<Document> {
     let (tx, rx) = async_channel::bounded(1);

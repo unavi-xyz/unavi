@@ -6,7 +6,6 @@ use crate::error::ScriptError;
 pub mod agent;
 pub mod event;
 pub mod input;
-pub mod kv;
 pub mod peer;
 pub mod physics;
 pub mod portal;

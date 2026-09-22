@@ -154,6 +154,30 @@ impl PrimHandle {
             .map_err(raise)
     }
 
+    pub async fn session(&self) -> js_sys::Array {
+        let Ok(values) = shared::wired::scene::prim::session(&self.api, self.rep).await else {
+            return js_sys::Array::new();
+        };
+        values
+            .into_iter()
+            .map(|(name, value)| {
+                let pair = js_sys::Array::new();
+                pair.push(&JsValue::from_str(&name));
+                pair.push(&js_sys::Uint8Array::from(value.as_slice()).into());
+                JsValue::from(pair)
+            })
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "setSession")]
+    pub async fn set_session(&self, values: JsValue) -> Result<(), JsValue> {
+        let values = session_writes(&values);
+        shared::wired::scene::prim::set_session(&self.api, self.rep, values)
+            .await
+            .map_err(raise)?
+            .map_err(raise)
+    }
+
     pub async fn reference(&self) -> JsValue {
         match shared::wired::scene::prim::reference(&self.api, self.rep).await {
             Ok(Some(b)) => js_sys::Uint8Array::from(b.as_slice()).into(),
@@ -908,6 +932,23 @@ fn js_to_bytes(v: &JsValue) -> Option<Vec<u8>> {
         return None;
     }
     Some(js_sys::Uint8Array::new(v).to_vec())
+}
+
+/// A batch of session writes as jco passes `list<tuple<string,
+/// option<list<u8>>>>`: an array of pairs, the second `undefined` where the
+/// write blocks its key.
+fn session_writes(v: &JsValue) -> Vec<(String, Option<Vec<u8>>)> {
+    if v.is_null() || v.is_undefined() {
+        return Vec::new();
+    }
+    js_sys::Array::from(v)
+        .iter()
+        .filter_map(|entry| {
+            let pair = js_sys::Array::from(&entry);
+            let name = pair.get(0).as_string()?;
+            Some((name, js_to_bytes(&pair.get(1))))
+        })
+        .collect()
 }
 
 fn js_to_graph_overrides(v: &JsValue) -> Result<Vec<(u16, PrimGraphValue)>, String> {

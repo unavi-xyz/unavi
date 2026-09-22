@@ -67,7 +67,7 @@ impl Limits {
             |stock| match stock {
                 Stock::WasmMemory => Some(budget),
                 Stock::Documents
-                | Stock::KvMemory
+                | Stock::SessionMemory
                 | Stock::PortalWatches
                 | Stock::Prims
                 | Stock::Receptors
@@ -87,7 +87,7 @@ impl Limits {
     pub fn document() -> Self {
         Self::new(
             |stock| match stock {
-                Stock::KvMemory => Some(8 * MB as u64),
+                Stock::SessionMemory => Some(8 * MB as u64),
                 Stock::WasmMemory => Some(128 * MB as u64),
                 Stock::Documents => Some(256),
                 Stock::Prims | Stock::Slots => Some(50_000),
@@ -120,7 +120,7 @@ impl Limits {
     pub fn space() -> Self {
         Self::new(
             |stock| match stock {
-                Stock::KvMemory => Some(256 * MB as u64),
+                Stock::SessionMemory => Some(256 * MB as u64),
                 Stock::WasmMemory => Some(512 * MB as u64),
                 Stock::Documents => Some(4_000),
                 Stock::Prims => Some(4_000_000),
@@ -157,7 +157,7 @@ impl Limits {
     pub fn peer() -> Self {
         Self::new(
             |stock| match stock {
-                Stock::KvMemory => Some(64 * MB as u64),
+                Stock::SessionMemory => Some(64 * MB as u64),
                 Stock::WasmMemory => Some(256 * MB as u64),
                 Stock::Documents => Some(1_000),
                 Stock::Prims => Some(1_000_000),

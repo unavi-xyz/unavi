@@ -11,6 +11,5 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-wired-kv.path    = "../wired-kv"
 wired-math.path  = "../wired-math"
 wired-scene.path = "../wired-scene"

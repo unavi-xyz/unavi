@@ -23,6 +23,7 @@ use hsd::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
+use smol_str::SmolStr;
 use unavi_policy::{
     space::Space,
     trust::Trust,
@@ -107,7 +108,7 @@ pub struct DocModel {
     pub owner:         Option<EndpointId>,
     pub holder:        Option<EndpointId>,
     pub pinned_by:     Vec<(EndpointId, u64)>,
-    pub kv:            Vec<DocKv>,
+    pub session:       Vec<DocCell>,
     pub instanced:     bool,
     pub prims:         Option<usize>,
     pub parent:        Option<NamespaceId>,
@@ -115,11 +116,12 @@ pub struct DocModel {
     pub tree:          Option<String>,
 }
 
-/// The canonical last-write-wins state of one key, merged across every peer's
-/// cells plus the neutral cell.
+/// One session opinion, as it stands after the last-write-wins merge that
+/// happened when it landed.
 #[derive(std::hash::Hash)]
-pub struct DocKv {
-    pub key:    String,
+pub struct DocCell {
+    pub prim:   PrimId,
+    pub name:   SmolStr,
     pub value:  Option<Vec<u8>>,
     pub at:     u64,
     pub writer: EndpointId,
@@ -290,7 +292,7 @@ impl InspectData<'_, '_> {
             owner: space.and_then(|s| view.replicas().owner(DocId(*s.as_bytes()), doc_id)),
             holder: space.and_then(|s| view.replicas().holder(DocId(*s.as_bytes()), doc_id)),
             pinned_by,
-            kv: doc_kv(doc_id, snap),
+            session: doc_session(doc_id, snap),
             instanced: entity.is_some_and(|(_, instanced, ..)| instanced),
             prims: entity.and_then(|(.., prims, _)| prims),
             parent: entity.and_then(|(e, ..)| self.parent_doc(e)),
@@ -334,24 +336,26 @@ impl InspectData<'_, '_> {
     }
 }
 
-/// `doc`'s cells, ordered by key.
+/// `doc`'s session cells, ordered by prim and then by name.
 ///
 /// One cell per key, so the last-write-wins merge already happened when the
 /// write landed and there is nothing to resolve here.
-fn doc_kv(doc: DocId, snap: &debug::DebugSnapshot) -> Vec<DocKv> {
+fn doc_session(doc: DocId, snap: &debug::DebugSnapshot) -> Vec<DocCell> {
     let Some(d) = snap.docs.iter().find(|d| d.doc == doc) else {
         return Vec::new();
     };
-    let mut cells =
-        d.kv.iter()
-            .map(|kv| DocKv {
-                key:    kv.key.clone(),
-                value:  kv.value.clone(),
-                at:     kv.at,
-                writer: kv.writer,
-            })
-            .collect::<Vec<_>>();
-    cells.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+    let mut cells = d
+        .session
+        .iter()
+        .map(|cell| DocCell {
+            prim:   cell.prim,
+            name:   cell.name.clone(),
+            value:  cell.value.clone(),
+            at:     cell.at,
+            writer: cell.writer,
+        })
+        .collect::<Vec<_>>();
+    cells.sort_unstable_by(|a, b| (a.prim, &a.name).cmp(&(b.prim, &b.name)));
     cells
 }
 
@@ -405,8 +409,8 @@ fn prim_summary(state: &SceneState, id: PrimId) -> (String, String) {
 mod tests {
     use super::*;
     use crate::state::debug::{
+        DebugCell,
         DebugDoc,
-        DebugKv,
         DebugSnapshot,
     };
 
@@ -423,8 +427,9 @@ mod tests {
         let other = DocId(*blake3::hash(b"other-doc").as_bytes());
         let writer = peer(1);
 
-        let cell = |key: &str, at| DebugKv {
-            key: key.into(),
+        let cell = |prim: u8, name: &str, at| DebugCell {
+            prim: PrimId([prim; 16]),
+            name: name.into(),
             value: Some(b"value".to_vec()),
             at,
             writer,
@@ -435,21 +440,25 @@ mod tests {
                 DebugDoc {
                     doc,
                     space: doc,
-                    kv: vec![cell("b", 2), cell("a", 1)],
+                    session: vec![cell(2, "b", 2), cell(1, "b", 4), cell(1, "a", 1)],
                 },
                 DebugDoc {
-                    doc:   other,
-                    space: other,
-                    kv:    vec![cell("elsewhere", 3)],
+                    doc:     other,
+                    space:   other,
+                    session: vec![cell(1, "elsewhere", 3)],
                 },
             ],
         };
 
-        let cells = doc_kv(doc, &snap);
+        let cells = doc_session(doc, &snap);
         assert_eq!(
-            cells.iter().map(|c| c.key.as_str()).collect::<Vec<_>>(),
-            ["a", "b"],
-            "another document's cells must not appear, and keys sort"
+            cells
+                .iter()
+                .map(|c| (c.prim.0[0], c.name.as_str()))
+                .collect::<Vec<_>>(),
+            [(1, "a"), (1, "b"), (2, "b")],
+            "another document's cells must not appear, and one prim's keys \
+             stay together"
         );
         assert_eq!(cells[0].writer, writer);
     }

@@ -48,9 +48,6 @@ pub fn add_apis_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> 
     wired::storage::bindings::wired::storage::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     wired::storage::bindings::wired::storage::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    wired::kv::bindings::wired::kv::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    wired::kv::bindings::wired::kv::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-
     wired::peer::bindings::wired::peer::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     wired::peer::bindings::wired::peer::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 

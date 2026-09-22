@@ -1,4 +1,4 @@
-package example:wired-kv;
+package example:session;
 
 world guest {
   include wired:prelude/script-privileged;

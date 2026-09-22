@@ -19,12 +19,11 @@ use crate::{
             EventScope,
             SpatialScope,
         },
-        kv::{
-            api::self_kv,
-            types::Kv,
-        },
         scene::{
-            api::self_document,
+            api::{
+                self_document,
+                self_prim,
+            },
             types::{
                 Document,
                 Material,
@@ -42,7 +41,7 @@ use crate::{
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
-const LINK_KEY: &str = "gate:link";
+const LINK_KEY: &str = "state:link";
 const PORTAL_PRIM_NAME: &str = "portal";
 const RECEPTOR_PRIM_NAME: &str = "receptor";
 
@@ -57,7 +56,8 @@ const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
 
 struct Script {
     portal_prim: Prim,
-    kv:          Kv,
+    /// This script's own prim, where its session state hangs.
+    state:       Prim,
     beacon_rx:   EventReceptor,
     incoming_rx: EventReceptor,
     backlink_rx: EventReceptor,
@@ -125,7 +125,7 @@ impl ScriptBehavior for Script {
 
         Ok(Self {
             portal_prim,
-            kv: self_kv()?,
+            state: self_prim()?,
             beacon_rx,
             incoming_rx,
             backlink_rx,
@@ -139,11 +139,11 @@ impl ScriptBehavior for Script {
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
                 continue;
             };
-            if read_link(&self.kv).is_some_and(|s| s.target_space == target) {
+            if read_link(&self.state).is_some_and(|s| s.target_space == target) {
                 continue;
             }
             write_link(
-                &self.kv,
+                &self.state,
                 &LinkState {
                     target_space:  target,
                     receptor_doc:  None,
@@ -161,7 +161,7 @@ impl ScriptBehavior for Script {
                 continue;
             };
             write_link(
-                &self.kv,
+                &self.state,
                 &LinkState {
                     target_space:  req.source_space,
                     receptor_doc:  Some(req.source_doc),
@@ -177,7 +177,7 @@ impl ScriptBehavior for Script {
             if payload.source_prim != self.portal_prim.id() {
                 continue;
             }
-            let Some(mut state) = read_link(&self.kv) else {
+            let Some(mut state) = read_link(&self.state) else {
                 continue;
             };
             let new_doc = Some(payload.receptor_doc);
@@ -187,10 +187,10 @@ impl ScriptBehavior for Script {
             }
             state.receptor_doc = new_doc;
             state.receptor_prim = new_prim;
-            write_link(&self.kv, &state);
+            write_link(&self.state, &state);
         }
 
-        let next = read_link(&self.kv);
+        let next = read_link(&self.state);
         if next != self.applied {
             self.portal_prim
                 .set_portal(Some(&portal_from_link(next.as_ref())))?;
@@ -309,14 +309,18 @@ fn portal_from_link(link: Option<&LinkState>) -> Portal {
     }
 }
 
-fn write_link(kv: &Kv, state: &LinkState) {
+/// The gate's link is session state: every peer present sees the same portal,
+/// and it is gone when the space empties.
+fn write_link(prim: &Prim, state: &LinkState) {
     let bytes = postcard::to_allocvec(state).expect("encode link state");
-    if let Err(err) = kv.set(LINK_KEY, &bytes) {
-        eprintln!("Gate kv write failed: {err:?}");
+    if let Err(err) = prim.set_session(&[(LINK_KEY.to_string(), Some(bytes))]) {
+        eprintln!("Gate session write failed: {err:?}");
     }
 }
 
-fn read_link(kv: &Kv) -> Option<LinkState> {
-    kv.get(LINK_KEY)
-        .and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
+fn read_link(prim: &Prim) -> Option<LinkState> {
+    prim.session()
+        .into_iter()
+        .find(|(key, _)| key == LINK_KEY)
+        .and_then(|(_, bytes)| postcard::from_bytes::<LinkState>(&bytes).ok())
 }

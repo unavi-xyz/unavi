@@ -1,8 +1,29 @@
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc,
+        Mutex,
+    },
+};
+
 use bevy::prelude::*;
-use bevy_hsd::HsdNamespace;
-use hsd::id::DocId;
+use bevy_hsd::{
+    Hsd,
+    HsdDocId,
+    HsdNamespace,
+};
+use hsd::{
+    id::DocId,
+    key,
+    property::Property,
+    state::{
+        SceneState,
+        entry::Entry,
+    },
+};
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
+use smol_str::SmolStr;
 use unavi_policy::{
     registry::Policy,
     space::Space,
@@ -12,9 +33,17 @@ use unavi_util::async_commands::AsyncCommands;
 use crate::{
     quota::Viewer,
     state::{
-        cell::KvError,
+        cell::{
+            Restored,
+            SessionError,
+            SessionKey,
+            Standing,
+        },
         clock,
-        message::StateMsg,
+        message::{
+            SessionWrite,
+            StateMsg,
+        },
         replicas::{
             self,
             Replicas,
@@ -210,21 +239,22 @@ impl Drop for HoldState {
     }
 }
 
-/// Holds one KV cell for as long as the document anchoring it lives.
+/// Holds one session cell for as long as the document anchoring it lives.
 #[derive(Component)]
-pub struct KvState {
+pub struct CellState {
     doc:      DocId,
-    key:      String,
+    key:      SessionKey,
     /// Held because a drop takes no arguments.
     replicas: Replicas,
 }
 
-impl Drop for KvState {
+impl Drop for CellState {
     fn drop(&mut self) {
-        // No `KvForget` goes out. A cell belongs to the document, so it
-        // outlives the peer that wrote it; an explicit delete
-        // propagates as a tombstone at write time instead.
-        self.replicas.remove_kv(self.doc, &self.key);
+        // Nothing goes out. An opinion belongs to the document, so it outlives
+        // the peer that wrote it; an explicit delete propagates as a blocked
+        // key at write time instead.
+        self.replicas
+            .remove_session(self.doc, self.key.prim, &self.key.name);
     }
 }
 
@@ -279,11 +309,11 @@ fn find_state<C: Component, F: Fn(&C) -> bool>(
 }
 
 /// Finds the doc-anchored cell guard for `key`, if one exists.
-fn find_kv(world: &World, anchor: Entity, doc: DocId, key: &str) -> Option<Entity> {
+fn find_cell(world: &World, anchor: Entity, doc: DocId, key: &SessionKey) -> Option<Entity> {
     world.get::<DocStates>(anchor)?.iter().find(|e| {
         world
-            .get::<KvState>(*e)
-            .is_some_and(|c| c.doc == doc && c.key == key)
+            .get::<CellState>(*e)
+            .is_some_and(|c| c.doc == doc && &c.key == key)
     })
 }
 
@@ -349,39 +379,52 @@ fn clear_pin(world: &mut World, peer_ent: Entity, doc: DocId) {
     }
 }
 
-fn set_kv(
+/// Applies a batch of session opinions: records them, composes them into the
+/// document they speak for, and broadcasts them if they are this peer's.
+///
+/// One batch, one write boundary. A script's tick flushes its whole dirty set
+/// through here, and a half-applied tick can render — so the document's events
+/// are withheld until every write in the batch has landed.
+fn set_session(
     world: &mut World,
     peer: EndpointId,
     doc: DocId,
     space: DocId,
-    key: String,
-    value: Option<Vec<u8>>,
+    writes: Vec<SessionWrite>,
     at: u64,
     local: bool,
-) -> Result<(), KvError> {
-    if key.len() > replicas::KV_KEY_MAX_BYTES {
-        return Err(KvError::KeyTooLong);
+) -> Result<(), SessionError> {
+    if writes.iter().any(|w| !valid_name(&w.name)) {
+        return Err(SessionError::BadName);
     }
     let anchor = doc_anchor(world, doc, space);
     let policy = world.resource::<Policy>().clone();
     let replicas = world.resource::<Replicas>().clone();
     let view = current_view(world);
-    replicas.add_kv(
-        &policy,
-        as_viewer(view.as_ref()),
-        peer,
-        doc,
-        space,
-        key.clone(),
-        value.clone(),
-        at,
-    )?;
-    if local {
-        replicas.broadcast(&StateMsg::Kv {
+
+    for write in &writes {
+        replicas.add_session(
+            &policy,
+            as_viewer(view.as_ref()),
+            peer,
             doc,
             space,
-            key: key.clone(),
-            value,
+            SessionKey {
+                prim: write.prim,
+                name: SmolStr::new(&write.name),
+            },
+            write.value.clone(),
+            at,
+        )?;
+    }
+
+    compose_session(world, doc, &writes, at);
+
+    if local {
+        replicas.broadcast(&StateMsg::Session {
+            doc,
+            space,
+            writes: writes.clone(),
             at,
         });
     }
@@ -389,10 +432,120 @@ fn set_kv(
     // Anchored to the document alone, so a disconnect leaves the cell intact
     // and a change of owner does not move it. One guard per key, whoever wrote
     // it last.
-    if find_kv(world, anchor, doc, &key).is_none() {
-        world.spawn((KvState { doc, key, replicas }, StateDoc(anchor)));
+    for write in writes {
+        let key = SessionKey {
+            prim: write.prim,
+            name: SmolStr::new(write.name),
+        };
+        if find_cell(world, anchor, doc, &key).is_none() {
+            world.spawn((
+                CellState {
+                    doc,
+                    key,
+                    replicas: replicas.clone(),
+                },
+                StateDoc(anchor),
+            ));
+        }
     }
     Ok(())
+}
+
+/// A session name is a property name, so it answers to the same key-layout
+/// rule every document key does, plus a length the store will accept.
+fn valid_name(name: &str) -> bool {
+    key::is_valid_name(name) && name.len() <= replicas::SESSION_NAME_MAX_BYTES
+}
+
+/// The live state of a document in the world, or `None` for one this node is
+/// not holding open.
+fn doc_state(world: &mut World, doc: DocId) -> Option<Arc<Mutex<SceneState>>> {
+    world
+        .query::<(&HsdDocId, &Hsd)>()
+        .iter(world)
+        .find(|(id, _)| id.0 == doc)
+        .map(|(_, live)| Arc::clone(&live.0))
+}
+
+/// Rolls back every session opinion `peer` wrote and composes whatever was
+/// underneath back into the documents that held it.
+///
+/// Answers how many keys it touched. The composition is queued rather than
+/// awaited: ejecting a peer is not a frame boundary, and the record is already
+/// correct by the time this returns.
+#[must_use]
+pub fn revert_session(view: &SpaceView, peer: EndpointId) -> usize {
+    let restored = view.replicas().revert_writes(peer);
+    let touched = restored.len();
+    let _ = AsyncCommands::default()
+        .push(move |world: &mut World| {
+            for one in restored {
+                restore_session(world, one);
+            }
+        })
+        .try_send();
+    touched
+}
+
+fn restore_session(world: &mut World, restored: Restored) {
+    let Some(state) = doc_state(world, restored.doc) else {
+        return;
+    };
+    let Ok(mut state) = state.lock() else {
+        warn!("scene state poisoned");
+        return;
+    };
+
+    // The reverted peer's opinion carries the newer stamp, so it is dropped
+    // rather than written over: an older write is refused, and rightly.
+    state.clear_session(restored.key.prim, &restored.key.name);
+    if let Standing::Prior { value, at } = restored.standing {
+        let bytes = value
+            .map(|bytes| Property::Attribute(bytes).encode())
+            .unwrap_or_default();
+        if let Err(err) = state.apply_session(&Entry::bytes(
+            key::prop(restored.key.prim, &restored.key.name),
+            bytes,
+            at,
+        )) {
+            warn!(?err, "restored opinion refused by the document");
+        }
+    }
+}
+
+/// Writes the batch into the document's session layer, where it composes with
+/// what the document and the scripts say.
+///
+/// The record in [`Replicas`] is what replication and revert read; this is
+/// where the value is drawn from. A document not in the world yet composes
+/// nothing — the record carries the opinion until the document arrives and
+/// [`Replicas::session_value`] answers for it.
+fn compose_session(world: &mut World, doc: DocId, writes: &[SessionWrite], at: u64) {
+    let Some(state) = doc_state(world, doc) else {
+        return;
+    };
+    let Ok(mut state) = state.lock() else {
+        warn!("scene state poisoned");
+        return;
+    };
+
+    state.open_tick();
+    for write in writes {
+        // A guest states an opaque payload, which is what an attribute is:
+        // the same encoding the document uses, so a session opinion on
+        // `xform` is interchangeable with the one the document holds.
+        let value = write
+            .value
+            .as_ref()
+            .map(|bytes| Property::Attribute(bytes.clone()).encode())
+            .unwrap_or_default();
+        if let Err(err) =
+            state.apply_session(&Entry::bytes(key::prop(write.prim, &write.name), value, at))
+        {
+            warn!(?err, "session opinion refused by the document");
+        }
+    }
+    state.close_tick();
 }
 
 impl SpaceView {
@@ -419,35 +572,25 @@ impl SpaceView {
             .try_send();
     }
 
-    pub async fn doc_kv_set(
+    /// States what this peer says about `doc`'s prims for the rest of the
+    /// session, as one atomic batch.
+    ///
+    /// A write with no value blocks its key: the property is gone for this
+    /// session rather than holding a value.
+    pub async fn set_session(
         &self,
         space: DocId,
         doc: DocId,
-        key: String,
-        value: Vec<u8>,
-    ) -> Result<(), KvError> {
+        writes: Vec<SessionWrite>,
+    ) -> Result<(), SessionError> {
         let me = self.me();
         let at = clock::current_millis();
         AsyncCommands::default()
             .send_with(move |world: &mut World| {
-                set_kv(world, me, doc, space, key, Some(value), at, true)
+                set_session(world, me, doc, space, writes, at, true)
             })
             .await
-            .unwrap_or(Err(KvError::Other))
-    }
-
-    pub async fn doc_kv_delete(
-        &self,
-        space: DocId,
-        doc: DocId,
-        key: String,
-    ) -> Result<(), KvError> {
-        let me = self.me();
-        let at = clock::current_millis();
-        AsyncCommands::default()
-            .send_with(move |world: &mut World| set_kv(world, me, doc, space, key, None, at, true))
-            .await
-            .unwrap_or(Err(KvError::Other))
+            .unwrap_or(Err(SessionError::Other))
     }
 }
 
@@ -490,10 +633,18 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
                 if let Some(at) = s.hold.filter(|at| clock::time_valid(*at)) {
                     spawn_hold(world, peer_ent, peer, s.doc, s.space, at, false);
                 }
-                for kv in s.kv {
-                    if clock::time_valid(kv.at) {
-                        let _ = set_kv(world, peer, s.doc, s.space, kv.key, kv.value, kv.at, false);
-                    }
+                // One batch per stamp, so a snapshot lands the way the writes
+                // that made it did.
+                let mut by_stamp: BTreeMap<u64, Vec<SessionWrite>> = BTreeMap::new();
+                for cell in s.session.into_iter().filter(|c| clock::time_valid(c.at)) {
+                    by_stamp.entry(cell.at).or_default().push(SessionWrite {
+                        prim:  cell.prim,
+                        name:  cell.name,
+                        value: cell.value,
+                    });
+                }
+                for (at, writes) in by_stamp {
+                    let _ = set_session(world, peer, s.doc, s.space, writes, at, false);
                 }
             }
         }
@@ -505,14 +656,13 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
             spawn_hold(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::ReleaseHold { doc } => clear_hold(world, peer_ent, doc),
-        StateMsg::Kv {
+        StateMsg::Session {
             doc,
             space,
-            key,
-            value,
+            writes,
             at,
         } if clock::time_valid(at) => {
-            let _ = set_kv(world, peer, doc, space, key, value, at, false);
+            let _ = set_session(world, peer, doc, space, writes, at, false);
         }
         _ => {}
     }
@@ -520,6 +670,8 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
 
 #[cfg(test)]
 mod tests {
+    use hsd::id::PrimId;
+
     use super::*;
 
     fn doc(seed: &[u8]) -> DocId {
@@ -530,6 +682,19 @@ mod tests {
     /// point, so a key has to be derived rather than written down.
     fn peer(seed: u8) -> EndpointId {
         iroh::SecretKey::from_bytes(&[seed; 32]).public()
+    }
+
+    fn prim() -> PrimId {
+        PrimId([1; 16])
+    }
+
+    /// One opinion on one key, which is all these tests need of a batch.
+    fn writes() -> Vec<SessionWrite> {
+        vec![SessionWrite {
+            prim:  prim(),
+            name:  "k".to_owned(),
+            value: Some(b"v".to_vec()),
+        }]
     }
 
     #[test]
@@ -555,8 +720,37 @@ mod tests {
         replicas.unregister_stream(token);
     }
 
+    /// The record is where attribution and replication live; the document's
+    /// session layer is where the value composes. One call has to reach both,
+    /// or a peer's opinion is replicated and never drawn.
     #[test]
-    fn neutral_kv_guard_drop_does_not_forget() {
+    fn a_session_write_composes_into_the_document_it_speaks_for() {
+        let me = peer(1);
+        let space = doc(b"compose-space");
+
+        let mut world = World::new();
+        world.init_resource::<Policy>();
+        world.insert_resource(Replicas::new());
+        world.spawn(Space(NamespaceId::from(&space.0)));
+        let state = Arc::new(Mutex::new(SceneState::new()));
+        world.spawn((Hsd(Arc::clone(&state)), HsdDocId(space)));
+
+        set_session(&mut world, me, space, space, writes(), 1, true).expect("session set");
+
+        let composed = state
+            .lock()
+            .expect("lock")
+            .get(prim())
+            .and_then(|p| p.property("k").and_then(Property::as_attribute).cloned());
+        assert_eq!(
+            composed.as_deref(),
+            Some(&b"v"[..]),
+            "what a peer said has to compose in the document it said it about"
+        );
+    }
+
+    #[test]
+    fn a_neutral_cell_guard_drop_does_not_forget() {
         let replicas = Replicas::new();
         let me = peer(1);
         let space = doc(b"neutral-guard-space");
@@ -568,30 +762,20 @@ mod tests {
         world.init_resource::<Policy>();
         world.insert_resource(replicas.clone());
         let space_ent = world.spawn(Space(NamespaceId::from(&space.0))).id();
-        set_kv(
-            &mut world,
-            me,
-            space,
-            space,
-            "k".into(),
-            Some(b"v".to_vec()),
-            1,
-            true,
-        )
-        .expect("kv set");
-        assert!(matches!(rx.try_recv(), Ok(StateMsg::Kv { .. })));
+        set_session(&mut world, me, space, space, writes(), 1, true).expect("session set");
+        assert!(matches!(rx.try_recv(), Ok(StateMsg::Session { .. })));
 
         // Tearing down the doc drops the cell locally but sends no retract, so
         // peers still holding it keep theirs.
         world.despawn(space_ent);
-        assert_eq!(replicas.kv_get(space, space, "k"), None);
+        assert_eq!(replicas.session_value(space, space, prim(), "k"), None);
         assert!(rx.try_recv().is_err());
 
         replicas.unregister_stream(token);
     }
 
     #[test]
-    fn neutral_kv_survives_writer_disconnect() {
+    fn a_neutral_cell_survives_the_writers_disconnect() {
         let replicas = Replicas::new();
         let remote = peer(3);
         let space = doc(b"neutral-survive-space");
@@ -601,29 +785,22 @@ mod tests {
         world.insert_resource(replicas.clone());
         let space_ent = world.spawn(Space(NamespaceId::from(&space.0))).id();
         let peer_ent = world.spawn(RemotePeer(remote)).id();
-        set_kv(
-            &mut world,
-            remote,
-            space,
-            space,
-            "k".into(),
-            Some(b"v".to_vec()),
-            1,
-            false,
-        )
-        .expect("kv set");
-        assert_eq!(replicas.kv_get(space, space, "k"), Some(b"v".to_vec()));
+        set_session(&mut world, remote, space, space, writes(), 1, false).expect("session set");
+        assert_eq!(
+            replicas.session_value(space, space, prim(), "k"),
+            Some(b"v".to_vec())
+        );
 
         world.despawn(peer_ent);
         assert_eq!(
-            replicas.kv_get(space, space, "k"),
+            replicas.session_value(space, space, prim(), "k"),
             Some(b"v".to_vec()),
-            "space-owned kv should persist after the writer disconnects"
+            "a space-owned opinion persists after the peer that wrote it goes"
         );
 
         // The doc anchor still owns the cell's lifetime.
         world.despawn(space_ent);
-        assert_eq!(replicas.kv_get(space, space, "k"), None);
+        assert_eq!(replicas.session_value(space, space, prim(), "k"), None);
     }
 
     #[test]

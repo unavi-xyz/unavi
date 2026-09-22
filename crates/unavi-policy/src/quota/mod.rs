@@ -23,7 +23,7 @@ pub mod limits;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Stock {
     Documents,
-    KvMemory,
+    SessionMemory,
     PortalWatches,
     Prims,
     Receptors,
@@ -34,7 +34,7 @@ pub enum Stock {
 impl Stock {
     const ALL: [Self; 7] = [
         Self::Documents,
-        Self::KvMemory,
+        Self::SessionMemory,
         Self::PortalWatches,
         Self::Prims,
         Self::Receptors,
@@ -417,49 +417,53 @@ mod tests {
 
     #[test]
     fn a_lease_grows_shrinks_and_refunds_on_drop() {
-        let q = Quota::new(limits_stock(Stock::KvMemory, 100), None);
-        let mut lease = q.lease(Stock::KvMemory, 40).expect("initial");
-        assert_eq!(q.usage(Stock::KvMemory), 40);
+        let q = Quota::new(limits_stock(Stock::SessionMemory, 100), None);
+        let mut lease = q.lease(Stock::SessionMemory, 40).expect("initial");
+        assert_eq!(q.usage(Stock::SessionMemory), 40);
 
         lease.resize(90).expect("grow within the cap");
-        assert_eq!(q.usage(Stock::KvMemory), 90);
+        assert_eq!(q.usage(Stock::SessionMemory), 90);
 
         assert!(
             lease.resize(120).is_err(),
             "growth past the cap fails and leaves the lease unchanged"
         );
         assert_eq!(lease.leased(), 90);
-        assert_eq!(q.usage(Stock::KvMemory), 90);
+        assert_eq!(q.usage(Stock::SessionMemory), 90);
 
         drop(lease);
-        assert_eq!(q.usage(Stock::KvMemory), 0, "drop refunds the full lease");
+        assert_eq!(
+            q.usage(Stock::SessionMemory),
+            0,
+            "drop refunds the full lease"
+        );
     }
 
     #[test]
     fn a_lease_shrinks_at_a_full_cap() {
-        let q = Quota::new(limits_stock(Stock::KvMemory, 50), None);
-        let mut lease = q.lease(Stock::KvMemory, 50).expect("fill the cap");
-        assert!(q.lease(Stock::KvMemory, 1).is_err(), "cap is full");
+        let q = Quota::new(limits_stock(Stock::SessionMemory, 50), None);
+        let mut lease = q.lease(Stock::SessionMemory, 50).expect("fill the cap");
+        assert!(q.lease(Stock::SessionMemory, 1).is_err(), "cap is full");
 
         lease.resize(10).expect("shrink frees stock");
-        assert_eq!(q.usage(Stock::KvMemory), 10);
+        assert_eq!(q.usage(Stock::SessionMemory), 10);
         let _room = q
-            .lease(Stock::KvMemory, 40)
+            .lease(Stock::SessionMemory, 40)
             .expect("freed room is reusable");
     }
 
     #[test]
     fn a_lease_rolls_up_and_refunds_to_its_owner() {
-        let owner = Quota::new(limits_stock(Stock::KvMemory, 100), None);
+        let owner = Quota::new(limits_stock(Stock::SessionMemory, 100), None);
         let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
-        let mut lease = doc.lease(Stock::KvMemory, 30).expect("charge");
-        assert_eq!(owner.usage(Stock::KvMemory), 30);
+        let mut lease = doc.lease(Stock::SessionMemory, 30).expect("charge");
+        assert_eq!(owner.usage(Stock::SessionMemory), 30);
 
         lease.resize(10).expect("shrink");
-        assert_eq!(owner.usage(Stock::KvMemory), 10);
+        assert_eq!(owner.usage(Stock::SessionMemory), 10);
 
         drop(lease);
-        assert_eq!(owner.usage(Stock::KvMemory), 0);
+        assert_eq!(owner.usage(Stock::SessionMemory), 0);
     }
 
     #[test]

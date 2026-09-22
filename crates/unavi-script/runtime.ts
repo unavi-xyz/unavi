@@ -182,13 +182,6 @@ function buildImports(wasi: WASIShim, rt: any) {
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),
     },
-    "wired:kv/api": {
-      selfKv: rt.wiredKvSelfKv.bind(rt),
-      getKv: rt.wiredKvGetKv.bind(rt),
-    },
-    "wired:kv/types": {
-      Kv: rt.wiredKvClass(),
-    },
     "wired:peer/api": {
       selfPeer: rt.wiredPeerSelfPeer.bind(rt),
       selfDid: rt.wiredPeerSelfDid.bind(rt),

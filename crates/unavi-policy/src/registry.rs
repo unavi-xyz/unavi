@@ -295,23 +295,28 @@ mod tests {
 
     /// The owning peer caps the aggregate, not just each document.
     #[test]
-    fn kv_memory_rolls_up_to_peer_across_docs() {
+    fn session_memory_rolls_up_to_peer_across_docs() {
         let policy = Policy::new();
         let peer = policy.peer_quota(peer(7), Limits::peer);
-        let cap = |limits: Limits| *limits.stock.get(&Stock::KvMemory).expect("caps kv memory");
+        let cap = |limits: Limits| {
+            *limits
+                .stock
+                .get(&Stock::SessionMemory)
+                .expect("caps session memory")
+        };
         let (doc_cap, peer_cap) = (cap(Limits::document()), cap(Limits::peer()));
 
         for i in 0..peer_cap / doc_cap {
             let quota = policy.document_quota(doc(&i.to_le_bytes()), || Some(Arc::clone(&peer)));
             quota
-                .charge(Stock::KvMemory, doc_cap)
+                .charge(Stock::SessionMemory, doc_cap)
                 .expect("doc fits within the peer budget");
         }
 
         let overflow = policy.document_quota(doc(b"overflow"), || Some(Arc::clone(&peer)));
         assert!(matches!(
-            overflow.charge(Stock::KvMemory, doc_cap),
-            Err(QuotaError::Stock(Stock::KvMemory))
+            overflow.charge(Stock::SessionMemory, doc_cap),
+            Err(QuotaError::Stock(Stock::SessionMemory))
         ));
     }
 

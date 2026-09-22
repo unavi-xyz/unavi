@@ -31,8 +31,8 @@ interface types {
   }
 
   /// Read access to the docs this node holds: its own root doc, and the view
-  /// docs of the registries it follows. Writing is `wired:kv`'s job, scoped to
-  /// a document the script owns.
+  /// docs of the registries it follows. Read-only — writing a document is
+  /// `wired:scene`'s job, scoped to one the script owns.
   resource storage {
     /// This node's root doc namespace, if one is set.
     root-doc:   func() -> option<namespace>;

@@ -6,7 +6,7 @@ use unavi_policy::{
         Stock,
     },
 };
-use unavi_space::state::cell::KvError;
+use unavi_space::state::cell::SessionError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
 ///
@@ -44,12 +44,12 @@ impl From<QuotaError> for ScriptError {
     }
 }
 
-impl From<KvError> for ScriptError {
-    fn from(err: KvError) -> Self {
+impl From<SessionError> for ScriptError {
+    fn from(err: SessionError) -> Self {
         match err {
-            KvError::QuotaExceeded => Self::QuotaStock(Stock::KvMemory),
-            KvError::NotOwner => Self::Policy(PolicyError::NotOwner),
-            KvError::KeyTooLong | KvError::Other => Self::Other(err.to_string()),
+            SessionError::QuotaExceeded => Self::QuotaStock(Stock::SessionMemory),
+            SessionError::NotOwner => Self::Policy(PolicyError::NotOwner),
+            SessionError::BadName | SessionError::Other => Self::Other(err.to_string()),
         }
     }
 }

@@ -16,7 +16,7 @@ use crate::{
 pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) -> Result<(), NoIdentity> {
     set_trust(view, peer, Some(Trust::Blocked))?;
 
-    let reverted = view.replicas().revert_writes(peer);
+    let reverted = crate::state::entities::revert_session(view, peer);
     info!(reverted, "Ejected peer");
 
     link.disconnect(peer);

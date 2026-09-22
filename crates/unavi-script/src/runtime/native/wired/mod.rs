@@ -2,7 +2,6 @@ pub mod agent;
 pub mod error;
 pub mod event;
 pub mod input;
-pub mod kv;
 pub mod peer;
 pub mod physics;
 pub mod portal;

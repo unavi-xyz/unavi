@@ -1,10 +1,5 @@
-//! The live scene document, as the runtime holds it.
-//!
-//! `HsdState` composes opinions through a layer stack into the resolved view
-//! every consumer draws, realizes prims, and emits [`SceneEvent`]s. Split by
-//! concern: `compose` is the layer-to-view engine, `apply` ingests entries,
-//! `commit` promotes live opinions, `reference` holds what referencing
-//! documents say, and `write` is the local authoring surface.
+//! A document composed through its layer stack into the view its prims
+//! realize from, with the [`SceneEvent`]s describing each change.
 
 use std::collections::{
     BTreeSet,
@@ -14,10 +9,14 @@ use std::collections::{
 use thiserror::Error;
 
 use crate::{
-    attributes::Attribute,
+    format::meta::DocMeta,
     id::PrimId,
-    meta::DocMeta,
-    property::PropertyError,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        value::PropertyError,
+    },
     state::{
         event::SceneEvent,
         layer::{
@@ -47,75 +46,51 @@ pub mod save;
 pub enum StateError {
     #[error("unknown prim {0}")]
     UnknownPrim(PrimId),
-    #[error("invalid property name {0:?}")]
-    Name(String),
+    #[error("{0} is written through set_parent")]
+    Reserved(PropName),
     #[error("property {0}")]
-    Property(#[from] PropertyError),
+    Value(#[from] PropertyError),
     #[error("postcard {0}")]
     Postcard(#[from] postcard::Error),
 }
 
-/// Deepest parent chain a prim may sit under.
-///
-/// A document nesting past this holds its deeper prims rather than realizing
-/// them: resolving one prim's placement walks its whole chain, and the ECS
-/// hierarchy it becomes is walked recursively again on every propagation and
-/// despawn.
+/// Deepest parent chain a prim may realize under.
+/// Deeper prims are still held in state.
 pub const MAX_PRIM_DEPTH: usize = 512;
 
 /// Most prims one document may realize at once.
-///
-/// Enforced here rather than at any one consumer: entries arrive from peers
-/// over document sync, which never passes through the authoring API where the
-/// per-document quota is charged. Prims past the cap stay held, exactly as an
-/// orphan does, and realize if room frees up.
+/// Prims past the cap are held until room frees up.
 pub const MAX_REALIZED_PRIMS: usize = 100_000;
 
-/// The layers a [`HsdState::commit`] may promote opinions into.
+/// The layer a [`HsdState::commit`] promotes opinions into.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitTarget {
-    /// The document layer: what a save writes to the namespace, so a
-    /// promotion here is durable.
+    /// Written back by a save.
     Document,
-    /// The overrides the document referencing this one holds over it, named by
-    /// the reference site. Where an edit to content authored elsewhere lands,
-    /// and durable in the referencing document rather than this one — so a
-    /// commit here answers the entries that document has to hold.
+    /// Durable in the document referencing this one through `site`.
     Override { site: PrimId },
-    /// The session layer: this session only, replicated by nothing yet.
-    /// The fallback for a commit from a client holding no durable key.
+    /// Held for this session only.
     Session,
 }
 
 #[derive(Debug)]
 pub struct HsdState {
     meta:               DocMeta,
-    /// Weakest first, so iterating forwards composes and iterating backwards
-    /// finds the strongest opinion on a key. One `Layer` per `LayerId`,
-    /// indexed by its strength seat.
-    layers:             Vec<Layer>,
-    /// What this document says about the prims of the documents its own prims
-    /// reference, keyed by reference site. Durable here under
-    /// `p/<site>/ref/layer/…` and installed into the referenced document,
-    /// which is the only place it composes.
+    /// Indexed by [`LayerId`], weakest first.
+    layers:             [Layer; LayerId::ALL.len()],
+    /// This document's opinions about the prims of the documents it
+    /// references, keyed by reference site. They compose only once installed
+    /// into the referenced document.
     references:         HashMap<PrimId, Layer>,
-    /// Bumped on every write to `references`, so a realizer can tell whether
-    /// what it installed into a child is still current.
     references_version: u64,
-    /// The composed view every reader sees, recomputed per written key. A
-    /// cache: only [`Self::resolve_parent`] and its siblings write it.
     resolved:           HashMap<PrimId, PrimState>,
-    /// Parent id to children, indexed over *resolved* parents and including
-    /// parents that do not exist yet, which is what lets an orphan be picked
-    /// up when its parent arrives.
+    /// Keyed by resolved parent, including parents that do not exist yet.
     children:           HashMap<PrimId, BTreeSet<PrimId>>,
-    /// Realized prims and their effective parent, `None` for a document root.
+    /// Realized prims and their parent, `None` for a root.
     realized:           HashMap<PrimId, Option<PrimId>>,
     events:             Vec<SceneEvent>,
-    /// Write boundaries currently open. A script tick can be suspended between
-    /// any two host calls, so its events are withheld until it closes.
     ticks:              usize,
-    /// Where the oldest open boundary started writing.
+    /// Where the oldest open write boundary started writing.
     tick_start:         usize,
 }
 
@@ -130,7 +105,7 @@ impl HsdState {
     pub fn new() -> Self {
         Self {
             meta:               DocMeta::default(),
-            layers:             LayerId::ALL.map(|_| Layer::default()).to_vec(),
+            layers:             LayerId::ALL.map(|_| Layer::default()),
             references:         HashMap::new(),
             references_version: 0,
             resolved:           HashMap::new(),
@@ -143,17 +118,12 @@ impl HsdState {
     }
 
     #[must_use]
-    pub const fn meta(&self) -> DocMeta {
-        self.meta
-    }
-
-    #[must_use]
     pub fn get(&self, prim: PrimId) -> Option<&PrimState> {
         self.resolved.get(&prim)
     }
 
-    /// Whether a prim exists: its `parent/` property resolves to a live entry.
-    /// Existence is not realization — an existing prim may still be held.
+    /// Whether some layer states a live parent for the prim. An existing prim
+    /// may still be held rather than realized.
     #[must_use]
     pub fn exists(&self, prim: PrimId) -> bool {
         self.resolved.get(&prim).is_some_and(|s| s.parent.is_some())
@@ -164,8 +134,7 @@ impl HsdState {
         self.realized.contains_key(&prim)
     }
 
-    /// The effective parent of a realized prim, `None` if it is a document
-    /// root or is not realized.
+    /// `None` for a root or a prim that is not realized.
     #[must_use]
     pub fn parent(&self, prim: PrimId) -> Option<PrimId> {
         self.realized.get(&prim).copied().flatten()
@@ -200,11 +169,30 @@ impl HsdState {
         out
     }
 
-    /// Opens a write boundary. Everything written until the matching
-    /// [`Self::close_tick`] is withheld from [`Self::drain_events`].
-    ///
-    /// Boundaries nest by count rather than replacing one another, so two
-    /// writers on one document hold their events until both are done.
+    #[must_use]
+    pub fn attribute<A: Property>(&self, prim: PrimId) -> Option<Result<A, postcard::Error>> {
+        self.payload(prim, &A::NAME)
+    }
+
+    /// The field `name` decoded as `V`, `None` when it holds no attribute.
+    #[must_use]
+    pub fn payload<V: Payload>(
+        &self,
+        prim: PrimId,
+        name: &PropName,
+    ) -> Option<Result<V, postcard::Error>> {
+        let payload = self.get(prim)?.property(name)?.as_attribute()?;
+        Some(V::decode(payload))
+    }
+
+    #[must_use]
+    pub fn relationship(&self, prim: PrimId, name: &PropName) -> Option<PrimId> {
+        self.get(prim)?.property(name)?.as_relationship()
+    }
+
+    /// Opens a write boundary. Events written until the matching
+    /// [`Self::close_tick`] are withheld from [`Self::drain_events`].
+    /// Boundaries nest.
     pub const fn open_tick(&mut self) {
         if self.ticks == 0 {
             self.tick_start = self.events.len();
@@ -212,22 +200,12 @@ impl HsdState {
         self.ticks += 1;
     }
 
-    /// Saturates rather than underflowing: an unmatched close is a bug in the
-    /// caller, not a reason to release a boundary someone else is holding.
+    /// An unmatched close is ignored.
     pub const fn close_tick(&mut self) {
         self.ticks = self.ticks.saturating_sub(1);
     }
 
-    #[must_use]
-    pub const fn is_ticking(&self) -> bool {
-        self.ticks > 0
-    }
-
-    /// Events belonging to finished writes.
-    ///
-    /// A tick still in flight keeps its tail: a prim whose creating tick has
-    /// not set its transform yet would otherwise be drawn at the origin until
-    /// the tick resumes.
+    /// Events written outside any open boundary.
     pub fn drain_events(&mut self) -> Vec<SceneEvent> {
         if self.ticks == 0 {
             return std::mem::take(&mut self.events);
@@ -237,9 +215,9 @@ impl HsdState {
         complete
     }
 
-    /// Replaces pending events with a full description of the realized scene,
-    /// so a consumer attaching to an already-built state gets everything.
-    /// Parents are emitted before their children.
+    /// Replaces pending events with a description of the realized scene,
+    /// parents before children. The description drains even while a boundary
+    /// is open.
     pub fn resync(&mut self) {
         self.events.clear();
 
@@ -256,19 +234,6 @@ impl HsdState {
             stack.extend(children);
         }
 
-        // A consumer attaching mid-tick needs the scene as it stands now, so
-        // the description itself drains; only writes after it are withheld.
         self.tick_start = self.events.len();
-    }
-
-    #[must_use]
-    pub fn attribute<A: Attribute>(&self, prim: PrimId) -> Option<Result<A, postcard::Error>> {
-        let payload = self.get(prim)?.property(A::KEY)?.as_attribute()?;
-        Some(A::decode(payload))
-    }
-
-    #[must_use]
-    pub fn relationship(&self, prim: PrimId, name: &str) -> Option<PrimId> {
-        self.get(prim)?.property(name)?.as_relationship()
     }
 }

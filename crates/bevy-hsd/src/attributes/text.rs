@@ -8,14 +8,20 @@ use bevy_msdf::{
         Outline,
     },
 };
-use hsd::attributes::{
-    Attribute,
-    material::ColorVec,
-    text::{
-        TextAlign,
-        TextAnchor,
-        TextAttr,
-        TextBillboard,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::{
+        material::ColorVec,
+        text::{
+            self,
+            TextAlign,
+            TextAnchor,
+            TextAttr,
+            TextBillboard,
+        },
     },
 };
 use msdf::layout::{
@@ -47,14 +53,15 @@ pub struct TextData(pub TextAttr);
 pub struct TextParser;
 
 impl AttributeParser for TextParser {
-    fn key(&self) -> &'static str {
-        TextAttr::KEY
+    fn group(&self) -> &'static str {
+        text::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

@@ -3,13 +3,13 @@ use web_time::{
     UNIX_EPOCH,
 };
 
-use crate::property::Property;
+use crate::property::value::Value;
 
-/// Orders concurrent writes to one key exactly as iroh-docs orders entries at
-/// read time, so a live-applied entry and a re-read of the same document
-/// agree on the winner.
+/// Orders concurrent writes to one key: the later timestamp wins, then the
+/// greater content hash.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Stamp {
+    /// Milliseconds since the Unix epoch.
     pub timestamp: u64,
     pub content:   [u8; 32],
 }
@@ -23,47 +23,40 @@ impl Stamp {
         }
     }
 
-    /// The current wall-clock timestamp, for a local write's stamp.
+    /// Equal to [`Self::new`] over `property`'s encoding, without building it.
     #[must_use]
-    pub fn now(value: &[u8]) -> Self {
-        Self::new(now_micros(), value)
-    }
-
-    /// The content hash of `property`'s wire form, without encoding it to a
-    /// scratch `Vec` first.
-    #[must_use]
-    pub fn for_property(property: &Property) -> Self {
+    pub fn of_property(timestamp: u64, property: &Value) -> Self {
         let mut hasher = blake3::Hasher::new();
         property.hash_into(&mut hasher);
         Self {
-            timestamp: now_micros(),
-            content:   *hasher.finalize().as_bytes(),
+            timestamp,
+            content: *hasher.finalize().as_bytes(),
         }
     }
 
-    /// The content hash of an attribute payload's wire form, without encoding
-    /// it to a scratch `Vec` first.
+    /// Equal to [`Self::of_property`] over an attribute holding `payload`.
     #[must_use]
-    pub fn for_attribute(payload: &[u8]) -> Self {
+    pub fn of_attribute(timestamp: u64, payload: &[u8]) -> Self {
         let mut hasher = blake3::Hasher::new();
-        Property::hash_attribute_into(&mut hasher, payload);
+        Value::hash_attribute_into(&mut hasher, payload);
         Self {
-            timestamp: now_micros(),
-            content:   *hasher.finalize().as_bytes(),
+            timestamp,
+            content: *hasher.finalize().as_bytes(),
         }
     }
 }
 
-fn now_micros() -> u64 {
+pub(super) fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_micros() as u64)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
     pub key:       String,
     pub value:     Vec<u8>,
+    /// Milliseconds since the Unix epoch.
     pub timestamp: u64,
 }
 

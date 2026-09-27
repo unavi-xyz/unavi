@@ -1,7 +1,13 @@
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    portal::PortalAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::portal::{
+        self,
+        PortalAttr,
+    },
 };
 
 use crate::attributes::{
@@ -22,14 +28,15 @@ pub struct PortalConfig(pub PortalAttr);
 pub struct PortalParser;
 
 impl AttributeParser for PortalParser {
-    fn key(&self) -> &'static str {
-        PortalAttr::KEY
+    fn group(&self) -> &'static str {
+        portal::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

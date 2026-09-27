@@ -260,6 +260,11 @@ fn dirty_struct(dirty_ident: &Ident, stateful: &[&ParsedField]) -> TokenStream {
     }
 }
 
+/// The property a state field is stored at, in the `state` namespace.
+fn field_key(ident: &Ident) -> Literal {
+    Literal::string(&format!("state/{ident}"))
+}
+
 /// Encode the dirty session fields and hand them to the host as one batch.
 fn session_flush(session_fields: &[&Ident]) -> TokenStream {
     if session_fields.is_empty() {
@@ -267,7 +272,7 @@ fn session_flush(session_fields: &[&Ident]) -> TokenStream {
     }
     let keys = session_fields
         .iter()
-        .map(|ident| Literal::string(&ident.to_string()))
+        .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
         let mut session_writes: Vec<(String, Option<Vec<u8>>)> = Vec::new();
@@ -293,7 +298,7 @@ fn document_flush(document_fields: &[&Ident]) -> TokenStream {
     }
     let keys = document_fields
         .iter()
-        .map(|ident| Literal::string(&ident.to_string()))
+        .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
         let prim_id = prim.id();
@@ -318,7 +323,7 @@ fn adopt(session_fields: &[&Ident]) -> TokenStream {
     }
     let keys = session_fields
         .iter()
-        .map(|ident| Literal::string(&ident.to_string()))
+        .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
         for (name, bytes) in prim.session() {
@@ -369,7 +374,7 @@ mod tests {
 
         assert!(rendered.contains("pub fn sync"));
         assert!(rendered.contains("prim.set_session(&session_writes)?"));
-        assert!(rendered.contains(r#""ticks".to_owned()"#));
+        assert!(rendered.contains(r#""state/ticks".to_owned()"#));
         assert!(rendered.contains("::postcard::to_allocvec(&self.ticks)?"));
         assert!(rendered.contains("for (name, bytes) in prim.session()"));
         assert!(rendered.contains("::postcard::from_bytes(&bytes)"));
@@ -394,7 +399,7 @@ mod tests {
         assert!(!rendered.contains("set_session"));
         assert!(rendered.contains("let document = crate::wired::scene::api::self_document()?;"));
         assert!(rendered.contains("document.commit(&document_commits)?"));
-        assert!(rendered.contains(r#""page".to_owned()"#));
+        assert!(rendered.contains(r#""state/page".to_owned()"#));
         assert!(rendered.contains("let prim_id = prim.id();"));
         assert!(!rendered.contains("prim.session()"));
         assert!(!rendered.contains("from_bytes"));

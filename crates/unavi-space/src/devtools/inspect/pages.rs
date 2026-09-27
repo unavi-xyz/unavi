@@ -234,7 +234,7 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
                 cell_value_cells(
                     g,
                     m.doc,
-                    &row.name,
+                    row.name.as_str(),
                     row.at,
                     row.value.as_deref(),
                     expanded,

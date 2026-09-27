@@ -7,13 +7,15 @@ use std::{
 };
 
 use bevy::prelude::Resource;
-use hsd::id::{
-    DocId,
-    PrimId,
+use hsd::{
+    id::{
+        DocId,
+        PrimId,
+    },
+    property::name::PropName,
 };
 use iroh::EndpointId;
 use parking_lot::Mutex;
-use smol_str::SmolStr;
 use unavi_policy::{
     quota::{
         Quota,
@@ -608,12 +610,12 @@ impl Replicas {
             .add_session(peer, doc, space, key, value, at, &quota)
     }
 
-    pub(crate) fn remove_session(&self, doc: DocId, prim: PrimId, name: &str) {
+    pub(crate) fn remove_session(&self, doc: DocId, prim: PrimId, name: &PropName) {
         self.0.lock().remove_session(
             doc,
             &SessionKey {
                 prim,
-                name: SmolStr::new(name),
+                name: name.clone(),
             },
         );
     }
@@ -667,14 +669,14 @@ impl Replicas {
         space: DocId,
         doc: DocId,
         prim: PrimId,
-        name: &str,
+        name: &PropName,
     ) -> Option<Vec<u8>> {
         self.0.lock().cell(
             space,
             doc,
             &SessionKey {
                 prim,
-                name: SmolStr::new(name),
+                name: name.clone(),
             },
         )
     }
@@ -682,7 +684,7 @@ impl Replicas {
     /// Every key of `prim` holding a live value. A blocked key is stored but
     /// reads as absent, so it is not listed.
     #[must_use]
-    pub fn session_keys(&self, space: DocId, doc: DocId, prim: PrimId) -> Vec<SmolStr> {
+    pub fn session_keys(&self, space: DocId, doc: DocId, prim: PrimId) -> Vec<PropName> {
         let keys = {
             let inner = self.0.lock();
             inner
@@ -714,7 +716,9 @@ impl Replicas {
                         .session
                         .iter()
                         .filter_map(|(key, cell)| {
-                            cell.value.as_ref().map(|v| key.name.len() + v.len())
+                            cell.value
+                                .as_ref()
+                                .map(|v| key.name.as_str().len() + v.len())
                         })
                         .sum()
                 })
@@ -842,10 +846,14 @@ mod tests {
         PrimId([1; 16])
     }
 
-    fn key(name: &str) -> SessionKey {
+    fn name(field: &str) -> PropName {
+        format!("test/{field}").parse().expect("valid prop name")
+    }
+
+    fn key(field: &str) -> SessionKey {
         SessionKey {
             prim: prim(),
-            name: SmolStr::new(name),
+            name: name(field),
         }
     }
 
@@ -928,7 +936,7 @@ mod tests {
         );
         assert_eq!(
             replicas
-                .session_value(space, doc, prim(), "colour")
+                .session_value(space, doc, prim(), &name("colour"))
                 .as_deref(),
             Some(&b"red"[..]),
             "the new owner inherits the state, not an empty document"
@@ -948,7 +956,7 @@ mod tests {
             .expect("the new owner may write what it inherited");
         assert_eq!(
             replicas
-                .session_value(space, doc, prim(), "colour")
+                .session_value(space, doc, prim(), &name("colour"))
                 .as_deref(),
             Some(&b"blue"[..])
         );
@@ -978,21 +986,24 @@ mod tests {
         );
         assert_eq!(
             replicas
-                .session_value(space, space, prim(), "link")
+                .session_value(space, space, prim(), &name("link"))
                 .as_deref(),
             Some(&b"dest"[..])
         );
 
-        replicas.remove_session(space, prim(), "missing");
+        replicas.remove_session(space, prim(), &name("missing"));
         assert_eq!(
             replicas
-                .session_value(space, space, prim(), "link")
+                .session_value(space, space, prim(), &name("link"))
                 .as_deref(),
             Some(&b"dest"[..])
         );
 
-        replicas.remove_session(space, prim(), "link");
-        assert_eq!(replicas.session_value(space, space, prim(), "link"), None);
+        replicas.remove_session(space, prim(), &name("link"));
+        assert_eq!(
+            replicas.session_value(space, space, prim(), &name("link")),
+            None
+        );
         assert!(!replicas.has_doc(space, space));
     }
 
@@ -1029,7 +1040,7 @@ mod tests {
             .expect("mallory defaces it");
         assert_eq!(
             replicas
-                .session_value(space, space, prim(), "sign")
+                .session_value(space, space, prim(), &name("sign"))
                 .as_deref(),
             Some(&b"defaced"[..])
         );
@@ -1037,7 +1048,7 @@ mod tests {
         assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
             replicas
-                .session_value(space, space, prim(), "sign")
+                .session_value(space, space, prim(), &name("sign"))
                 .as_deref(),
             Some(&b"welcome"[..]),
             "blocking must put back what the blocked peer wrote over"
@@ -1066,7 +1077,7 @@ mod tests {
 
         assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
-            replicas.session_value(space, space, prim(), "spam"),
+            replicas.session_value(space, space, prim(), &name("spam")),
             None,
             "a cell with no prior version has nothing to fall back to"
         );
@@ -1110,7 +1121,7 @@ mod tests {
 
         assert_eq!(replicas.revert_writes(mallory).len(), 1);
         assert_eq!(
-            replicas.session_value(space, space, prim(), "sign"),
+            replicas.session_value(space, space, prim(), &name("sign")),
             None,
             "falling back to the blocked peer's own earlier write undoes nothing"
         );
@@ -1139,7 +1150,7 @@ mod tests {
         assert!(replicas.revert_writes(mallory).is_empty());
         assert_eq!(
             replicas
-                .session_value(space, space, prim(), "keep")
+                .session_value(space, space, prim(), &name("keep"))
                 .as_deref(),
             Some(&b"mine"[..])
         );
@@ -1182,7 +1193,9 @@ mod tests {
             Err(SessionError::NotOwner)
         ));
         assert_eq!(
-            replicas.session_value(space, doc, prim(), "k").as_deref(),
+            replicas
+                .session_value(space, doc, prim(), &name("k"))
+                .as_deref(),
             Some(&b"v"[..])
         );
     }
@@ -1213,7 +1226,7 @@ mod tests {
         assert!(quota.usage(Stock::SessionMemory) > 0);
         assert_eq!(quota.usage(Stock::Documents), 1);
 
-        replicas.remove_session(doc, prim(), "k");
+        replicas.remove_session(doc, prim(), &name("k"));
         replicas.remove_pin(&policy, None, peer, doc);
         assert_eq!(quota.usage(Stock::SessionMemory), 0);
         assert_eq!(quota.usage(Stock::Documents), 0);

@@ -4,13 +4,13 @@
     (
         attributes: (
             name: "default_glow",
-            material_graph: (path: "./glow.hss"),
+            shader: (path: "./glow.hss"),
         ),
     ),
     (
         attributes: (
             name: "red_glow",
-            material_graph: (
+            shader: (
                 path: "./glow.hss",
                 overrides: {0: Color((1.0, 0.0, 0.0, 1.0))},
             ),

@@ -19,7 +19,7 @@ wired_prelude::generate_script!(Script);
 const GROUND_SIZE: f32 = 30.0;
 const GROUND_THICK: f32 = 0.5;
 
-const MATERIAL_BINDING: &str = "material:binding";
+const MATERIAL_BINDING: &str = "material/binding";
 
 const IDENTITY_QUAT: Quat = Quat::IDENTITY;
 

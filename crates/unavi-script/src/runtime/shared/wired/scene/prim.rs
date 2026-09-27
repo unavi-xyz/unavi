@@ -16,31 +16,41 @@ use bevy::{
     transform::components::Transform,
 };
 use hsd::{
-    attributes::{
-        Attribute,
+    bounds::{
+        MAX_MESH_ELEMENTS,
+        MAX_NAME_BYTES,
+        MAX_TEXT_BYTES,
+    },
+    id::{
+        DocId,
+        PrimId,
+    },
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        value::Value,
+    },
+    schema::{
         collider::{
-            ColliderAttr,
+            ColliderIndices,
             ColliderKind,
+            ColliderVertices,
         },
         gravity_scale::GravityScaleAttr,
-        image::ImageAttr,
+        image::{
+            ImageData,
+            ImageSampler,
+        },
         material::{
             AlphaMode,
             ColorVec,
             MaterialAttr,
         },
-        material_graph::{
-            MAX_PUBLIC_INPUTS,
-            ShaderGraph,
-            overrides::GraphOverridesAttr,
-            validate::validate,
-            value::{
-                GraphValue,
-                is_finite,
-            },
-        },
         mesh::{
-            MeshAttr,
+            self,
+            MeshIndices,
+            MeshStream,
             Topology,
         },
         name::NameAttr,
@@ -55,6 +65,16 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
+        shader::{
+            MAX_PUBLIC_INPUTS,
+            ShaderGraph,
+            overrides::GraphOverridesAttr,
+            validate::validate,
+            value::{
+                GraphValue,
+                is_finite,
+            },
+        },
         spawn::SpawnAttr,
         text::{
             TextAlign,
@@ -64,16 +84,6 @@ use hsd::{
         },
         xform::XformAttr,
     },
-    bounds::{
-        MAX_MESH_ELEMENTS,
-        MAX_NAME_BYTES,
-        MAX_TEXT_BYTES,
-    },
-    id::{
-        DocId,
-        PrimId,
-    },
-    property::Property,
     state::HsdState,
 };
 use unavi_physics::finite;
@@ -262,67 +272,51 @@ impl PrimRes {
         Ok(f(&mut state))
     }
 
-    fn read_attr<A: Attribute>(&self) -> anyhow::Result<Option<A>> {
+    fn read_attr<A: Property>(&self) -> anyhow::Result<Option<A>> {
         self.with(|state| state.attribute::<A>(self.id).and_then(Result::ok))
     }
 
-    fn write_attr<A: Attribute>(&self, value: &A) -> anyhow::Result<()> {
+    fn write_attr<A: Property>(&self, value: &A) -> anyhow::Result<()> {
         self.with(|state| state.set_attribute(self.id, value))??;
         Ok(())
     }
 
-    fn clear(&self, name: &str) -> anyhow::Result<()> {
+    fn read_value<V: Payload>(&self, name: &PropName) -> anyhow::Result<Option<V>> {
+        self.with(|state| state.payload::<V>(self.id, name).and_then(Result::ok))
+    }
+
+    fn write_value<V: Payload>(&self, name: &PropName, value: &V) -> anyhow::Result<()> {
+        self.with(|state| state.set_payload(self.id, name, value))??;
+        Ok(())
+    }
+
+    fn clear(&self, name: &PropName) -> anyhow::Result<()> {
         self.with(|state| state.remove_property(self.id, name))
     }
 
-    fn write_or_clear<A: Attribute>(&self, value: Option<A>) -> anyhow::Result<()> {
-        value.map_or_else(|| self.clear(A::KEY), |attr| self.write_attr(&attr))
+    /// Removes every field of `namespace` the prim resolves, so a relationship
+    /// or texture binding that lives alongside a group's own field never
+    /// outlives the group it was set on.
+    fn clear_namespace(&self, namespace: &str) -> anyhow::Result<()> {
+        self.with(|state| state.remove_group(self.id, namespace))
     }
 
-    /// Reads the attribute (or `default`), applies `f`, and writes it back.
-    ///
-    /// The read-modify-write a bulk field needs: topology and streams share one
-    /// entry, so setting one has to preserve the others.
-    fn update_attr<A: Attribute>(&self, default: A, f: impl FnOnce(&mut A)) -> anyhow::Result<()> {
-        self.with(|state| -> anyhow::Result<()> {
-            let mut attr = state
-                .attribute::<A>(self.id)
-                .transpose()?
-                .unwrap_or(default);
-            f(&mut attr);
-            state.set_attribute(self.id, &attr)?;
-            Ok(())
-        })?
-    }
-
-    /// Sets the collider kind, creating the attribute when the prim has none
-    /// and keeping any buffers already set.
-    fn set_collider_kind(&self, kind: ColliderKind) -> anyhow::Result<()> {
-        self.with(|state| -> anyhow::Result<()> {
-            let mut attr = state
-                .attribute::<ColliderAttr>(self.id)
-                .transpose()?
-                .unwrap_or(ColliderAttr {
-                    kind,
-                    vertices: None,
-                    indices: None,
-                });
-            attr.kind = kind;
-            state.set_attribute(self.id, &attr)?;
-            Ok(())
-        })?
+    fn write_or_clear<A: Property>(&self, value: Option<A>) -> anyhow::Result<()> {
+        value.map_or_else(|| self.clear(&A::NAME), |attr| self.write_attr(&attr))
     }
 
     /// Sets a collider buffer. A prim with no collider has nowhere to put it,
     /// so this errors rather than silently dropping it.
-    fn set_collider_buffer(&self, f: impl FnOnce(&mut ColliderAttr)) -> anyhow::Result<()> {
+    fn set_collider_buffer<A: Property>(&self, value: Option<A>) -> anyhow::Result<()> {
         self.with(|state| -> anyhow::Result<()> {
-            let mut attr = state
-                .attribute::<ColliderAttr>(self.id)
-                .transpose()?
-                .ok_or_else(|| anyhow::anyhow!("prim has no collider to set buffers on"))?;
-            f(&mut attr);
-            state.set_attribute(self.id, &attr)?;
+            anyhow::ensure!(
+                state.attribute::<ColliderKind>(self.id).is_some(),
+                "prim has no collider to set buffers on"
+            );
+            match value {
+                Some(v) => state.set_attribute(self.id, &v)?,
+                None => state.remove_property(self.id, &A::NAME),
+            }
             Ok(())
         })?
     }
@@ -451,7 +445,7 @@ pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Res
             anyhow::ensure!(s.len() <= MAX_NAME_BYTES, "name too long");
             prim.write_attr(&NameAttr(s))
         }
-        None => prim.clear(NameAttr::KEY),
+        None => prim.clear(&NameAttr::NAME),
     }
 }
 
@@ -579,7 +573,7 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
             );
             Ok(())
         }
-        None => prim.clear(XformAttr::KEY),
+        None => prim.clear(&XformAttr::NAME),
     }
 }
 
@@ -628,8 +622,8 @@ pub async fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
     if prim.is_proxy {
         return Ok(None);
     }
-    Ok(prim.read_attr::<MeshAttr>()?.map(|attr| PrimMesh {
-        topology: topology_to_prim(attr.topology),
+    Ok(prim.read_attr::<Topology>()?.map(|topology| PrimMesh {
+        topology: topology_to_prim(topology),
     }))
 }
 
@@ -637,12 +631,8 @@ pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::R
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
     value.map_or_else(
-        || prim.clear(MeshAttr::KEY),
-        |mesh| {
-            prim.update_attr(MeshAttr::default(), |attr| {
-                attr.topology = topology_from_prim(mesh.topology);
-            })
-        },
+        || prim.clear_namespace(Topology::NAME.group()),
+        |mesh| prim.write_attr(&topology_from_prim(mesh.topology)),
     )
 }
 
@@ -654,23 +644,15 @@ pub async fn set_mesh_stream(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
-    let bytes = match values {
+    let name = mesh::stream(&key)?;
+    match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
-            Some(f32s_to_bytes(&v))
+            prim.write_value(&name, &MeshStream(f32s_to_bytes(&v)))
         }
-        None => None,
-    };
-    prim.update_attr(MeshAttr::default(), |mesh| match bytes {
-        Some(bytes) => {
-            mesh.streams.insert(key, bytes);
-        }
-        None => {
-            mesh.streams.remove(&key);
-        }
-    })
+        None => prim.clear(&name),
+    }
 }
 
 pub async fn set_mesh_indices_u32(
@@ -680,28 +662,28 @@ pub async fn set_mesh_indices_u32(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    let bytes = match values {
+    match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
-            Some(u32s_to_bytes(&v))
+            prim.write_attr(&MeshIndices(u32s_to_bytes(&v)))
         }
-        None => None,
-    };
-    prim.update_attr(MeshAttr::default(), |mesh| mesh.indices = bytes)
+        None => prim.clear(&MeshIndices::NAME),
+    }
 }
 
-/// Reads a vertex stream back out of the prim's mesh attribute. A proxy's
-/// streams are not present locally, so it reads as having none.
+/// Reads a vertex stream back out of the prim's own `mesh/stream:<key>`
+/// field. A proxy's streams are not present locally, so it reads as having
+/// none.
 pub async fn mesh_stream(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<Vec<f32>>> {
     let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
-    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
+    let name = mesh::stream(&key)?;
     Ok(prim
-        .read_attr::<MeshAttr>()?
-        .and_then(|mesh| mesh.streams.get(&key).map(|bytes| bytes_to_f32s(bytes))))
+        .read_value::<MeshStream>(&name)?
+        .map(|stream| bytes_to_f32s(&stream.0)))
 }
 
 pub async fn set_collider_vertices(
@@ -711,15 +693,15 @@ pub async fn set_collider_vertices(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    let bytes = match values {
+    let value = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider vertices too large");
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
-            Some(f32s_to_bytes(&v))
+            Some(ColliderVertices(f32s_to_bytes(&v)))
         }
         None => None,
     };
-    prim.set_collider_buffer(|c| c.vertices = bytes)
+    prim.set_collider_buffer(value)
 }
 
 pub async fn set_collider_indices(
@@ -729,26 +711,27 @@ pub async fn set_collider_indices(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    let bytes = match values {
+    let value = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider indices too large");
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
-            Some(u32s_to_bytes(&v))
+            Some(ColliderIndices(u32s_to_bytes(&v)))
         }
         None => None,
     };
-    prim.set_collider_buffer(|c| c.indices = bytes)
+    prim.set_collider_buffer(value)
 }
 
 pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    if bytes.is_some() {
-        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+    match bytes {
+        Some(b) => {
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            prim.write_attr(&ImageData(b))
+        }
+        None => prim.clear(&ImageData::NAME),
     }
-    prim.update_attr(ImageAttr::default(), |image| {
-        image.data = bytes.unwrap_or_default();
-    })
 }
 
 const fn topology_to_prim(t: Topology) -> PrimTopology {
@@ -782,7 +765,10 @@ pub async fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial
 pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    prim.write_or_clear(value.map(prim_to_material_attr))
+    value.map_or_else(
+        || prim.clear_namespace(MaterialAttr::NAME.group()),
+        |v| prim.write_attr(&prim_to_material_attr(v)),
+    )
 }
 
 /// Validates a script-built graph and stores it as the prim's own shading.
@@ -797,11 +783,15 @@ pub async fn set_material_graph(
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
 
-    if let Some(graph) = &value {
-        validate(graph)?;
-        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+    match value {
+        Some(graph) => {
+            validate(&graph)?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            prim.write_attr(&graph)
+        }
+        // Clearing the graph drops its overrides and texture bindings too.
+        None => prim.clear_namespace(ShaderGraph::NAME.group()),
     }
-    prim.write_or_clear(value)
 }
 
 pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, PrimGraphValue)>> {
@@ -997,32 +987,20 @@ fn prim_color_to_vec(c: PrimColor) -> ColorVec {
     ])
 }
 
-pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<ImageAttr>> {
+pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<ImageSampler>> {
     let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
-    prim.read_attr::<ImageAttr>()
+    prim.read_attr::<ImageSampler>()
 }
 
-pub async fn set_image(api: &Api, rep: u32, value: Option<ImageAttr>) -> anyhow::Result<()> {
+pub async fn set_image(api: &Api, rep: u32, value: Option<ImageSampler>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    // Sampler settings only: keep the bytes `set-image-data` already put in
-    // the same payload.
     value.map_or_else(
-        || prim.clear(ImageAttr::KEY),
-        |value| {
-            prim.update_attr(ImageAttr::default(), |image| {
-                image.address_mode_u = value.address_mode_u;
-                image.address_mode_v = value.address_mode_v;
-                image.address_mode_w = value.address_mode_w;
-                image.mag_filter = value.mag_filter;
-                image.min_filter = value.min_filter;
-                image.mipmap_filter = value.mipmap_filter;
-                image.srgb = value.srgb;
-            })
-        },
+        || prim.clear_namespace(ImageSampler::NAME.group()),
+        |v| prim.write_attr(&v),
     )
 }
 
@@ -1031,7 +1009,7 @@ pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider
     if prim.is_proxy {
         return Ok(None);
     }
-    Ok(prim.read_attr::<ColliderAttr>()?.map(|c| match c.kind {
+    Ok(prim.read_attr::<ColliderKind>()?.map(|kind| match kind {
         ColliderKind::Capsule { height, radius } => PrimCollider::Capsule {
             height: height as f32,
             radius: radius as f32,
@@ -1051,8 +1029,8 @@ pub async fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> a
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
     value.map_or_else(
-        || prim.clear(ColliderAttr::KEY),
-        |value| prim.set_collider_kind(prim_to_collider_kind(value)),
+        || prim.clear_namespace(ColliderKind::NAME.group()),
+        |v| prim.write_attr(&prim_to_collider_kind(v)),
     )
 }
 
@@ -1140,7 +1118,7 @@ pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyho
     ensure_writable(&prim)?;
     match value {
         Some(p) => prim.write_attr(&prim_portal_to_attr(p)?),
-        None => prim.clear(PortalAttr::KEY),
+        None => prim.clear(&PortalAttr::NAME),
     }
 }
 
@@ -1224,7 +1202,8 @@ pub async fn get_relationship(api: &Api, rep: u32, key: String) -> anyhow::Resul
     if prim.is_proxy {
         return Ok(None);
     }
-    prim.with(|state| state.relationship(prim.id, &key).map(|id| id.to_string()))
+    let name: PropName = key.parse()?;
+    prim.with(|state| state.relationship(prim.id, &name).map(|id| id.to_string()))
 }
 
 pub async fn set_relationship(
@@ -1235,7 +1214,7 @@ pub async fn set_relationship(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "relationship key too long");
+    let name: PropName = key.parse()?;
     match target {
         Some(target_id) => {
             let target = target_id
@@ -1247,11 +1226,17 @@ pub async fn set_relationship(
                     "relationship target does not exist in this document"
                 );
                 state
-                    .set_property(prim.id, &key, Property::Relationship(target))
+                    .set_property(prim.id, &name, Value::Relationship(target))
                     .map_err(Into::into)
             })?
         }
-        None => prim.clear(&key),
+        // Only clears a field that currently holds a relationship: this door
+        // cannot be used to delete an attribute such as `mesh/topology`.
+        None => prim.with(|state| {
+            if state.relationship(prim.id, &name).is_some() {
+                state.remove_property(prim.id, &name);
+            }
+        }),
     }
 }
 
@@ -1271,36 +1256,36 @@ mod tests {
     }
 
     #[test]
-    fn first_stream_defaults_the_mesh_attr() {
+    fn a_stream_write_leaves_topology_unset() {
         let prim = prim_res();
-        prim.update_attr(MeshAttr::default(), |mesh| {
-            mesh.streams.insert("POSITION".to_owned(), vec![0; 12]);
-        })
-        .expect("update mesh");
-        let mesh = prim
-            .read_attr::<MeshAttr>()
-            .expect("read mesh attr")
-            .expect("present");
-        assert_eq!(mesh.topology, Topology::TriangleList);
-        assert!(mesh.streams.contains_key("POSITION"));
+        let name = mesh::stream("POSITION").expect("valid stream name");
+        prim.write_value(&name, &MeshStream(vec![0; 12]))
+            .expect("write stream");
+        assert!(
+            prim.read_attr::<Topology>()
+                .expect("read topology")
+                .is_none(),
+            "topology is its own field, independent of any stream"
+        );
+        assert!(
+            prim.read_value::<MeshStream>(&name)
+                .expect("read stream")
+                .is_some()
+        );
     }
 
     #[test]
     fn an_authored_topology_survives_a_stream_write() {
         let prim = prim_res();
-        prim.write_attr(&MeshAttr {
-            topology: Topology::LineList,
-            ..Default::default()
-        })
-        .expect("write mesh attr");
-        prim.update_attr(MeshAttr::default(), |mesh| {
-            mesh.streams.insert("POSITION".to_owned(), vec![0; 12]);
-        })
-        .expect("update mesh");
-        let mesh = prim
-            .read_attr::<MeshAttr>()
-            .expect("read mesh attr")
+        prim.write_attr(&Topology::LineList)
+            .expect("write topology");
+        let name = mesh::stream("POSITION").expect("valid stream name");
+        prim.write_value(&name, &MeshStream(vec![0; 12]))
+            .expect("write stream");
+        let topology = prim
+            .read_attr::<Topology>()
+            .expect("read topology")
             .expect("present");
-        assert_eq!(mesh.topology, Topology::LineList);
+        assert_eq!(topology, Topology::LineList);
     }
 }

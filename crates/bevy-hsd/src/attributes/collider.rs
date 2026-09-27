@@ -5,14 +5,17 @@ use bytemuck::{
     try_cast_slice,
 };
 use hsd::{
-    attributes::{
-        Attribute,
-        collider::{
-            ColliderAttr,
-            ColliderKind,
-        },
-    },
     bounds::MAX_MESH_ELEMENTS,
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::collider::{
+        self,
+        ColliderIndices,
+        ColliderKind,
+        ColliderVertices,
+    },
 };
 use unavi_physics::{
     body::{
@@ -28,8 +31,14 @@ use crate::attributes::{
     util::compute_global_transform,
 };
 
-#[derive(Component, Debug, Clone)]
-pub struct ColliderData(pub ColliderAttr);
+/// Assembled from `collider/kind`, `collider/vertices` and `collider/indices`,
+/// each its own field so a change to one never re-decodes the others.
+#[derive(Component, Debug, Clone, Default)]
+pub struct ColliderData {
+    pub kind:     Option<ColliderKind>,
+    pub vertices: Option<ColliderVertices>,
+    pub indices:  Option<ColliderIndices>,
+}
 
 #[derive(Component)]
 pub struct HsdCollider;
@@ -37,27 +46,53 @@ pub struct HsdCollider;
 pub struct ColliderParser;
 
 impl AttributeParser for ColliderParser {
-    fn key(&self) -> &'static str {
-        ColliderAttr::KEY
+    fn group(&self) -> &'static str {
+        collider::GROUP
     }
 
+    /// `kind` gates the whole collider: without it nothing can be built, so
+    /// its removal tears down the collider entirely rather than leaving a
+    /// half-built one.
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        match payload {
-            Some(payload) => {
+        match name.field() {
+            Some("kind") => match payload.map(ColliderKind::decode).transpose()? {
+                Some(kind) => {
+                    commands
+                        .entity(prim)
+                        .entry::<ColliderData>()
+                        .or_default()
+                        .and_modify(move |mut data| data.kind = Some(kind));
+                    commands.entity(prim).insert(HsdCollider);
+                }
+                None => {
+                    commands
+                        .entity(prim)
+                        .remove::<(ColliderData, HsdCollider, Collider, DisabledCollider)>();
+                }
+            },
+            Some("vertices") => {
+                let vertices = payload.map(ColliderVertices::decode).transpose()?;
                 commands
                     .entity(prim)
-                    .insert((ColliderData(ColliderAttr::decode(payload)?), HsdCollider));
+                    .entry::<ColliderData>()
+                    .or_default()
+                    .and_modify(move |mut data| data.vertices = vertices);
             }
-            None => {
+            Some("indices") => {
+                let indices = payload.map(ColliderIndices::decode).transpose()?;
                 commands
                     .entity(prim)
-                    .remove::<(ColliderData, HsdCollider, Collider, DisabledCollider)>();
+                    .entry::<ColliderData>()
+                    .or_default()
+                    .and_modify(move |mut data| data.indices = indices);
             }
+            _ => {}
         }
         Ok(())
     }
@@ -72,10 +107,12 @@ pub fn rebuild_collider(
     for (prim, data) in &changed {
         commands.entity(prim).remove::<Collider>();
 
+        let Some(kind) = data.kind else {
+            continue;
+        };
         let seed = compute_global_transform(prim, &locals, &parents);
-        let attr = &data.0;
 
-        let collider = match attr.kind {
+        let collider = match kind {
             ColliderKind::Sphere(r) => shape::sphere(r as f32),
             ColliderKind::Capsule { height, radius } => {
                 shape::capsule(radius as f32, height as f32)
@@ -85,18 +122,16 @@ pub fn rebuild_collider(
                 shape::cylinder(radius as f32, height as f32)
             }
             ColliderKind::ConvexHull => {
-                let Some(bytes) = attr.vertices.as_deref() else {
+                let Some(vertices) = data.vertices.as_ref() else {
                     continue;
                 };
-                build_convex_hull(bytes)
+                build_convex_hull(&vertices.0)
             }
             ColliderKind::Trimesh => {
-                let (Some(vertices), Some(indices)) =
-                    (attr.vertices.as_deref(), attr.indices.as_deref())
-                else {
+                let (Some(vertices), Some(indices)) = (&data.vertices, &data.indices) else {
                     continue;
                 };
-                build_trimesh(vertices, indices)
+                build_trimesh(&vertices.0, &indices.0)
             }
         };
 

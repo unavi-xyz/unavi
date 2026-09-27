@@ -5,8 +5,8 @@ use bevy::{
     },
     prelude::*,
 };
-use hsd::attributes::mesh::{
-    MeshAttr,
+use hsd::schema::mesh::{
+    self,
     Topology,
 };
 use rstest::rstest;
@@ -20,13 +20,7 @@ mod common;
 #[rstest]
 fn test_mesh_lifecycle(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &MeshAttr {
-            topology: Topology::TriangleList,
-            ..Default::default()
-        },
-    );
+    ctx.set_attr(root, &Topology::TriangleList);
     ctx.set_mesh_stream(root, "POSITION", vec![0u8; 36]);
 
     ctx.app.update();
@@ -37,12 +31,28 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
 
-    ctx.remove_attr::<MeshAttr>(root);
+    ctx.remove_attr::<Topology>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 0);
+}
+
+#[traced_test]
+#[rstest]
+fn removing_the_position_stream_stops_drawing_the_mesh(mut ctx: TestContext) {
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &Topology::TriangleList);
+    ctx.set_mesh_stream(root, "POSITION", vec![0u8; 36]);
+    ctx.app.update();
+
+    ctx.remove_property(root, &mesh::stream("POSITION").expect("name"));
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut query = world.query::<&Mesh3d>();
+    assert_eq!(query.query(world).into_iter().count(), 0);
 }
 
 const POSITIONS: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -59,13 +69,7 @@ fn test_mesh_build(#[from(ctx_blobs)] mut ctx: TestContext) {
     let indices = bytemuck::cast_slice::<u32, u8>(&INDEX_VALUES).to_vec();
 
     let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &MeshAttr {
-            topology: Topology::TriangleList,
-            ..Default::default()
-        },
-    );
+    ctx.set_attr(root, &Topology::TriangleList);
     ctx.set_mesh_stream(root, "POSITION", positions);
     ctx.set_mesh_stream(root, "NORMAL", normals);
     ctx.set_mesh_stream(root, "UV_0", uvs);
@@ -124,13 +128,7 @@ fn test_mesh_build(#[from(ctx_blobs)] mut ctx: TestContext) {
 #[rstest]
 fn test_out_of_range_indices_are_rejected(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &MeshAttr {
-            topology: Topology::TriangleList,
-            ..Default::default()
-        },
-    );
+    ctx.set_attr(root, &Topology::TriangleList);
     ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
     ctx.set_mesh_indices(root, bytemuck::cast_slice(&[0u32, 1, 9]).to_vec());
 
@@ -154,13 +152,7 @@ fn test_out_of_range_indices_are_rejected(mut ctx: TestContext) {
 #[rstest]
 fn test_mismatched_attribute_lengths_are_rejected(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &MeshAttr {
-            topology: Topology::TriangleList,
-            ..Default::default()
-        },
-    );
+    ctx.set_attr(root, &Topology::TriangleList);
     ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
     ctx.set_mesh_stream(
         root,
@@ -188,13 +180,7 @@ fn test_mismatched_attribute_lengths_are_rejected(mut ctx: TestContext) {
 #[rstest]
 fn test_in_range_indices_build_a_mesh(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &MeshAttr {
-            topology: Topology::TriangleList,
-            ..Default::default()
-        },
-    );
+    ctx.set_attr(root, &Topology::TriangleList);
     ctx.set_mesh_stream(root, "POSITION", bytemuck::cast_slice(&POSITIONS).to_vec());
     ctx.set_mesh_indices(root, bytemuck::cast_slice(&[0u32, 1, 2]).to_vec());
 

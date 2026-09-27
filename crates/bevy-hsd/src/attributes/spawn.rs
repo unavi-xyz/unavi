@@ -1,7 +1,13 @@
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    spawn::SpawnAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::spawn::{
+        self,
+        SpawnAttr,
+    },
 };
 
 use crate::attributes::{
@@ -20,14 +26,15 @@ pub struct SpawnPoint {
 pub struct SpawnParser;
 
 impl AttributeParser for SpawnParser {
-    fn key(&self) -> &'static str {
-        SpawnAttr::KEY
+    fn group(&self) -> &'static str {
+        spawn::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

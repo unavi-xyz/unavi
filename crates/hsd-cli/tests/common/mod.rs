@@ -9,9 +9,9 @@ use std::{
 };
 
 use hsd::{
-    attributes::name::NameAttr,
+    format::package::Package,
     id::PrimId,
-    package::Package,
+    schema::name::NameAttr,
     state::{
         HsdState,
         entry::Entry,

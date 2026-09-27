@@ -1,42 +1,35 @@
 use std::collections::BTreeMap;
 
-use smol_str::SmolStr;
-
 use crate::{
-    attributes::parent::ParentAttr,
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
+    schema::parent::ParentAttr,
     state::entry::Stamp,
 };
 
-/// One prim as every reader sees it: each key composed from the layer stack,
-/// strongest opinion winning.
-///
-/// A cache rather than a source — only `HsdState`'s resolve step writes it,
-/// and it holds nothing the layers do not already say.
+/// One prim with each key composed from the layer stack, strongest opinion
+/// winning.
 #[derive(Debug, Clone, Default)]
 pub struct PrimState {
-    /// `None` means no layer states a live parent: the prim has not been
-    /// written yet, was tombstoned, or a stronger layer blocked it. Either way
-    /// it is held rather than realized.
+    /// `None` when no layer states a live parent.
     pub parent:   Option<ParentAttr>,
     parent_stamp: Stamp,
-    /// Attributes and relationships share one map; the [`Property`] variant
-    /// says which.
-    props:        BTreeMap<SmolStr, Property>,
+    props:        BTreeMap<PropName, Value>,
 }
 
 impl PrimState {
     #[must_use]
-    pub fn property(&self, name: &str) -> Option<&Property> {
+    pub fn property(&self, name: &PropName) -> Option<&Value> {
         self.props.get(name)
     }
 
-    pub fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {
+    pub fn properties(&self) -> impl Iterator<Item = (&PropName, &Value)> {
         self.props.iter()
     }
 
-    /// The stamp of whichever layer won the parent key, which is what breaks a
-    /// cycle identically on every peer.
+    /// The stamp of the opinion that won the parent key.
     #[must_use]
     pub const fn parent_stamp(&self) -> Stamp {
         self.parent_stamp
@@ -47,27 +40,18 @@ impl PrimState {
         self.parent_stamp = stamp;
     }
 
-    pub(super) fn set_property(&mut self, name: &str, value: Option<Property>) {
+    pub(super) fn set_property(&mut self, name: &PropName, value: Option<Value>) {
         match value {
             Some(value) => {
-                // Update in place where the key exists: `insert` would build a
-                // fresh `SmolStr` and drop it, since a `BTreeMap` keeps the
-                // key it already had.
                 if let Some(slot) = self.props.get_mut(name) {
                     *slot = value;
                 } else {
-                    self.props.insert(SmolStr::new(name), value);
+                    self.props.insert(name.clone(), value);
                 }
             }
             None => {
                 self.props.remove(name);
             }
         }
-    }
-
-    /// The stored key equal to `name`, so an event can clone the interned
-    /// string instead of building a fresh one.
-    pub(super) fn property_key(&self, name: &str) -> Option<SmolStr> {
-        self.props.get_key_value(name).map(|(key, _)| key.clone())
     }
 }

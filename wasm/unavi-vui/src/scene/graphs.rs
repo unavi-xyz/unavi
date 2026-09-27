@@ -2,7 +2,7 @@
 //! it.
 //!
 //! A graph is submitted to one hidden template prim and reached by
-//! `material:binding`, rather than written onto each body: binding costs
+//! `material/binding`, rather than written onto each body: binding costs
 //! nothing, where submitting costs an upload, and the renderer shares one
 //! compiled program across everything pointing at it. What differs between two
 //! motes is their overrides.
@@ -609,13 +609,13 @@ fn with_templates<T>(f: impl FnOnce(&Templates) -> T) -> anyhow::Result<T> {
 /// prim, and every body naming this one shares its compiled program.
 pub fn bind_shell(prim: &Prim) -> anyhow::Result<()> {
     let id = with_templates(|t| t.shell.id())?;
-    prim.set_relationship("material:binding", Some(&id))?;
+    prim.set_relationship("material/binding", Some(&id))?;
     Ok(())
 }
 
 pub fn bind_ring(prim: &Prim) -> anyhow::Result<()> {
     let id = with_templates(|t| t.ring.id())?;
-    prim.set_relationship("material:binding", Some(&id))?;
+    prim.set_relationship("material/binding", Some(&id))?;
     Ok(())
 }
 
@@ -625,7 +625,7 @@ mod tests {
 
     use super::*;
 
-    /// `hsd::attributes::material_graph::MAX_NODES`, restated because a guest
+    /// `hsd::attributes::shader::MAX_NODES`, restated because a guest
     /// cannot see it: exceeding it is refused at the setter, so the whole
     /// surface would come up unshaded.
     const MAX_NODES: usize = 128;

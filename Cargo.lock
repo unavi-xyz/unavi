@@ -6656,6 +6656,7 @@ version = "0.0.16"
 dependencies = [
  "base64 0.22.1",
  "blake3",
+ "const_format",
  "postcard",
  "rand 0.9.5",
  "ron",

@@ -1,16 +1,18 @@
 //! Read-only views of the peer store for the dev tools state inspector.
 
-use hsd::id::{
-    DocId,
-    PrimId,
+use hsd::{
+    id::{
+        DocId,
+        PrimId,
+    },
+    property::name::PropName,
 };
 use iroh::EndpointId;
-use smol_str::SmolStr;
 
 /// One session opinion: what a peer said about one key of one prim.
 pub struct DebugCell {
     pub prim:   PrimId,
-    pub name:   SmolStr,
+    pub name:   PropName,
     /// The cell's value bytes; `None` is a blocked key.
     pub value:  Option<Vec<u8>>,
     pub at:     u64,

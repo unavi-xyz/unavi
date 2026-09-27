@@ -10,7 +10,7 @@ use bevy_hsd::{
         DocAnchor,
     },
 };
-use hsd::attributes::xform::XformAttr;
+use hsd::schema::xform::XformAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
 

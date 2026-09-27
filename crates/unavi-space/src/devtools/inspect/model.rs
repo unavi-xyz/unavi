@@ -11,19 +11,19 @@ use bevy_hsd::{
     HsdPrimIndex,
 };
 use hsd::{
-    attributes::{
-        Attribute,
-        name::NameAttr,
-    },
     id::{
         DocId,
         PrimId,
     },
+    property::{
+        Property,
+        name::PropName,
+    },
+    schema::name::NameAttr,
     state::HsdState,
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use smol_str::SmolStr;
 use unavi_policy::{
     space::Space,
     trust::Trust,
@@ -121,7 +121,7 @@ pub struct DocModel {
 #[derive(std::hash::Hash)]
 pub struct DocCell {
     pub prim:   PrimId,
-    pub name:   SmolStr,
+    pub name:   PropName,
     pub value:  Option<Vec<u8>>,
     pub at:     u64,
     pub writer: EndpointId,
@@ -391,7 +391,7 @@ fn prim_summary(state: &HsdState, id: PrimId) -> (String, String) {
     let mut keys = Vec::new();
     if let Some(prim) = state.get(id) {
         for (key, _) in prim.properties() {
-            if key == NameAttr::KEY {
+            if *key == NameAttr::NAME {
                 if let Some(Ok(n)) = state.attribute::<NameAttr>(id) {
                     name = format!("{:?}", n.0);
                 }
@@ -428,7 +428,7 @@ mod tests {
 
         let cell = |prim: u8, name: &str, at| DebugCell {
             prim: PrimId([prim; 16]),
-            name: name.into(),
+            name: format!("test/{name}").parse().expect("valid prop name"),
             value: Some(b"value".to_vec()),
             at,
             writer,
@@ -453,9 +453,9 @@ mod tests {
         assert_eq!(
             cells
                 .iter()
-                .map(|c| (c.prim.0[0], c.name.as_str()))
+                .map(|c| (c.prim.0[0], c.name.field()))
                 .collect::<Vec<_>>(),
-            [(1, "a"), (1, "b"), (2, "b")],
+            [(1, Some("a")), (1, Some("b")), (2, Some("b"))],
             "another document's cells must not appear, and one prim's keys \
              stay together"
         );

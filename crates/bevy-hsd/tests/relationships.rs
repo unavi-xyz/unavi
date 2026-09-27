@@ -2,7 +2,7 @@ use bevy_hsd::{
     HsdPrimIndex,
     HsdRelationships,
 };
-use hsd::attributes::material;
+use hsd::schema::material;
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -18,7 +18,7 @@ fn test_relationship_storage(mut ctx: TestContext) {
     let target = ctx.create_prim();
     let source = ctx.create_prim();
 
-    ctx.set_relationship(source, material::BINDING, target);
+    ctx.set_relationship(source, &material::BINDING, target);
 
     ctx.app.update();
 
@@ -36,9 +36,9 @@ fn test_relationship_storage(mut ctx: TestContext) {
         .entity(source_ent)
         .get::<HsdRelationships>()
         .expect("relationships");
-    assert_eq!(rels.0.get(material::BINDING), Some(&target));
+    assert_eq!(rels.0.get(&material::BINDING), Some(&target));
 
-    ctx.remove_property(source, material::BINDING);
+    ctx.remove_property(source, &material::BINDING);
     ctx.app.update();
 
     let world = ctx.app.world_mut();

@@ -47,7 +47,7 @@ interface types {
     triangle-strip,
   }
 
-  /// Vertex buffers live in their own `mesh:<NAME>` entries set with
+  /// Vertex buffers live in their own `mesh/stream:<NAME>` entries set with
   /// `set-mesh-stream`.
   record mesh {
     topology: topology,
@@ -70,7 +70,7 @@ interface types {
   }
 
   /// Texture slots are relationships set with `set-relationship`, under
-  /// `material:base-color-texture` and friends.
+  /// `material/base_color_texture` and friends.
   record material {
     alpha-cutoff: option<f32>,
     alpha-mode:   option<alpha-mode>,
@@ -326,7 +326,7 @@ interface types {
     nearest,
   }
 
-  /// The encoded bytes are the prim's `image:data` entry, set with
+  /// The encoded bytes are the prim's `image/data` entry, set with
   /// `set-image-data`; this record is sampler settings only.
   record image {
     address-mode-u: option<address-mode>,
@@ -339,7 +339,7 @@ interface types {
   }
 
   /// `convex-hull` and `trimesh` read their buffers from the prim's
-  /// `collider:vertices` and `collider:indices` entries, set with
+  /// `collider/vertices` and `collider/indices` entries, set with
   /// `set-collider-vertices` and `set-collider-indices`.
   variant collider {
     capsule(collider-capsule),
@@ -457,6 +457,11 @@ interface types {
     /// Promotes the named keys' live opinions into the strongest durable layer
     /// this client can write, else the session layer.
     ///
+    /// A key is `namespace/field`, or a bare `namespace` for a built-in with
+    /// one value (e.g. `xform`, `state/link`). A built-in namespace is
+    /// schema-checked — a wrong-kind or unknown field is refused; any other
+    /// namespace is free-form and needs a field.
+    ///
     /// Writing and keeping are separate acts: `set-property` family calls land
     /// in the runtime layer and evaporate with the session, and `commit` is
     /// the only thing that makes one survive. Granularity is per property,
@@ -507,9 +512,10 @@ interface types {
     /// name: replicated, attributed to whoever wrote each key, and gone when
     /// they leave. A key nobody states, or one a peer has blocked, is absent.
     ///
-    /// The same key space the document uses, so an opinion stated here
-    /// composes over what the document says and can be promoted into it by
-    /// `commit`.
+    /// A name is `namespace/field` (e.g. `state/link`). The same key space the
+    /// document uses, so an opinion stated here composes over what the
+    /// document says and can be promoted into it by `commit`. A built-in
+    /// namespace is schema-checked; any other namespace is free-form.
     session: func() -> list<tuple<string, list<u8>>>;
 
     /// States session opinions on this prim, as one atomic batch — generated
@@ -553,7 +559,7 @@ interface types {
     /// content — every prim submitting the same graph draws with one program.
     ///
     /// A prim may instead reach a graph its package authored, through the
-    /// `material:binding` relationship, which costs nothing to point at.
+    /// `material/binding` relationship, which costs nothing to point at.
     set-material-graph: func(value: option<shader-graph>) -> result<_, error>;
 
     /// Per-instance overrides of the shader graph this prim renders, keyed by
@@ -583,8 +589,14 @@ interface types {
     text:     func() -> option<text>;
     set-text: func(value: option<text>) -> result<_, error>;
 
+    /// Every relationship field this prim resolves, keyed by `namespace/field`
+    /// (e.g. `material/binding`).
     relationships:    func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;
+    /// A target of `none` clears `key` only if it currently holds a
+    /// relationship — this cannot delete an attribute field such as
+    /// `mesh/topology`. A built-in namespace is schema-checked: `key` must
+    /// name one of its relationship fields, or the call is refused.
     set-relationship: func(key: string, target: option<prim-id>) -> result<_, error>;
   }
 }

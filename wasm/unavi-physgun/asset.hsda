@@ -9,7 +9,7 @@
     ),
     (
         attributes: (
-            material_graph: (
+            shader: (
                 path: "./beam.hss",
                 overrides: {},
             ),
@@ -20,7 +20,7 @@
     ),
     (
         attributes: (
-            material_graph: (
+            shader: (
                 path: "./glow.hss",
                 overrides: {},
             ),

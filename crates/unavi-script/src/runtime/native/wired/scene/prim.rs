@@ -1,8 +1,8 @@
-use hsd::attributes::{
+use hsd::schema::{
     image::{
         AddressMode,
         FilterMode,
-        ImageAttr,
+        ImageSampler,
     },
     xform::XformAttr,
 };
@@ -341,7 +341,7 @@ const fn filter_mode_shared(mode: WitFilterMode) -> FilterMode {
     }
 }
 
-fn image_wit(img: ImageAttr) -> Image {
+fn image_wit(img: ImageSampler) -> Image {
     Image {
         address_mode_u: img.address_mode_u.map(address_mode_wit),
         address_mode_v: img.address_mode_v.map(address_mode_wit),
@@ -353,8 +353,8 @@ fn image_wit(img: ImageAttr) -> Image {
     }
 }
 
-fn image_shared(img: Image) -> ImageAttr {
-    ImageAttr {
+fn image_shared(img: Image) -> ImageSampler {
+    ImageSampler {
         address_mode_u: img.address_mode_u.map(address_mode_shared),
         address_mode_v: img.address_mode_v.map(address_mode_shared),
         address_mode_w: img.address_mode_w.map(address_mode_shared),
@@ -362,7 +362,6 @@ fn image_shared(img: Image) -> ImageAttr {
         min_filter:     img.min_filter.map(filter_mode_shared),
         mipmap_filter:  img.mipmap_filter.map(filter_mode_shared),
         srgb:           img.srgb,
-        data:           Vec::new(),
     }
 }
 

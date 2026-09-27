@@ -1,18 +1,14 @@
-//! Document key layout.
-//!
-//! iroh-docs applies Willow prefix semantics: an entry removes all of its
-//! author's older entries under its own key as a prefix.
-//!
-//! Two rules, and both are enforced here rather than by convention:
-//!
-//! 1. No data lives at a key that prefixes another key. A property either holds
-//!    its value at `p/<prim>/<name>/` or owns the namespace below it, never
-//!    both.
-//! 2. Every key ends with `/`, so `mesh:ref/` cannot prefix `mesh:reference/`.
+use std::fmt::{
+    Display,
+    Formatter,
+};
 
 use smol_str::SmolStr;
 
-use crate::id::PrimId;
+use crate::{
+    id::PrimId,
+    property::name::PropName,
+};
 
 pub const META: &str = "meta/";
 pub const PRIM_PREFIX: &str = "p/";
@@ -20,78 +16,87 @@ pub const PRIM_PREFIX: &str = "p/";
 /// Every top-level prefix a reader has to ask for to hold a whole document.
 pub const PREFIXES: [&str; 2] = [META, PRIM_PREFIX];
 
+/// The prefix every key of `prim` lies under.
 #[must_use]
 pub fn prim_prefix(prim: PrimId) -> String {
     format!("{PRIM_PREFIX}{prim}/")
 }
 
-/// A property's key: `p/<prim>/<name>/`.
-#[must_use]
-pub fn prop(prim: PrimId, name: &str) -> String {
-    format!("{PRIM_PREFIX}{prim}/{name}/")
-}
-
-/// A key inside the namespace a property owns: `p/<prim>/<name>/<tail>/`.
-#[must_use]
-pub fn prop_sub(prim: PrimId, name: &str, tail: &str) -> String {
-    format!("{PRIM_PREFIX}{prim}/{name}/{tail}/")
-}
-
+/// Where a key sits in a document.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Key {
     Meta,
+    /// A property at `p/<prim>/<name>/`.
     Prop {
         prim: PrimId,
-        name: SmolStr,
+        name: PropName,
     },
-    PropSub {
-        prim: PrimId,
-        name: SmolStr,
-        tail: SmolStr,
+    /// Three or more segments below the prim. `tail` keeps its slashes.
+    Nested {
+        prim:  PrimId,
+        group: SmolStr,
+        tail:  SmolStr,
     },
 }
 
-/// Parses a document key, returning `None` for anything this format does not
-/// define. Unrecognized keys are ignored rather than rejected.
-#[must_use]
-pub fn parse(key: &str) -> Option<Key> {
-    if key == META {
-        return Some(Key::Meta);
+impl Key {
+    #[must_use]
+    pub fn prop(prim: PrimId, name: &PropName) -> Self {
+        Self::Prop {
+            prim,
+            name: name.clone(),
+        }
     }
 
-    let rest = key.strip_prefix(PRIM_PREFIX)?;
-    let rest = rest.strip_suffix('/')?;
-    let (prim, rest) = rest.split_once('/')?;
-    let prim = prim.parse::<PrimId>().ok()?;
-
-    match rest.split_once('/') {
-        None => {
-            if !is_valid_name(rest) {
-                return None;
-            }
-            Some(Key::Prop {
-                prim,
-                name: SmolStr::new(rest),
-            })
+    /// A key deeper than a property, below `group`.
+    #[must_use]
+    pub fn nested(prim: PrimId, group: &str, tail: &str) -> Self {
+        Self::Nested {
+            prim,
+            group: SmolStr::new(group),
+            tail: SmolStr::new(tail),
         }
-        Some((name, tail)) => {
-            if !is_valid_name(name) || tail.is_empty() {
+    }
+
+    /// Unrecognized keys return `None`.
+    #[must_use]
+    pub fn parse(key: &str) -> Option<Self> {
+        if key == META {
+            return Some(Self::Meta);
+        }
+
+        let rest = key.strip_prefix(PRIM_PREFIX)?;
+        let rest = rest.strip_suffix('/')?;
+        let (prim, rest) = rest.split_once('/')?;
+        let prim = prim.parse::<PrimId>().ok()?;
+
+        if let Some((group, tail)) = rest.split_once('/')
+            && tail.contains('/')
+        {
+            if group.is_empty() || tail.split('/').any(str::is_empty) {
                 return None;
             }
-            Some(Key::PropSub {
+            return Some(Self::Nested {
                 prim,
-                name: SmolStr::new(name),
+                group: SmolStr::new(group),
                 tail: SmolStr::new(tail),
-            })
+            });
         }
+        Some(Self::Prop {
+            prim,
+            name: rest.parse().ok()?,
+        })
     }
 }
 
-/// A property name may not be empty or contain a `/`, since either would let
-/// one key prefix another.
-#[must_use]
-pub fn is_valid_name(name: &str) -> bool {
-    !name.is_empty() && !name.contains('/')
+impl Display for Key {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Meta => f.write_str(META),
+            Self::Prop { prim, name } => write!(f, "{PRIM_PREFIX}{prim}/{name}/"),
+            Self::Nested { prim, group, tail } => write!(f, "{PRIM_PREFIX}{prim}/{group}/{tail}/"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -102,68 +107,78 @@ mod tests {
         PrimId([1; 16])
     }
 
+    fn name(path: &str) -> PropName {
+        path.parse().expect("valid")
+    }
+
     #[test]
     fn round_trips_a_property() {
-        let key = prop(id(), "material:binding");
+        let key = Key::prop(id(), &name("material/binding"));
         assert_eq!(
-            parse(&key),
+            Key::parse(&key.to_string()),
             Some(Key::Prop {
                 prim: id(),
-                name: SmolStr::new("material:binding"),
+                name: name("material/binding"),
             })
         );
     }
 
     #[test]
-    fn round_trips_a_sub_key() {
-        let key = prop_sub(id(), "ref", "target");
+    fn a_nested_tail_keeps_its_slashes() {
+        let key = Key::nested(id(), "ref", "layer/abc/xform");
         assert_eq!(
-            parse(&key),
-            Some(Key::PropSub {
-                prim: id(),
-                name: SmolStr::new("ref"),
-                tail: SmolStr::new("target"),
-            })
-        );
-    }
-
-    /// How a property divides its own namespace never reaches this module.
-    #[test]
-    fn a_tail_keeps_its_slashes() {
-        let key = prop_sub(id(), "ref", "layer/abc/xform");
-        assert_eq!(
-            parse(&key),
-            Some(Key::PropSub {
-                prim: id(),
-                name: SmolStr::new("ref"),
-                tail: SmolStr::new("layer/abc/xform"),
+            Key::parse(&key.to_string()),
+            Some(Key::Nested {
+                prim:  id(),
+                group: SmolStr::new("ref"),
+                tail:  SmolStr::new("layer/abc/xform"),
             })
         );
     }
 
     #[test]
-    fn a_name_sharing_another_names_prefix_is_still_its_own_property() {
+    fn a_property_lies_under_its_namespace() {
+        let name = name("material/binding");
+        let prefix = format!("{}{}/", prim_prefix(id()), name.group());
+        assert!(Key::prop(id(), &name).to_string().starts_with(&prefix));
+    }
+
+    #[test]
+    fn a_field_sharing_another_fields_prefix_is_still_its_own_property() {
         assert_eq!(
-            parse(&format!("{PRIM_PREFIX}{}/reference/", id())),
+            Key::parse(&format!("{PRIM_PREFIX}{}/material/binding_extra/", id())),
             Some(Key::Prop {
                 prim: id(),
-                name: SmolStr::new("reference"),
+                name: name("material/binding_extra"),
             })
         );
     }
 
     #[test]
     fn round_trips_meta() {
-        assert_eq!(parse(META), Some(Key::Meta));
+        assert_eq!(Key::parse(META), Some(Key::Meta));
     }
 
     #[test]
-    fn bare_prim_prefix_is_not_a_key() {
-        assert_eq!(parse(&prim_prefix(id())), None);
+    fn a_bare_property_is_its_namespace_prefix() {
+        let name = name("xform");
+        assert_eq!(
+            Key::prop(id(), &name).to_string(),
+            format!("{}{}/", prim_prefix(id()), "xform")
+        );
+        assert_eq!(
+            Key::parse(&Key::prop(id(), &name).to_string()),
+            Some(Key::Prop { prim: id(), name })
+        );
+    }
+
+    #[test]
+    fn a_prim_alone_is_not_a_key() {
+        assert_eq!(Key::parse(&prim_prefix(id())), None);
     }
 
     #[test]
     fn missing_trailing_slash_is_rejected() {
-        assert_eq!(parse(&format!("p/{}/xform", id())), None);
+        assert_eq!(Key::parse(&format!("p/{}/xform", id())), None);
     }
 }

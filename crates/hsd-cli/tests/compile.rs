@@ -14,13 +14,13 @@ use common::{
     realize,
 };
 use hsd::{
-    attributes::{
-        image::ImageAttr,
+    format::package::Package,
+    id::DocId,
+    schema::{
+        image::ImageData,
         material,
         reference::ReferenceAttr,
     },
-    id::DocId,
-    package::Package,
     state::{
         HsdState,
         entry::Entry,
@@ -72,7 +72,7 @@ fn a_texture_field_compiles_to_a_relationship() {
     let state = realize(&compile(&write_source("texture", SOURCE)).expect("compile"));
 
     assert_eq!(
-        state.relationship(prim_named(&state, "cube"), material::BASE_COLOR_TEXTURE),
+        state.relationship(prim_named(&state, "cube"), &material::BASE_COLOR_TEXTURE),
         Some(prim_named(&state, "tex"))
     );
 }
@@ -82,11 +82,11 @@ fn an_image_file_compiles_into_the_image_attribute() {
     let state = realize(&compile(&write_source("image", SOURCE)).expect("compile"));
 
     let image = state
-        .attribute::<ImageAttr>(prim_named(&state, "tex"))
+        .attribute::<ImageData>(prim_named(&state, "tex"))
         .expect("image attribute")
         .expect("decodes");
 
-    assert_eq!(image.data, TEXTURE);
+    assert_eq!(image.0, TEXTURE);
 }
 
 /// Ids come from the source path and tree position, so an unchanged input

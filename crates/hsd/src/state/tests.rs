@@ -1,11 +1,18 @@
 use std::collections::BTreeMap;
 
-use smol_str::SmolStr;
-
 use super::*;
 use crate::{
-    attributes::{
-        Attribute,
+    id::{
+        DocId,
+        PrimId,
+    },
+    key,
+    property::{
+        Property,
+        name::PropName,
+        value::Value,
+    },
+    schema::{
         material::{
             BINDING,
             MaterialAttr,
@@ -13,23 +20,14 @@ use crate::{
         name::NameAttr,
         parent::ParentAttr,
         reference::{
-            self,
+            LayerKey,
             ReferenceAttr,
         },
         script::ScriptAttr,
         xform::XformAttr,
     },
-    id::{
-        DocId,
-        PrimId,
-    },
-    key,
-    property::Property,
     state::{
-        entry::{
-            Entry,
-            Stamp,
-        },
+        entry::Entry,
         event::SceneEvent,
         layer::{
             Layer,
@@ -43,7 +41,7 @@ fn prim(n: u8) -> PrimId {
 }
 
 fn parent_key(prim: PrimId) -> String {
-    key::prop(prim, ParentAttr::KEY)
+    key::Key::prop(prim, &ParentAttr::NAME).to_string()
 }
 
 fn root_entry(id: PrimId, timestamp: u64) -> Entry {
@@ -62,10 +60,10 @@ fn child_entry(id: PrimId, parent: PrimId, timestamp: u64) -> Entry {
     )
 }
 
-fn attr_entry<A: Attribute>(id: PrimId, value: &A, timestamp: u64) -> Entry {
+fn attr_entry<A: Property>(id: PrimId, value: &A, timestamp: u64) -> Entry {
     Entry::new(
-        key::prop(id, A::KEY),
-        Property::Attribute(value.encode().expect("encode")).encode(),
+        key::Key::prop(id, &A::NAME).to_string(),
+        Value::Attribute(value.encode().expect("encode")).encode(),
         timestamp,
     )
 }
@@ -157,7 +155,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
     }));
     assert!(events.iter().any(|e| matches!(
         e,
-        SceneEvent::Property { prim: p, name, .. } if *p == prim(2) && name == XformAttr::KEY
+        SceneEvent::Property { prim: p, name, .. } if *p == prim(2) && *name == XformAttr::NAME
     )));
 }
 
@@ -208,6 +206,34 @@ fn a_prim_hanging_off_a_cycle_is_realized_under_its_own_parent() {
 
     assert_eq!(state.roots(), vec![prim(2)]);
     assert_eq!(state.parent(prim(3)), Some(prim(1)));
+}
+
+#[test]
+fn a_reparent_closing_a_cycle_breaks_it_at_a_member_below_the_moved_prim() {
+    let entries = [
+        root_entry(prim(9), 1),
+        child_entry(prim(1), prim(9), 10),
+        child_entry(prim(2), prim(1), 20),
+        child_entry(prim(3), prim(2), 30),
+        child_entry(prim(1), prim(3), 15),
+    ];
+
+    let mut incremental = HsdState::new();
+    apply(&mut incremental, &entries);
+
+    let mut fresh = HsdState::new();
+    apply(
+        &mut fresh,
+        &[
+            entries[4].clone(),
+            entries[3].clone(),
+            entries[2].clone(),
+            entries[0].clone(),
+        ],
+    );
+
+    assert_eq!(incremental.roots(), vec![prim(3), prim(9)]);
+    assert_eq!(shape(&incremental), shape(&fresh));
 }
 
 #[test]
@@ -310,8 +336,8 @@ fn an_unknown_attribute_round_trips_untouched() {
         &[
             root_entry(prim(1), 1),
             Entry::new(
-                key::prop(prim(1), "shader_graph"),
-                Property::Attribute(payload.clone()).encode(),
+                key::Key::prop(prim(1), &"custom/blob".parse().expect("name")).to_string(),
+                Value::Attribute(payload.clone()).encode(),
                 2,
             ),
         ],
@@ -319,9 +345,9 @@ fn an_unknown_attribute_round_trips_untouched() {
 
     let entries = state.entries();
     let stored = entries
-        .get(&key::prop(prim(1), "shader_graph"))
+        .get(&key::Key::prop(prim(1), &"custom/blob".parse().expect("name")).to_string())
         .expect("entry");
-    assert_eq!(stored, &Property::Attribute(payload).encode());
+    assert_eq!(stored, &Value::Attribute(payload).encode());
 }
 
 #[test]
@@ -336,21 +362,59 @@ fn relationships_and_attributes_share_one_namespace() {
         .set_attribute(prim(1), &MaterialAttr::default())
         .expect("attribute");
     state
-        .set_relationship(prim(1), BINDING, prim(2))
+        .set_relationship(prim(1), &BINDING, prim(2))
         .expect("relationship");
 
     let prim_state = state.get(prim(1)).expect("prim");
     assert!(
         prim_state
-            .property("material")
+            .property(&MaterialAttr::NAME)
             .expect("attr")
             .as_attribute()
             .is_some()
     );
     assert_eq!(
-        prim_state.property(BINDING).expect("rel").as_relationship(),
+        prim_state
+            .property(&BINDING)
+            .expect("rel")
+            .as_relationship(),
         Some(prim(2))
     );
+}
+
+#[test]
+fn removing_a_namespace_takes_its_relationships_with_it() {
+    let mut state = HsdState::new();
+    apply(
+        &mut state,
+        &[root_entry(prim(1), 1), root_entry(prim(2), 1)],
+    );
+    state
+        .set_attribute(prim(1), &MaterialAttr::default())
+        .expect("attribute");
+    state
+        .set_relationship(prim(1), &BINDING, prim(2))
+        .expect("relationship");
+    state
+        .set_attribute(prim(1), &NameAttr("kept".into()))
+        .expect("name");
+
+    state.remove_group(prim(1), MaterialAttr::NAME.group());
+
+    assert!(state.attribute::<MaterialAttr>(prim(1)).is_none());
+    assert_eq!(state.relationship(prim(1), &BINDING), None);
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("kept"));
+}
+
+#[test]
+fn parent_is_only_written_through_set_parent() {
+    let mut state = HsdState::new();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+
+    assert!(matches!(
+        state.set_property(prim(1), &ParentAttr::NAME, name_attr("x")),
+        Err(StateError::Reserved(_))
+    ));
 }
 
 #[test]
@@ -422,8 +486,10 @@ fn an_attribute_carrying_bytes_round_trips() {
         payload
     );
     assert_eq!(
-        state.entries().get(&key::prop(prim(1), ScriptAttr::KEY)),
-        Some(&Property::Attribute(ScriptAttr(payload).encode().expect("encode")).encode()),
+        state
+            .entries()
+            .get(&key::Key::prop(prim(1), &ScriptAttr::NAME).to_string()),
+        Some(&Value::Attribute(ScriptAttr(payload).encode().expect("encode")).encode()),
     );
 }
 
@@ -469,14 +535,17 @@ fn removing_a_property_emits_an_absent_value() {
 
     apply(
         &mut state,
-        &[tombstone(key::prop(prim(1), XformAttr::KEY), 3)],
+        &[tombstone(
+            key::Key::prop(prim(1), &XformAttr::NAME).to_string(),
+            3,
+        )],
     );
 
     assert_eq!(
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  XformAttr::KEY.into(),
+            name:  XformAttr::NAME,
             value: None,
         }]
     );
@@ -540,6 +609,41 @@ fn nesting_past_the_depth_cap_is_not_realized() {
         !state.is_realized(ids[deep - 1]),
         "prims past the cap are held"
     );
+}
+
+#[test]
+fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
+    let mut state = HsdState::new();
+
+    let ids = (0..MAX_PRIM_DEPTH - 2)
+        .map(|i| {
+            let mut bytes = [0u8; 32];
+            bytes[..8].copy_from_slice(&(i as u64).to_be_bytes());
+            PrimId::from_digest(&bytes)
+        })
+        .collect::<Vec<_>>();
+    state.apply(&root_entry(ids[0], 0)).expect("root");
+    for (i, window) in ids.windows(2).enumerate() {
+        state
+            .apply(&child_entry(window[1], window[0], i as u64 + 1))
+            .expect("child");
+    }
+    let deepest = ids[ids.len() - 1];
+
+    apply(
+        &mut state,
+        &[
+            root_entry(prim(1), 1),
+            child_entry(prim(2), prim(1), 1),
+            child_entry(prim(3), prim(2), 1),
+        ],
+    );
+    assert!(state.is_realized(prim(3)));
+
+    apply(&mut state, &[child_entry(prim(1), deepest, 10_000)]);
+
+    assert!(state.is_realized(prim(2)), "the last prim within the cap");
+    assert!(!state.is_realized(prim(3)), "one past the cap");
 }
 
 #[test]
@@ -609,7 +713,7 @@ fn a_prim_and_its_properties_leave_together() {
         events.iter().any(|e| matches!(
             e,
             SceneEvent::Property { prim: p, name, .. }
-                if *p == prim(1) && name == XformAttr::KEY
+                if *p == prim(1) && *name == XformAttr::NAME
         )),
         "the transform arrives in the same drain as the prim it belongs to"
     );
@@ -627,10 +731,8 @@ fn boundaries_nest_so_two_writers_both_have_to_finish() {
         state.drain_events().is_empty(),
         "one writer finishing does not release another's partial work"
     );
-    assert!(state.is_ticking());
 
     state.close_tick();
-    assert!(!state.is_ticking());
     assert_ne!(state.drain_events().len(), 0);
 }
 
@@ -638,7 +740,6 @@ fn boundaries_nest_so_two_writers_both_have_to_finish() {
 fn an_unmatched_close_does_not_underflow() {
     let mut state = HsdState::new();
     state.close_tick();
-    assert!(!state.is_ticking());
     state.open_tick();
     apply(&mut state, &[root_entry(prim(1), 1)]);
     assert!(state.drain_events().is_empty(), "the boundary still holds");
@@ -669,15 +770,15 @@ fn a_consumer_attaching_mid_tick_gets_the_scene_as_it_stands() {
     state.close_tick();
 }
 
-/// Scripts are not routed into the runtime layer yet, so these reach it
-/// the way that routing will.
-fn runtime_property(state: &mut HsdState, prim: PrimId, name: &str, value: Option<Property>) {
-    let stamp = Stamp::now(&value.as_ref().map(Property::encode).unwrap_or_default());
-    state.write_property(LayerId::Runtime, prim, name, value, stamp);
+fn runtime_property(state: &mut HsdState, prim: PrimId, name: PropName, value: Option<Value>) {
+    match value {
+        Some(value) => state.set_property(prim, &name, value).expect("set"),
+        None => state.remove_property(prim, &name),
+    }
 }
 
-fn name_attr(value: &str) -> Property {
-    Property::Attribute(NameAttr(value.into()).encode().expect("encode"))
+fn name_attr(value: &str) -> Value {
+    Value::Attribute(NameAttr(value.into()).encode().expect("encode"))
 }
 
 fn name_of(state: &HsdState, prim: PrimId) -> Option<String> {
@@ -699,7 +800,7 @@ fn a_runtime_opinion_shadows_the_document_beneath_it() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("runtime")),
     );
 
@@ -708,10 +809,57 @@ fn a_runtime_opinion_shadows_the_document_beneath_it() {
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: Some(name_attr("runtime")),
         }]
     );
+}
+
+#[test]
+fn a_spawn_despawn_loop_leaves_nothing_behind() {
+    let mut state = HsdState::new();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+    let resolved = state.resolved.len();
+
+    for _ in 0..100 {
+        let spawned = state.create_prim(Some(prim(1)));
+        state
+            .set_attribute(spawned, &NameAttr("bullet".into()))
+            .expect("set");
+        state.remove_prim(spawned);
+    }
+
+    assert_eq!(state.resolved.len(), resolved);
+    assert_eq!(state.layers[LayerId::Runtime.idx()].prims().count(), 0);
+    assert_eq!(state.children(prim(1)), Vec::new());
+}
+
+#[test]
+fn removing_a_document_prim_blocks_it_rather_than_forgetting_it() {
+    let mut state = HsdState::new();
+    apply(
+        &mut state,
+        &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
+    );
+
+    state.remove_prim(prim(2));
+
+    assert!(!state.exists(prim(2)));
+    assert!(state.entries().contains_key(&parent_key(prim(2))));
+}
+
+#[test]
+fn back_to_back_local_writes_keep_the_last_value() {
+    let mut state = HsdState::new();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+
+    for i in 0..1000 {
+        let value = format!("{i}");
+        state
+            .set_attribute(prim(1), &NameAttr(value.clone()))
+            .expect("set");
+        assert_eq!(name_of(&state, prim(1)), Some(value));
+    }
 }
 
 #[test]
@@ -727,7 +875,7 @@ fn a_document_write_under_a_runtime_opinion_emits_nothing() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("runtime")),
     );
     state.drain_events();
@@ -759,7 +907,7 @@ fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
     let saved = state.entries();
     state.drain_events();
 
-    runtime_property(&mut state, prim(1), NameAttr::KEY, None);
+    runtime_property(&mut state, prim(1), NameAttr::NAME, None);
 
     assert_eq!(
         name_of(&state, prim(1)),
@@ -771,7 +919,7 @@ fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: None,
         }]
     );
@@ -797,10 +945,15 @@ fn a_runtime_write_leaves_the_save_set_byte_identical() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("runtime")),
     );
-    runtime_property(&mut state, prim(1), "scratch", Some(name_attr("new key")));
+    runtime_property(
+        &mut state,
+        prim(1),
+        "custom/scratch".parse().expect("name"),
+        Some(name_attr("new key")),
+    );
 
     assert_eq!(
         state.entries(),
@@ -852,14 +1005,11 @@ fn commit_promotes_a_live_opinion_into_the_document() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("runtime")),
     );
     state.drain_events();
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
     assert!(
@@ -868,15 +1018,14 @@ fn commit_promotes_a_live_opinion_into_the_document() {
              only the save set changed"
     );
     assert_eq!(
-        state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+        state
+            .entries()
+            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("runtime").encode()),
         "the promoted opinion is exactly what a save now writes"
     );
 
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
     assert_eq!(
         name_of(&state, prim(1)).as_deref(),
         Some("runtime"),
@@ -901,13 +1050,10 @@ fn commit_with_no_writable_key_writes_the_session_layer() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("runtime")),
     );
-    state.commit(
-        CommitTarget::Session,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.commit(CommitTarget::Session, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
     assert_eq!(
@@ -942,10 +1088,7 @@ fn committing_a_script_created_prim_adds_it_to_the_save_set() {
 
     state.commit(
         CommitTarget::Document,
-        &[
-            (scratch, SmolStr::new(ParentAttr::KEY)),
-            (scratch, SmolStr::new(NameAttr::KEY)),
-        ],
+        &[(scratch, ParentAttr::NAME), (scratch, NameAttr::NAME)],
     );
 
     let entries = state.entries();
@@ -953,7 +1096,7 @@ fn committing_a_script_created_prim_adds_it_to_the_save_set() {
         entries.contains_key(&parent_key(scratch)),
         "committing the parent is what makes a spawned prim survive a save"
     );
-    assert!(entries.contains_key(&key::prop(scratch, NameAttr::KEY)));
+    assert!(entries.contains_key(&key::Key::prop(scratch, &NameAttr::NAME).to_string()));
     assert!(state.is_realized(scratch));
     assert_eq!(state.children(prim(1)), vec![scratch]);
 }
@@ -970,23 +1113,20 @@ fn committing_a_blocked_opinion_removes_a_document_property() {
     );
     state.drain_events();
 
-    state.remove_property(prim(1), NameAttr::KEY);
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.remove_property(prim(1), &NameAttr::NAME);
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)), None);
     assert!(
         !state
             .entries()
-            .contains_key(&key::prop(prim(1), NameAttr::KEY))
+            .contains_key(&key::Key::prop(prim(1), &NameAttr::NAME).to_string())
     );
     assert_eq!(
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: None,
         }]
     );
@@ -1011,10 +1151,7 @@ fn committing_a_blocked_parent_removes_a_document_prim() {
         "but hiding is a live opinion; the document still holds the prim"
     );
 
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(2), SmolStr::new(ParentAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(prim(2), ParentAttr::NAME)]);
 
     assert!(
         !state.entries().contains_key(&parent_key(prim(2))),
@@ -1036,17 +1173,14 @@ fn committing_a_key_with_no_live_opinion_changes_nothing() {
     );
     let saved = state.entries();
 
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("document"));
     assert_eq!(state.entries(), saved);
 }
 
-fn override_entry(site: PrimId, target: PrimId, name: &str, value: &Property) -> Entry {
-    Entry::new(reference::layer_key(site, target, name), value.encode(), 3)
+fn override_entry(site: PrimId, target: PrimId, name: PropName, value: &Value) -> Entry {
+    Entry::new(LayerKey { target, name }.key(site), value.encode(), 3)
 }
 
 /// A referenced document, holding one prim with a name of its own.
@@ -1082,7 +1216,7 @@ fn an_override_beats_the_document_it_speaks_for() {
         &[override_entry(
             prim(7),
             prim(1),
-            NameAttr::KEY,
+            NameAttr::NAME,
             &name_attr("recoloured"),
         )],
     ));
@@ -1092,13 +1226,15 @@ fn an_override_beats_the_document_it_speaks_for() {
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: Some(name_attr("recoloured")),
         }],
         "installing an override changes what is drawn, so it emits"
     );
     assert_eq!(
-        state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+        state
+            .entries()
+            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("couch").encode()),
         "the opinion is durable in the referencing document, not in this one"
     );
@@ -1112,14 +1248,14 @@ fn a_live_opinion_beats_an_override() {
         &[override_entry(
             prim(7),
             prim(1),
-            NameAttr::KEY,
+            NameAttr::NAME,
             &name_attr("room says"),
         )],
     ));
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("script says")),
     );
 
@@ -1138,7 +1274,7 @@ fn an_override_the_referencing_document_dropped_stops_resolving() {
         &[override_entry(
             prim(7),
             prim(1),
-            NameAttr::KEY,
+            NameAttr::NAME,
             &name_attr("recoloured"),
         )],
     ));
@@ -1156,7 +1292,7 @@ fn an_override_the_referencing_document_dropped_stops_resolving() {
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: Some(name_attr("couch")),
         }]
     );
@@ -1171,7 +1307,11 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     state.install_reference_layer(&stated(
         prim(7),
         &[tombstone(
-            reference::layer_key(prim(7), prim(2), ParentAttr::KEY),
+            LayerKey {
+                target: prim(2),
+                name:   ParentAttr::NAME,
+            }
+            .key(prim(7)),
             4,
         )],
     ));
@@ -1190,7 +1330,7 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
 #[test]
 fn overrides_round_trip_through_the_entry_set() {
     let site = prim(7);
-    let entry = override_entry(site, prim(1), NameAttr::KEY, &name_attr("recoloured"));
+    let entry = override_entry(site, prim(1), NameAttr::NAME, &name_attr("recoloured"));
 
     let mut referencing = HsdState::new();
     apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);
@@ -1218,7 +1358,7 @@ fn overrides_round_trip_through_the_entry_set() {
 #[test]
 fn an_override_whose_site_the_document_does_not_state_is_not_saved() {
     let mut referencing = HsdState::new();
-    let entry = override_entry(prim(7), prim(1), NameAttr::KEY, &name_attr("recoloured"));
+    let entry = override_entry(prim(7), prim(1), NameAttr::NAME, &name_attr("recoloured"));
     apply(&mut referencing, std::slice::from_ref(&entry));
 
     assert!(
@@ -1241,20 +1381,24 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     runtime_property(
         &mut target,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("recoloured")),
     );
     target.drain_events();
 
     let entries = target.commit(
         CommitTarget::Override { site },
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        &[(prim(1), NameAttr::NAME)],
     );
 
     assert_eq!(
         entries,
         vec![Entry::new(
-            reference::layer_key(site, prim(1), NameAttr::KEY),
+            LayerKey {
+                target: prim(1),
+                name:   NameAttr::NAME,
+            }
+            .key(site),
             name_attr("recoloured").encode(),
             entries[0].timestamp,
         )],
@@ -1295,10 +1439,10 @@ fn state_is_quiet(state: &mut HsdState) -> bool {
 }
 
 /// What a present peer says, arriving as a state message does.
-fn session_property(state: &mut HsdState, prim: PrimId, value: &Property, at: u64) {
+fn session_property(state: &mut HsdState, prim: PrimId, value: &Value, at: u64) {
     state
         .apply_session(&Entry::new(
-            key::prop(prim, NameAttr::KEY),
+            key::Key::prop(prim, &NameAttr::NAME).to_string(),
             value.encode(),
             at,
         ))
@@ -1312,7 +1456,7 @@ fn a_session_opinion_beats_a_script_computing_the_same_key() {
     runtime_property(
         &mut state,
         prim(1),
-        NameAttr::KEY,
+        NameAttr::NAME,
         Some(name_attr("animated")),
     );
     session_property(&mut state, prim(1), &name_attr("what the peer said"), 5);
@@ -1337,7 +1481,7 @@ fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
     session_property(&mut state, prim(1), &name_attr("what the peer said"), 5);
     state.drain_events();
 
-    state.clear_session(prim(1), NameAttr::KEY);
+    state.clear_session(prim(1), &NameAttr::NAME);
 
     assert_eq!(
         name_of(&state, prim(1)).as_deref(),
@@ -1349,7 +1493,7 @@ fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
         state.drain_events(),
         vec![SceneEvent::Property {
             prim:  prim(1),
-            name:  SmolStr::new(NameAttr::KEY),
+            name:  NameAttr::NAME,
             value: Some(name_attr("couch")),
         }]
     );
@@ -1358,7 +1502,7 @@ fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
 #[test]
 fn clearing_a_key_no_peer_stated_changes_nothing() {
     let mut state = referenced();
-    state.clear_session(prim(1), NameAttr::KEY);
+    state.clear_session(prim(1), &NameAttr::NAME);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
     assert!(state_is_quiet(&mut state));
@@ -1369,13 +1513,12 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
     let mut state = referenced();
     session_property(&mut state, prim(1), &name_attr("a guest recoloured it"), 5);
 
-    state.commit(
-        CommitTarget::Document,
-        &[(prim(1), SmolStr::new(NameAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(
-        state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+        state
+            .entries()
+            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("a guest recoloured it").encode()),
         "keep is the owner's own commit over an opinion they did not \
              author, and this is the mechanism it rides on"
@@ -1384,6 +1527,29 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
         name_of(&state, prim(1)).as_deref(),
         Some("a guest recoloured it"),
         "what everyone sees does not move; only where the value lives"
+    );
+}
+
+#[test]
+fn a_promotion_lands_even_when_the_opinion_predates_the_document_value() {
+    let mut state = HsdState::new();
+    apply(
+        &mut state,
+        &[
+            root_entry(prim(1), 1),
+            attr_entry(prim(1), &NameAttr("couch".into()), 1_000),
+        ],
+    );
+    session_property(&mut state, prim(1), &name_attr("recoloured"), 500);
+
+    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
+    assert_eq!(
+        state
+            .entries()
+            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
+        Some(&name_attr("recoloured").encode()),
     );
 }
 
@@ -1410,14 +1576,11 @@ fn the_reference_target_round_trips_through_the_entry_set() {
     state
         .set_attribute(site, &ReferenceAttr(target))
         .expect("reference");
-    state.commit(
-        CommitTarget::Document,
-        &[(site, SmolStr::new(ReferenceAttr::KEY))],
-    );
+    state.commit(CommitTarget::Document, &[(site, ReferenceAttr::NAME)]);
 
     let saved = state.entries();
     assert!(
-        saved.contains_key(&reference::target_key(site)),
+        saved.contains_key(&key::Key::prop(site, &ReferenceAttr::NAME).to_string()),
         "the target is written at its structural key"
     );
     assert!(
@@ -1446,8 +1609,7 @@ fn the_reference_target_round_trips_through_the_entry_set() {
 #[test]
 fn a_reference_layer_entry_round_trips_at_its_structural_key() {
     let site = prim(7);
-    let entry = override_entry(site, prim(1), NameAttr::KEY, &name_attr("recoloured"));
-    assert!(entry.key.starts_with(&reference::layer_prefix(site)));
+    let entry = override_entry(site, prim(1), NameAttr::NAME, &name_attr("recoloured"));
 
     let mut referencing = HsdState::new();
     apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);

@@ -1,9 +1,11 @@
-use hsd::id::{
-    DocId,
-    PrimId,
+use hsd::{
+    id::{
+        DocId,
+        PrimId,
+    },
+    property::name::PropName,
 };
 use iroh::EndpointId;
-use smol_str::SmolStr;
 use unavi_policy::quota::StockLease;
 
 /// Which key of which prim a session opinion is about.
@@ -14,7 +16,7 @@ use unavi_policy::quota::StockLease;
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) struct SessionKey {
     pub(crate) prim: PrimId,
-    pub(crate) name: SmolStr,
+    pub(crate) name: PropName,
 }
 
 /// One session opinion, merged last-write-wins by `(at, peer)`. `value: None`
@@ -42,7 +44,7 @@ pub(crate) struct Cell {
 }
 
 pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
-    (key.name.len() + value.map_or(0, <[u8]>::len)) as u64
+    (key.name.as_str().len() + value.map_or(0, <[u8]>::len)) as u64
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]

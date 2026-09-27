@@ -9,8 +9,8 @@ pub const MAX_NAME_BYTES: usize = KB;
 
 /// Largest string a single text prim may carry.
 ///
-/// Enforced when the string is stored or synced, so network-delivered text is
-/// re-checked at layout time as a backstop rather than trusted here.
+/// Enforced when the string is stored or synced. Layout re-checks
+/// network-delivered text as a backstop.
 pub const MAX_TEXT_BYTES: usize = 4 * KB;
 
 /// Largest vertex/index stream a single mesh write may upload.

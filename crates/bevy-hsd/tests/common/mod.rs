@@ -19,15 +19,28 @@ use bevy::{
     prelude::*,
     transform::TransformPlugin,
 };
-use bevy_hsd::attributes::material_graph::ShaderGraphMaterial;
+use bevy_hsd::attributes::shader::ShaderGraphMaterial;
 use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
 use hsd::{
-    attributes::{
-        Attribute,
-        collider::ColliderAttr,
-        image::ImageAttr,
-        material_graph::{
+    id::PrimId,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+    },
+    schema::{
+        collider::{
+            ColliderIndices,
+            ColliderVertices,
+        },
+        image::ImageData,
+        mesh::{
+            self,
+            MeshIndices,
+            MeshStream,
+        },
+        shader::{
             ShaderGraph,
             graph::{
                 DisplacementGraph,
@@ -41,9 +54,7 @@ use hsd::{
             },
             value::GraphValue,
         },
-        mesh::MeshAttr,
     },
-    id::PrimId,
     state::{
         HsdState,
         entry::Entry,
@@ -239,58 +250,47 @@ impl TestContext {
             .expect("prim is realized")
     }
 
-    pub fn set_attr<A: Attribute>(&self, prim: PrimId, value: &A) {
+    pub fn set_attr<A: Property>(&self, prim: PrimId, value: &A) {
         self.with_state(|state| state.set_attribute(prim, value).expect("set attribute"));
     }
 
-    pub fn remove_attr<A: Attribute>(&self, prim: PrimId) {
-        self.with_state(|state| state.remove_property(prim, A::KEY));
-    }
-
-    /// Reads an existing attribute, applies `f`, and writes it back. The
-    /// read-modify-write a bulk field needs now that it shares one entry with
-    /// the rest of the attribute.
-    fn update_attr<A: Attribute>(&self, prim: PrimId, f: impl FnOnce(&mut A)) {
-        self.with_state(|state| {
-            let mut attr = state
-                .attribute::<A>(prim)
-                .expect("attribute present")
-                .expect("decode attribute");
-            f(&mut attr);
-            state.set_attribute(prim, &attr).expect("set attribute");
-        });
+    pub fn remove_attr<A: Property>(&self, prim: PrimId) {
+        self.with_state(|state| state.remove_property(prim, &A::NAME));
     }
 
     pub fn set_mesh_stream(&self, prim: PrimId, name: &str, bytes: Vec<u8>) {
-        self.update_attr::<MeshAttr>(prim, |mesh| {
-            mesh.streams.insert(name.to_owned(), bytes);
+        let field = mesh::stream(name).expect("valid stream name");
+        self.with_state(|state| {
+            state
+                .set_payload(prim, &field, &MeshStream(bytes))
+                .expect("set stream");
         });
     }
 
     pub fn set_mesh_indices(&self, prim: PrimId, bytes: Vec<u8>) {
-        self.update_attr::<MeshAttr>(prim, |mesh| mesh.indices = Some(bytes));
+        self.set_attr(prim, &MeshIndices(bytes));
     }
 
     pub fn set_image_data(&self, prim: PrimId, bytes: Vec<u8>) {
-        self.update_attr::<ImageAttr>(prim, |image| image.data = bytes);
+        self.set_attr(prim, &ImageData(bytes));
     }
 
     pub fn set_collider_vertices(&self, prim: PrimId, bytes: Vec<u8>) {
-        self.update_attr::<ColliderAttr>(prim, |c| c.vertices = Some(bytes));
+        self.set_attr(prim, &ColliderVertices(bytes));
     }
 
     pub fn set_collider_indices(&self, prim: PrimId, bytes: Vec<u8>) {
-        self.update_attr::<ColliderAttr>(prim, |c| c.indices = Some(bytes));
+        self.set_attr(prim, &ColliderIndices(bytes));
     }
 
-    /// Sets a prim's `material:graph_data` attribute from its encoded payload,
-    /// which is the shape the graph tests build.
+    /// Sets a prim's `shader/graph` attribute from its encoded payload, which
+    /// is the shape the graph tests build.
     pub fn set_shader_graph(&self, prim: PrimId, bytes: Vec<u8>) {
         let graph = ShaderGraph::decode(&bytes).expect("decode graph");
         self.set_attr(prim, &graph);
     }
 
-    pub fn set_relationship(&self, prim: PrimId, name: &str, target: PrimId) {
+    pub fn set_relationship(&self, prim: PrimId, name: &PropName, target: PrimId) {
         self.with_state(|state| {
             state
                 .set_relationship(prim, name, target)
@@ -298,7 +298,7 @@ impl TestContext {
         });
     }
 
-    pub fn remove_property(&self, prim: PrimId, name: &str) {
+    pub fn remove_property(&self, prim: PrimId, name: &PropName) {
         self.with_state(|state| state.remove_property(prim, name));
     }
 
@@ -330,7 +330,7 @@ impl TestDocument {
         self.with_state(|state| state.create_prim(None))
     }
 
-    pub fn set_attr<A: Attribute>(&self, prim: PrimId, value: &A) {
+    pub fn set_attr<A: Property>(&self, prim: PrimId, value: &A) {
         self.with_state(|state| state.set_attribute(prim, value).expect("set attribute"));
     }
 

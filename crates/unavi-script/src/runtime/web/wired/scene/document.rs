@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hsd::attributes::xform::XformAttr;
+use hsd::schema::xform::XformAttr;
 use unavi_policy::permissions::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;

@@ -8,7 +8,7 @@ use common::{
     node,
     unlit,
 };
-use hsd::attributes::material_graph::{
+use hsd::schema::shader::{
     graph::{
         LitOutput,
         SurfaceOutput,

@@ -1,7 +1,13 @@
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    script::ScriptAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::script::{
+        self,
+        ScriptAttr,
+    },
 };
 
 use crate::attributes::{
@@ -15,14 +21,15 @@ pub struct HsdScript(pub Vec<u8>);
 pub struct ScriptParser;
 
 impl AttributeParser for ScriptParser {
-    fn key(&self) -> &'static str {
-        ScriptAttr::KEY
+    fn group(&self) -> &'static str {
+        script::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

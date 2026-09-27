@@ -1,22 +1,26 @@
-//! The layer-to-view engine: every write path funnels into `write_*`, which
-//! settles the composed view and the events a consumer would apply.
-
-use std::collections::HashSet;
-
-use smol_str::SmolStr;
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 use crate::{
-    attributes::parent::ParentAttr,
     id::{
         PRIM_ID_BYTES,
         PrimId,
     },
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
+    schema::parent::ParentAttr,
     state::{
         HsdState,
         MAX_PRIM_DEPTH,
         MAX_REALIZED_PRIMS,
-        entry::Stamp,
+        entry::{
+            Stamp,
+            now_millis,
+        },
         event::SceneEvent,
         layer::{
             Layer,
@@ -26,23 +30,53 @@ use crate::{
     },
 };
 
-/// Where a prim sits once the tree's integrity rules have been applied.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Placement {
     Root,
     Child(PrimId),
-    /// Held: the parent chain reaches a prim that does not exist.
-    Unrealized,
+    Held,
 }
 
-/// The strongest opinion on a key, or `None` where every layer is silent and
-/// where the strongest opinion is `Blocked` — `Blocked` stops the walk rather
-/// than falling through.
-///
-/// Takes `layers` rather than `&self` so the caller can hold this borrow
-/// against `resolved` at the same time: it is the layers, not the whole state,
-/// that this reads.
-fn resolve_property<'a>(layers: &'a [Layer], prim: PrimId, name: &str) -> Option<&'a Property> {
+/// Scratch space for one [`HsdState::refresh`].
+#[derive(Default)]
+struct Walk {
+    /// The parent chain being walked, in order and as a set.
+    order:   Vec<PrimId>,
+    members: HashSet<PrimId>,
+    /// Depth of each prim this refresh realized under a root.
+    depths:  HashMap<PrimId, usize>,
+}
+
+impl Walk {
+    fn reset(&mut self, prim: PrimId) {
+        self.order.clear();
+        self.members.clear();
+        self.push(prim);
+    }
+
+    fn push(&mut self, prim: PrimId) {
+        self.order.push(prim);
+        self.members.insert(prim);
+    }
+
+    /// The chain from `prim` onward, if `prim` is already on it.
+    fn cycle_at(&self, prim: PrimId) -> Option<&[PrimId]> {
+        if !self.members.contains(&prim) {
+            return None;
+        }
+        let index = self.order.iter().position(|&id| id == prim)?;
+        Some(&self.order[index..])
+    }
+}
+
+/// Now, or one past `held` when the wall clock has not passed it.
+fn after(held: Option<Stamp>) -> u64 {
+    let now = now_millis();
+    held.map_or(now, |held| now.max(held.timestamp.saturating_add(1)))
+}
+
+/// The strongest opinion on a key. `Blocked` stops the walk.
+fn resolve_property<'a>(layers: &'a [Layer], prim: PrimId, name: &PropName) -> Option<&'a Value> {
     layers
         .iter()
         .rev()
@@ -50,23 +84,45 @@ fn resolve_property<'a>(layers: &'a [Layer], prim: PrimId, name: &str) -> Option
         .and_then(|opinion| opinion.value())
 }
 
-/// The stamp a local parent write gets when the caller has none. Hashing the
-/// payload out of a stack buffer avoids `ParentAttr::to_wire`'s two
-/// allocations.
-fn parent_stamp(parent: Option<ParentAttr>) -> Stamp {
-    let Some(parent) = parent else {
-        return Stamp::now(&[]);
-    };
-    let mut buf = [0u8; PRIM_ID_BYTES + 1];
-    postcard::to_slice(&parent, &mut buf).map_or_else(
-        |_| Stamp::now(&ParentAttr::to_wire(Some(parent))),
-        |encoded| Stamp::for_attribute(encoded),
-    )
-}
-
 impl HsdState {
-    pub(super) fn layer(&mut self, id: LayerId) -> &mut Layer {
+    pub(super) const fn layer(&self, id: LayerId) -> &Layer {
+        &self.layers[id.idx()]
+    }
+
+    pub(super) const fn layer_mut(&mut self, id: LayerId) -> &mut Layer {
         &mut self.layers[id.idx()]
+    }
+
+    /// A timestamp for a local write to a property in `layer`, past the stamp
+    /// the layer already holds for it even when the wall clock has not moved.
+    pub(super) fn local_property_time(&self, layer: LayerId, prim: PrimId, name: &PropName) -> u64 {
+        after(
+            self.layer(layer)
+                .get(prim)
+                .and_then(|opinions| opinions.property_stamp(name)),
+        )
+    }
+
+    pub(super) fn local_parent_stamp(
+        &self,
+        layer: LayerId,
+        prim: PrimId,
+        parent: Option<ParentAttr>,
+    ) -> Stamp {
+        let held = self
+            .layer(layer)
+            .get(prim)
+            .and_then(|opinions| opinions.parent())
+            .map(|(_, stamp)| *stamp);
+        let timestamp = after(held);
+        let Some(parent) = parent else {
+            return Stamp::new(timestamp, &[]);
+        };
+        let mut buf = [0u8; PRIM_ID_BYTES + 1];
+        postcard::to_slice(&parent, &mut buf).map_or_else(
+            |_| Stamp::new(timestamp, &ParentAttr::to_wire(Some(parent))),
+            |encoded| Stamp::of_attribute(timestamp, encoded),
+        )
     }
 
     fn resolve_parent(&self, prim: PrimId) -> (Option<ParentAttr>, Stamp) {
@@ -80,6 +136,8 @@ impl HsdState {
             )
     }
 
+    /// Stamps a local write with [`Self::local_parent_stamp`] when `stamp` is
+    /// `None`.
     pub(super) fn write_parent(
         &mut self,
         layer: LayerId,
@@ -87,20 +145,16 @@ impl HsdState {
         parent: Option<ParentAttr>,
         stamp: Option<Stamp>,
     ) {
-        let stamp = stamp.unwrap_or_else(|| parent_stamp(parent));
-
-        if !self
-            .layer(layer)
+        let stamp = stamp.unwrap_or_else(|| self.local_parent_stamp(layer, prim, parent));
+        if self
+            .layer_mut(layer)
             .entry(prim)
             .set_parent(parent.into(), stamp)
         {
-            return;
+            self.settle_parent(prim);
         }
-        self.settle_parent(prim);
     }
 
-    /// Recomposes `prim`'s parent from the stack, reindexes its place among
-    /// its siblings, and re-realizes whatever that moved.
     pub(super) fn settle_parent(&mut self, prim: PrimId) {
         let (parent, stamp) = self.resolve_parent(prim);
         let view = self.resolved.entry(prim).or_default();
@@ -112,6 +166,9 @@ impl HsdState {
             && let Some(siblings) = self.children.get_mut(&old_parent)
         {
             siblings.remove(&prim);
+            if siblings.is_empty() {
+                self.children.remove(&old_parent);
+            }
         }
         if let Some(ParentAttr::Prim(new_parent)) = parent {
             self.children.entry(new_parent).or_default().insert(prim);
@@ -124,29 +181,21 @@ impl HsdState {
         &mut self,
         layer: LayerId,
         prim: PrimId,
-        name: &str,
-        value: Option<Property>,
+        name: &PropName,
+        value: Option<Value>,
         stamp: Stamp,
     ) {
-        if !self
-            .layer(layer)
+        if self
+            .layer_mut(layer)
             .entry(prim)
             .set_property(name, value.into(), stamp)
         {
-            return;
+            self.settle_property(prim, name);
         }
-        self.settle_property(prim, name);
     }
 
-    /// Recomposes one property from the stack and emits it if what a consumer
-    /// would draw changed.
-    ///
-    /// A weaker layer writing under a stronger one's opinion costs a resolve
-    /// and nothing else: the composed value did not move, so there is nothing
-    /// to apply.
-    pub(super) fn settle_property(&mut self, prim: PrimId, name: &str) {
-        // Compare against the layers by reference, so an unchanged value is
-        // never cloned — only the strongest opinion's own bytes are read.
+    /// Recomposes one property, emitting it if the composed value moved.
+    pub(super) fn settle_property(&mut self, prim: PrimId, name: &PropName) {
         let resolved = resolve_property(&self.layers, prim, name);
         let view = self.resolved.entry(prim).or_default();
         if view.property(name) == resolved {
@@ -156,132 +205,150 @@ impl HsdState {
         view.set_property(name, value.clone());
 
         if self.realized.contains_key(&prim) {
-            let name = view
-                .property_key(name)
-                .unwrap_or_else(|| SmolStr::new(name));
-            self.events.push(SceneEvent::Property { prim, name, value });
+            self.events.push(SceneEvent::Property {
+                prim,
+                name: name.clone(),
+                value,
+            });
         }
     }
 
-    /// Recomputes realization for `root` and, if it changed, everything under
-    /// it. Cycles are visited once thanks to `seen`.
+    /// Drops the composed view of a prim no layer holds an opinion on.
+    pub(super) fn forget_if_unstated(&mut self, prim: PrimId) {
+        if self.layers.iter().all(|layer| layer.get(prim).is_none()) {
+            self.resolved.remove(&prim);
+        }
+    }
+
+    /// Recomputes realization for `root` and its subtree. Descends through
+    /// every prim that is or was realized, since a move changes the depth and
+    /// cycle membership of everything beneath it.
     fn refresh(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
         let mut stack = vec![root];
-        // Reused across every prim this walk touches, so `placement` does not
-        // allocate per prim.
-        let mut chain = Vec::new();
+        let mut walk = Walk::default();
 
         while let Some(prim) = stack.pop() {
             if !seen.insert(prim) {
                 continue;
             }
-
-            let placement = self.placement(prim, &mut chain);
-            let previous = self.realized.get(&prim).copied();
-
-            let changed = match placement {
-                Placement::Unrealized => {
-                    if previous.is_some() {
-                        self.realized.remove(&prim);
-                        self.events.push(SceneEvent::Unrealized { prim });
-                        true
-                    } else {
-                        false
-                    }
-                }
-                Placement::Root | Placement::Child(_) => {
-                    let parent = match placement {
-                        Placement::Child(parent) => Some(parent),
-                        _ => None,
-                    };
-                    match previous {
-                        None => {
-                            self.realized.insert(prim, parent);
-                            self.events.push(SceneEvent::Realized { prim, parent });
-                            self.emit_contents(prim);
-                            true
-                        }
-                        Some(previous) if previous != parent => {
-                            self.realized.insert(prim, parent);
-                            self.events.push(SceneEvent::Reparented { prim, parent });
-                            true
-                        }
-                        Some(_) => false,
-                    }
-                }
-            };
-
-            if changed && let Some(children) = self.children.get(&prim) {
+            let placement = self.placement(prim, &mut walk);
+            let was_realized = self.place(prim, placement);
+            if (was_realized || placement != Placement::Held)
+                && let Some(children) = self.children.get(&prim)
+            {
                 stack.extend(children.iter().copied());
             }
         }
     }
 
-    /// Emits everything a newly realized prim already holds, so a consumer
-    /// never has to read state directly to catch up.
+    /// Answers whether the prim was realized before.
+    fn place(&mut self, prim: PrimId, placement: Placement) -> bool {
+        let parent = match placement {
+            Placement::Held => {
+                let was_realized = self.realized.remove(&prim).is_some();
+                if was_realized {
+                    self.events.push(SceneEvent::Unrealized { prim });
+                }
+                return was_realized;
+            }
+            Placement::Root => None,
+            Placement::Child(parent) => Some(parent),
+        };
+        match self.realized.insert(prim, parent) {
+            None => {
+                self.events.push(SceneEvent::Realized { prim, parent });
+                self.emit_contents(prim);
+                false
+            }
+            Some(previous) => {
+                if previous != parent {
+                    self.events.push(SceneEvent::Reparented { prim, parent });
+                }
+                true
+            }
+        }
+    }
+
+    /// Emits every property a newly realized prim already holds.
     pub(super) fn emit_contents(&mut self, prim: PrimId) {
         let Some(state) = self.resolved.get(&prim) else {
             return;
         };
-        let values = state
-            .properties()
-            .map(|(name, value)| (name.clone(), value.clone()))
-            .collect::<Vec<_>>();
-
-        for (name, value) in values {
-            self.events.push(SceneEvent::Property {
-                prim,
-                name,
-                value: Some(value),
-            });
-        }
+        self.events.extend(
+            state
+                .properties()
+                .map(|(name, value)| SceneEvent::Property {
+                    prim,
+                    name: name.clone(),
+                    value: Some(value.clone()),
+                }),
+        );
     }
 
-    /// LWW parent pointers can form cycles; the cycle breaks at its
-    /// greatest-stamped member, which every peer computes identically.
-    fn placement(&self, prim: PrimId, chain: &mut Vec<PrimId>) -> Placement {
+    /// A parent cycle breaks at its greatest-stamped member, which becomes a
+    /// root. A prim whose chain reaches a root realizes only under a realized
+    /// parent.
+    fn placement(&self, prim: PrimId, walk: &mut Walk) -> Placement {
         let Some(state) = self.resolved.get(&prim) else {
-            return Placement::Unrealized;
+            return Placement::Held;
         };
-        // Already-realized prims stay realized; only new ones are turned away,
-        // so a full document keeps converging instead of thrashing.
         if self.realized.len() >= MAX_REALIZED_PRIMS && !self.realized.contains_key(&prim) {
-            return Placement::Unrealized;
+            return Placement::Held;
         }
         let parent = match state.parent {
-            None => return Placement::Unrealized,
-            Some(ParentAttr::Root) => return Placement::Root,
+            None => return Placement::Held,
+            Some(ParentAttr::Root) => {
+                walk.depths.insert(prim, 0);
+                return Placement::Root;
+            }
             Some(ParentAttr::Prim(parent)) => parent,
         };
 
-        // `chain` holds the visited prims in order, so a lookup by index is
-        // the whole cycle check — the map it replaces bought nothing on a
-        // chain this short and allocated on every call.
-        chain.clear();
-        chain.push(prim);
+        let depth = match walk.depths.get(&parent) {
+            Some(&parent_depth) => parent_depth + 1,
+            None => match self.walk_to_root(prim, parent, walk) {
+                Ok(depth) => depth,
+                Err(placement) => return placement,
+            },
+        };
+        if depth >= MAX_PRIM_DEPTH || !self.realized.contains_key(&parent) {
+            return Placement::Held;
+        }
+        walk.depths.insert(prim, depth);
+        Placement::Child(parent)
+    }
+
+    /// Walks up from `prim` to its root, answering its depth. Ends early with
+    /// the placement when the chain is broken, too deep, or cycles.
+    fn walk_to_root(
+        &self,
+        prim: PrimId,
+        parent: PrimId,
+        walk: &mut Walk,
+    ) -> Result<usize, Placement> {
+        walk.reset(prim);
         let mut current = parent;
         loop {
-            if let Some(index) = chain.iter().position(|&id| id == current) {
-                let breaker = chain[index..]
+            if let Some(cycle) = walk.cycle_at(current) {
+                let breaker = cycle
                     .iter()
                     .copied()
-                    .max_by_key(|id| (self.parent_stamp(*id), *id))
-                    .unwrap_or(prim);
-                return if breaker == prim {
+                    .max_by_key(|id| (self.parent_stamp(*id), *id));
+                return Err(if breaker == Some(prim) {
                     Placement::Root
                 } else {
                     Placement::Child(parent)
-                };
+                });
             }
-            if chain.len() >= MAX_PRIM_DEPTH {
-                return Placement::Unrealized;
+            if walk.order.len() >= MAX_PRIM_DEPTH {
+                return Err(Placement::Held);
             }
-            chain.push(current);
+            walk.push(current);
 
             match self.resolved.get(&current).and_then(|s| s.parent) {
-                None => return Placement::Unrealized,
-                Some(ParentAttr::Root) => return Placement::Child(parent),
+                None => return Err(Placement::Held),
+                Some(ParentAttr::Root) => return Ok(walk.order.len() - 1),
                 Some(ParentAttr::Prim(next)) => current = next,
             }
         }

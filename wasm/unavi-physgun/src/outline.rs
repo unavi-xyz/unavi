@@ -99,7 +99,7 @@ impl Outline {
                     .find(|p| p.name().is_some_and(|n| n == TEMPLATE_PRIM_NAME))
             }) {
             Some(template) => {
-                prim.set_relationship("material:binding", Some(&template.id()))
+                prim.set_relationship("material/binding", Some(&template.id()))
                     .ok();
                 prim.set_graph_overrides(&[(
                     TINT_INPUT,

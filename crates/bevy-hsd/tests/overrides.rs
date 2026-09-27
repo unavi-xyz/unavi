@@ -17,18 +17,21 @@ use bevy_hsd::{
     load::RefOverrides,
 };
 use hsd::{
-    attributes::{
-        Attribute,
-        name::NameAttr,
-        parent::ParentAttr,
-        reference,
-    },
     id::{
         DocId,
         PrimId,
     },
     key,
-    property::Property,
+    property::{
+        Payload,
+        Property,
+        value::Value,
+    },
+    schema::{
+        name::NameAttr,
+        parent::ParentAttr,
+        reference::LayerKey,
+    },
     state::{
         HsdState,
         entry::Entry,
@@ -42,8 +45,8 @@ mod common;
 
 const TARGET: PrimId = PrimId([7; 16]);
 
-fn name_property(value: &str) -> Property {
-    Property::Attribute(NameAttr(value.into()).encode().expect("encode"))
+fn name_property(value: &str) -> Value {
+    Value::Attribute(NameAttr(value.into()).encode().expect("encode"))
 }
 
 /// A referenced document holding one prim named by its own author.
@@ -52,12 +55,12 @@ fn referenced() -> Arc<Mutex<HsdState>> {
     state
         .apply_all(&[
             Entry::new(
-                key::prop(TARGET, ParentAttr::KEY),
+                key::Key::prop(TARGET, &ParentAttr::NAME).to_string(),
                 ParentAttr::to_wire(Some(ParentAttr::Root)),
                 1,
             ),
             Entry::new(
-                key::prop(TARGET, NameAttr::KEY),
+                key::Key::prop(TARGET, &NameAttr::NAME).to_string(),
                 name_property("couch").encode(),
                 1,
             ),
@@ -99,7 +102,11 @@ fn an_override_written_after_the_fact_reaches_what_it_speaks_for(mut ctx: TestCo
     assert_eq!(name_of(&ctx, child, TARGET).as_deref(), Some("couch"));
 
     ctx.apply(&Entry::new(
-        reference::layer_key(site, TARGET, NameAttr::KEY),
+        LayerKey {
+            target: TARGET,
+            name:   NameAttr::NAME,
+        }
+        .key(site),
         name_property("recoloured").encode(),
         2,
     ));
@@ -122,7 +129,11 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     let state = referenced();
     let child = realize(&mut ctx, site_ent, &state);
     ctx.apply(&Entry::new(
-        reference::layer_key(site, TARGET, NameAttr::KEY),
+        LayerKey {
+            target: TARGET,
+            name:   NameAttr::NAME,
+        }
+        .key(site),
         name_property("recoloured").encode(),
         2,
     ));
@@ -132,7 +143,11 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     // An empty value under the same key: the referencing document states that
     // the property is gone rather than stating one of its own.
     ctx.apply(&Entry::new(
-        reference::layer_key(site, TARGET, NameAttr::KEY),
+        LayerKey {
+            target: TARGET,
+            name:   NameAttr::NAME,
+        }
+        .key(site),
         Vec::new(),
         3,
     ));

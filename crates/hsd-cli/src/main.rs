@@ -11,7 +11,7 @@ use clap::{
     Args,
     Parser,
 };
-use hsd::source::Source;
+use hsd::format::source::Source;
 use hsd_cli::{
     compile,
     dump,
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
             let package = compile::compile_file(&input_abs, &mut built)?;
 
             let name = compile::output_name(&input_abs);
-            let out = out_dir.join(format!("{name}.{}", hsd::package::EXTENSION));
+            let out = out_dir.join(format!("{name}.{}", hsd::format::package::EXTENSION));
             std::fs::write(&out, package.encode()?)
                 .with_context(|| format!("writing {}", out.display()))?;
             println!("wrote {}", out.display());

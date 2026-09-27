@@ -20,13 +20,12 @@ use hsd::{
         DocId,
         PrimId,
     },
-    key,
+    property::name::PropName,
     state::{
         CommitTarget,
         HsdState,
     },
 };
-use smol_str::SmolStr;
 use tokio::sync::MutexGuard;
 use unavi_policy::quota::{
     Flow,
@@ -387,8 +386,10 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
             let prim = prim
                 .parse::<PrimId>()
                 .map_err(|err| anyhow::anyhow!("invalid prim id: {err}"))?;
-            anyhow::ensure!(key::is_valid_name(&name), "invalid property name {name:?}");
-            Ok((prim, SmolStr::new(name)))
+            let name = name
+                .parse::<PropName>()
+                .map_err(|err| anyhow::anyhow!("invalid property name: {err}"))?;
+            Ok((prim, name))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
 

@@ -16,13 +16,20 @@ use bevy_panorbit_camera::{
 };
 use bytemuck::cast_slice;
 use hsd::{
-    attributes::{
+    id::PrimId,
+    schema::{
         material::{
             self,
             ColorVec,
             MaterialAttr,
         },
-        material_graph::{
+        mesh::{
+            self,
+            MeshIndices,
+            MeshStream,
+            Topology,
+        },
+        shader::{
             ShaderGraph,
             graph::{
                 DisplacementGraph,
@@ -37,13 +44,8 @@ use hsd::{
             },
             value::GraphValue,
         },
-        mesh::{
-            MeshAttr,
-            Topology,
-        },
         xform::XformAttr,
     },
-    id::PrimId,
     state::HsdState,
 };
 use iroh_blobs::{
@@ -102,7 +104,7 @@ fn populate(state: &mut HsdState) {
     let red = material_prim(state, ColorVec(vec![0.9, 0.2, 0.15, 1.0]), 0.1, 0.35);
     let blue = material_prim(state, ColorVec(vec![0.15, 0.4, 0.95, 1.0]), 0.8, 0.2);
 
-    let buffers = cube_buffers();
+    let cube = cube_mesh();
 
     for (offset, target) in [
         (Vec3::new(-2.0, 0.0, 0.0), red),
@@ -112,7 +114,7 @@ fn populate(state: &mut HsdState) {
         (Vec3::new(1.0, 0.0, -2.0), red),
     ] {
         let prim = state.create_prim(None);
-        state.set_attribute(prim, &buffers).expect("mesh");
+        write_mesh(state, prim, &cube);
         state
             .set_attribute(
                 prim,
@@ -124,26 +126,16 @@ fn populate(state: &mut HsdState) {
             )
             .expect("xform");
         state
-            .set_relationship(prim, material::BINDING, target)
+            .set_relationship(prim, &material::BINDING, target)
             .expect("binding");
     }
 
     // Two effects a fixed `MaterialAttr` cannot express, on smooth spheres: a
     // cube's per-face normals split apart when displaced along them.
-    let graph_buffers = sphere_buffers();
+    let sphere = sphere_mesh();
 
-    shader_graph_cube(
-        state,
-        &graph_buffers,
-        Vec3::new(-1.0, 0.0, 2.0),
-        glow_graph(),
-    );
-    shader_graph_cube(
-        state,
-        &graph_buffers,
-        Vec3::new(1.0, 0.0, 2.0),
-        pulse_graph(),
-    );
+    shader_graph_cube(state, &sphere, Vec3::new(-1.0, 0.0, 2.0), glow_graph());
+    shader_graph_cube(state, &sphere, Vec3::new(1.0, 0.0, 2.0), pulse_graph());
 }
 
 fn material_prim(
@@ -169,12 +161,12 @@ fn material_prim(
 
 fn shader_graph_cube(
     state: &mut HsdState,
-    buffers: &MeshAttr,
+    mesh: &Mesh,
     offset: Vec3,
     graph: ShaderGraph,
 ) -> PrimId {
     let prim = state.create_prim(None);
-    state.set_attribute(prim, buffers).expect("mesh");
+    write_mesh(state, prim, mesh);
     state
         .set_attribute(
             prim,
@@ -251,43 +243,47 @@ fn pulse_graph() -> ShaderGraph {
     }
 }
 
-fn cube_buffers() -> MeshAttr {
-    let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
-    mesh_buffers(cube)
+fn cube_mesh() -> Mesh {
+    Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build()
 }
 
 /// Smoothly-normalled sphere, so a displacement graph breathes the whole
 /// shell rather than splitting per-face vertices apart.
-fn sphere_buffers() -> MeshAttr {
-    mesh_buffers(Sphere::new(CUBE_SIZE / 2.0).mesh().build())
+fn sphere_mesh() -> Mesh {
+    Sphere::new(CUBE_SIZE / 2.0).mesh().build()
 }
 
-fn mesh_buffers(mesh: Mesh) -> MeshAttr {
-    let mut attr = MeshAttr {
-        topology: Topology::TriangleList,
-        ..Default::default()
-    };
+/// Writes a Bevy mesh's buffers as `mesh/topology`, `mesh/indices` and one
+/// `mesh/stream:<NAME>` field per vertex attribute the mesh carries.
+fn write_mesh(state: &mut HsdState, prim: PrimId, mesh: &Mesh) {
+    state
+        .set_attribute(prim, &Topology::TriangleList)
+        .expect("topology");
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
         mesh.attribute(Mesh::ATTRIBUTE_POSITION)
     {
-        attr.streams
-            .insert("POSITION".to_owned(), cast_slice(positions).to_vec());
+        write_stream(state, prim, "POSITION", cast_slice(positions).to_vec());
     }
     if let Some(VertexAttributeValues::Float32x3(normals)) = mesh.attribute(Mesh::ATTRIBUTE_NORMAL)
     {
-        attr.streams
-            .insert("NORMAL".to_owned(), cast_slice(normals).to_vec());
+        write_stream(state, prim, "NORMAL", cast_slice(normals).to_vec());
     }
     if let Some(VertexAttributeValues::Float32x2(uvs)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
-        attr.streams
-            .insert("UV_0".to_owned(), cast_slice(uvs).to_vec());
+        write_stream(state, prim, "UV_0", cast_slice(uvs).to_vec());
     }
     if let Some(Indices::U32(idx)) = mesh.indices() {
-        attr.indices = Some(cast_slice(idx).to_vec());
+        state
+            .set_attribute(prim, &MeshIndices(cast_slice(idx).to_vec()))
+            .expect("indices");
     }
+}
 
-    attr
+fn write_stream(state: &mut HsdState, prim: PrimId, name: &str, bytes: Vec<u8>) {
+    let field = mesh::stream(name).expect("valid stream name");
+    state
+        .set_payload(prim, &field, &MeshStream(bytes))
+        .expect("stream");
 }
 
 fn spawn_mem_store() -> (MemStore, Blobs) {

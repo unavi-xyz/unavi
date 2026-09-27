@@ -5,24 +5,13 @@ use bevy_hsd::loaded::{
     HsdSnapshotDrained,
 };
 use bytemuck::cast_slice;
-use hsd::attributes::collider::{
-    ColliderAttr,
-    ColliderKind,
-};
+use hsd::schema::collider::ColliderKind;
 use rstest::rstest;
 use tracing_test::traced_test;
 
 use crate::common::*;
 
 mod common;
-
-const fn collider(kind: ColliderKind) -> ColliderAttr {
-    ColliderAttr {
-        kind,
-        vertices: None,
-        indices: None,
-    }
-}
 
 const VERTS: [[f32; 3]; 4] = [
     [0.0, 0.0, 0.0],
@@ -42,11 +31,11 @@ fn test_loaded_when_no_blob_work(mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(
         root,
-        &collider(ColliderKind::Cuboid {
+        &ColliderKind::Cuboid {
             x: 1.0,
             y: 1.0,
             z: 1.0,
-        }),
+        },
     );
 
     ctx.tick_until(has::<HsdLoaded>);
@@ -59,7 +48,7 @@ fn test_not_loaded_while_collider_broken(mut ctx: TestContext) {
 
     // Garbage bytes for a trimesh: the collider cannot be built, so readiness
     // must never fire while it is missing.
-    ctx.set_attr(root, &collider(ColliderKind::Trimesh));
+    ctx.set_attr(root, &ColliderKind::Trimesh);
     ctx.set_collider_vertices(root, b"not-vertices".to_vec());
     ctx.set_collider_indices(root, b"not-indices".to_vec());
 
@@ -85,7 +74,7 @@ fn test_loaded_after_collider_built(mut ctx: TestContext) {
     let indices = cast_slice::<[u32; 3], u8>(&IDXS).to_vec();
 
     let root = ctx.create_prim();
-    ctx.set_attr(root, &collider(ColliderKind::Trimesh));
+    ctx.set_attr(root, &ColliderKind::Trimesh);
     ctx.set_collider_vertices(root, vertices);
     ctx.set_collider_indices(root, indices);
 

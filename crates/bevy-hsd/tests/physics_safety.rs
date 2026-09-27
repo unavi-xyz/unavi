@@ -11,18 +11,15 @@ use avian3d::prelude::{
 use bevy::prelude::*;
 use bevy_hsd::Hsd;
 use hsd::{
-    attributes::{
-        collider::{
-            ColliderAttr,
-            ColliderKind,
-        },
+    id::PrimId,
+    schema::{
+        collider::ColliderKind,
         rigid_body::{
             RigidBodyAttr,
             RigidBodyKind,
         },
         xform::XformAttr,
     },
-    id::PrimId,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -32,17 +29,9 @@ use crate::common::*;
 
 mod common;
 
-const fn collider(kind: ColliderKind) -> ColliderAttr {
-    ColliderAttr {
-        kind,
-        vertices: None,
-        indices: None,
-    }
-}
-
 fn write_full_prim(
     ctx: &TestContext,
-    collider: Option<ColliderAttr>,
+    collider: Option<ColliderKind>,
     rigid_body: Option<RigidBodyAttr>,
     xform: Option<XformAttr>,
 ) -> PrimId {
@@ -72,11 +61,11 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
 ) {
     write_full_prim(
         &ctx_physics,
-        Some(collider(ColliderKind::Cuboid {
+        Some(ColliderKind::Cuboid {
             x: 1.0,
             y: 0.5,
             z: 1.0,
-        })),
+        }),
         Some(RigidBodyAttr {
             kind: Some(kind),
             ..Default::default()
@@ -105,12 +94,7 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
 #[traced_test]
 #[rstest]
 fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
-    write_full_prim(
-        &ctx_physics,
-        Some(collider(ColliderKind::Sphere(0.5))),
-        None,
-        None,
-    );
+    write_full_prim(&ctx_physics, Some(ColliderKind::Sphere(0.5)), None, None);
 
     ctx_physics.app.update();
     ctx_physics.app.update();
@@ -131,10 +115,10 @@ fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
 fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
     write_full_prim(
         &ctx_physics,
-        Some(collider(ColliderKind::Cylinder {
+        Some(ColliderKind::Cylinder {
             height: 0.1,
             radius: 0.6,
-        })),
+        }),
         Some(RigidBodyAttr {
             kind: Some(RigidBodyKind::Static),
             ..Default::default()
@@ -153,11 +137,11 @@ fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
 fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics: TestContext) {
     write_full_prim(
         &ctx_physics,
-        Some(collider(ColliderKind::Cuboid {
+        Some(ColliderKind::Cuboid {
             x: 0.2,
             y: 0.2,
             z: 0.2,
-        })),
+        }),
         Some(RigidBodyAttr {
             kind: Some(RigidBodyKind::Static),
             ..Default::default()
@@ -189,11 +173,11 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
 fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
     let prim = write_full_prim(
         &ctx_physics,
-        Some(collider(ColliderKind::Cuboid {
+        Some(ColliderKind::Cuboid {
             x: 1.0,
             y: 1.0,
             z: 1.0,
-        })),
+        }),
         Some(RigidBodyAttr {
             kind: Some(RigidBodyKind::Static),
             ..Default::default()
@@ -246,11 +230,11 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
     let child = ctx_physics.create_child(parent);
     ctx_physics.set_attr(
         child,
-        &collider(ColliderKind::Cuboid {
+        &ColliderKind::Cuboid {
             x: 0.2,
             y: 0.2,
             z: 0.2,
-        }),
+        },
     );
     ctx_physics.set_attr(
         child,
@@ -308,11 +292,11 @@ fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: Tes
     let child = ctx_physics.create_child(parent);
     ctx_physics.set_attr(
         child,
-        &collider(ColliderKind::Cuboid {
+        &ColliderKind::Cuboid {
             x: 0.5,
             y: 0.5,
             z: 0.5,
-        }),
+        },
     );
     ctx_physics.set_attr(
         child,

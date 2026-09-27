@@ -4,6 +4,7 @@
 //! content, fetched eagerly because a document must be complete before it
 //! realizes.
 
+use bevy::log::warn;
 use hsd::{
     key,
     state::{
@@ -17,8 +18,10 @@ use wds::document::Document;
 pub async fn read_state(doc: &Document) -> anyhow::Result<HsdState> {
     let mut state = HsdState::new();
     for entry in doc.list(&key::PREFIXES).await? {
-        if let Some(entry) = to_entry(doc, &entry).await {
-            state.apply(&entry)?;
+        if let Some(entry) = to_entry(doc, &entry).await
+            && let Err(err) = state.apply(&entry)
+        {
+            warn!(key = %entry.key, ?err, "dropping an unreadable entry");
         }
     }
     Ok(state)
@@ -43,7 +46,7 @@ pub async fn to_entry(doc: &Document, entry: &iroh_docs::Entry) -> Option<Entry>
     Some(Entry {
         key,
         value,
-        timestamp: entry.timestamp(),
+        timestamp: entry.timestamp() / 1000,
     })
 }
 

@@ -15,11 +15,11 @@ use bevy::{
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
-    id::DocId,
-    package::{
+    format::package::{
         self,
         Package,
     },
+    id::DocId,
     state::layer::Layer,
 };
 use iroh_docs::NamespaceId;

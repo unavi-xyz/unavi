@@ -1,18 +1,16 @@
-use smol_str::SmolStr;
-
 use crate::{
     id::PrimId,
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
 };
 
-/// Describes the *realized* scene only.
-///
-/// A prim whose parent has not arrived produces nothing until it does, at
-/// which point `Realized` is followed by one event per property it already
-/// holds.
+/// A change to the realized scene. `Realized` is followed by one `Property`
+/// event per property the prim already holds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SceneEvent {
-    /// `parent` is `None` for a root of the document.
+    /// `parent` is `None` for a root.
     Realized {
         prim:   PrimId,
         parent: Option<PrimId>,
@@ -26,7 +24,7 @@ pub enum SceneEvent {
     },
     Property {
         prim:  PrimId,
-        name:  SmolStr,
-        value: Option<Property>,
+        name:  PropName,
+        value: Option<Value>,
     },
 }

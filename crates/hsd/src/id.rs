@@ -20,7 +20,10 @@ use serde::{
 use thiserror::Error;
 
 pub const PRIM_ID_BYTES: usize = 16;
-pub const PRIM_ID_CHARS: usize = 22;
+
+/// The base64url length of [`PRIM_ID_BYTES`], six bits per character rounded
+/// up.
+pub const PRIM_ID_CHARS: usize = (PRIM_ID_BYTES * 8).div_ceil(6);
 
 #[derive(Error, Debug)]
 pub enum IdError {
@@ -42,8 +45,8 @@ impl PrimId {
         Self(bytes)
     }
 
-    /// Truncates 32 derived bytes into an id, for build-time ids that must be
-    /// identical on every peer rather than random.
+    /// Truncates 32 derived bytes into an id. Used for build-time ids that
+    /// must be identical across peers.
     #[must_use]
     pub fn from_digest(digest: &[u8; 32]) -> Self {
         let mut bytes = [0u8; PRIM_ID_BYTES];
@@ -54,8 +57,6 @@ impl PrimId {
 
 impl Display for PrimId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        // Writes the base64 straight into the formatter; `encode` would build
-        // a 22-byte `String` to hand back.
         write!(f, "{}", Base64Display::new(&self.0, &URL_SAFE_NO_PAD))
     }
 }
@@ -87,12 +88,8 @@ impl FromStr for PrimId {
 pub struct DocId(pub [u8; 32]);
 
 impl DocId {
-    /// Derived ID for a realized reference site: the child document a prim
-    /// stands for, so every peer computes the same ID.
-    ///
-    /// Derived from the parent document and the site prim rather than being
-    /// the target's id, because two prims may reference one document and
-    /// everything keyed by document id is per site.
+    /// Derives a site's document id from the parent document and prim, so
+    /// every peer computes the same id.
     #[must_use]
     pub fn site(parent: Self, prim: PrimId) -> Self {
         let mut hasher = blake3::Hasher::new();

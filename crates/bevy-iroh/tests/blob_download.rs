@@ -1,7 +1,10 @@
 //! A blob the local store has never seen is pulled from a sync target, rather
 //! than waited on until it happens to arrive.
 
-use std::time::Duration;
+use std::time::{
+    Duration,
+    Instant,
+};
 
 use bevy::{
     prelude::*,
@@ -41,9 +44,9 @@ const CONTENT: &[u8] = b"content only the provider holds";
 /// Bounds the wait for the blob to land in the client's local store; a real
 /// network fetch has no fixed duration to guess at.
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30);
-/// Bounds the catch-up loop that ticks the ECS until the already-landed blob
-/// surfaces as a [`BlobResponse`], which takes no real time of its own.
-const ATTEMPTS: usize = 200;
+/// Bounds the ECS catch-up once the blob is local. The fetch task still reads
+/// the blob back asynchronously, so an update count is not a bound.
+const RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct Fixture {
     blobs:    Blobs,
@@ -163,7 +166,8 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
 
     wait_for_download(&fixture.blobs, fixture.hash);
 
-    for _ in 0..ATTEMPTS {
+    let start = Instant::now();
+    while start.elapsed() < RESPONSE_TIMEOUT {
         app.update();
 
         if let Some(response) = app.world().get::<BlobResponse>(entity) {

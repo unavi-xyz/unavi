@@ -10,7 +10,7 @@
 //! would exercise RON deserialization, which is `hsd-cli`'s job and not what
 //! this suite tests.
 
-use hsd::attributes::material_graph::{
+use hsd::schema::shader::{
     ShaderGraph,
     graph::{
         DisplacementGraph,
@@ -55,7 +55,6 @@ pub const fn input(i: u16) -> Port {
     Port::Input(i)
 }
 
-/// An unlit surface output with the given color and no clip threshold.
 #[must_use]
 pub const fn unlit(color: Port) -> SurfaceOutput {
     SurfaceOutput::Unlit(UnlitOutput {
@@ -64,7 +63,6 @@ pub const fn unlit(color: Port) -> SurfaceOutput {
     })
 }
 
-/// A graph whose surface network holds `nodes` and has a default unlit output.
 #[must_use]
 pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
     ShaderGraph {
@@ -77,7 +75,6 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
     }
 }
 
-/// A graph whose surface network holds `nodes` and the given output.
 #[must_use]
 pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph {
     ShaderGraph {
@@ -90,7 +87,6 @@ pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph
     }
 }
 
-/// A graph with a default surface and a displacement network holding `nodes`.
 #[must_use]
 pub fn displaced(nodes: Vec<Node>, position_offset: Option<Port>) -> ShaderGraph {
     ShaderGraph {

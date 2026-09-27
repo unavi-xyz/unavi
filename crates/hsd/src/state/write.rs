@@ -1,15 +1,14 @@
-//! Local writes: applied immediately, needing no capability and no storage.
-//! Whether they reach other peers is the space protocol's business, and
-//! whether they reach the document is an explicit save.
+//! Local writes, into the runtime layer.
 
 use crate::{
-    attributes::{
-        Attribute,
-        parent::ParentAttr,
-    },
     id::PrimId,
-    key,
-    property::Property,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        value::Value,
+    },
+    schema::parent::ParentAttr,
     state::{
         HsdState,
         StateError,
@@ -38,54 +37,88 @@ impl HsdState {
         Ok(())
     }
 
-    /// Blocks the prim in the runtime layer rather than deleting it. A script
-    /// can hide a document prim for this session; only a commit can remove one
-    /// from the document.
+    /// A prim only the runtime layer states is forgotten. Any other is
+    /// blocked in the runtime layer, and stays in the layers beneath it.
     pub fn remove_prim(&mut self, prim: PrimId) {
-        if self.resolved.contains_key(&prim) {
-            self.write_parent(LayerId::Runtime, prim, None, None);
+        if !self.resolved.contains_key(&prim) {
+            return;
         }
+        let runtime_only = LayerId::ALL
+            .into_iter()
+            .filter(|id| *id != LayerId::Runtime)
+            .all(|id| self.layer(id).get(prim).is_none());
+        if !runtime_only {
+            self.write_parent(LayerId::Runtime, prim, None, None);
+            return;
+        }
+
+        self.layer_mut(LayerId::Runtime).remove(prim);
+        self.settle_parent(prim);
+        self.forget_if_unstated(prim);
     }
 
     pub fn set_property(
         &mut self,
         prim: PrimId,
-        name: &str,
-        value: Property,
+        name: &PropName,
+        value: Value,
     ) -> Result<(), StateError> {
-        // `parent` is structural, not a property: it decides realization, and
-        // writing it here would put a second value under the name that
-        // [`Self::set_parent`] already owns.
-        if !key::is_valid_name(name) || name == ParentAttr::KEY {
-            return Err(StateError::Name(name.to_owned()));
+        if *name == ParentAttr::NAME {
+            return Err(StateError::Reserved(name.clone()));
         }
-        let stamp = Stamp::for_property(&value);
+        let timestamp = self.local_property_time(LayerId::Runtime, prim, name);
+        let stamp = Stamp::of_property(timestamp, &value);
         self.write_property(LayerId::Runtime, prim, name, Some(value), stamp);
         Ok(())
     }
 
-    pub fn set_attribute<A: Attribute>(
+    pub fn set_attribute<A: Property>(
         &mut self,
         prim: PrimId,
         value: &A,
     ) -> Result<(), StateError> {
-        self.set_property(prim, A::KEY, Property::Attribute(value.encode()?))
+        self.set_payload(prim, &A::NAME, value)
+    }
+
+    pub fn set_payload<V: Payload>(
+        &mut self,
+        prim: PrimId,
+        name: &PropName,
+        value: &V,
+    ) -> Result<(), StateError> {
+        self.set_property(prim, name, Value::Attribute(value.encode()?))
     }
 
     pub fn set_relationship(
         &mut self,
         prim: PrimId,
-        name: &str,
+        name: &PropName,
         target: PrimId,
     ) -> Result<(), StateError> {
-        self.set_property(prim, name, Property::Relationship(target))
+        self.set_property(prim, name, Value::Relationship(target))
     }
 
-    pub fn remove_property(&mut self, prim: PrimId, name: &str) {
-        if name == ParentAttr::KEY {
+    pub fn remove_property(&mut self, prim: PrimId, name: &PropName) {
+        if *name == ParentAttr::NAME {
             return;
         }
-        let stamp = Stamp::now(&[]);
+        let timestamp = self.local_property_time(LayerId::Runtime, prim, name);
+        let stamp = Stamp::new(timestamp, &[]);
         self.write_property(LayerId::Runtime, prim, name, None, stamp);
+    }
+
+    /// Removes every property of `group` the prim resolves.
+    pub fn remove_group(&mut self, prim: PrimId, group: &str) {
+        let Some(state) = self.resolved.get(&prim) else {
+            return;
+        };
+        let names = state
+            .properties()
+            .filter(|(name, _)| name.group() == group)
+            .map(|(name, _)| name.clone())
+            .collect::<Vec<_>>();
+        for name in names {
+            self.remove_property(prim, &name);
+        }
     }
 }

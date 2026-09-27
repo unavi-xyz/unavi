@@ -13,33 +13,52 @@ use anyhow::{
     Result,
 };
 use hsd::{
-    attributes::{
-        Attribute,
-        collider::ColliderAttr,
-        gravity_scale::GravityScaleAttr,
-        image::ImageAttr,
-        material::MaterialAttr,
-        material_graph::{
-            ShaderGraph,
-            overrides::GraphOverridesAttr,
+    format::package::Package,
+    id::PrimId,
+    key,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        render_bytes,
+        value::Value,
+    },
+    schema::{
+        collider::{
+            ColliderIndices,
+            ColliderKind,
+            ColliderVertices,
         },
-        mesh::MeshAttr,
+        gravity_scale::GravityScaleAttr,
+        image::{
+            ImageData,
+            ImageSampler,
+        },
+        material::MaterialAttr,
+        mesh::{
+            self,
+            MeshIndices,
+            MeshStream,
+            Topology,
+        },
         name::NameAttr,
         parent::ParentAttr,
         portal::PortalAttr,
         reference::{
             self,
+            LayerKey,
             ReferenceAttr,
         },
         rigid_body::RigidBodyAttr,
         script::ScriptAttr,
+        shader::{
+            ShaderGraph,
+            overrides::GraphOverridesAttr,
+        },
         spawn::SpawnAttr,
+        text::TextAttr,
         xform::XformAttr,
     },
-    id::PrimId,
-    key,
-    package::Package,
-    property::Property,
 };
 use ron::extensions::Extensions;
 use serde::Serialize;
@@ -47,9 +66,6 @@ use serde::Serialize;
 #[derive(Serialize, Default)]
 struct DumpPrim {
     id:            String,
-    /// The document this prim references, when it has one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reference:     Option<String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     attributes:    BTreeMap<String, String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -65,7 +81,6 @@ struct DumpPrim {
 #[derive(Default)]
 struct Node {
     parent:        Option<ParentAttr>,
-    reference:     Option<String>,
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
     overrides:     BTreeMap<String, BTreeMap<String, String>>,
@@ -78,45 +93,35 @@ pub fn dump_file(input: &Path) -> Result<String> {
 
     let mut nodes: BTreeMap<PrimId, Node> = BTreeMap::new();
     for (raw, value) in &package.entries {
-        match key::parse(raw) {
-            Some(key::Key::Prop { prim, name }) if name == ParentAttr::KEY => {
+        match key::Key::parse(raw) {
+            Some(key::Key::Prop { prim, name }) if name == ParentAttr::NAME => {
                 nodes.entry(prim).or_default().parent = ParentAttr::from_wire(value)?;
             }
             Some(key::Key::Prop { prim, name }) => {
                 let node = nodes.entry(prim).or_default();
-                match Property::decode(value)? {
-                    Property::Relationship(target) => {
+                match Value::decode(value)? {
+                    Value::Relationship(target) => {
                         node.relationships
                             .insert(name.to_string(), target.to_string());
                     }
-                    Property::Attribute(payload) => {
+                    Value::Attribute(payload) => {
                         node.attributes
                             .insert(name.to_string(), render(&name, &payload));
                     }
                 }
             }
-            Some(key::Key::PropSub { prim, name, tail }) if name == ReferenceAttr::KEY => {
-                match reference::parse_tail(&tail) {
-                    Some(reference::RefKey::Target) => {
-                        let node = nodes.entry(prim).or_default();
-                        node.reference = Some(match Property::decode(value)? {
-                            Property::Attribute(payload) => render(ReferenceAttr::KEY, &payload),
-                            Property::Relationship(target) => target.to_string(),
-                        });
-                    }
-                    Some(reference::RefKey::Layer { target, name }) => {
-                        nodes
-                            .entry(prim)
-                            .or_default()
-                            .overrides
-                            .entry(target.to_string())
-                            .or_default()
-                            .insert(name.to_string(), render_override(&name, value)?);
-                    }
-                    None => {}
+            Some(key::Key::Nested { prim, group, tail }) if group == reference::GROUP => {
+                if let Some(LayerKey { target, name }) = LayerKey::parse(&tail) {
+                    nodes
+                        .entry(prim)
+                        .or_default()
+                        .overrides
+                        .entry(target.to_string())
+                        .or_default()
+                        .insert(name.to_string(), render_override(&name, value)?);
                 }
             }
-            Some(key::Key::Meta | key::Key::PropSub { .. }) | None => {}
+            Some(key::Key::Meta | key::Key::Nested { .. }) | None => {}
         }
     }
 
@@ -134,7 +139,6 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
         .filter(|(_, node)| node.parent.is_some())
         .map(|(id, node)| DumpPrim {
             id:            id.to_string(),
-            reference:     node.reference.clone(),
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
             overrides:     node.overrides.clone(),
@@ -145,41 +149,52 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
 
 /// Renders an override's value, which carries whichever kind of key it names.
 /// An empty value blocks the key rather than stating one.
-fn render_override(name: &str, value: &[u8]) -> Result<String> {
+fn render_override(name: &PropName, value: &[u8]) -> Result<String> {
     if value.is_empty() {
         return Ok("<blocked>".to_owned());
     }
-    if name == ParentAttr::KEY {
+    if *name == ParentAttr::NAME {
         return Ok(format!("{:?}", ParentAttr::from_wire(value)?));
     }
-    Ok(match Property::decode(value)? {
-        Property::Relationship(target) => target.to_string(),
-        Property::Attribute(payload) => render(name, &payload),
+    Ok(match Value::decode(value)? {
+        Value::Relationship(target) => target.to_string(),
+        Value::Attribute(payload) => render(name, &payload),
     })
 }
 
-/// Renders a known attribute through the registry; an unknown one keeps its
-/// key and its size, which is all a build that has never heard of it knows.
-fn render(name: &str, payload: &[u8]) -> String {
-    fn show<A: Attribute + std::fmt::Debug>(payload: &[u8]) -> String {
-        A::decode(payload).map_or_else(|err| format!("<undecodable: {err}>"), |v| format!("{v:?}"))
-    }
+/// The attributes dump decodes. Any other renders as its size.
+const DECODED: &[(PropName, fn(&[u8]) -> String)] = &[
+    (ColliderKind::NAME, ColliderKind::render),
+    (ColliderVertices::NAME, ColliderVertices::render),
+    (ColliderIndices::NAME, ColliderIndices::render),
+    (GravityScaleAttr::NAME, GravityScaleAttr::render),
+    (ImageSampler::NAME, ImageSampler::render),
+    (ImageData::NAME, ImageData::render),
+    (MaterialAttr::NAME, MaterialAttr::render),
+    (Topology::NAME, Topology::render),
+    (MeshIndices::NAME, MeshIndices::render),
+    (NameAttr::NAME, NameAttr::render),
+    (PortalAttr::NAME, PortalAttr::render),
+    (ReferenceAttr::NAME, ReferenceAttr::render),
+    (RigidBodyAttr::NAME, RigidBodyAttr::render),
+    (ScriptAttr::NAME, ScriptAttr::render),
+    (ShaderGraph::NAME, ShaderGraph::render),
+    (GraphOverridesAttr::NAME, GraphOverridesAttr::render),
+    (SpawnAttr::NAME, SpawnAttr::render),
+    (TextAttr::NAME, TextAttr::render),
+    (XformAttr::NAME, XformAttr::render),
+];
 
-    match name {
-        ColliderAttr::KEY => show::<ColliderAttr>(payload),
-        GravityScaleAttr::KEY => show::<GravityScaleAttr>(payload),
-        ImageAttr::KEY => show::<ImageAttr>(payload),
-        MaterialAttr::KEY => show::<MaterialAttr>(payload),
-        GraphOverridesAttr::KEY => show::<GraphOverridesAttr>(payload),
-        ShaderGraph::KEY => show::<ShaderGraph>(payload),
-        MeshAttr::KEY => show::<MeshAttr>(payload),
-        NameAttr::KEY => show::<NameAttr>(payload),
-        PortalAttr::KEY => show::<PortalAttr>(payload),
-        ReferenceAttr::KEY => show::<ReferenceAttr>(payload),
-        RigidBodyAttr::KEY => show::<RigidBodyAttr>(payload),
-        ScriptAttr::KEY => show::<ScriptAttr>(payload),
-        SpawnAttr::KEY => show::<SpawnAttr>(payload),
-        XformAttr::KEY => show::<XformAttr>(payload),
-        _ => format!("<unknown, {} bytes>", payload.len()),
+/// A mesh stream, named by a prefix, is rendered from its own type.
+fn render(name: &PropName, payload: &[u8]) -> String {
+    if mesh::stream_of(name).is_some() {
+        return MeshStream::decode(payload).map_or_else(
+            |err| format!("<undecodable: {err}>"),
+            |value| render_bytes(value.0.len()),
+        );
     }
+    DECODED.iter().find(|(known, _)| known == name).map_or_else(
+        || format!("<unknown, {} bytes>", payload.len()),
+        |(_, render)| render(payload),
+    )
 }

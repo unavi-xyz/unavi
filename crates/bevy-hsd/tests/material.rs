@@ -8,8 +8,8 @@ use bevy_hsd::attributes::{
     image::HsdImage,
     material::HsdMaterial,
 };
-use hsd::attributes::{
-    image::ImageAttr,
+use hsd::schema::{
+    image::ImageSampler,
     material::{
         self,
         ColorVec,
@@ -93,7 +93,7 @@ fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
     let image_prim = ctx.create_prim();
     ctx.set_attr(
         image_prim,
-        &ImageAttr {
+        &ImageSampler {
             srgb: Some(true),
             ..Default::default()
         },
@@ -102,7 +102,7 @@ fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
 
     let material_prim = ctx.create_prim();
     ctx.set_attr(material_prim, &MaterialAttr::default());
-    ctx.set_relationship(material_prim, material::BASE_COLOR_TEXTURE, image_prim);
+    ctx.set_relationship(material_prim, &material::BASE_COLOR_TEXTURE, image_prim);
 
     let mut image_handle: Option<Handle<Image>> = None;
     let mut material_handle: Option<Handle<StandardMaterial>> = None;
@@ -144,7 +144,7 @@ fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
     assert_eq!(mat.base_color_texture.as_ref(), Some(&image_handle));
 }
 
-/// `material:binding` is USD's precedent: a prim uses another prim's material
+/// `material/binding` is USD's precedent: a prim uses another prim's material
 /// rather than defining its own.
 #[traced_test]
 #[rstest]
@@ -159,7 +159,7 @@ fn test_material_binding(mut ctx: TestContext) {
     );
 
     let prim_b = ctx.create_prim();
-    ctx.set_relationship(prim_b, material::BINDING, prim_a);
+    ctx.set_relationship(prim_b, &material::BINDING, prim_a);
 
     ctx.app.update();
     ctx.app.update();

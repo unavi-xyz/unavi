@@ -99,7 +99,7 @@ impl Laser {
             .find(|p| p.name().is_some_and(|n| n == TEMPLATE_PRIM_NAME))
         {
             Some(template) => {
-                prim.set_relationship("material:binding", Some(&template.id()))
+                prim.set_relationship("material/binding", Some(&template.id()))
                     .ok();
             }
             None => eprintln!("physgun: HSD missing {TEMPLATE_PRIM_NAME} prim; beam unshaded"),

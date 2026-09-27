@@ -1,15 +1,16 @@
 use std::io::Cursor;
 
 use bevy::{
-    image::ImageSampler,
+    image::ImageSampler as BevyImageSampler,
     prelude::*,
     render::render_resource::TextureFormat,
 };
 use bevy_hsd::attributes::image::HsdImage;
-use hsd::attributes::image::{
+use hsd::schema::image::{
     AddressMode,
     FilterMode,
-    ImageAttr,
+    ImageData,
+    ImageSampler,
 };
 use image::{
     ImageFormat,
@@ -26,7 +27,7 @@ mod common;
 #[rstest]
 fn test_image_lifecycle(mut ctx: TestContext) {
     let root = ctx.create_prim();
-    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_attr(root, &ImageSampler::default());
     ctx.set_image_data(root, b"png".to_vec());
 
     ctx.app.update();
@@ -37,7 +38,7 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].0, Handle::<Image>::default());
 
-    ctx.remove_attr::<ImageAttr>(root);
+    ctx.remove_attr::<ImageData>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -62,7 +63,7 @@ fn test_image_blob_load(#[from(ctx_blobs)] mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(
         root,
-        &ImageAttr {
+        &ImageSampler {
             address_mode_u: Some(AddressMode::MirrorRepeat),
             mag_filter: Some(FilterMode::Nearest),
             srgb: Some(true),
@@ -93,7 +94,7 @@ fn test_image_blob_load(#[from(ctx_blobs)] mut ctx: TestContext) {
     assert_eq!(img.texture_descriptor.format, TextureFormat::Rgba8UnormSrgb);
     assert_eq!(img.data.as_deref(), Some(rgba.as_raw().as_slice()));
 
-    let ImageSampler::Descriptor(sampler) = &img.sampler else {
+    let BevyImageSampler::Descriptor(sampler) = &img.sampler else {
         panic!("expected descriptor sampler");
     };
     assert_eq!(
@@ -114,7 +115,7 @@ fn test_oversized_image_is_refused(mut ctx: TestContext) {
         .expect("encode oversized png");
 
     let root = ctx.create_prim();
-    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_attr(root, &ImageSampler::default());
     ctx.set_image_data(root, bytes.into_inner());
 
     ctx.app.update();
@@ -142,7 +143,7 @@ fn test_image_within_the_cap_loads(mut ctx: TestContext) {
         .expect("encode png");
 
     let root = ctx.create_prim();
-    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_attr(root, &ImageSampler::default());
     ctx.set_image_data(root, bytes.into_inner());
 
     ctx.app.update();

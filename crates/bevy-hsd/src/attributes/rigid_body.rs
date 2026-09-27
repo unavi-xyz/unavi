@@ -9,9 +9,13 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    rigid_body::{
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::rigid_body::{
+        self,
         RigidBodyAttr,
         RigidBodyKind,
     },
@@ -35,14 +39,15 @@ pub struct RigidBodyData(pub RigidBodyAttr);
 pub struct RigidBodyParser;
 
 impl AttributeParser for RigidBodyParser {
-    fn key(&self) -> &'static str {
-        RigidBodyAttr::KEY
+    fn group(&self) -> &'static str {
+        rigid_body::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

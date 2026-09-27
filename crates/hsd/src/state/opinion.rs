@@ -1,20 +1,16 @@
 use std::collections::BTreeMap;
 
-use smol_str::SmolStr;
-
 use crate::{
-    attributes::parent::ParentAttr,
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
+    schema::parent::ParentAttr,
     state::entry::Stamp,
 };
 
-/// What one layer says about one key.
-///
-/// Absence from the layer's map is the third state — "no opinion" — and falls
-/// through to the layer below. `Blocked` does not fall through: it states the
-/// key is gone, so nothing weaker shows past it. Two states would leave "a
-/// stronger layer removes a property the document set" inexpressible, since
-/// absence already means "no opinion".
+/// What one layer says about one key. A layer holding no opinion falls
+/// through to the layer below, and `Blocked` hides every weaker layer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Opinion<T> {
     Set(T),
@@ -36,15 +32,12 @@ impl<T> From<Option<T>> for Opinion<T> {
     }
 }
 
-/// One layer's opinions about one prim, each stamped so a later write from any
-/// peer wins and an older one is refused.
+/// One layer's opinions about one prim, each stamped so an older write is
+/// refused.
 #[derive(Debug, Clone)]
 pub(super) struct PrimOpinions {
     parent: Option<(Opinion<ParentAttr>, Stamp)>,
-    /// Attributes, relationships and blobs share one map: a value's tag says
-    /// which it is, so a name has exactly one kind and no tombstone has to
-    /// guess between two.
-    props:  BTreeMap<SmolStr, (Opinion<Property>, Stamp)>,
+    props:  BTreeMap<PropName, (Opinion<Value>, Stamp)>,
 }
 
 impl PrimOpinions {
@@ -59,21 +52,23 @@ impl PrimOpinions {
         self.parent.as_ref()
     }
 
-    pub(super) fn property(&self, name: &str) -> Option<&Opinion<Property>> {
+    pub(super) fn property(&self, name: &PropName) -> Option<&Opinion<Value>> {
         self.props.get(name).map(|(opinion, _)| opinion)
     }
 
-    /// Every property key this layer holds an opinion about, `Blocked` ones
-    /// included.
-    pub(super) fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Opinion<Property>)> {
+    pub(super) fn property_stamp(&self, name: &PropName) -> Option<Stamp> {
+        self.props.get(name).map(|(_, stamp)| *stamp)
+    }
+
+    /// `Blocked` opinions included.
+    pub(super) fn properties(&self) -> impl Iterator<Item = (&PropName, &Opinion<Value>)> {
         self.props
             .iter()
             .map(|(name, (opinion, _))| (name, opinion))
     }
 
-    /// The properties this layer states a value for. A `Blocked` key is an
-    /// opinion but not a value, so it is absent here and from the save set.
-    pub(super) fn set_properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {
+    /// `Blocked` opinions excluded.
+    pub(super) fn set_properties(&self) -> impl Iterator<Item = (&PropName, &Value)> {
         self.props
             .iter()
             .filter_map(|(name, (opinion, _))| opinion.value().map(|value| (name, value)))
@@ -83,21 +78,16 @@ impl PrimOpinions {
         self.parent.is_none() && self.props.is_empty()
     }
 
-    /// Removes and answers the parent opinion, or `None` when this prim has
-    /// none in this layer. An empty prim's entry is dropped by the layer's
-    /// `take_*` wrappers, so a layer never lingers on prims it no longer
-    /// says anything about.
     pub(super) const fn take_parent(&mut self) -> Option<(Opinion<ParentAttr>, Stamp)> {
         self.parent.take()
     }
 
-    pub(super) fn take_property(&mut self, name: &str) -> Option<(Opinion<Property>, Stamp)> {
+    pub(super) fn take_property(&mut self, name: &PropName) -> Option<(Opinion<Value>, Stamp)> {
         self.props.remove(name)
     }
 
-    /// Records an opinion, answering whether the write was accepted. A stamp
-    /// older than the one already held is refused and changes nothing, which
-    /// is what makes entries arriving out of order converge.
+    /// Answers whether the write was accepted. A stamp older than the one
+    /// held is refused.
     pub(super) fn set_parent(&mut self, parent: Opinion<ParentAttr>, stamp: Stamp) -> bool {
         if self.parent.as_ref().is_some_and(|(_, old)| stamp < *old) {
             return false;
@@ -108,8 +98,8 @@ impl PrimOpinions {
 
     pub(super) fn set_property(
         &mut self,
-        name: &str,
-        value: Opinion<Property>,
+        name: &PropName,
+        value: Opinion<Value>,
         stamp: Stamp,
     ) -> bool {
         match self.props.get_mut(name) {
@@ -119,7 +109,7 @@ impl PrimOpinions {
                 true
             }
             None => {
-                self.props.insert(SmolStr::new(name), (value, stamp));
+                self.props.insert(name.clone(), (value, stamp));
                 true
             }
         }

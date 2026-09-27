@@ -15,7 +15,10 @@ use bevy_hsd::{
 use hsd::{
     id::DocId,
     key,
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
     state::{
         HsdState,
         entry::Entry,
@@ -23,7 +26,6 @@ use hsd::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use smol_str::SmolStr;
 use unavi_policy::{
     registry::Policy,
     space::Space,
@@ -394,15 +396,17 @@ fn set_session(
     at: u64,
     local: bool,
 ) -> Result<(), SessionError> {
-    if writes.iter().any(|w| !valid_name(&w.name)) {
-        return Err(SessionError::BadName);
-    }
+    let named: Vec<(SessionWrite, PropName)> = writes
+        .into_iter()
+        .map(|w| valid_name(&w.name).map(|name| (w, name)))
+        .collect::<Result<_, _>>()?;
+
     let anchor = doc_anchor(world, doc, space);
     let policy = world.resource::<Policy>().clone();
     let replicas = world.resource::<Replicas>().clone();
     let view = current_view(world);
 
-    for write in &writes {
+    for (write, name) in &named {
         replicas.add_session(
             &policy,
             as_viewer(view.as_ref()),
@@ -411,20 +415,21 @@ fn set_session(
             space,
             SessionKey {
                 prim: write.prim,
-                name: SmolStr::new(&write.name),
+                name: name.clone(),
             },
             write.value.clone(),
             at,
         )?;
     }
 
-    compose_session(world, doc, &writes, at);
+    compose_session(world, doc, &named, at);
 
     if local {
+        let writes = named.iter().map(|(w, _)| w.clone()).collect();
         replicas.broadcast(&StateMsg::Session {
             doc,
             space,
-            writes: writes.clone(),
+            writes,
             at,
         });
     }
@@ -432,10 +437,10 @@ fn set_session(
     // Anchored to the document alone, so a disconnect leaves the cell intact
     // and a change of owner does not move it. One guard per key, whoever wrote
     // it last.
-    for write in writes {
+    for (write, name) in named {
         let key = SessionKey {
             prim: write.prim,
-            name: SmolStr::new(write.name),
+            name,
         };
         if find_cell(world, anchor, doc, &key).is_none() {
             world.spawn((
@@ -452,9 +457,12 @@ fn set_session(
 }
 
 /// A session name is a property name, so it answers to the same key-layout
-/// rule every document key does, plus a length the store will accept.
-fn valid_name(name: &str) -> bool {
-    key::is_valid_name(name) && name.len() <= replicas::SESSION_NAME_MAX_BYTES
+/// rule every document property does, plus a length the store will accept.
+fn valid_name(name: &str) -> Result<PropName, SessionError> {
+    if name.len() > replicas::SESSION_NAME_MAX_BYTES {
+        return Err(SessionError::BadName);
+    }
+    name.parse().map_err(|_| SessionError::BadName)
 }
 
 /// The live state of a document in the world, or `None` for one this node is
@@ -501,10 +509,10 @@ fn restore_session(world: &mut World, restored: Restored) {
     state.clear_session(restored.key.prim, &restored.key.name);
     if let Standing::Prior { value, at } = restored.standing {
         let bytes = value
-            .map(|bytes| Property::Attribute(bytes).encode())
+            .map(|bytes| Value::Attribute(bytes).encode())
             .unwrap_or_default();
         if let Err(err) = state.apply_session(&Entry::new(
-            key::prop(restored.key.prim, &restored.key.name),
+            key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
             bytes,
             at,
         )) {
@@ -520,7 +528,7 @@ fn restore_session(world: &mut World, restored: Restored) {
 /// where the value is drawn from. A document not in the world yet composes
 /// nothing — the record carries the opinion until the document arrives and
 /// [`Replicas::session_value`] answers for it.
-fn compose_session(world: &mut World, doc: DocId, writes: &[SessionWrite], at: u64) {
+fn compose_session(world: &mut World, doc: DocId, writes: &[(SessionWrite, PropName)], at: u64) {
     let Some(state) = doc_state(world, doc) else {
         return;
     };
@@ -530,18 +538,20 @@ fn compose_session(world: &mut World, doc: DocId, writes: &[SessionWrite], at: u
     };
 
     state.open_tick();
-    for write in writes {
+    for (write, name) in writes {
         // A guest states an opaque payload, which is what an attribute is:
         // the same encoding the document uses, so a session opinion on
         // `xform` is interchangeable with the one the document holds.
         let value = write
             .value
             .as_ref()
-            .map(|bytes| Property::Attribute(bytes.clone()).encode())
+            .map(|bytes| Value::Attribute(bytes.clone()).encode())
             .unwrap_or_default();
-        if let Err(err) =
-            state.apply_session(&Entry::new(key::prop(write.prim, &write.name), value, at))
-        {
+        if let Err(err) = state.apply_session(&Entry::new(
+            key::Key::prop(write.prim, name).to_string(),
+            value,
+            at,
+        )) {
             warn!(?err, "session opinion refused by the document");
         }
     }
@@ -692,7 +702,7 @@ mod tests {
     fn writes() -> Vec<SessionWrite> {
         vec![SessionWrite {
             prim:  prim(),
-            name:  "k".to_owned(),
+            name:  "test/k".to_owned(),
             value: Some(b"v".to_vec()),
         }]
     }
@@ -737,11 +747,11 @@ mod tests {
 
         set_session(&mut world, me, space, space, writes(), 1, true).expect("session set");
 
-        let composed = state
-            .lock()
-            .expect("lock")
-            .get(prim())
-            .and_then(|p| p.property("k").and_then(Property::as_attribute).cloned());
+        let composed = state.lock().expect("lock").get(prim()).and_then(|p| {
+            p.property(&hsd::prop_name!("test/k"))
+                .and_then(Value::as_attribute)
+                .cloned()
+        });
         assert_eq!(
             composed.as_deref(),
             Some(&b"v"[..]),
@@ -768,7 +778,10 @@ mod tests {
         // Tearing down the doc drops the cell locally but sends no retract, so
         // peers still holding it keep theirs.
         world.despawn(space_ent);
-        assert_eq!(replicas.session_value(space, space, prim(), "k"), None);
+        assert_eq!(
+            replicas.session_value(space, space, prim(), &hsd::prop_name!("test/k")),
+            None
+        );
         assert!(rx.try_recv().is_err());
 
         replicas.unregister_stream(token);
@@ -787,20 +800,23 @@ mod tests {
         let peer_ent = world.spawn(RemotePeer(remote)).id();
         set_session(&mut world, remote, space, space, writes(), 1, false).expect("session set");
         assert_eq!(
-            replicas.session_value(space, space, prim(), "k"),
+            replicas.session_value(space, space, prim(), &hsd::prop_name!("test/k")),
             Some(b"v".to_vec())
         );
 
         world.despawn(peer_ent);
         assert_eq!(
-            replicas.session_value(space, space, prim(), "k"),
+            replicas.session_value(space, space, prim(), &hsd::prop_name!("test/k")),
             Some(b"v".to_vec()),
             "a space-owned opinion persists after the peer that wrote it goes"
         );
 
         // The doc anchor still owns the cell's lifetime.
         world.despawn(space_ent);
-        assert_eq!(replicas.session_value(space, space, prim(), "k"), None);
+        assert_eq!(
+            replicas.session_value(space, space, prim(), &hsd::prop_name!("test/k")),
+            None
+        );
     }
 
     #[test]

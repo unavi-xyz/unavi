@@ -23,9 +23,9 @@ use hsd::{
         DocId,
         PrimId,
     },
+    property::name::PropName,
     state::HsdState,
 };
-use smol_str::SmolStr;
 use wds::document::Document;
 
 pub mod anchor;
@@ -46,18 +46,15 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            MaterialPlugin::<attributes::material_graph::ShaderGraphMaterial>::default(),
+            MaterialPlugin::<attributes::shader::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
         ))
             .init_asset::<load::HsdAsset>()
-            .init_resource::<attributes::material_graph::ShaderGraphCache>()
+            .init_resource::<attributes::shader::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
             .add_observer(diff::resync_on_spawn)
-            .add_observer(attributes::material_graph::evict_document_shaders)
-            .add_systems(
-                Startup,
-                attributes::material_graph::register_fallback_shader,
-            )
+            .add_observer(attributes::shader::evict_document_shaders)
+            .add_systems(Startup, attributes::shader::register_fallback_shader)
             .add_systems(
                 Update,
                 (
@@ -87,8 +84,8 @@ impl Plugin for HsdPlugin {
                     )
                         .chain(),
                     (
-                        attributes::material_graph::rebuild_material_graph,
-                        attributes::material_graph::apply_graph_overrides,
+                        attributes::shader::rebuild_shader_material,
+                        attributes::shader::apply_graph_overrides,
                         load::instance_hsd,
                         load::realize_refs,
                     )
@@ -173,10 +170,10 @@ pub struct Prim(pub PrimId);
 pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
 
 /// A prim's relationship properties: the cross-prim references, which in this
-/// format share one namespace with attributes and are distinguished by a tag
+/// format share one group with attributes and are distinguished by a tag
 /// byte rather than by name.
 #[derive(Component, Default, Debug)]
-pub struct HsdRelationships(pub BTreeMap<SmolStr, PrimId>);
+pub struct HsdRelationships(pub BTreeMap<PropName, PrimId>);
 
 /// Pauses event draining while a batched writer holds it, so the batch's
 /// writes reach the world atomically instead of tearing across frames.

@@ -1,6 +1,6 @@
 //! Decides which backend renders a prim, so exactly one does.
 //!
-//! The format's `material:binding` names another prim, not a backend, and this
+//! The format's `material/binding` names another prim, not a backend, and this
 //! crate has two backends for it. Without a single decision point a prim can
 //! carry both material components and render twice.
 
@@ -9,7 +9,7 @@ use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
 };
-use hsd::attributes::material;
+use hsd::schema::material;
 
 use crate::{
     HsdChild,
@@ -20,7 +20,7 @@ use crate::{
             HsdMaterial,
             MaterialData,
         },
-        material_graph::{
+        shader::{
             HsdMaterialGraphSlot,
             HsdShaderGraphMaterial,
             ShaderGraphMaterial,
@@ -31,7 +31,7 @@ use crate::{
 /// Which backend renders a prim, and whose definition it uses.
 ///
 /// The inner entity is the prim the definition comes from — itself, or the
-/// target of its `material:binding`. A bound prim follows whatever its target
+/// target of its `material/binding`. A bound prim follows whatever its target
 /// resolved to, so a graph and a PBR material are interchangeable.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaterialSource {
@@ -53,11 +53,11 @@ pub struct SourceCtx<'w, 's> {
 }
 
 impl SourceCtx<'_, '_> {
-    /// The prim a `material:binding` names, if it resolves within the same
+    /// The prim a `material/binding` names, if it resolves within the same
     /// document.
     fn binding_target(&self, prim: Entity) -> Option<Entity> {
         let rels = self.relationships.get(prim).ok()?;
-        let target = rels.0.get(material::BINDING)?;
+        let target = rels.0.get(&material::BINDING)?;
         let doc = self.children.get(prim).ok()?.0;
         let target = *self.indices.get(doc).ok()?.0.get(target)?;
         (target != prim).then_some(target)

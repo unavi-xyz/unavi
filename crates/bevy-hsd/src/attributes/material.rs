@@ -3,9 +3,13 @@ use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
 };
-use hsd::attributes::{
-    Attribute,
-    material::{
+use hsd::{
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+    },
+    schema::material::{
         self,
         ColorVec,
         MaterialAttr,
@@ -60,16 +64,20 @@ impl MaterialTextureRefs {
 pub struct MaterialParser;
 
 impl AttributeParser for MaterialParser {
-    fn key(&self) -> &'static str {
-        MaterialAttr::KEY
+    fn group(&self) -> &'static str {
+        material::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
+        if *name != MaterialAttr::NAME {
+            return Ok(());
+        }
         match payload {
             // Only the decoded definition: whether this prim renders as PBR
             // at all is `MaterialSource`'s call, and `build` inserts the
@@ -208,17 +216,17 @@ fn build(
         return;
     };
 
-    let texture = |name: &str| {
+    let texture = |name: &PropName| {
         rels.and_then(|rels| rels.0.get(name))
             .and_then(|target| index.0.get(target).copied())
     };
 
     let texture_refs = MaterialTextureRefs {
-        base_color:         texture(material::BASE_COLOR_TEXTURE),
-        emissive:           texture(material::EMISSIVE_TEXTURE),
-        metallic_roughness: texture(material::METALLIC_ROUGHNESS_TEXTURE),
-        normal:             texture(material::NORMAL_TEXTURE),
-        occlusion:          texture(material::OCCLUSION_TEXTURE),
+        base_color:         texture(&material::BASE_COLOR_TEXTURE),
+        emissive:           texture(&material::EMISSIVE_TEXTURE),
+        metallic_roughness: texture(&material::METALLIC_ROUGHNESS_TEXTURE),
+        normal:             texture(&material::NORMAL_TEXTURE),
+        occlusion:          texture(&material::OCCLUSION_TEXTURE),
     };
 
     let mut standard = StandardMaterial::default();

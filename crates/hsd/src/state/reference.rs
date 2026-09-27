@@ -1,15 +1,15 @@
-//! Reference layers: what this document says about the prims of the documents
-//! it references, and what a document referencing *this* one says about its.
-
 use std::collections::HashSet;
 
 use crate::{
-    attributes::{
-        Attribute,
-        parent::ParentAttr,
-    },
     id::PrimId,
-    property::Property,
+    property::{
+        Property,
+        value::Value,
+    },
+    schema::{
+        parent::ParentAttr,
+        reference::LayerKey,
+    },
     state::{
         HsdState,
         StateError,
@@ -19,34 +19,34 @@ use crate::{
             LayerId,
             OpinionKey,
         },
+        opinion::Opinion,
     },
 };
 
 impl HsdState {
-    /// What this document says about the prims of the document `site`
-    /// references, for the realizer to install into it.
+    /// This document's opinions about the prims of the document `site`
+    /// references.
     #[must_use]
     pub fn reference_layer_for(&self, site: PrimId) -> Option<&Layer> {
         self.references.get(&site)
     }
 
-    /// Changes once per write to any of this document's reference layers, so a
-    /// realizer holding a version knows whether what it installed is current.
+    /// Changes on every accepted write to any reference layer.
     #[must_use]
     pub const fn references_version(&self) -> u64 {
         self.references_version
     }
 
-    /// Installs what the document referencing this one says about its prims.
-    ///
-    /// Replaces the layer whole rather than merging: an opinion the referencing
-    /// document dropped has to stop resolving, and only that document knows
-    /// its own set. Every key either layer held is recomposed, so a dropped
-    /// opinion falls back to what this document itself says.
+    /// Replaces the override layer with what the referencing document states,
+    /// recomposing every key either layer held.
     pub fn install_reference_layer(&mut self, layer: &Layer) {
-        let mut keys: HashSet<_> = self.layer(LayerId::Override).keys().into_iter().collect();
+        let mut keys = self
+            .layer(LayerId::Override)
+            .keys()
+            .into_iter()
+            .collect::<HashSet<_>>();
         keys.extend(layer.keys());
-        *self.layer(LayerId::Override) = layer.clone();
+        *self.layer_mut(LayerId::Override) = layer.clone();
 
         for (prim, opinion) in keys {
             match opinion {
@@ -56,32 +56,32 @@ impl HsdState {
         }
     }
 
-    /// Records this document's opinion about a prim of the document `site`
-    /// references. An empty value is an opinion too: it blocks the key, which
-    /// is not the same as holding none.
+    /// `None` blocks the key.
     pub(super) fn write_reference(
         &mut self,
         site: PrimId,
-        target: PrimId,
-        name: &str,
-        value: Option<&Vec<u8>>,
+        LayerKey { target, name }: &LayerKey,
+        value: Option<&[u8]>,
         stamp: Stamp,
     ) -> Result<(), StateError> {
-        let layer = self.references.entry(site).or_default();
-        let opinions = layer.entry(target);
-
-        let accepted = match name {
-            ParentAttr::KEY => {
-                let parent = value
-                    .map(|bytes| ParentAttr::from_wire(bytes))
-                    .transpose()?
-                    .flatten();
-                opinions.set_parent(parent.into(), stamp)
-            }
-            name => {
-                let property = value.map(|bytes| Property::decode(bytes)).transpose()?;
-                opinions.set_property(name, property.into(), stamp)
-            }
+        let target = *target;
+        let accepted = if *name == ParentAttr::NAME {
+            let parent = match value {
+                Some(bytes) => ParentAttr::from_wire(bytes)?,
+                None => None,
+            };
+            self.references
+                .entry(site)
+                .or_default()
+                .entry(target)
+                .set_parent(Opinion::from(parent), stamp)
+        } else {
+            let property = value.map(Value::decode).transpose()?;
+            self.references
+                .entry(site)
+                .or_default()
+                .entry(target)
+                .set_property(name, Opinion::from(property), stamp)
         };
         if accepted {
             self.references_version = self.references_version.wrapping_add(1);

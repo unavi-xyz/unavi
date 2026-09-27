@@ -21,20 +21,52 @@ use anyhow::{
     ensure,
 };
 use hsd::{
-    attributes::{
-        Attribute,
-        collider::{
-            ColliderAttr,
-            ColliderKind,
+    format::{
+        meta::DocMeta,
+        package::Package,
+        source::{
+            Source,
+            SourceAttributes,
+            SourceCollider,
+            SourceImage,
+            SourceMaterial,
+            SourcePrim,
+            SourceRigidBody,
+            SourceShader,
+            SourceXform,
         },
+    },
+    id::{
+        DocId,
+        PrimId,
+    },
+    key,
+    property::{
+        Property,
+        name::PropName,
+        value::Value,
+    },
+    schema::{
+        collider::ColliderKind,
         gravity_scale::GravityScaleAttr,
-        image::ImageAttr,
+        image::{
+            ImageData,
+            ImageSampler,
+        },
         material::{
             self,
             ColorVec,
             MaterialAttr,
         },
-        material_graph::{
+        name::NameAttr,
+        parent::ParentAttr,
+        reference::ReferenceAttr,
+        rigid_body::{
+            RigidBodyAttr,
+            RigidBodyKind,
+        },
+        script::ScriptAttr,
+        shader::{
             ShaderGraph,
             overrides::{
                 GraphOverridesAttr,
@@ -43,38 +75,8 @@ use hsd::{
             parse::parse as parse_hss,
             validate::validate,
         },
-        name::NameAttr,
-        parent::ParentAttr,
-        reference::{
-            self,
-            ReferenceAttr,
-        },
-        rigid_body::{
-            RigidBodyAttr,
-            RigidBodyKind,
-        },
-        script::ScriptAttr,
         spawn::SpawnAttr,
         xform::XformAttr,
-    },
-    id::{
-        DocId,
-        PrimId,
-    },
-    key,
-    meta::DocMeta,
-    package::Package,
-    property::Property,
-    source::{
-        Source,
-        SourceAttributes,
-        SourceCollider,
-        SourceImage,
-        SourceMaterial,
-        SourceMaterialGraph,
-        SourcePrim,
-        SourceRigidBody,
-        SourceXform,
     },
 };
 
@@ -202,15 +204,10 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             let id = derive_prim_id(&self.source, path);
 
             self.entries.insert(
-                key::prop(id, ParentAttr::KEY),
+                key::Key::prop(id, &ParentAttr::NAME).to_string(),
                 ParentAttr::to_wire(Some(parent)),
             );
             self.emit_attributes(id, &prim.attributes)?;
-
-            for (name, target) in &prim.relationships {
-                let target = self.resolve(target)?;
-                self.set_property(id, name, Property::Relationship(target));
-            }
 
             self.emit(&prim.children, ParentAttr::Prim(id), path)?;
             path.pop();
@@ -248,8 +245,8 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         if let Some(mat) = &attrs.material {
             self.emit_material(id, mat)?;
         }
-        if let Some(graph) = &attrs.material_graph {
-            self.emit_material_graph(id, graph)?;
+        if let Some(shader) = &attrs.shader {
+            self.emit_shader(id, shader)?;
         }
         if let Some(rel) = &attrs.script {
             let bytes = self.compile_script(rel)?;
@@ -268,7 +265,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             std::fs::read(&path).with_context(|| format!("reading image {}", path.display()))?;
         self.set_attribute(
             id,
-            &ImageAttr {
+            &ImageSampler {
                 address_mode_u: image.address_mode_u,
                 address_mode_v: image.address_mode_v,
                 address_mode_w: image.address_mode_w,
@@ -276,9 +273,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
                 min_filter:     image.min_filter,
                 mipmap_filter:  image.mipmap_filter,
                 srgb:           image.srgb,
-                data:           bytes,
             },
-        )
+        )?;
+        self.set_attribute(id, &ImageData(bytes))
     }
 
     fn emit_material(&mut self, id: PrimId, mat: &SourceMaterial) -> Result<()> {
@@ -307,17 +304,17 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         ] {
             if let Some(target) = slot {
                 let target = self.resolve(target)?;
-                self.set_property(id, name, Property::Relationship(target));
+                self.set_property(id, &name, Value::Relationship(target));
             }
         }
         Ok(())
     }
 
-    /// Compiles a `.hss` (Hyper-Space Shader) file to the
-    /// `material:graph_data` attribute and, if the prim specifies overrides, a
-    /// second attribute alongside it.
-    fn emit_material_graph(&mut self, id: PrimId, graph: &SourceMaterialGraph) -> Result<()> {
-        let path = self.input_dir.join(&graph.path);
+    /// Compiles a `.hss` (Hyper-Space Shader) file to the `shader/graph`
+    /// attribute and, if the prim specifies overrides, a `shader/overrides`
+    /// attribute alongside it.
+    fn emit_shader(&mut self, id: PrimId, shader: &SourceShader) -> Result<()> {
+        let path = self.input_dir.join(&shader.path);
         let src = std::fs::read_to_string(&path)
             .with_context(|| format!("reading shader graph {}", path.display()))?;
         let parsed: ShaderGraph =
@@ -325,9 +322,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         validate(&parsed).with_context(|| format!("validating shader graph {}", path.display()))?;
         self.set_attribute(id, &parsed)?;
 
-        if !graph.overrides.is_empty() {
+        if !shader.overrides.is_empty() {
             let overrides = GraphOverridesAttr {
-                overrides: graph.overrides.clone(),
+                overrides: shader.overrides.clone(),
             };
             validate_overrides(&parsed, &overrides)
                 .with_context(|| format!("validating overrides for {}", path.display()))?;
@@ -370,36 +367,26 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             .with_context(|| format!("reference {name:?} does not match any named prim"))
     }
 
-    fn set_attribute<A: Attribute>(&mut self, id: PrimId, value: &A) -> Result<()> {
+    fn set_attribute<A: Property>(&mut self, id: PrimId, value: &A) -> Result<()> {
         let payload = value
             .encode()
-            .with_context(|| format!("encoding {} attribute", A::KEY))?;
-        self.set_property(id, A::KEY, Property::Attribute(payload));
+            .with_context(|| format!("encoding {} attribute", A::NAME))?;
+        self.set_property(id, &A::NAME, Value::Attribute(payload));
         Ok(())
     }
 
-    fn set_property(&mut self, id: PrimId, name: &str, value: Property) {
-        // `ref` owns the namespace below it rather than holding its own key.
-        let key = if name == ReferenceAttr::KEY {
-            reference::target_key(id)
-        } else {
-            key::prop(id, name)
-        };
-        self.entries.insert(key, value.encode());
+    fn set_property(&mut self, id: PrimId, name: &PropName, value: Value) {
+        self.entries
+            .insert(key::Key::prop(id, name).to_string(), value.encode());
     }
 }
 
-const fn compile_collider(c: &SourceCollider) -> ColliderAttr {
-    let kind = match *c {
+const fn compile_collider(c: &SourceCollider) -> ColliderKind {
+    match *c {
         SourceCollider::Capsule { height, radius } => ColliderKind::Capsule { height, radius },
         SourceCollider::Cuboid { x, y, z } => ColliderKind::Cuboid { x, y, z },
         SourceCollider::Cylinder { height, radius } => ColliderKind::Cylinder { height, radius },
         SourceCollider::Sphere(r) => ColliderKind::Sphere(r),
-    };
-    ColliderAttr {
-        kind,
-        vertices: None,
-        indices: None,
     }
 }
 

@@ -41,7 +41,7 @@ use crate::{
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
-const LINK_KEY: &str = "state:link";
+const LINK_KEY: &str = "state/link";
 const PORTAL_PRIM_NAME: &str = "portal";
 const RECEPTOR_PRIM_NAME: &str = "receptor";
 

@@ -6,7 +6,7 @@
 //! no wildcard, so a kind added to either side fails to compile until it is
 //! added here too.
 
-use hsd::attributes::material_graph::{
+use hsd::schema::shader::{
     ShaderGraph,
     graph::{
         BlendMode,
@@ -267,7 +267,7 @@ const fn node(value: wit::Node) -> Node {
 
 #[cfg(test)]
 mod tests {
-    use hsd::attributes::material_graph::validate::validate;
+    use hsd::schema::shader::validate::validate;
 
     use super::*;
 

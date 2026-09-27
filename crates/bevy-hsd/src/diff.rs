@@ -6,10 +6,12 @@ use bevy::{
 };
 use hsd::{
     id::PrimId,
-    property::Property,
+    property::{
+        name::PropName,
+        value::Value,
+    },
     state::event::SceneEvent,
 };
-use smol_str::SmolStr;
 
 use crate::{
     Hsd,
@@ -43,7 +45,7 @@ pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: C
 /// map seeds from the live component the first time its prim is touched.
 #[derive(Default)]
 struct Staged {
-    rels: HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
+    rels: HashMap<Entity, BTreeMap<PropName, PrimId>>,
 }
 
 impl Staged {
@@ -51,7 +53,7 @@ impl Staged {
         &'a mut self,
         prim_ent: Entity,
         live: &Query<&HsdRelationships>,
-    ) -> &'a mut BTreeMap<SmolStr, PrimId> {
+    ) -> &'a mut BTreeMap<PropName, PrimId> {
         self.rels
             .entry(prim_ent)
             .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
@@ -175,25 +177,25 @@ fn apply_property(
     staged: &mut Staged,
     rels_now: &Query<&HsdRelationships>,
     prim_ent: Entity,
-    name: &str,
-    value: Option<Property>,
+    name: &PropName,
+    value: Option<Value>,
 ) {
     match value {
-        Some(Property::Relationship(target)) => {
-            staged.rels(prim_ent, rels_now).insert(name.into(), target);
+        Some(Value::Relationship(target)) => {
+            staged.rels(prim_ent, rels_now).insert(name.clone(), target);
         }
-        Some(Property::Attribute(payload)) => {
-            let Some(parser) = PARSERS.get(name) else {
+        Some(Value::Attribute(payload)) => {
+            let Some(parser) = PARSERS.get(name.group()) else {
                 return;
             };
-            if let Err(err) = parser.lifecycle(commands, prim_ent, Some(&payload)) {
+            if let Err(err) = parser.lifecycle(commands, prim_ent, name, Some(&payload)) {
                 error!(%name, ?err, "failed to apply attribute");
             }
         }
         None => {
             staged.rels(prim_ent, rels_now).remove(name);
-            if let Some(parser) = PARSERS.get(name)
-                && let Err(err) = parser.lifecycle(commands, prim_ent, None)
+            if let Some(parser) = PARSERS.get(name.group())
+                && let Err(err) = parser.lifecycle(commands, prim_ent, name, None)
             {
                 error!(%name, ?err, "failed to remove attribute");
             }

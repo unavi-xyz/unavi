@@ -1,8 +1,14 @@
 use avian3d::prelude::GravityScale;
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    gravity_scale::GravityScaleAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::gravity_scale::{
+        self,
+        GravityScaleAttr,
+    },
 };
 
 use crate::attributes::{
@@ -16,14 +22,15 @@ pub struct GravityScaleData(pub GravityScaleAttr);
 pub struct GravityScaleParser;
 
 impl AttributeParser for GravityScaleParser {
-    fn key(&self) -> &'static str {
-        GravityScaleAttr::KEY
+    fn group(&self) -> &'static str {
+        gravity_scale::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

@@ -1,7 +1,13 @@
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    name::NameAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::name::{
+        self,
+        NameAttr,
+    },
 };
 
 use crate::attributes::{
@@ -15,14 +21,15 @@ pub struct NameData(pub NameAttr);
 pub struct NameParser;
 
 impl AttributeParser for NameParser {
-    fn key(&self) -> &'static str {
-        NameAttr::KEY
+    fn group(&self) -> &'static str {
+        name::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

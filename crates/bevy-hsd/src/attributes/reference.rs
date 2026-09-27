@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use hsd::{
-    attributes::{
-        Attribute,
-        reference::ReferenceAttr,
-    },
     id::DocId,
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::reference::{
+        self,
+        ReferenceAttr,
+    },
 };
 
 use crate::attributes::{
@@ -23,14 +27,15 @@ pub struct HsdRef(pub DocId);
 pub struct ReferenceParser;
 
 impl AttributeParser for ReferenceParser {
-    fn key(&self) -> &'static str {
-        ReferenceAttr::KEY
+    fn group(&self) -> &'static str {
+        reference::GROUP
     }
 
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

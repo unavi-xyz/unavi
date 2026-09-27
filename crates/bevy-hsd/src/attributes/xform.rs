@@ -3,9 +3,15 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    xform::XformAttr,
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema::xform::{
+        self,
+        XformAttr,
+    },
 };
 use unavi_physics::finite;
 
@@ -21,8 +27,8 @@ pub struct XformData(pub XformAttr);
 pub struct XformParser;
 
 impl AttributeParser for XformParser {
-    fn key(&self) -> &'static str {
-        XformAttr::KEY
+    fn group(&self) -> &'static str {
+        xform::GROUP
     }
 
     /// Removal resets the transform rather than removing it: `Prim` requires
@@ -31,6 +37,7 @@ impl AttributeParser for XformParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
+        _name: &PropName,
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {

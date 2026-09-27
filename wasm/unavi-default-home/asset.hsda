@@ -46,7 +46,7 @@
             script: "./Cargo.toml",
         ),
         relationships: {
-            "material:binding": "ground",
+            "material/binding": "ground",
         },
         children: [],
     ),

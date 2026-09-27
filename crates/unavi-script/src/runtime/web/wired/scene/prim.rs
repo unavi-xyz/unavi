@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use hsd::attributes::image::{
+use hsd::schema::image::{
     AddressMode,
     FilterMode,
-    ImageAttr,
+    ImageSampler,
 };
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
@@ -711,7 +711,7 @@ fn js_to_filter_mode(v: &JsValue) -> Option<FilterMode> {
     })
 }
 
-fn image_to_js(img: &ImageAttr) -> JsValue {
+fn image_to_js(img: &ImageSampler) -> JsValue {
     let obj = js_sys::Object::new();
     for (key, mode) in [
         ("addressModeU", img.address_mode_u),
@@ -737,11 +737,11 @@ fn image_to_js(img: &ImageAttr) -> JsValue {
     obj.into()
 }
 
-fn js_to_image(v: &JsValue) -> Option<ImageAttr> {
+fn js_to_image(v: &JsValue) -> Option<ImageSampler> {
     if v.is_null() || v.is_undefined() {
         return None;
     }
-    Some(ImageAttr {
+    Some(ImageSampler {
         address_mode_u: js_to_address_mode(&obj_get(v, "addressModeU")),
         address_mode_v: js_to_address_mode(&obj_get(v, "addressModeV")),
         address_mode_w: js_to_address_mode(&obj_get(v, "addressModeW")),

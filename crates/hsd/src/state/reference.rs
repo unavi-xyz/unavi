@@ -31,14 +31,9 @@ impl HsdState {
         self.references.get(&site)
     }
 
-    /// Changes on every accepted write to any reference layer.
-    #[must_use]
-    pub const fn references_version(&self) -> u64 {
-        self.references_version
-    }
-
     /// Replaces the override layer with what the referencing document states,
-    /// recomposing every key either layer held.
+    /// recomposing every key either layer held. Later changes arrive through
+    /// [`Self::project_override`].
     pub fn install_reference_layer(&mut self, layer: &Layer) {
         let mut keys = self
             .layer(LayerId::Override)
@@ -56,7 +51,8 @@ impl HsdState {
         }
     }
 
-    /// `None` blocks the key.
+    /// Replaces this document's opinion on a key of the document `site`
+    /// references. `None` blocks the key.
     pub(super) fn write_reference(
         &mut self,
         site: PrimId,
@@ -65,26 +61,16 @@ impl HsdState {
         stamp: Stamp,
     ) -> Result<(), StateError> {
         let target = *target;
-        let accepted = if *name == ParentAttr::NAME {
+        let opinions = self.references.entry(site).or_default().entry(target);
+        if *name == ParentAttr::NAME {
             let parent = match value {
                 Some(bytes) => ParentAttr::from_wire(bytes)?,
                 None => None,
             };
-            self.references
-                .entry(site)
-                .or_default()
-                .entry(target)
-                .set_parent(Opinion::from(parent), stamp)
+            opinions.replace_parent(Opinion::from(parent), stamp);
         } else {
             let property = value.map(Value::decode).transpose()?;
-            self.references
-                .entry(site)
-                .or_default()
-                .entry(target)
-                .set_property(name, Opinion::from(property), stamp)
-        };
-        if accepted {
-            self.references_version = self.references_version.wrapping_add(1);
+            opinions.replace_property(name, Opinion::from(property), stamp);
         }
         Ok(())
     }

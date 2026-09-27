@@ -27,10 +27,11 @@ use crate::{
     },
 };
 
-mod apply;
 mod commit;
 mod compose;
+mod project;
 mod reference;
+mod session;
 mod write;
 
 pub mod entry;
@@ -38,7 +39,6 @@ pub mod event;
 pub mod layer;
 pub mod opinion;
 pub mod prim;
-pub mod save;
 
 #[cfg(test)] mod tests;
 
@@ -65,7 +65,7 @@ pub const MAX_REALIZED_PRIMS: usize = 100_000;
 /// The layer a [`HsdState::commit`] promotes opinions into.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitTarget {
-    /// Written back by a save.
+    /// Written to this document's store.
     Document,
     /// Durable in the document referencing this one through `site`.
     Override { site: PrimId },
@@ -75,23 +75,22 @@ pub enum CommitTarget {
 
 #[derive(Debug)]
 pub struct HsdState {
-    meta:               DocMeta,
+    meta:       DocMeta,
     /// Indexed by [`LayerId`], weakest first.
-    layers:             [Layer; LayerId::ALL.len()],
+    layers:     [Layer; LayerId::ALL.len()],
     /// This document's opinions about the prims of the documents it
     /// references, keyed by reference site. They compose only once installed
     /// into the referenced document.
-    references:         HashMap<PrimId, Layer>,
-    references_version: u64,
-    resolved:           HashMap<PrimId, PrimState>,
+    references: HashMap<PrimId, Layer>,
+    resolved:   HashMap<PrimId, PrimState>,
     /// Keyed by resolved parent, including parents that do not exist yet.
-    children:           HashMap<PrimId, BTreeSet<PrimId>>,
+    children:   HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their parent, `None` for a root.
-    realized:           HashMap<PrimId, Option<PrimId>>,
-    events:             Vec<SceneEvent>,
-    ticks:              usize,
+    realized:   HashMap<PrimId, Option<PrimId>>,
+    events:     Vec<SceneEvent>,
+    ticks:      usize,
     /// Where the oldest open write boundary started writing.
-    tick_start:         usize,
+    tick_start: usize,
 }
 
 impl Default for HsdState {
@@ -104,16 +103,15 @@ impl HsdState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            meta:               DocMeta::default(),
-            layers:             LayerId::ALL.map(|_| Layer::default()),
-            references:         HashMap::new(),
-            references_version: 0,
-            resolved:           HashMap::new(),
-            children:           HashMap::new(),
-            realized:           HashMap::new(),
-            events:             Vec::new(),
-            ticks:              0,
-            tick_start:         0,
+            meta:       DocMeta::default(),
+            layers:     LayerId::ALL.map(|_| Layer::default()),
+            references: HashMap::new(),
+            resolved:   HashMap::new(),
+            children:   HashMap::new(),
+            realized:   HashMap::new(),
+            events:     Vec::new(),
+            ticks:      0,
+            tick_start: 0,
         }
     }
 

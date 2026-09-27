@@ -214,7 +214,7 @@ fn rewriting_replaces_every_reference_with_its_minted_id() {
 
     let mut state = HsdState::new();
     for (key, value) in entries {
-        state.apply(&Entry::new(key, value, 1)).expect("apply");
+        state.project(&Entry::new(key, value, 1)).expect("project");
     }
 
     for name in ["left", "right"] {

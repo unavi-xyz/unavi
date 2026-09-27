@@ -2,6 +2,10 @@ use std::collections::BTreeMap;
 
 use super::*;
 use crate::{
+    format::meta::{
+        DOC_VERSION,
+        DocMeta,
+    },
     id::{
         DocId,
         PrimId,
@@ -32,7 +36,9 @@ use crate::{
         layer::{
             Layer,
             LayerId,
+            OpinionKey,
         },
+        opinion::Opinion,
     },
 };
 
@@ -72,8 +78,10 @@ fn tombstone(key: String, timestamp: u64) -> Entry {
     Entry::new(key, Vec::new(), timestamp)
 }
 
-fn apply(state: &mut HsdState, entries: &[Entry]) {
-    state.apply_all(entries).expect("apply");
+fn project(state: &mut HsdState, entries: &[Entry]) {
+    for entry in entries {
+        state.project(entry).expect("project");
+    }
 }
 
 fn shape(state: &HsdState) -> BTreeMap<PrimId, Option<PrimId>> {
@@ -83,10 +91,61 @@ fn shape(state: &HsdState) -> BTreeMap<PrimId, Option<PrimId>> {
         .collect()
 }
 
+/// The projected document layer as its store holds it. A blocked key holds no
+/// value, except in a reference layer, where it is an empty entry.
+fn document(state: &HsdState) -> BTreeMap<String, Vec<u8>> {
+    let mut out = BTreeMap::new();
+    let layer = state.layer(LayerId::Document);
+    for (prim, opinion) in layer.keys() {
+        let Some(opinions) = layer.get(prim) else {
+            continue;
+        };
+        match opinion {
+            OpinionKey::Parent => {
+                if let Some(parent) = opinions.parent().and_then(|(opinion, _)| opinion.value()) {
+                    out.insert(parent_key(prim), ParentAttr::to_wire(Some(*parent)));
+                }
+            }
+            OpinionKey::Property(name) => {
+                if let Some(value) = opinions.property(&name).and_then(Opinion::value) {
+                    out.insert(key::Key::prop(prim, &name).to_string(), value.encode());
+                }
+            }
+        }
+    }
+
+    for (site, references) in &state.references {
+        for (target, opinion) in references.keys() {
+            let Some(opinions) = references.get(target) else {
+                continue;
+            };
+            let (name, value) = match opinion {
+                OpinionKey::Parent => (
+                    ParentAttr::NAME,
+                    opinions
+                        .parent()
+                        .map(|(opinion, _)| ParentAttr::to_wire(opinion.value().copied()))
+                        .unwrap_or_default(),
+                ),
+                OpinionKey::Property(name) => {
+                    let value = opinions
+                        .property(&name)
+                        .and_then(Opinion::value)
+                        .map(Value::encode)
+                        .unwrap_or_default();
+                    (name, value)
+                }
+            };
+            out.insert(LayerKey { target, name }.key(*site), value);
+        }
+    }
+    out
+}
+
 #[test]
 fn realizes_a_root_and_its_child() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
     );
@@ -106,15 +165,15 @@ fn entry_order_does_not_change_the_result() {
     ];
 
     let mut forward = HsdState::new();
-    apply(&mut forward, &entries);
+    project(&mut forward, &entries);
 
     let mut reversed = HsdState::new();
     let mut flipped = entries.clone();
     flipped.reverse();
-    apply(&mut reversed, &flipped);
+    project(&mut reversed, &flipped);
 
     assert_eq!(shape(&forward), shape(&reversed));
-    assert_eq!(forward.entries(), reversed.entries());
+    assert_eq!(document(&forward), document(&reversed));
     assert_eq!(
         reversed
             .attribute::<NameAttr>(prim(3))
@@ -127,7 +186,7 @@ fn entry_order_does_not_change_the_result() {
 #[test]
 fn an_orphan_is_held_not_reparented_to_the_root() {
     let mut state = HsdState::new();
-    apply(&mut state, &[child_entry(prim(2), prim(1), 2)]);
+    project(&mut state, &[child_entry(prim(2), prim(1), 2)]);
 
     assert!(state.exists(prim(2)));
     assert!(!state.is_realized(prim(2)));
@@ -137,7 +196,7 @@ fn an_orphan_is_held_not_reparented_to_the_root() {
 #[test]
 fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             child_entry(prim(2), prim(1), 2),
@@ -146,7 +205,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
     );
     assert_eq!(state.drain_events().len(), 0);
 
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     let events = state.drain_events();
 
     assert!(events.contains(&SceneEvent::Realized {
@@ -162,7 +221,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
 #[test]
 fn a_property_on_an_unrealized_prim_emits_nothing() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[attr_entry(prim(9), &NameAttr("held".into()), 1)],
     );
@@ -178,10 +237,10 @@ fn a_cycle_breaks_at_its_greatest_stamp_regardless_of_order() {
     ];
 
     let mut forward = HsdState::new();
-    apply(&mut forward, &entries);
+    project(&mut forward, &entries);
 
     let mut shuffled = HsdState::new();
-    apply(
+    project(
         &mut shuffled,
         &[entries[2].clone(), entries[0].clone(), entries[1].clone()],
     );
@@ -224,13 +283,19 @@ fn a_cycle_realizes_each_member_after_its_parent_in_any_order() {
         child_entry(prim(3), prim(2), 30),
         child_entry(prim(4), prim(2), 40),
     ];
-    let orders = [[0, 1, 2, 3], [2, 0, 1, 3], [3, 2, 1, 0], [1, 3, 0, 2], [0, 2, 3, 1]];
+    let orders = [
+        [0, 1, 2, 3],
+        [2, 0, 1, 3],
+        [3, 2, 1, 0],
+        [1, 3, 0, 2],
+        [0, 2, 3, 1],
+    ];
 
     for order in orders {
         let mut state = HsdState::new();
         let mut events = Vec::new();
         for i in order {
-            apply(&mut state, &[entries[i].clone()]);
+            project(&mut state, &[entries[i].clone()]);
             events.extend(state.drain_events());
         }
         assert_eq!(
@@ -244,7 +309,7 @@ fn a_cycle_realizes_each_member_after_its_parent_in_any_order() {
 #[test]
 fn a_prim_hanging_off_a_cycle_is_realized_under_its_own_parent() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             child_entry(prim(1), prim(2), 10),
@@ -268,10 +333,10 @@ fn a_reparent_closing_a_cycle_breaks_it_at_a_member_below_the_moved_prim() {
     ];
 
     let mut incremental = HsdState::new();
-    apply(&mut incremental, &entries);
+    project(&mut incremental, &entries);
 
     let mut fresh = HsdState::new();
-    apply(
+    project(
         &mut fresh,
         &[
             entries[4].clone(),
@@ -288,7 +353,7 @@ fn a_reparent_closing_a_cycle_breaks_it_at_a_member_below_the_moved_prim() {
 #[test]
 fn a_cross_author_tombstone_removes_a_prim_written_by_someone_else() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -298,7 +363,7 @@ fn a_cross_author_tombstone_removes_a_prim_written_by_someone_else() {
     );
     state.drain_events();
 
-    apply(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
+    project(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
 
     assert!(!state.exists(prim(2)));
     assert!(!state.is_realized(prim(2)));
@@ -312,7 +377,7 @@ fn a_cross_author_tombstone_removes_a_prim_written_by_someone_else() {
 #[test]
 fn deleting_a_prim_holds_its_descendants_rather_than_dropping_them() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -321,58 +386,90 @@ fn deleting_a_prim_holds_its_descendants_rather_than_dropping_them() {
         ],
     );
 
-    apply(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
+    project(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
     assert!(!state.is_realized(prim(3)));
     assert!(state.exists(prim(3)));
 
-    apply(&mut state, &[child_entry(prim(2), prim(1), 20)]);
+    project(&mut state, &[child_entry(prim(2), prim(1), 20)]);
     assert!(state.is_realized(prim(3)));
 }
 
 #[test]
-fn an_older_entry_never_overwrites_a_newer_one() {
+fn a_projected_entry_replaces_a_newer_stamped_one() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
-            attr_entry(prim(1), &NameAttr("new".into()), 100),
-            attr_entry(prim(1), &NameAttr("old".into()), 50),
+            attr_entry(prim(1), &NameAttr("first".into()), 100),
+            attr_entry(prim(1), &NameAttr("winner".into()), 50),
         ],
     );
 
     assert_eq!(
-        state
-            .attribute::<NameAttr>(prim(1))
-            .expect("name")
-            .expect("decode"),
-        NameAttr("new".into())
+        name_of(&state, prim(1)).as_deref(),
+        Some("winner"),
+        "the store chose the winner, and a projection ordering by its own \
+             stamp would disagree with a peer that re-read the key"
     );
 }
 
 #[test]
-fn concurrent_writes_at_one_timestamp_resolve_the_same_way_both_orders() {
-    let a = attr_entry(prim(1), &NameAttr("alpha".into()), 7);
-    let b = attr_entry(prim(1), &NameAttr("beta".into()), 7);
+fn projecting_the_winner_a_key_already_holds_emits_nothing() {
+    let mut state = HsdState::new();
+    let name = attr_entry(prim(1), &NameAttr("same".into()), 2);
+    project(&mut state, &[root_entry(prim(1), 1), name.clone()]);
+    state.drain_events();
 
-    let mut forward = HsdState::new();
-    apply(
-        &mut forward,
-        &[root_entry(prim(1), 1), a.clone(), b.clone()],
+    project(&mut state, &[name]);
+
+    assert!(
+        state_is_quiet(&mut state),
+        "a key is re-read on every insert, so one winner arrives more than once"
+    );
+}
+
+#[test]
+fn a_winner_that_fails_to_decode_clears_what_the_key_held() {
+    let mut state = HsdState::new();
+    project(
+        &mut state,
+        &[
+            root_entry(prim(1), 1),
+            attr_entry(prim(1), &NameAttr("old".into()), 2),
+        ],
     );
 
-    let mut reversed = HsdState::new();
-    apply(&mut reversed, &[root_entry(prim(1), 1), b, a]);
-
+    let garbage = Entry::new(
+        key::Key::prop(prim(1), &NameAttr::NAME).to_string(),
+        vec![0xFF],
+        3,
+    );
+    assert!(state.project(&garbage).is_err());
     assert_eq!(
-        forward
-            .attribute::<NameAttr>(prim(1))
-            .expect("name")
-            .expect("decode"),
-        reversed
-            .attribute::<NameAttr>(prim(1))
-            .expect("name")
-            .expect("decode"),
+        name_of(&state, prim(1)),
+        None,
+        "the old value is no longer what the store holds"
+    );
+}
+
+#[test]
+fn a_document_newer_than_this_build_realizes_nothing_until_it_is_readable() {
+    let mut state = HsdState::new();
+    project(
+        &mut state,
+        &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
+    );
+    let meta = |version| Entry::new(key::META, DocMeta { version }.encode().expect("encode"), 3);
+
+    project(&mut state, &[meta(DOC_VERSION + 1)]);
+    assert!(state.is_refused());
+    assert_eq!(shape(&state), BTreeMap::new());
+
+    project(&mut state, &[meta(DOC_VERSION)]);
+    assert_eq!(
+        shape(&state),
+        BTreeMap::from([(prim(1), None), (prim(2), Some(prim(1)))])
     );
 }
 
@@ -380,7 +477,7 @@ fn concurrent_writes_at_one_timestamp_resolve_the_same_way_both_orders() {
 fn an_unknown_attribute_round_trips_untouched() {
     let payload = vec![0xCA, 0xFE, 0xBA, 0xBE];
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -392,7 +489,7 @@ fn an_unknown_attribute_round_trips_untouched() {
         ],
     );
 
-    let entries = state.entries();
+    let entries = document(&state);
     let stored = entries
         .get(&key::Key::prop(prim(1), &"custom/blob".parse().expect("name")).to_string())
         .expect("entry");
@@ -402,7 +499,7 @@ fn an_unknown_attribute_round_trips_untouched() {
 #[test]
 fn relationships_and_attributes_share_one_namespace() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[root_entry(prim(1), 1), root_entry(prim(2), 1)],
     );
@@ -434,7 +531,7 @@ fn relationships_and_attributes_share_one_namespace() {
 #[test]
 fn removing_a_namespace_takes_its_relationships_with_it() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[root_entry(prim(1), 1), root_entry(prim(2), 1)],
     );
@@ -458,7 +555,7 @@ fn removing_a_namespace_takes_its_relationships_with_it() {
 #[test]
 fn parent_is_only_written_through_set_parent() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
 
     assert!(matches!(
         state.set_property(prim(1), &ParentAttr::NAME, name_attr("x")),
@@ -467,9 +564,9 @@ fn parent_is_only_written_through_set_parent() {
 }
 
 #[test]
-fn script_created_prims_are_absent_from_the_save_set() {
+fn script_created_prims_are_absent_from_the_document_layer() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
 
     let scratch = state.create_prim(Some(prim(1)));
     state
@@ -477,7 +574,7 @@ fn script_created_prims_are_absent_from_the_save_set() {
         .expect("attribute");
 
     assert!(state.is_realized(scratch));
-    let entries = state.entries();
+    let entries = document(&state);
     assert!(entries.contains_key(&parent_key(prim(1))));
     assert!(!entries.contains_key(&parent_key(scratch)));
 }
@@ -485,14 +582,14 @@ fn script_created_prims_are_absent_from_the_save_set() {
 #[test]
 fn a_script_editing_a_document_prim_changes_what_is_drawn_not_what_is_kept() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
             attr_entry(prim(1), &NameAttr("document".into()), 2),
         ],
     );
-    let saved = state.entries();
+    let held = document(&state);
 
     state
         .set_attribute(prim(1), &NameAttr("edited".into()))
@@ -504,8 +601,8 @@ fn a_script_editing_a_document_prim_changes_what_is_drawn_not_what_is_kept() {
         "the edit is what every reader sees this session"
     );
     assert_eq!(
-        state.entries(),
-        saved,
+        document(&state),
+        held,
         "and it reaches the document only through a commit, which is what \
              lets a document stay open to its keyholder instead of being \
              frozen to keep the two coherent"
@@ -518,10 +615,10 @@ fn an_attribute_carrying_bytes_round_trips() {
     // is one property like any other.
     let payload = vec![9; 1024];
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
-    apply(
+    project(
         &mut state,
         &[attr_entry(prim(1), &ScriptAttr(payload.clone()), 2)],
     );
@@ -535,9 +632,7 @@ fn an_attribute_carrying_bytes_round_trips() {
         payload
     );
     assert_eq!(
-        state
-            .entries()
-            .get(&key::Key::prop(prim(1), &ScriptAttr::NAME).to_string()),
+        document(&state).get(&key::Key::prop(prim(1), &ScriptAttr::NAME).to_string()),
         Some(&Value::Attribute(ScriptAttr(payload).encode().expect("encode")).encode()),
     );
 }
@@ -545,7 +640,7 @@ fn an_attribute_carrying_bytes_round_trips() {
 #[test]
 fn reparenting_emits_one_event_and_moves_the_subtree() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -556,7 +651,7 @@ fn reparenting_emits_one_event_and_moves_the_subtree() {
     );
     state.drain_events();
 
-    apply(&mut state, &[child_entry(prim(3), prim(2), 10)]);
+    project(&mut state, &[child_entry(prim(3), prim(2), 10)]);
 
     assert_eq!(state.children(prim(1)), Vec::new());
     assert_eq!(state.children(prim(2)), vec![prim(3)]);
@@ -573,7 +668,7 @@ fn reparenting_emits_one_event_and_moves_the_subtree() {
 #[test]
 fn removing_a_property_emits_an_absent_value() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -582,7 +677,7 @@ fn removing_a_property_emits_an_absent_value() {
     );
     state.drain_events();
 
-    apply(
+    project(
         &mut state,
         &[tombstone(
             key::Key::prop(prim(1), &XformAttr::NAME).to_string(),
@@ -601,32 +696,28 @@ fn removing_a_property_emits_an_absent_value() {
 }
 
 #[test]
-fn the_save_set_round_trips_through_a_fresh_state() {
-    let mut original = HsdState::new();
-    apply(
-        &mut original,
-        &[
-            root_entry(prim(1), 1),
-            child_entry(prim(2), prim(1), 2),
-            attr_entry(prim(2), &NameAttr("kept".into()), 3),
-            attr_entry(prim(2), &ScriptAttr(vec![7; 32]), 4),
-        ],
-    );
+fn a_commit_survives_its_store_echo_without_an_event() {
+    let mut state = HsdState::new();
+    project(&mut state, &[root_entry(prim(1), 1)]);
+    runtime_property(&mut state, prim(1), NameAttr::NAME, Some(name_attr("kept")));
+    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    state.drain_events();
 
-    let mut restored = HsdState::new();
-    let entries = original
-        .entries()
+    let echoed = writes
         .into_iter()
-        .map(|(key, value)| Entry {
-            key,
-            value,
-            timestamp: 100,
+        .map(|write| Entry {
+            timestamp: write.timestamp + 7,
+            ..write
         })
         .collect::<Vec<_>>();
-    apply(&mut restored, &entries);
+    project(&mut state, &echoed);
 
-    assert_eq!(shape(&original), shape(&restored));
-    assert_eq!(original.entries(), restored.entries());
+    assert!(
+        state_is_quiet(&mut state),
+        "the store stamps the write itself, and projecting its winner does \
+             not move what is drawn"
+    );
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("kept"));
 }
 
 #[test]
@@ -642,10 +733,10 @@ fn nesting_past_the_depth_cap_is_not_realized() {
         })
         .collect::<Vec<_>>();
 
-    state.apply(&root_entry(ids[0], 0)).expect("root");
+    state.project(&root_entry(ids[0], 0)).expect("root");
     for (i, window) in ids.windows(2).enumerate() {
         state
-            .apply(&child_entry(window[1], window[0], i as u64 + 1))
+            .project(&child_entry(window[1], window[0], i as u64 + 1))
             .expect("child");
     }
 
@@ -671,15 +762,15 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
             PrimId::from_digest(&bytes)
         })
         .collect::<Vec<_>>();
-    state.apply(&root_entry(ids[0], 0)).expect("root");
+    state.project(&root_entry(ids[0], 0)).expect("root");
     for (i, window) in ids.windows(2).enumerate() {
         state
-            .apply(&child_entry(window[1], window[0], i as u64 + 1))
+            .project(&child_entry(window[1], window[0], i as u64 + 1))
             .expect("child");
     }
     let deepest = ids[ids.len() - 1];
 
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -689,7 +780,7 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
     );
     assert!(state.is_realized(prim(3)));
 
-    apply(&mut state, &[child_entry(prim(1), deepest, 10_000)]);
+    project(&mut state, &[child_entry(prim(1), deepest, 10_000)]);
 
     assert!(state.is_realized(prim(2)), "the last prim within the cap");
     assert!(!state.is_realized(prim(3)), "one past the cap");
@@ -699,7 +790,7 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
 fn an_open_tick_withholds_its_own_writes() {
     let mut state = HsdState::new();
     state.open_tick();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
 
     assert!(
         state.drain_events().is_empty(),
@@ -720,9 +811,9 @@ fn an_open_tick_withholds_its_own_writes() {
 #[test]
 fn writes_made_before_a_tick_opened_still_drain() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     state.open_tick();
-    apply(&mut state, &[root_entry(prim(2), 2)]);
+    project(&mut state, &[root_entry(prim(2), 2)]);
 
     let events = state.drain_events();
     assert!(events.contains(&SceneEvent::Realized {
@@ -743,7 +834,7 @@ fn writes_made_before_a_tick_opened_still_drain() {
 fn a_prim_and_its_properties_leave_together() {
     let mut state = HsdState::new();
     state.open_tick();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -773,7 +864,7 @@ fn boundaries_nest_so_two_writers_both_have_to_finish() {
     let mut state = HsdState::new();
     state.open_tick();
     state.open_tick();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
 
     state.close_tick();
     assert!(
@@ -790,7 +881,7 @@ fn an_unmatched_close_does_not_underflow() {
     let mut state = HsdState::new();
     state.close_tick();
     state.open_tick();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     assert!(state.drain_events().is_empty(), "the boundary still holds");
     state.close_tick();
 }
@@ -798,7 +889,7 @@ fn an_unmatched_close_does_not_underflow() {
 #[test]
 fn a_consumer_attaching_mid_tick_gets_the_scene_as_it_stands() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
     state.open_tick();
@@ -811,7 +902,7 @@ fn a_consumer_attaching_mid_tick_gets_the_scene_as_it_stands() {
         "a resync is a description of now, not part of anyone's tick"
     );
 
-    apply(&mut state, &[root_entry(prim(2), 2)]);
+    project(&mut state, &[root_entry(prim(2), 2)]);
     assert!(
         state.drain_events().is_empty(),
         "writes after the resync are still the open tick's"
@@ -837,7 +928,7 @@ fn name_of(state: &HsdState, prim: PrimId) -> Option<String> {
 #[test]
 fn a_runtime_opinion_shadows_the_document_beneath_it() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -867,7 +958,7 @@ fn a_runtime_opinion_shadows_the_document_beneath_it() {
 #[test]
 fn a_spawn_despawn_loop_leaves_nothing_behind() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     let resolved = state.resolved.len();
 
     for _ in 0..100 {
@@ -879,14 +970,14 @@ fn a_spawn_despawn_loop_leaves_nothing_behind() {
     }
 
     assert_eq!(state.resolved.len(), resolved);
-    assert_eq!(state.layers[LayerId::Runtime.idx()].prims().count(), 0);
+    assert_eq!(state.layer(LayerId::Runtime).keys(), Vec::new());
     assert_eq!(state.children(prim(1)), Vec::new());
 }
 
 #[test]
 fn removing_a_document_prim_blocks_it_rather_than_forgetting_it() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
     );
@@ -894,13 +985,13 @@ fn removing_a_document_prim_blocks_it_rather_than_forgetting_it() {
     state.remove_prim(prim(2));
 
     assert!(!state.exists(prim(2)));
-    assert!(state.entries().contains_key(&parent_key(prim(2))));
+    assert!(document(&state).contains_key(&parent_key(prim(2))));
 }
 
 #[test]
 fn back_to_back_local_writes_keep_the_last_value() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
 
     for i in 0..1000 {
         let value = format!("{i}");
@@ -914,7 +1005,7 @@ fn back_to_back_local_writes_keep_the_last_value() {
 #[test]
 fn a_document_write_under_a_runtime_opinion_emits_nothing() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -929,7 +1020,7 @@ fn a_document_write_under_a_runtime_opinion_emits_nothing() {
     );
     state.drain_events();
 
-    apply(
+    project(
         &mut state,
         &[attr_entry(prim(1), &NameAttr("later".into()), 3)],
     );
@@ -946,14 +1037,14 @@ fn a_document_write_under_a_runtime_opinion_emits_nothing() {
 #[test]
 fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
             attr_entry(prim(1), &NameAttr("document".into()), 2),
         ],
     );
-    let saved = state.entries();
+    let held = document(&state);
     state.drain_events();
 
     runtime_property(&mut state, prim(1), NameAttr::NAME, None);
@@ -973,23 +1064,23 @@ fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
         }]
     );
     assert_eq!(
-        state.entries(),
-        saved,
+        document(&state),
+        held,
         "blocking is an opinion of a live layer, not an edit to the document"
     );
 }
 
 #[test]
-fn a_runtime_write_leaves_the_save_set_byte_identical() {
+fn a_runtime_write_leaves_the_document_layer_byte_identical() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
             attr_entry(prim(1), &NameAttr("document".into()), 2),
         ],
     );
-    let saved = state.entries();
+    let held = document(&state);
 
     runtime_property(
         &mut state,
@@ -1005,17 +1096,16 @@ fn a_runtime_write_leaves_the_save_set_byte_identical() {
     );
 
     assert_eq!(
-        state.entries(),
-        saved,
-        "this is the guarantee sync_document could not make, and the whole \
-             reason it had to freeze a document"
+        document(&state),
+        held,
+        "a runtime write reaches the store only through a commit"
     );
 }
 
 #[test]
 fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
     state.write_parent(
@@ -1034,15 +1124,15 @@ fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
     assert_eq!(state.parent(prim(9)), None);
     assert_eq!(state.children(prim(1)), Vec::new());
     assert!(
-        !state.entries().contains_key(&parent_key(prim(9))),
-        "a prim only a live layer states never reaches the save set"
+        !document(&state).contains_key(&parent_key(prim(9))),
+        "a prim only a live layer states never reaches the document layer"
     );
 }
 
 #[test]
 fn commit_promotes_a_live_opinion_into_the_document() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -1058,42 +1148,46 @@ fn commit_promotes_a_live_opinion_into_the_document() {
         Some(name_attr("runtime")),
     );
     state.drain_events();
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
     assert!(
         state.drain_events().is_empty(),
-        "the opinion travelled whole, so what every reader sees never moved; \
-             only the save set changed"
+        "the opinion travelled whole, so what every reader sees never moved"
     );
     assert_eq!(
-        state
-            .entries()
-            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
-        Some(&name_attr("runtime").encode()),
-        "the promoted opinion is exactly what a save now writes"
+        writes,
+        vec![Entry::new(
+            key::Key::prop(prim(1), &NameAttr::NAME).to_string(),
+            name_attr("runtime").encode(),
+            writes[0].timestamp,
+        )],
+        "the promoted opinion is exactly what the store is written"
+    );
+    assert_eq!(
+        document(&state).get(&writes[0].key),
+        Some(&writes[0].value),
+        "and the projection holds it before the store echoes it back"
     );
 
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
     assert_eq!(
-        name_of(&state, prim(1)).as_deref(),
-        Some("runtime"),
-        "a second commit is a no-op: the live opinion is gone, so there is \
-             nothing left to promote"
+        state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]),
+        Vec::new(),
+        "a second commit has no live opinion left to promote"
     );
 }
 
 #[test]
 fn commit_with_no_writable_key_writes_the_session_layer() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
             attr_entry(prim(1), &NameAttr("document".into()), 2),
         ],
     );
-    let saved = state.entries();
+    let held = document(&state);
     state.drain_events();
 
     runtime_property(
@@ -1102,16 +1196,12 @@ fn commit_with_no_writable_key_writes_the_session_layer() {
         NameAttr::NAME,
         Some(name_attr("runtime")),
     );
-    state.commit(CommitTarget::Session, &[(prim(1), NameAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Session, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
-    assert_eq!(
-        state.entries(),
-        saved,
-        "the session fallback changes nothing a save writes — that is what \
-             makes a guest's commit visible without persisting it"
-    );
-    apply(
+    assert_eq!(writes, Vec::new(), "the session layer has no store");
+    assert_eq!(document(&state), held);
+    project(
         &mut state,
         &[attr_entry(prim(1), &NameAttr("later".into()), 3)],
     );
@@ -1124,36 +1214,41 @@ fn commit_with_no_writable_key_writes_the_session_layer() {
 }
 
 #[test]
-fn committing_a_script_created_prim_adds_it_to_the_save_set() {
+fn committing_a_script_created_prim_writes_it_to_the_store() {
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(prim(1), 1)]);
+    project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
     let scratch = state.create_prim(Some(prim(1)));
     state
         .set_attribute(scratch, &NameAttr("kept".into()))
         .expect("attribute");
-    assert!(!state.entries().contains_key(&parent_key(scratch)));
 
-    state.commit(
-        CommitTarget::Document,
-        &[(scratch, ParentAttr::NAME), (scratch, NameAttr::NAME)],
-    );
+    let writes = state
+        .commit(
+            CommitTarget::Document,
+            &[(scratch, ParentAttr::NAME), (scratch, NameAttr::NAME)],
+        )
+        .into_iter()
+        .map(|write| write.key)
+        .collect::<Vec<_>>();
 
-    let entries = state.entries();
-    assert!(
-        entries.contains_key(&parent_key(scratch)),
-        "committing the parent is what makes a spawned prim survive a save"
+    assert_eq!(
+        writes,
+        vec![
+            parent_key(scratch),
+            key::Key::prop(scratch, &NameAttr::NAME).to_string(),
+        ],
+        "committing the parent is what makes a spawned prim durable"
     );
-    assert!(entries.contains_key(&key::Key::prop(scratch, &NameAttr::NAME).to_string()));
     assert!(state.is_realized(scratch));
     assert_eq!(state.children(prim(1)), vec![scratch]);
 }
 
 #[test]
-fn committing_a_blocked_opinion_removes_a_document_property() {
+fn committing_a_blocked_opinion_deletes_a_document_property() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -1163,13 +1258,17 @@ fn committing_a_blocked_opinion_removes_a_document_property() {
     state.drain_events();
 
     state.remove_property(prim(1), &NameAttr::NAME);
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(name_of(&state, prim(1)), None);
-    assert!(
-        !state
-            .entries()
-            .contains_key(&key::Key::prop(prim(1), &NameAttr::NAME).to_string())
+    assert_eq!(
+        writes,
+        vec![Entry::new(
+            key::Key::prop(prim(1), &NameAttr::NAME).to_string(),
+            Vec::new(),
+            writes[0].timestamp,
+        )],
+        "an empty write deletes the key"
     );
     assert_eq!(
         state.drain_events(),
@@ -1182,11 +1281,15 @@ fn committing_a_blocked_opinion_removes_a_document_property() {
 }
 
 #[test]
-fn committing_a_blocked_parent_removes_a_document_prim() {
+fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
-        &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
+        &[
+            root_entry(prim(1), 1),
+            child_entry(prim(2), prim(1), 2),
+            attr_entry(prim(2), &NameAttr("gone".into()), 3),
+        ],
     );
     state.drain_events();
 
@@ -1196,36 +1299,47 @@ fn committing_a_blocked_parent_removes_a_document_prim() {
         "a script can hide a document prim for this session"
     );
     assert!(
-        state.entries().contains_key(&parent_key(prim(2))),
-        "but hiding is a live opinion; the document still holds the prim"
+        document(&state).contains_key(&parent_key(prim(2))),
+        "but hiding is a live opinion, and the document still holds the prim"
     );
 
-    state.commit(CommitTarget::Document, &[(prim(2), ParentAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Document, &[(prim(2), ParentAttr::NAME)]);
 
-    assert!(
-        !state.entries().contains_key(&parent_key(prim(2))),
-        "committing the block is what removes the prim from the document; \
-             the key falls out of the save set and a diff deletes it"
+    assert_eq!(
+        writes
+            .iter()
+            .map(|write| (write.key.clone(), write.value.clone()))
+            .collect::<Vec<_>>(),
+        vec![
+            (parent_key(prim(2)), Vec::new()),
+            (
+                key::Key::prop(prim(2), &NameAttr::NAME).to_string(),
+                Vec::new()
+            ),
+        ],
+        "a removed prim leaves no properties behind in the store"
     );
     assert!(!state.is_realized(prim(2)));
+    assert!(!document(&state).contains_key(&parent_key(prim(2))));
 }
 
 #[test]
 fn committing_a_key_with_no_live_opinion_changes_nothing() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
             attr_entry(prim(1), &NameAttr("document".into()), 2),
         ],
     );
-    let saved = state.entries();
+    let held = document(&state);
 
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
+    assert_eq!(writes, Vec::new());
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("document"));
-    assert_eq!(state.entries(), saved);
+    assert_eq!(document(&state), held);
 }
 
 fn override_entry(site: PrimId, target: PrimId, name: PropName, value: &Value) -> Entry {
@@ -1235,7 +1349,7 @@ fn override_entry(site: PrimId, target: PrimId, name: PropName, value: &Value) -
 /// A referenced document, holding one prim with a name of its own.
 fn referenced() -> HsdState {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -1250,7 +1364,7 @@ fn referenced() -> HsdState {
 /// reads it back out to install.
 fn stated(site: PrimId, entries: &[Entry]) -> Layer {
     let mut referencing = HsdState::new();
-    apply(&mut referencing, entries);
+    project(&mut referencing, entries);
     referencing
         .reference_layer_for(site)
         .cloned()
@@ -1281,9 +1395,7 @@ fn an_override_beats_the_document_it_speaks_for() {
         "installing an override changes what is drawn, so it emits"
     );
     assert_eq!(
-        state
-            .entries()
-            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
+        document(&state).get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("couch").encode()),
         "the opinion is durable in the referencing document, not in this one"
     );
@@ -1350,7 +1462,7 @@ fn an_override_the_referencing_document_dropped_stops_resolving() {
 #[test]
 fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     let mut state = referenced();
-    apply(&mut state, &[child_entry(prim(2), prim(1), 3)]);
+    project(&mut state, &[child_entry(prim(2), prim(1), 3)]);
     state.drain_events();
 
     state.install_reference_layer(&stated(
@@ -1371,53 +1483,26 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
              its parent"
     );
     assert!(
-        state.entries().contains_key(&parent_key(prim(2))),
+        document(&state).contains_key(&parent_key(prim(2))),
         "hiding it does not remove it: the prim is still the target's"
     );
 }
 
 #[test]
-fn overrides_round_trip_through_the_entry_set() {
-    let site = prim(7);
-    let entry = override_entry(site, prim(1), NameAttr::NAME, &name_attr("recoloured"));
-
-    let mut referencing = HsdState::new();
-    apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);
-    let saved = referencing.entries();
-    assert_eq!(
-        saved.get(&entry.key),
-        Some(&entry.value),
-        "an override is authored content and is written back like any"
-    );
-
-    let mut reread = HsdState::new();
-    apply(
-        &mut reread,
-        &saved
-            .into_iter()
-            .map(|(key, value)| Entry::new(key, value, 1))
-            .collect::<Vec<_>>(),
-    );
-
-    let mut target = referenced();
-    target.install_reference_layer(reread.reference_layer_for(site).expect("kept the override"));
-    assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
-}
-
-#[test]
-fn an_override_whose_site_the_document_does_not_state_is_not_saved() {
-    let mut referencing = HsdState::new();
+fn a_projected_override_recomposes_the_document_it_speaks_for() {
+    let mut state = referenced();
     let entry = override_entry(prim(7), prim(1), NameAttr::NAME, &name_attr("recoloured"));
-    apply(&mut referencing, std::slice::from_ref(&entry));
 
-    assert!(
-        !referencing.entries().contains_key(&entry.key),
-        "an override rides on the prim that references its document; with \
-             no such prim in the document there is nothing for it to ride"
-    );
-    assert!(
-        referencing.reference_layer_for(prim(7)).is_some(),
-        "it is still held, so it saves once the site prim is committed"
+    state.project_override(&entry).expect("project");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
+
+    state
+        .project_override(&tombstone(entry.key, 4))
+        .expect("project");
+    assert_eq!(
+        name_of(&state, prim(1)),
+        None,
+        "an empty override entry blocks the key"
     );
 }
 
@@ -1425,7 +1510,7 @@ fn an_override_whose_site_the_document_does_not_state_is_not_saved() {
 fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     let site = prim(7);
     let mut target = referenced();
-    let saved = target.entries();
+    let held = document(&target);
 
     runtime_property(
         &mut target,
@@ -1461,16 +1546,16 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     );
     assert!(state_is_quiet(&mut target));
     assert_eq!(
-        target.entries(),
-        saved,
+        document(&target),
+        held,
         "the target document was authored elsewhere and is untouched"
     );
 
     let mut referencing = HsdState::new();
-    apply(&mut referencing, &[root_entry(site, 1)]);
-    apply(&mut referencing, &entries);
+    project(&mut referencing, &[root_entry(site, 1)]);
+    project(&mut referencing, &entries);
     assert_eq!(
-        referencing.entries().get(&entries[0].key),
+        document(&referencing).get(&entries[0].key),
         Some(&entries[0].value),
         "which is what makes the edit survive the session"
     );
@@ -1501,7 +1586,7 @@ fn session_property(state: &mut HsdState, prim: PrimId, value: &Value, at: u64) 
 #[test]
 fn a_session_opinion_beats_a_script_computing_the_same_key() {
     let mut state = referenced();
-    let saved = state.entries();
+    let held = document(&state);
     runtime_property(
         &mut state,
         prim(1),
@@ -1517,10 +1602,9 @@ fn a_session_opinion_beats_a_script_computing_the_same_key() {
              the same property, or the holder is not authoritative"
     );
     assert_eq!(
-        state.entries(),
-        saved,
-        "and never reaches the save set on its own; only a commit puts it \
-             there"
+        document(&state),
+        held,
+        "and never reaches the document layer on its own"
     );
 }
 
@@ -1565,9 +1649,7 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
     state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
 
     assert_eq!(
-        state
-            .entries()
-            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
+        document(&state).get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("a guest recoloured it").encode()),
         "keep is the owner's own commit over an opinion they did not \
              author, and this is the mechanism it rides on"
@@ -1582,7 +1664,7 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
 #[test]
 fn a_promotion_lands_even_when_the_opinion_predates_the_document_value() {
     let mut state = HsdState::new();
-    apply(
+    project(
         &mut state,
         &[
             root_entry(prim(1), 1),
@@ -1595,9 +1677,7 @@ fn a_promotion_lands_even_when_the_opinion_predates_the_document_value() {
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
     assert_eq!(
-        state
-            .entries()
-            .get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
+        document(&state).get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
         Some(&name_attr("recoloured").encode()),
     );
 }
@@ -1616,56 +1696,31 @@ fn a_session_opinion_is_refused_when_an_older_one_arrives_late() {
 }
 
 #[test]
-fn the_reference_target_round_trips_through_the_entry_set() {
+fn a_committed_reference_target_projects_back_as_the_ref_property() {
     let site = prim(7);
     let target = DocId([7; 32]);
 
     let mut state = HsdState::new();
-    apply(&mut state, &[root_entry(site, 1)]);
+    project(&mut state, &[root_entry(site, 1)]);
     state
         .set_attribute(site, &ReferenceAttr(target))
         .expect("reference");
-    state.commit(CommitTarget::Document, &[(site, ReferenceAttr::NAME)]);
+    let writes = state.commit(CommitTarget::Document, &[(site, ReferenceAttr::NAME)]);
 
-    let saved = state.entries();
-    assert!(
-        saved.contains_key(&key::Key::prop(site, &ReferenceAttr::NAME).to_string()),
+    assert_eq!(
+        writes[0].key,
+        key::Key::prop(site, &ReferenceAttr::NAME).to_string(),
         "the target is written at its structural key"
-    );
-    assert!(
-        !saved.contains_key(&format!("p/{site}/ref/")),
-        "nothing lives on the `ref/` spine"
     );
 
     let mut reread = HsdState::new();
-    apply(
-        &mut reread,
-        &saved
-            .into_iter()
-            .map(|(key, value)| Entry::new(key, value, 1))
-            .collect::<Vec<_>>(),
-    );
+    project(&mut reread, &[root_entry(site, 1)]);
+    project(&mut reread, &writes);
     assert_eq!(
         reread
             .attribute::<ReferenceAttr>(site)
             .expect("ref")
             .expect("decode"),
         ReferenceAttr(target),
-        "and reads back as the ordinary `ref` property"
-    );
-}
-
-#[test]
-fn a_reference_layer_entry_round_trips_at_its_structural_key() {
-    let site = prim(7);
-    let entry = override_entry(site, prim(1), NameAttr::NAME, &name_attr("recoloured"));
-
-    let mut referencing = HsdState::new();
-    apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);
-
-    assert_eq!(
-        referencing.entries().get(&entry.key),
-        Some(&entry.value),
-        "the entry set carries the reference layer under the site's prefix"
     );
 }

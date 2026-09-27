@@ -15,3 +15,14 @@ pub const MAX_TEXT_BYTES: usize = 4 * KB;
 
 /// Largest vertex/index stream a single mesh write may upload.
 pub const MAX_MESH_ELEMENTS: usize = 4 * MB;
+
+/// Largest value a single document entry may hold. A mesh carries its streams
+/// in one entry, so this sits several streams above [`MAX_MESH_ELEMENTS`].
+pub const MAX_ENTRY_BYTES: usize = 32 * MB;
+
+/// Largest `.hsdz` package a loader reads.
+pub const MAX_PACKAGE_BYTES: usize = 256 * MB;
+
+/// Most sub-documents one `.hsdz` package may carry. Each mints a namespace
+/// when the package is instanced.
+pub const MAX_PACKAGE_DOCUMENTS: usize = 256;

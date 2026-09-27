@@ -6,7 +6,10 @@ use bevy_hsd::{
     Hsd,
     HsdDocId,
     HsdNamespace,
-    document,
+    feed::{
+        DocFeed,
+        Ready,
+    },
 };
 use bevy_iroh::store::{
     LocalStore,
@@ -14,7 +17,6 @@ use bevy_iroh::store::{
 };
 use hsd::{
     id::DocId,
-    key,
     state::HsdState,
 };
 use iroh::EndpointAddr;
@@ -31,30 +33,6 @@ use crate::peer::{
 
 pub mod pinned_docs;
 
-const READ_ATTEMPTS: usize = 10;
-const READ_DELAY: Duration = Duration::from_secs(1);
-
-/// Polls `doc` until an entry exists under `prefix`, reporting whether one
-/// arrived before the attempts ran out.
-///
-/// A document syncs entry by entry, so the first entry of the expected shape is
-/// the only signal that it has started to arrive.
-async fn wait_for_prefix(
-    doc: &Document,
-    prefix: &str,
-    attempts: usize,
-    delay: Duration,
-) -> anyhow::Result<bool> {
-    for _ in 0..attempts.max(1) {
-        let query = iroh_docs::store::Query::single_latest_per_key().key_prefix(prefix);
-        if doc.get_one(query).await?.is_some() {
-            return Ok(true);
-        }
-        n0_future::time::sleep(delay).await;
-    }
-    Ok(false)
-}
-
 /// How long [`start_space_fetch`] gives gossip to confirm an occupant before
 /// reading the space with whatever it found. A registry-listed occupant
 /// gossip has not reached would only fail the exact dial iroh-docs' own sync
@@ -63,9 +41,9 @@ const PEER_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Component)]
 pub struct PendingScene {
-    /// Carries the document alongside its state, so the component that lands
+    /// Carries the document alongside its feed, so the component that lands
     /// on the entity holds the same handle the fetch opened.
-    rx:      Receiver<(Document, HsdState)>,
+    rx:      Receiver<(Document, DocFeed)>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -161,29 +139,25 @@ pub fn start_space_fetch(
         let (cancel_tx, cancel_rx) = oneshot::channel();
 
         spawn_async_task(async move {
-            // Waiting on the prim prefix rather than a single snapshot key: the
-            // document is its entries now, and the first prim proves it
-            // arrived.
             let fetch = async {
                 let doc = store.open(ns).await?;
                 // Recorded before the content arrives. A space entered and
                 // never fully read is still one this node chose to keep.
                 store.record_visit(ns).await?;
+                // Subscribed before the sync starts, so it sees every entry the
+                // sync brings.
+                let feed = DocFeed::spawn(doc.clone(), Ready::RemoteSync);
                 doc.start_sync(peers).await?;
-                let arrived =
-                    wait_for_prefix(&doc, key::PRIM_PREFIX, READ_ATTEMPTS, READ_DELAY).await?;
-                anyhow::Ok((doc, arrived))
+                anyhow::Ok((doc, feed))
             };
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}
                 res = fetch => match res {
-                    Ok((doc, true)) => match document::read_state(&doc).await {
-                        Ok(state) => {
-                            tx.send((doc, state)).await.ok();
+                    Ok(fetched) => {
+                        if tx.send(fetched).await.is_err() {
+                            debug!(%ns, "space fetched after its scene was dropped");
                         }
-                        Err(err) => error!(?err, "failed reading space entries"),
-                    },
-                    Ok((_, false)) => warn!(%ns, "space document never arrived"),
+                    }
                     Err(err) => error!(?err, "failed syncing space document"),
                 },
             }
@@ -204,7 +178,7 @@ pub fn instantiate_pending_scenes(
     mut commands: Commands,
 ) {
     for (entity, space, pending) in &pending {
-        let Ok((doc, state)) = pending.rx.try_recv() else {
+        let Ok((doc, feed)) = pending.rx.try_recv() else {
             continue;
         };
 
@@ -212,9 +186,10 @@ pub fn instantiate_pending_scenes(
         commands
             .entity(entity)
             .insert((
-                Hsd::new(state),
+                Hsd::new(HsdState::new()),
                 HsdDocId(DocId(*space.0.as_bytes())),
                 HsdNamespace(doc),
+                feed,
             ))
             .remove::<PendingScene>();
     }

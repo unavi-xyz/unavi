@@ -9,13 +9,13 @@ use bevy_hsd::{
     Hsd,
     HsdDocId,
     HsdNamespace,
-    document,
+    feed::{
+        DocFeed,
+        Ready,
+    },
 };
 use bevy_iroh::store::LocalStore;
-use hsd::{
-    key,
-    state::HsdState,
-};
+use hsd::state::HsdState;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
@@ -37,20 +37,14 @@ use crate::{
 /// How long an instanced, no-longer-pinned document lingers before despawn.
 const UNPIN_TTL: Duration = Duration::from_mins(3);
 
-const READ_RETRIES: usize = 4;
-
-/// The publish path uploads before announcing the pin, so a holder almost
-/// always has it by then; retries only cover transient connectivity.
-const READ_BACKOFF_SECS: u64 = 1;
-
 /// Delay before re-attempting a fetch whose retries were exhausted.
 const REFETCH_DELAY: Duration = Duration::from_secs(10);
 
 #[derive(Component)]
 pub struct PendingPinnedDoc {
-    /// Carries the document alongside its state, so the component that lands
+    /// Carries the document alongside its feed, so the component that lands
     /// on the entity holds the same handle the fetch opened.
-    rx:      Receiver<(Document, HsdState)>,
+    rx:      Receiver<(Document, DocFeed)>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -130,25 +124,22 @@ pub fn fetch_tracked_docs(
         spawn_async_task(async move {
             let fetch = async {
                 let doc = store.open(ns).await?;
+                // Subscribed before the sync starts, so it sees every entry the
+                // sync brings.
+                let feed = DocFeed::spawn(doc.clone(), Ready::RemoteSync);
                 doc.start_sync(sync_from).await?;
-                let arrived = super::wait_for_prefix(
-                    &doc,
-                    key::PRIM_PREFIX,
-                    READ_RETRIES,
-                    Duration::from_secs(READ_BACKOFF_SECS),
-                )
-                .await?;
-                anyhow::Ok((doc, arrived))
+                anyhow::Ok((doc, feed))
             };
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}
-                res = fetch => {
-                    if let Ok((doc, true)) = res
-                        && let Ok(state) = document::read_state(&doc).await
-                    {
-                        tx.send((doc, state)).await.ok();
+                res = fetch => match res {
+                    Ok(fetched) => {
+                        if tx.send(fetched).await.is_err() {
+                            debug!(%ns, "pinned document fetched after its tracker was dropped");
+                        }
                     }
-                }
+                    Err(err) => warn!(%ns, ?err, "failed syncing pinned document"),
+                },
             }
         });
 
@@ -169,10 +160,15 @@ pub fn instantiate_tracked_docs(
 ) {
     for (entity, doc, pending) in &pending {
         match pending.rx.try_recv() {
-            Ok((namespace, state)) => {
+            Ok((namespace, feed)) => {
                 commands
                     .entity(entity)
-                    .insert((Hsd::new(state), HsdDocId(doc.doc), HsdNamespace(namespace)))
+                    .insert((
+                        Hsd::new(HsdState::new()),
+                        HsdDocId(doc.doc),
+                        HsdNamespace(namespace),
+                        feed,
+                    ))
                     .remove::<PendingPinnedDoc>();
             }
             Err(TryRecvError::Empty) => {}

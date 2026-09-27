@@ -31,7 +31,7 @@ pub fn realize(package: &Package) -> HsdState {
 
     let mut state = HsdState::new();
     for (key, value) in package.entries {
-        state.apply(&Entry::new(key, value, 1)).expect("apply");
+        state.project(&Entry::new(key, value, 1)).expect("project");
     }
     state
 }

@@ -20,7 +20,10 @@ use hsd::{
         Package,
     },
     id::DocId,
-    state::layer::Layer,
+    state::{
+        HsdState,
+        layer::Layer,
+    },
 };
 use iroh_docs::NamespaceId;
 use unavi_util::{
@@ -37,7 +40,6 @@ use crate::{
     HsdSource,
     Prim,
     attributes::reference::HsdRef,
-    document,
 };
 
 /// A compiled document: one file with bytes inlined, arriving complete.
@@ -148,18 +150,15 @@ async fn build_and_instance(
 
     let mut entries = package.entries;
     Package::rewrite_refs(&mut entries, &minted)?;
-    // Package entries carry inline bytes, so there is nothing to fetch.
     for (key, value) in entries {
         doc.set(key, value).await?;
     }
-
-    let state = document::read_state(&doc).await?;
 
     AsyncCommands::default()
         .push(move |world: &mut World| {
             if let Ok(mut entity) = world.get_entity_mut(entity) {
                 entity.insert((
-                    Hsd::new(state),
+                    Hsd::new(HsdState::new()),
                     HsdDocId(DocId(*namespace.as_bytes())),
                     HsdNamespace(doc),
                 ));
@@ -194,12 +193,6 @@ pub struct RefLoaded(pub DocId);
 /// references, which is depth zero.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct RefDepth(pub usize);
-
-/// The version of the referencing document's overrides this child has
-/// installed, so a later edit to them re-installs and an untouched frame costs
-/// one comparison.
-#[derive(Component, Debug, Clone, Copy)]
-pub struct RefOverrides(pub u64);
 
 /// Realizes each referencing prim's target as a child document.
 ///
@@ -286,7 +279,6 @@ async fn realize_ref(
     // which is the dangling case a reference has and an embedded package does
     // not.
     let doc = store.open(NamespaceId::from(&target.0)).await?;
-    let mut state = document::read_state(&doc).await?;
 
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -298,16 +290,12 @@ async fn realize_ref(
                 return;
             }
 
-            // Installed before the spawn so the document is never briefly the
-            // target's own opinion: the observer that re-emits the scene runs
-            // on the spawn, and what it emits is what gets drawn.
-            let version = match site_overrides(world, prim_ent) {
-                Some((layer, version)) => {
-                    state.install_reference_layer(&layer);
-                    version
-                }
-                None => 0,
-            };
+            // Installed before the spawn, so no entry the feed brings in is
+            // ever drawn without the overrides that speak for it.
+            let mut state = HsdState::new();
+            if let Some(layer) = site_overrides(world, prim_ent) {
+                state.install_reference_layer(&layer);
+            }
 
             world.spawn((
                 Hsd::new(state),
@@ -315,7 +303,6 @@ async fn realize_ref(
                 HsdSource(target),
                 HsdNamespace(doc),
                 RefDepth(depth),
-                RefOverrides(version),
                 ChildOf(prim_ent),
             ));
         })
@@ -326,58 +313,12 @@ async fn realize_ref(
 }
 
 /// What the document holding `prim_ent` says about the prims of the document
-/// that prim references, with the version it was read at.
-fn site_overrides(world: &World, prim_ent: Entity) -> Option<(Layer, u64)> {
+/// that prim references.
+fn site_overrides(world: &World, prim_ent: Entity) -> Option<Layer> {
     let site = world.get::<Prim>(prim_ent)?.0;
     let host = world.get::<HsdChild>(prim_ent)?.0;
     let state = world.get::<Hsd>(host)?.0.lock().ok()?;
-    Some((
-        state.reference_layer_for(site).cloned().unwrap_or_default(),
-        state.references_version(),
-    ))
-}
-
-/// Re-installs a referencing document's overrides into what it references.
-///
-/// An override is durable in the document that states it, so a commit or a
-/// sync writes it there; this is what carries it across to the document it
-/// speaks for, where it composes.
-pub fn apply_ref_overrides(
-    mut realized: Query<(&ChildOf, &Hsd, &mut RefOverrides)>,
-    sites: Query<(&Prim, &HsdChild)>,
-    hosts: Query<&Hsd>,
-) {
-    for (site_prim, doc, mut installed) in &mut realized {
-        let Ok((site, host)) = sites.get(site_prim.0) else {
-            continue;
-        };
-        let Ok(host) = hosts.get(host.0) else {
-            continue;
-        };
-
-        let stated = {
-            let Ok(host) = host.0.lock() else {
-                warn!("scene state poisoned");
-                continue;
-            };
-            if host.references_version() == installed.0 {
-                continue;
-            }
-            (
-                host.reference_layer_for(site.0)
-                    .cloned()
-                    .unwrap_or_default(),
-                host.references_version(),
-            )
-        };
-
-        let Ok(mut state) = doc.0.lock() else {
-            warn!("scene state poisoned");
-            continue;
-        };
-        state.install_reference_layer(&stated.0);
-        installed.0 = stated.1;
-    }
+    state.reference_layer_for(site).cloned()
 }
 
 fn despawn_instances(

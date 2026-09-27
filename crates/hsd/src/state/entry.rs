@@ -5,13 +5,12 @@ use web_time::{
 
 use crate::property::value::Value;
 
-/// Orders the opinions a layer holds on one key: the later timestamp wins,
-/// then the greater content hash.
+/// Orders the opinions a live layer holds on one key. The later timestamp
+/// wins, then the greater content hash.
 ///
-/// This is iroh-docs' order within one author, not across authors. Its
-/// `single_latest_per_key` breaks a timestamp tie by author iteration order,
-/// so two authors' entries for one key must be resolved by the store before
-/// they are applied here.
+/// A projected opinion carries the stamp of the entry its store chose. Every
+/// peer holding that entry derives the same stamp, which is what a parent
+/// cycle breaks on.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Stamp {
     /// Milliseconds since the Unix epoch.
@@ -57,6 +56,7 @@ pub(super) fn now_millis() -> u64 {
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
+/// One key and its value. An empty value is a key holding no value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
     pub key:       String,

@@ -60,12 +60,24 @@ use hsd::{
         entry::Entry,
     },
 };
+use iroh::{
+    Endpoint,
+    SecretKey,
+    endpoint::presets::N0DisableRelay,
+};
 use iroh_blobs::{
+    Hash,
     api::blobs::Blobs,
     store::mem::MemStore,
 };
+use iroh_docs::Author;
 use rstest::fixture;
 use unavi_util::async_task::spawn_async_task;
+use wds::{
+    Store,
+    builder::StoreBuilder,
+    document::Document,
+};
 
 pub struct TestContext {
     pub app:   App,
@@ -229,12 +241,6 @@ impl TestContext {
 
     pub fn create_child(&self, parent: PrimId) -> PrimId {
         self.with_state(|state| state.create_prim(Some(parent)))
-    }
-
-    /// Writes a raw entry, which is the only way to reach the document layer:
-    /// the authoring calls all land in the runtime one.
-    pub fn apply(&self, entry: &Entry) {
-        self.with_state(|state| state.apply(entry).expect("apply entry"));
     }
 
     /// The entity realizing `prim`, which the diff spawns on the tick after
@@ -459,4 +465,75 @@ pub fn displaced_world(nodes: Vec<Node>, world_position_offset: Option<Port>) ->
         }),
         ..Default::default()
     }
+}
+
+/// Runs `future` on the task runtime the app's own tasks use.
+fn block_on<T: Send + 'static>(future: impl Future<Output = T> + Send + 'static) -> T {
+    let (tx, rx) = async_channel::bounded(1);
+    spawn_async_task(async move {
+        tx.send(future.await).await.expect("send result");
+    });
+    rx.recv_blocking().expect("task result")
+}
+
+/// An in-memory store, for tests whose entries go through iroh-docs.
+pub struct Backing(Store);
+
+impl Backing {
+    pub fn new() -> Self {
+        Self(block_on(async {
+            let secret_key = SecretKey::generate();
+            let author = Author::from_bytes(&secret_key.to_bytes());
+            let endpoint = Endpoint::builder(N0DisableRelay)
+                .secret_key(secret_key)
+                .bind()
+                .await
+                .expect("bind endpoint");
+            StoreBuilder::new(endpoint, author)
+                .build()
+                .await
+                .expect("build store")
+                .store
+        }))
+    }
+
+    pub fn document(&self) -> Document {
+        let store = self.0.clone();
+        block_on(async move { store.create().await.expect("create document") })
+    }
+
+    /// Stores `bytes` as a blob without pointing any key at it.
+    pub fn add_bytes(&self, bytes: Vec<u8>) -> Hash {
+        let store = self.0.clone();
+        block_on(async move {
+            store
+                .blobs()
+                .add_bytes(bytes)
+                .await
+                .expect("add bytes")
+                .hash
+        })
+    }
+}
+
+pub fn set_entry(doc: &Document, entry: &Entry) {
+    let (doc, entry) = (doc.clone(), entry.clone());
+    block_on(async move {
+        doc.set(entry.key, entry.value).await.expect("set entry");
+    });
+}
+
+/// Deletes `key`, as a commit of a blocked opinion does.
+pub fn remove_key(doc: &Document, key: String) {
+    let doc = doc.clone();
+    block_on(async move {
+        doc.remove(key).await.expect("remove key");
+    });
+}
+
+pub fn set_hash(doc: &Document, key: String, hash: Hash, size: u64) {
+    let doc = doc.clone();
+    block_on(async move {
+        doc.set_hash(key, hash, size).await.expect("set hash");
+    });
 }

@@ -20,12 +20,6 @@ interface api {
   /// two then diverge from. A copy, not a reference: the copy's scripts see
   /// the copy's prims, which is what a template is for.
   copy-document: func(id: document-id) -> result<document, error>;
-
-  /// Writes a document's authored content into its namespace.
-  ///
-  /// Script writes are live-layer opinions and are not durable; promote what
-  /// should survive with `commit` first.
-  save-document: func(id: document-id) -> result<_, error>;
 }
 
 interface types {

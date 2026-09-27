@@ -10,7 +10,6 @@ use bevy_hsd::{
     HsdHeld,
     HsdNamespace,
     HsdSource,
-    document as hsd_document,
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
@@ -19,7 +18,6 @@ use hsd::{
     state::{
         HsdState,
         entry::Entry,
-        save,
     },
 };
 use iroh_docs::{
@@ -112,20 +110,8 @@ pub(super) async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
         .ok_or_else(|| anyhow::anyhow!("document has no namespace: {id}"))
 }
 
-/// Writes a document's live state into its entries.
-///
-/// Per-key diff against what the namespace already holds: only changed keys
-/// are written, so two peers editing different prims do not overwrite each
-/// other.
-pub(super) async fn save_namespace(
-    ns: NamespaceId,
-    state: Arc<Mutex<HsdState>>,
-) -> anyhow::Result<()> {
-    let current = state
-        .lock()
-        .map_err(|_| anyhow::anyhow!("scene state poisoned"))?
-        .entries();
-
+/// Writes `entries` into the namespace `ns`. An empty value deletes its key.
+pub(super) async fn write_entries(ns: NamespaceId, entries: Vec<Entry>) -> anyhow::Result<()> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -140,16 +126,12 @@ pub(super) async fn save_namespace(
             spawn_async_task(async move {
                 let res = async {
                     let doc = store.open(ns).await?;
-
-                    let mut base = std::collections::BTreeMap::new();
-                    for entry in doc.list(&key::PREFIXES).await? {
-                        if let Some(entry) = hsd_document::to_entry(&doc, &entry).await {
-                            base.insert(entry.key, entry.value);
+                    for entry in entries {
+                        if entry.value.is_empty() {
+                            doc.remove(entry.key).await?;
+                        } else {
+                            doc.set(entry.key, entry.value).await?;
                         }
-                    }
-
-                    for change in save::diff(&base, &current) {
-                        hsd_document::apply_change(&doc, change).await?;
                     }
                     anyhow::Ok(())
                 }
@@ -315,22 +297,6 @@ async fn remove_replica(ns: NamespaceId) {
         .await;
 }
 
-pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
-    let id = doc_id(&id)?;
-
-    let state = {
-        let scene = api.wired_scene.lock().await;
-        scene
-            .docs
-            .iter()
-            .find_map(|(_, d)| (d.id == id).then(|| Arc::clone(&d.state)))
-    };
-    let Some(state) = state else {
-        anyhow::bail!("saved doc not held by script");
-    };
-    save_namespace(namespace_of(id).await?, state).await
-}
-
 /// Whether this node holds a document's namespace with its write key: the
 /// possession half of "does this client hold a key for a durable layer
 /// composing this prim". A namespace minted or imported here answers `true`;
@@ -368,76 +334,90 @@ pub(super) async fn holds_write_key(id: DocId) -> anyhow::Result<bool> {
 }
 
 pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
-    mint_document(api, HsdState::new()).await
+    mint_document(api, Vec::new()).await
 }
 
-/// Mints an independent document holding what `id` has authored.
+/// Mints an independent document holding what `id`'s store holds.
 ///
 /// A copy, not a reference: the two diverge from here, and the copy's scripts
 /// see the copy's prims. That is what a template is for, and what a reference
 /// deliberately is not — a reference realizes the target as a child document,
 /// so a script inside it would look for its siblings in the wrong place.
 ///
-/// Only the document layer travels. A copy of what someone's script happened
+/// Only what the store holds travels. A copy of what someone's script happened
 /// to be computing this frame is not what "copy this template" means.
 pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
     let id = doc_id(&id).map_err(|err| ScriptError::other(err.to_string()))?;
-    let entries = source_entries(api, id)
+    let entries = source_entries(id)
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?
         .ok_or_else(|| ScriptError::other(format!("no document {id} to copy")))?;
-
-    let mut state = HsdState::new();
-    for (key, value) in entries {
-        state
-            .apply(&Entry {
-                key,
-                value,
-                timestamp: 0,
-            })
-            .map_err(|err| ScriptError::other(err.to_string()))?;
-    }
-
-    mint_document(api, state).await
+    mint_document(api, entries).await
 }
 
-/// The authored entries of `id`, looked up by document id and then by the
+/// What the store behind `id` holds, looked up by document id and then by the
 /// reference sites realizing it, since a realized reference is keyed by its
 /// site rather than by the document it stands for.
-async fn source_entries(
-    _api: &Api,
-    id: DocId,
-) -> anyhow::Result<Option<std::collections::BTreeMap<String, Vec<u8>>>> {
+async fn source_entries(id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let by_id = world
-                .query::<(&HsdDocId, &Hsd)>()
+                .query::<(&HsdDocId, &HsdNamespace)>()
                 .iter(world)
                 .find(|(doc, _)| doc.0 == id)
-                .map(|(_, live)| Arc::clone(&live.0));
-            let state = by_id.or_else(|| {
+                .map(|(_, namespace)| namespace.0.clone());
+            let doc = by_id.or_else(|| {
                 world
-                    .query::<(&HsdSource, &Hsd)>()
+                    .query::<(&HsdSource, &HsdNamespace)>()
                     .iter(world)
                     .find(|(source, _)| source.0 == id)
-                    .map(|(_, live)| Arc::clone(&live.0))
+                    .map(|(_, namespace)| namespace.0.clone())
             });
-            let entries = state.and_then(|state| state.lock().ok().map(|s| s.entries()));
-            tx.try_send(entries).ok();
+            let Some(doc) = doc else {
+                tx.try_send(Ok(None)).ok();
+                return;
+            };
+            spawn_async_task(async move {
+                tx.try_send(read_entries(&doc, id).await.map(Some)).ok();
+            });
         })
         .send()
         .await?;
-    Ok(rx.recv().await?)
+    rx.recv().await?
 }
 
-async fn mint_document(api: &Api, state: HsdState) -> Result<u32, ScriptError> {
+async fn read_entries(doc: &Document, id: DocId) -> anyhow::Result<Vec<Entry>> {
+    let mut entries = Vec::new();
+    for entry in doc.list(&key::PREFIXES).await? {
+        let key = String::from_utf8(entry.key().to_vec())?;
+        let Some(value) = doc.value(&entry).await? else {
+            anyhow::bail!("{key} has not downloaded, so {id} cannot be copied whole");
+        };
+        entries.push(Entry::new(key, value.to_vec(), entry.timestamp() / 1000));
+    }
+    Ok(entries)
+}
+
+/// The entries land in the new namespace before the document spawns, and are
+/// projected into its state so a script sees them at once.
+async fn mint_document(api: &Api, entries: Vec<Entry>) -> Result<u32, ScriptError> {
     crate::quota::acquire(&api.quota, Flow::CreateDocument, 1.0).await?;
+
+    let mut state = HsdState::new();
+    for entry in &entries {
+        state
+            .project(entry)
+            .map_err(|err| ScriptError::other(err.to_string()))?;
+    }
 
     let doc = create_namespace()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
     let ns = doc.id();
+    write_entries(ns, entries)
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
     let state = Arc::new(Mutex::new(state));
 
     spawn_child_doc(api, Arc::clone(&state), doc).await?;

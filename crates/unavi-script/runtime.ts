@@ -207,7 +207,6 @@ function buildImports(wasi: WASIShim, rt: any) {
       copyDocument: rt.wiredSceneCopyDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
       removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
-      saveDocument: rt.wiredSceneSaveDocument.bind(rt),
       selfDocument: rt.wiredSceneSelfDocument.bind(rt),
       selfPrim: rt.wiredSceneSelfPrim.bind(rt),
     },

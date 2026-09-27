@@ -90,12 +90,4 @@ impl Runtime {
             .map_err(raise)?;
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
-
-    #[wasm_bindgen(js_name = "wiredSceneSaveDocument")]
-    pub async fn wired_scene_save_document(&self, id: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::Scene).map_err(raise)?;
-        shared::wired::scene::save_document(&self.api, id)
-            .await
-            .map_err(raise)
-    }
 }

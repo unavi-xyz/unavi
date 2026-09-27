@@ -43,7 +43,7 @@ use crate::runtime::shared::{
         holds_write_key,
         namespace_of,
         prim::PrimRes,
-        save_namespace,
+        write_entries,
     },
 };
 
@@ -405,11 +405,11 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
         )
     })?;
 
-    // Promotion only changed live state; the durable half is the namespace
-    // write, and the session layer has none.
+    // The commit already projected its entries where they compose. Writing
+    // them is what makes them durable, and the session layer has no store.
     match landing {
         Landing::Document => {
-            save_namespace(namespace_of(doc.id).await?, Arc::clone(&doc.state)).await?;
+            write_entries(namespace_of(doc.id).await?, entries).await?;
         }
         Landing::Override {
             reference, state, ..
@@ -418,9 +418,11 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
                 let mut referencing = state
                     .lock()
                     .map_err(|_| anyhow::anyhow!("scene state poisoned"))?;
-                referencing.apply_all(&entries)?;
+                for entry in &entries {
+                    referencing.project(entry)?;
+                }
             }
-            save_namespace(namespace_of(reference).await?, state).await?;
+            write_entries(namespace_of(reference).await?, entries).await?;
         }
         Landing::Session => {}
     }

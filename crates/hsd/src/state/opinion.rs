@@ -32,8 +32,8 @@ impl<T> From<Option<T>> for Opinion<T> {
     }
 }
 
-/// One layer's opinions about one prim, each stamped so an older write is
-/// refused.
+/// One layer's opinions about one prim, each stamped. A live layer refuses an
+/// older write. A projected layer replaces whatever it holds.
 #[derive(Debug, Clone)]
 pub(super) struct PrimOpinions {
     parent: Option<(Opinion<ParentAttr>, Stamp)>,
@@ -67,13 +67,6 @@ impl PrimOpinions {
             .map(|(name, (opinion, _))| (name, opinion))
     }
 
-    /// `Blocked` opinions excluded.
-    pub(super) fn set_properties(&self) -> impl Iterator<Item = (&PropName, &Value)> {
-        self.props
-            .iter()
-            .filter_map(|(name, (opinion, _))| opinion.value().map(|value| (name, value)))
-    }
-
     pub(super) fn is_empty(&self) -> bool {
         self.parent.is_none() && self.props.is_empty()
     }
@@ -92,26 +85,39 @@ impl PrimOpinions {
         if self.parent.as_ref().is_some_and(|(_, old)| stamp < *old) {
             return false;
         }
-        self.parent = Some((parent, stamp));
+        self.replace_parent(parent, stamp);
         true
     }
 
+    /// Answers whether the write was accepted. A stamp older than the one
+    /// held is refused.
     pub(super) fn set_property(
         &mut self,
         name: &PropName,
         value: Opinion<Value>,
         stamp: Stamp,
     ) -> bool {
-        match self.props.get_mut(name) {
-            Some((_, old)) if stamp < *old => false,
-            Some(slot) => {
-                *slot = (value, stamp);
-                true
-            }
-            None => {
-                self.props.insert(name.clone(), (value, stamp));
-                true
-            }
+        if self.property_stamp(name).is_some_and(|old| stamp < old) {
+            return false;
+        }
+        self.replace_property(name, value, stamp);
+        true
+    }
+
+    pub(super) const fn replace_parent(&mut self, parent: Opinion<ParentAttr>, stamp: Stamp) {
+        self.parent = Some((parent, stamp));
+    }
+
+    pub(super) fn replace_property(
+        &mut self,
+        name: &PropName,
+        value: Opinion<Value>,
+        stamp: Stamp,
+    ) {
+        if let Some(slot) = self.props.get_mut(name) {
+            *slot = (value, stamp);
+        } else {
+            self.props.insert(name.clone(), (value, stamp));
         }
     }
 }

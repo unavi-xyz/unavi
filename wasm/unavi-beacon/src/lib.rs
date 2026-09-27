@@ -27,10 +27,7 @@ use crate::{
             },
         },
         scene::{
-            api::{
-                save_document,
-                self_document,
-            },
+            api::self_document,
             types::{
                 Document,
                 Material,
@@ -204,18 +201,10 @@ impl Beacon {
             if !self.published
                 && matches!(event.action, InputAction::Press | InputAction::GripPress)
             {
-                let doc = self_document()?;
-                // Materializes the copied template's authored content into
-                // the beacon's namespace. sync-document left with the plan's
-                // C step; serving and pinning the document to the space is
-                // the session layer's work once it lands.
-                match save_document(&doc.id()) {
-                    Ok(()) => {
-                        self.published = true;
-                        println!("Beacon published: space={}", self.id);
-                    }
-                    Err(err) => eprintln!("Beacon publish failed: {err:?}"),
-                }
+                // The copied template is already durable in its own
+                // namespace, so pressing the beacon only marks it published.
+                self.published = true;
+                println!("Beacon published: space={}", self.id);
             }
         }
 

@@ -104,15 +104,6 @@ impl bindings::wired::scene::api::Host for Runtime {
             .await
             .map_err(|err| ScriptError::from(err).into()))
     }
-
-    async fn save_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
-        if let Err(err) = self.api.require(ApiName::Scene) {
-            return Ok(Err(err.into()));
-        }
-        Ok(shared::wired::scene::save_document(&self.api, id)
-            .await
-            .map_err(|err| ScriptError::from(err).into()))
-    }
 }
 
 impl bindings::wired::scene::types::Host for Runtime {}

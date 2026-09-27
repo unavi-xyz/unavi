@@ -49,6 +49,18 @@ impl LayerKey {
         .to_string()
     }
 
+    /// Reads a whole document key, answering the site it lies under.
+    #[must_use]
+    pub fn parse_key(key: &str) -> Option<(PrimId, Self)> {
+        let key::Key::Nested { prim, group, tail } = key::Key::parse(key)? else {
+            return None;
+        };
+        if group != GROUP {
+            return None;
+        }
+        Some((prim, Self::parse(&tail)?))
+    }
+
     /// Reads the tail of a [`key::Key::Nested`] under the `ref` group.
     #[must_use]
     pub fn parse(tail: &str) -> Option<Self> {

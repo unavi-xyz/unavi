@@ -31,7 +31,7 @@ use wds::document::Document;
 pub mod anchor;
 pub mod attributes;
 mod diff;
-pub mod document;
+pub mod feed;
 pub mod load;
 pub mod loaded;
 
@@ -53,6 +53,7 @@ impl Plugin for HsdPlugin {
             .init_resource::<attributes::shader::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
             .add_observer(diff::resync_on_spawn)
+            .add_observer(feed::feed_namespace)
             .add_observer(attributes::shader::evict_document_shaders)
             .add_systems(Startup, attributes::shader::register_fallback_shader)
             .add_systems(
@@ -62,9 +63,9 @@ impl Plugin for HsdPlugin {
                     // arity; nesting splits the systems, and `.chain()` on
                     // the outer tuple still orders the two inner groups.
                     (
-                        // Before the drain, so an override installed this
-                        // frame reaches the world in the same one.
-                        load::apply_ref_overrides,
+                        // Before the drain, so what the store changed reaches
+                        // the world the same frame.
+                        feed::apply_doc_deltas,
                         diff::discard_held_events,
                         diff::drain_scene_events,
                         attributes::xform::apply_xform,

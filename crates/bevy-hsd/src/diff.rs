@@ -22,6 +22,7 @@ use crate::{
     HsdRelationships,
     Prim,
     attributes::PARSERS,
+    feed::DocFeed,
     loaded::HsdSnapshotDrained,
 };
 
@@ -77,6 +78,7 @@ pub fn drain_scene_events(
     mut indices: Query<&mut HsdPrimIndex>,
     rels_now: Query<&HsdRelationships>,
     drained: Query<(), With<HsdSnapshotDrained>>,
+    feeds: Query<&DocFeed>,
     mut commands: Commands,
 ) {
     for (doc_ent, doc, gate) in &docs {
@@ -118,7 +120,9 @@ pub fn drain_scene_events(
             commands.entity(prim_ent).insert(HsdRelationships(rels));
         }
 
-        if !drained.contains(doc_ent) {
+        // A fed document is complete only once its feed's first read is.
+        let complete = feeds.get(doc_ent).map_or(true, DocFeed::is_synced);
+        if complete && !drained.contains(doc_ent) {
             commands.entity(doc_ent).insert(HsdSnapshotDrained);
         }
     }

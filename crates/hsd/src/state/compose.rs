@@ -161,13 +161,13 @@ impl HsdState {
         stamp: Option<Stamp>,
     ) {
         let stamp = stamp.unwrap_or_else(|| self.local_parent_stamp(layer, prim, parent));
-        if self
-            .layer_mut(layer)
-            .entry(prim)
-            .set_parent(parent.into(), stamp)
-        {
-            self.settle_parent(prim);
+        let opinions = self.layer_mut(layer).entry(prim);
+        if layer.is_projected() {
+            opinions.replace_parent(parent.into(), stamp);
+        } else if !opinions.set_parent(parent.into(), stamp) {
+            return;
         }
+        self.settle_parent(prim);
     }
 
     pub(super) fn settle_parent(&mut self, prim: PrimId) {
@@ -200,13 +200,13 @@ impl HsdState {
         value: Option<Value>,
         stamp: Stamp,
     ) {
-        if self
-            .layer_mut(layer)
-            .entry(prim)
-            .set_property(name, value.into(), stamp)
-        {
-            self.settle_property(prim, name);
+        let opinions = self.layer_mut(layer).entry(prim);
+        if layer.is_projected() {
+            opinions.replace_property(name, value.into(), stamp);
+        } else if !opinions.set_property(name, value.into(), stamp) {
+            return;
         }
+        self.settle_property(prim, name);
     }
 
     /// Recomposes one property, emitting it if the composed value moved.
@@ -241,7 +241,7 @@ impl HsdState {
     ///
     /// A cycle through `root` is placed from its breaker down, so every
     /// member is realized after its parent.
-    fn refresh(&mut self, root: PrimId) {
+    pub(super) fn refresh(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
         let mut walk = Walk::default();
         let mut start = root;
@@ -325,6 +325,9 @@ impl HsdState {
         let Some(state) = self.resolved.get(&prim) else {
             return Placement::Held;
         };
+        if self.is_refused() {
+            return Placement::Held;
+        }
         if self.realized.len() >= MAX_REALIZED_PRIMS && !self.realized.contains_key(&prim) {
             return Placement::Held;
         }

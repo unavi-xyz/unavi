@@ -12,6 +12,11 @@ use serde::{
 use thiserror::Error;
 
 use crate::{
+    bounds::{
+        MAX_ENTRY_BYTES,
+        MAX_PACKAGE_BYTES,
+        MAX_PACKAGE_DOCUMENTS,
+    },
     format::meta::DOC_VERSION,
     id::DocId,
     key,
@@ -41,6 +46,12 @@ pub enum PackageError {
     Value(#[from] PropertyError),
     #[error("reference to {0}, which the package does not carry")]
     Dangling(DocId),
+    #[error("package is {0} bytes, over the cap of {MAX_PACKAGE_BYTES}")]
+    TooLarge(usize),
+    #[error("package carries {0} documents, over the cap of {MAX_PACKAGE_DOCUMENTS}")]
+    TooManyDocuments(usize),
+    #[error("entry {key} is {len} bytes, over the cap of {MAX_ENTRY_BYTES}")]
+    EntryTooLarge { key: String, len: usize },
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,11 +114,32 @@ impl Package {
         Ok(out)
     }
 
+    /// Refuses a package past the byte, entry or document caps in
+    /// [`crate::bounds`].
     pub fn decode(bytes: &[u8]) -> Result<Self, PackageError> {
+        if bytes.len() > MAX_PACKAGE_BYTES {
+            return Err(PackageError::TooLarge(bytes.len()));
+        }
         let body = bytes.strip_prefix(MAGIC).ok_or(PackageError::Magic)?;
         let package = postcard::from_bytes::<Self>(body)?;
         if package.format_version > DOC_VERSION {
             return Err(PackageError::Version(package.format_version));
+        }
+        if package.documents.len() > MAX_PACKAGE_DOCUMENTS {
+            return Err(PackageError::TooManyDocuments(package.documents.len()));
+        }
+
+        let every_entry = package
+            .entries
+            .iter()
+            .chain(package.documents.iter().flat_map(|(_, entries)| entries));
+        for (key, value) in every_entry {
+            if value.len() > MAX_ENTRY_BYTES {
+                return Err(PackageError::EntryTooLarge {
+                    key: key.clone(),
+                    len: value.len(),
+                });
+            }
         }
         Ok(package)
     }
@@ -155,6 +187,33 @@ mod tests {
     #[test]
     fn foreign_bytes_are_rejected() {
         assert!(Package::decode(b"nope").is_err());
+    }
+
+    #[test]
+    fn an_oversized_entry_in_a_sub_document_is_rejected() {
+        let mut package = package();
+        package.documents.push((
+            Package::placeholder("child"),
+            vec![("p/B/script/".to_owned(), vec![0; MAX_ENTRY_BYTES + 1])],
+        ));
+        let bytes = package.encode().expect("encode");
+        assert!(matches!(
+            Package::decode(&bytes),
+            Err(PackageError::EntryTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn a_package_past_the_document_cap_is_rejected() {
+        let mut package = package();
+        package.documents = (0..=MAX_PACKAGE_DOCUMENTS)
+            .map(|i| (Package::placeholder(&i.to_string()), Vec::new()))
+            .collect();
+        let bytes = package.encode().expect("encode");
+        assert!(matches!(
+            Package::decode(&bytes),
+            Err(PackageError::TooManyDocuments(_))
+        ));
     }
 
     #[test]

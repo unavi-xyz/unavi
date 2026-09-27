@@ -37,13 +37,29 @@ enum Placement {
     Held,
 }
 
+/// Where a prim's parent chain ends.
+enum Chain {
+    /// At a root, this many links up.
+    Rooted(usize),
+    /// In a parent cycle, which breaks at `breaker`, this many links up.
+    /// `through` is whether the cycle passes through the walked prim.
+    Cycle {
+        breaker: PrimId,
+        depth:   usize,
+        through: bool,
+    },
+    /// At an unknown prim, or past [`MAX_PRIM_DEPTH`].
+    Broken,
+}
+
 /// Scratch space for one [`HsdState::refresh`].
 #[derive(Default)]
 struct Walk {
     /// The parent chain being walked, in order and as a set.
     order:   Vec<PrimId>,
     members: HashSet<PrimId>,
-    /// Depth of each prim this refresh realized under a root.
+    /// Depth below its root or cycle breaker of each prim this refresh
+    /// placed, and of the parent of the prim it started from.
     depths:  HashMap<PrimId, usize>,
 }
 
@@ -59,13 +75,12 @@ impl Walk {
         self.members.insert(prim);
     }
 
-    /// The chain from `prim` onward, if `prim` is already on it.
-    fn cycle_at(&self, prim: PrimId) -> Option<&[PrimId]> {
+    /// Where `prim` sits on the chain, if it is already on it.
+    fn position(&self, prim: PrimId) -> Option<usize> {
         if !self.members.contains(&prim) {
             return None;
         }
-        let index = self.order.iter().position(|&id| id == prim)?;
-        Some(&self.order[index..])
+        self.order.iter().position(|&id| id == prim)
     }
 }
 
@@ -223,10 +238,27 @@ impl HsdState {
     /// Recomputes realization for `root` and its subtree. Descends through
     /// every prim that is or was realized, since a move changes the depth and
     /// cycle membership of everything beneath it.
+    ///
+    /// A cycle through `root` is placed from its breaker down, so every
+    /// member is realized after its parent.
     fn refresh(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
-        let mut stack = vec![root];
         let mut walk = Walk::default();
+        let mut start = root;
+        if let Some(ParentAttr::Prim(parent)) = self.resolved.get(&root).and_then(|s| s.parent) {
+            match self.walk_to_root(root, parent, &mut walk) {
+                Chain::Cycle {
+                    breaker,
+                    through: true,
+                    ..
+                } => start = breaker,
+                Chain::Rooted(depth) | Chain::Cycle { depth, .. } => {
+                    walk.depths.insert(parent, depth - 1);
+                }
+                Chain::Broken => {}
+            }
+        }
+        let mut stack = vec![root, start];
 
         while let Some(prim) = stack.pop() {
             if !seen.insert(prim) {
@@ -308,10 +340,14 @@ impl HsdState {
         let depth = match walk.depths.get(&parent) {
             Some(&parent_depth) => parent_depth + 1,
             None => match self.walk_to_root(prim, parent, walk) {
-                Ok(depth) => depth,
-                Err(placement) => return placement,
+                Chain::Rooted(depth) | Chain::Cycle { depth, .. } => depth,
+                Chain::Broken => return Placement::Held,
             },
         };
+        if depth == 0 {
+            walk.depths.insert(prim, 0);
+            return Placement::Root;
+        }
         if depth >= MAX_PRIM_DEPTH || !self.realized.contains_key(&parent) {
             return Placement::Held;
         }
@@ -319,36 +355,35 @@ impl HsdState {
         Placement::Child(parent)
     }
 
-    /// Walks up from `prim` to its root, answering its depth. Ends early with
-    /// the placement when the chain is broken, too deep, or cycles.
-    fn walk_to_root(
-        &self,
-        prim: PrimId,
-        parent: PrimId,
-        walk: &mut Walk,
-    ) -> Result<usize, Placement> {
+    /// Walks up from `prim`, whose parent is `parent`, to where its chain
+    /// ends.
+    fn walk_to_root(&self, prim: PrimId, parent: PrimId, walk: &mut Walk) -> Chain {
         walk.reset(prim);
         let mut current = parent;
         loop {
-            if let Some(cycle) = walk.cycle_at(current) {
-                let breaker = cycle
+            if let Some(start) = walk.position(current) {
+                let (depth, breaker) = walk
+                    .order
                     .iter()
                     .copied()
-                    .max_by_key(|id| (self.parent_stamp(*id), *id));
-                return Err(if breaker == Some(prim) {
-                    Placement::Root
-                } else {
-                    Placement::Child(parent)
-                });
+                    .enumerate()
+                    .skip(start)
+                    .max_by_key(|(_, id)| (self.parent_stamp(*id), *id))
+                    .unwrap_or((start, current));
+                return Chain::Cycle {
+                    breaker,
+                    depth,
+                    through: start == 0,
+                };
             }
             if walk.order.len() >= MAX_PRIM_DEPTH {
-                return Err(Placement::Held);
+                return Chain::Broken;
             }
             walk.push(current);
 
             match self.resolved.get(&current).and_then(|s| s.parent) {
-                None => return Err(Placement::Held),
-                Some(ParentAttr::Root) => return Ok(walk.order.len() - 1),
+                None => return Chain::Broken,
+                Some(ParentAttr::Root) => return Chain::Rooted(walk.order.len() - 1),
                 Some(ParentAttr::Prim(next)) => current = next,
             }
         }

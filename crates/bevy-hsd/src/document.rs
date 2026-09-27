@@ -15,6 +15,8 @@ use hsd::{
 };
 use wds::document::Document;
 
+/// Applies only each key's winning entry, since a `Stamp` does not order
+/// entries across authors the way the store does.
 pub async fn read_state(doc: &Document) -> anyhow::Result<HsdState> {
     let mut state = HsdState::new();
     for entry in doc.list(&key::PREFIXES).await? {

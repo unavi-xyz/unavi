@@ -192,6 +192,55 @@ fn a_cycle_breaks_at_its_greatest_stamp_regardless_of_order() {
     assert_eq!(forward.parent(prim(2)), Some(prim(1)));
 }
 
+/// Folds a stream of scene events into the hierarchy a consumer builds,
+/// failing if any prim is placed under a parent not yet realized.
+fn replay(events: &[SceneEvent]) -> BTreeMap<PrimId, Option<PrimId>> {
+    let mut scene = BTreeMap::new();
+    for event in events {
+        match event {
+            SceneEvent::Realized { prim, parent } | SceneEvent::Reparented { prim, parent } => {
+                if let Some(parent) = parent {
+                    assert!(
+                        scene.contains_key(parent),
+                        "{prim} placed under {parent} before {parent} was realized"
+                    );
+                }
+                scene.insert(*prim, *parent);
+            }
+            SceneEvent::Unrealized { prim } => {
+                scene.remove(prim);
+            }
+            SceneEvent::Property { .. } => {}
+        }
+    }
+    scene
+}
+
+#[test]
+fn a_cycle_realizes_each_member_after_its_parent_in_any_order() {
+    let entries = [
+        child_entry(prim(1), prim(3), 10),
+        child_entry(prim(2), prim(1), 20),
+        child_entry(prim(3), prim(2), 30),
+        child_entry(prim(4), prim(2), 40),
+    ];
+    let orders = [[0, 1, 2, 3], [2, 0, 1, 3], [3, 2, 1, 0], [1, 3, 0, 2], [0, 2, 3, 1]];
+
+    for order in orders {
+        let mut state = HsdState::new();
+        let mut events = Vec::new();
+        for i in order {
+            apply(&mut state, &[entries[i].clone()]);
+            events.extend(state.drain_events());
+        }
+        assert_eq!(
+            replay(&events),
+            shape(&state),
+            "events for order {order:?} rebuild the state"
+        );
+    }
+}
+
 #[test]
 fn a_prim_hanging_off_a_cycle_is_realized_under_its_own_parent() {
     let mut state = HsdState::new();

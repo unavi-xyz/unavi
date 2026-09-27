@@ -5,8 +5,13 @@ use web_time::{
 
 use crate::property::value::Value;
 
-/// Orders concurrent writes to one key: the later timestamp wins, then the
-/// greater content hash.
+/// Orders the opinions a layer holds on one key: the later timestamp wins,
+/// then the greater content hash.
+///
+/// This is iroh-docs' order within one author, not across authors. Its
+/// `single_latest_per_key` breaks a timestamp tie by author iteration order,
+/// so two authors' entries for one key must be resolved by the store before
+/// they are applied here.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Stamp {
     /// Milliseconds since the Unix epoch.

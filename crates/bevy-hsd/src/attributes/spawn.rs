@@ -1,63 +1,32 @@
 use bevy::prelude::*;
-use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::spawn::{
-        self,
-        SpawnAttr,
-    },
-};
+use hsd::schema::spawn::SpawnAttr;
+use unavi_physics::finite;
 
 use crate::attributes::{
-    AttributeParser,
     ParseError,
+    apply_simple,
 };
-
-#[derive(Component, Debug, Clone, Copy)]
-pub struct SpawnData(pub SpawnAttr);
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SpawnPoint {
     pub radius: f32,
 }
 
-pub struct SpawnParser;
-
-impl AttributeParser for SpawnParser {
-    fn group(&self) -> &'static str {
-        spawn::GROUP
-    }
-
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        _name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match payload {
-            Some(payload) => {
-                commands
-                    .entity(prim)
-                    .insert(SpawnData(SpawnAttr::decode(payload)?));
-            }
-            None => {
-                commands.entity(prim).remove::<(SpawnData, SpawnPoint)>();
-            }
-        }
-        Ok(())
-    }
-}
-
-pub fn apply_spawn(
-    changed: Query<(Entity, &SpawnData), Changed<SpawnData>>,
-    mut commands: Commands,
-) {
-    for (entity, data) in &changed {
-        commands.entity(entity).insert(SpawnPoint {
-            radius: data.0.radius.max(0.0) as f32,
-        });
-    }
+pub(crate) fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    apply_simple::<SpawnAttr, SpawnPoint>(commands, prim, payload, |attr| {
+        let radius = attr.radius as f32;
+        // A non-finite or negative radius spawns at a point rather than
+        // refusing the spawn point outright.
+        let radius = if finite::nonneg(radius) {
+            radius
+        } else {
+            warn!("spawn: radius must be finite and >= 0 (got {radius}); using 0");
+            0.0
+        };
+        Some(SpawnPoint { radius })
+    })
 }

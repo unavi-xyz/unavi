@@ -948,6 +948,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "blake3",
  "bytemuck",
+ "bytes",
  "hsd",
  "image",
  "iroh",
@@ -6658,6 +6659,7 @@ version = "0.0.16"
 dependencies = [
  "base64 0.22.1",
  "blake3",
+ "bytes",
  "const_format",
  "postcard",
  "rand 0.9.5",
@@ -6676,6 +6678,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "blake3",
+ "bytes",
  "clap",
  "hsd",
  "ron",

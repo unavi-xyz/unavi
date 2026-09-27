@@ -110,6 +110,7 @@ mod tests {
     const MANIFEST: &[AssetSpec] = &[AssetSpec {
         rel_path: "model/default.vrm",
         hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
+        size:     4_452_486,
     }];
 
     #[test]

@@ -4,7 +4,6 @@
             name: "example",
             script: "./Cargo.toml",
         ),
-        relationships: {},
         children: [],
     ),
 ]

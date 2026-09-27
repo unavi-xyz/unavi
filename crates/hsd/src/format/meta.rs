@@ -17,13 +17,3 @@ impl Default for DocMeta {
         }
     }
 }
-
-impl DocMeta {
-    pub fn encode(&self) -> Result<Vec<u8>, postcard::Error> {
-        postcard::to_stdvec(self)
-    }
-
-    pub fn decode(bytes: &[u8]) -> Result<Self, postcard::Error> {
-        postcard::from_bytes(bytes)
-    }
-}

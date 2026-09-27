@@ -116,7 +116,7 @@ fn assert_displacement_valid(body: &str) {
 fn empty_unlit_graph_generates_valid_wgsl() {
     let graph = ShaderGraph::default();
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -139,7 +139,7 @@ fn lit_output_with_every_terminal_generates_valid_wgsl() {
         }),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(body.contains("discard"), "{body}");
     assert_surface_valid(&body, "out_base_color");
     assert!(body.contains("out_specular_transmission = 1.0"), "{body}");
@@ -201,7 +201,7 @@ fn every_surface_node_kind_generates_valid_wgsl() {
         displacement:  None,
     };
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -230,7 +230,7 @@ fn a_graph_can_bend_what_is_drawn_behind_it() {
         unlit(node(5)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -255,7 +255,7 @@ fn an_unlit_graph_may_read_the_world_normal() {
         unlit(node(3)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(
         !body.contains("pbr_input"),
         "an unlit body cannot name anything only the lit path defines:\n{body}"
@@ -275,7 +275,7 @@ fn a_lit_body_names_no_lit_only_identifier() {
         }),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(!body.contains("pbr_input"), "{body}");
 }
 
@@ -301,7 +301,7 @@ fn the_instance_object_and_view_leaves_generate_valid_wgsl() {
         unlit(node(5)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -353,7 +353,7 @@ fn every_derived_node_kind_generates_valid_wgsl() {
         unlit(node(10)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -376,7 +376,9 @@ fn the_shared_leaves_generate_valid_wgsl_in_displacement_too() {
         Some(node(4)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_displacement_body(&graph, &validated).expect("a displacement network");
+    let body = generate_displacement_body(&graph, &validated)
+        .expect("codegen")
+        .expect("a displacement network");
     assert_displacement_valid(&body);
 }
 
@@ -386,7 +388,7 @@ fn the_shared_leaves_generate_valid_wgsl_in_displacement_too() {
 fn optional_mesh_attributes_are_guarded_by_their_shader_defs() {
     let graph = graph_with_output(vec![Node::Uv, Node::VertexColor], unlit(node(1)));
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(body.contains("#ifdef VERTEX_UVS_A"), "{body}");
     assert!(body.contains("#ifdef VERTEX_COLORS"), "{body}");
     assert_surface_valid(&body, "out_color");
@@ -404,7 +406,7 @@ fn time_reads_the_view_globals_uniform() {
         }),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(body.contains("globals.time"), "{body}");
     assert!(!body.contains("params.time"), "{body}");
     assert_surface_valid(&body, "out_color");
@@ -425,7 +427,7 @@ fn public_input_swizzles_down_to_its_declared_kind() {
         displacement:  None,
     };
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated);
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert!(body.contains("params.inputs[0].x"), "{body}");
     assert_surface_valid(&body, "out_color");
 }
@@ -434,7 +436,7 @@ fn public_input_swizzles_down_to_its_declared_kind() {
 fn fragment_shader_splices_the_body_and_declares_bevy_imports() {
     let graph = ShaderGraph::default();
     let validated = validate(&graph).expect("valid");
-    let source = generate_fragment_shader(&graph, &validated);
+    let source = generate_fragment_shader(&graph, &validated).expect("codegen");
     assert!(source.contains("#import bevy_pbr"));
     assert!(source.contains("var out_color: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0);"));
     assert!(source.contains("var<uniform> params: GraphParams;"));
@@ -449,7 +451,7 @@ fn fragment_shader_splices_the_body_and_declares_bevy_imports() {
 fn lit_fragment_shader_uses_pbr_lighting() {
     let graph = graph_with_output(Vec::new(), SurfaceOutput::Lit(LitOutput::default()));
     let validated = validate(&graph).expect("valid");
-    let source = generate_fragment_shader(&graph, &validated);
+    let source = generate_fragment_shader(&graph, &validated).expect("codegen");
     assert!(source.contains("apply_pbr_lighting"));
     assert!(source.contains("pbr_input_from_vertex_output"));
 }
@@ -474,7 +476,9 @@ fn a_sin_driven_displacement_body_generates_valid_wgsl() {
         Some(node(4)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_displacement_body(&graph, &validated).expect("has displacement");
+    let body = generate_displacement_body(&graph, &validated)
+        .expect("codegen")
+        .expect("has displacement");
     assert!(body.contains("sin("), "{body}");
     assert_displacement_valid(&body);
 }
@@ -483,7 +487,9 @@ fn a_sin_driven_displacement_body_generates_valid_wgsl() {
 fn vertex_shader_splices_the_displacement_body() {
     let graph = displaced(vec![Node::LocalPosition], Some(node(0)));
     let validated = validate(&graph).expect("valid");
-    let source = generate_vertex_shader(&graph, &validated).expect("has displacement");
+    let source = generate_vertex_shader(&graph, &validated)
+        .expect("codegen")
+        .expect("has displacement");
     assert!(source.contains("#import bevy_pbr"));
     assert!(source.contains("vertex.position += out_position_offset;"));
     assert!(source.contains("mesh_position_local_to_world"));
@@ -525,7 +531,9 @@ fn a_world_space_sag_body_generates_valid_wgsl() {
         Some(node(7)),
     );
     let validated = validate(&graph).expect("valid");
-    let body = generate_displacement_body(&graph, &validated).expect("has displacement");
+    let body = generate_displacement_body(&graph, &validated)
+        .expect("codegen")
+        .expect("has displacement");
     assert!(body.contains("out_world_position_offset = n7;"), "{body}");
     assert_displacement_valid(&body);
 }
@@ -544,7 +552,9 @@ fn vertex_shader_applies_the_world_offset_after_the_mesh_transform() {
         ..Default::default()
     };
     let validated = validate(&graph).expect("valid");
-    let source = generate_vertex_shader(&graph, &validated).expect("has displacement");
+    let source = generate_vertex_shader(&graph, &validated)
+        .expect("codegen")
+        .expect("has displacement");
 
     let transform = source
         .find("mesh_position_local_to_world")

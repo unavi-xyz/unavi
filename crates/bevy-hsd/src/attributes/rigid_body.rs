@@ -10,12 +10,8 @@ use avian3d::prelude::{
 };
 use bevy::prelude::*;
 use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
+    property::Payload,
     schema::rigid_body::{
-        self,
         RigidBodyAttr,
         RigidBodyKind,
     },
@@ -28,113 +24,86 @@ use unavi_physics::{
     },
 };
 
-use crate::attributes::{
-    AttributeParser,
-    ParseError,
-};
+use crate::attributes::ParseError;
 
-#[derive(Component, Debug, Clone, Copy)]
-pub struct RigidBodyData(pub RigidBodyAttr);
-
-pub struct RigidBodyParser;
-
-impl AttributeParser for RigidBodyParser {
-    fn group(&self) -> &'static str {
-        rigid_body::GROUP
-    }
-
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        _name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match payload {
-            Some(payload) => {
-                commands
-                    .entity(prim)
-                    .insert(RigidBodyData(RigidBodyAttr::decode(payload)?));
-            }
-            None => {
-                commands
-                    .entity(prim)
-                    .remove::<RigidBodyData>()
-                    .remove::<RigidBody>()
-                    .remove::<Position>()
-                    .remove::<Rotation>()
-                    .remove::<DisabledRigidBody>()
-                    .remove::<Friction>()
-                    .remove::<Restitution>()
-                    .remove::<Mass>()
-                    .remove::<LinearDamping>()
-                    .remove::<AngularDamping>();
-            }
+pub fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match payload {
+        Some(payload) => build(commands, prim, &RigidBodyAttr::decode(payload)?),
+        None => {
+            commands.entity(prim).remove::<(
+                RigidBody,
+                Position,
+                Rotation,
+                DisabledRigidBody,
+                Friction,
+                Restitution,
+                Mass,
+                LinearDamping,
+                AngularDamping,
+            )>();
         }
-        Ok(())
     }
+    Ok(())
 }
 
-pub fn apply_rigid_body(
-    changed: Query<(Entity, &RigidBodyData), Changed<RigidBodyData>>,
-    mut commands: Commands,
-) {
-    for (ent, data) in &changed {
-        let attr = &data.0;
+/// Waits for `kind` to be committed; fabricating a default `Dynamic` would let
+/// a static mesh fall for a frame.
+fn build(commands: &mut Commands, ent: Entity, attr: &RigidBodyAttr) {
+    let Some(kind) = attr.kind else { return };
 
-        // Wait for kind to be committed; fabricating a default Dynamic would
-        // let static meshes fall for a frame.
-        let Some(kind) = attr.kind else {
-            continue;
-        };
+    let rb = match kind {
+        RigidBodyKind::Dynamic => RigidBody::Dynamic,
+        RigidBodyKind::Kinematic => RigidBody::Kinematic,
+        RigidBodyKind::Static => RigidBody::Static,
+    };
+    commands.entity(ent).insert(rb);
 
-        let rb = match kind {
-            RigidBodyKind::Dynamic => RigidBody::Dynamic,
-            RigidBodyKind::Kinematic => RigidBody::Kinematic,
-            RigidBodyKind::Static => RigidBody::Static,
-        };
-        commands.entity(ent).insert(rb);
-
-        apply_scalar(
-            &mut commands,
-            ent,
-            attr.friction,
-            nonneg,
-            Friction::new,
-            "friction",
-            ">= 0",
-        );
-        apply_scalar(
-            &mut commands,
-            ent,
-            attr.restitution,
-            nonneg,
-            Restitution::new,
-            "restitution",
-            ">= 0",
-        );
-        apply_scalar(&mut commands, ent, attr.mass, positive, Mass, "mass", "> 0");
-        apply_scalar(
-            &mut commands,
-            ent,
-            attr.linear_damping,
-            nonneg,
-            LinearDamping,
-            "linear_damping",
-            ">= 0",
-        );
-        apply_scalar(
-            &mut commands,
-            ent,
-            attr.angular_damping,
-            nonneg,
-            AngularDamping,
-            "angular_damping",
-            ">= 0",
-        );
-    }
+    apply_scalar(
+        commands,
+        ent,
+        attr.friction,
+        nonneg,
+        Friction::new,
+        "friction",
+        ">= 0",
+    );
+    apply_scalar(
+        commands,
+        ent,
+        attr.restitution,
+        nonneg,
+        Restitution::new,
+        "restitution",
+        ">= 0",
+    );
+    apply_scalar(commands, ent, attr.mass, positive, Mass, "mass", "> 0");
+    apply_scalar(
+        commands,
+        ent,
+        attr.linear_damping,
+        nonneg,
+        LinearDamping,
+        "linear_damping",
+        ">= 0",
+    );
+    apply_scalar(
+        commands,
+        ent,
+        attr.angular_damping,
+        nonneg,
+        AngularDamping,
+        "angular_damping",
+        ">= 0",
+    );
 }
 
+/// Inserts `C` from `value` when it is present and valid; removes it
+/// otherwise, so a field cleared or invalidated never leaves a stale
+/// component behind.
 fn apply_scalar<C: Component>(
     commands: &mut Commands,
     ent: Entity,
@@ -144,11 +113,16 @@ fn apply_scalar<C: Component>(
     name: &str,
     constraint: &str,
 ) {
-    let Some(v) = value else { return };
-    let narrowed = v as f32;
-    if valid(narrowed) {
-        commands.entity(ent).insert(ctor(narrowed));
-    } else {
-        warn!("rigid_body: {name} must be finite and {constraint} (got {v})");
+    match value {
+        Some(v) if valid(v as f32) => {
+            commands.entity(ent).insert(ctor(v as f32));
+        }
+        Some(v) => {
+            warn!("rigid_body: {name} must be finite and {constraint} (got {v})");
+            commands.entity(ent).remove::<C>();
+        }
+        None => {
+            commands.entity(ent).remove::<C>();
+        }
     }
 }

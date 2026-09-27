@@ -65,8 +65,5 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     let handle = asset_server.load(SCRIPT_PATH);
-    commands.spawn((LoadHsd {
-        handle,
-        on_load: None,
-    },));
+    commands.spawn((LoadHsd { handle },));
 }

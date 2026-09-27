@@ -4,10 +4,13 @@
 pub mod codegen;
 
 use bevy::{
-    asset::uuid_handle,
-    ecs::system::SystemParam,
     light::NotShadowCaster,
-    pbr::MeshMaterial3d,
+    mesh::MeshVertexBufferLayoutRef,
+    pbr::{
+        MaterialPipeline,
+        MaterialPipelineKey,
+        MeshMaterial3d,
+    },
     platform::collections::{
         HashMap,
         HashSet,
@@ -16,6 +19,7 @@ use bevy::{
     render::render_resource::{
         AsBindGroup,
         Face,
+        RenderPipelineDescriptor,
         ShaderType,
         SpecializedMeshPipelineError,
     },
@@ -33,6 +37,7 @@ use hsd::{
         graph::{
             BlendMode,
             CullMode,
+            SurfaceOutput,
         },
         node,
         overrides::{
@@ -49,62 +54,51 @@ use crate::{
     HsdChild,
     HsdRelationships,
     attributes::{
-        AttributeParser,
         ParseError,
         image::HsdImage,
         material_source::MaterialSource,
+        relations::PrimRelations,
     },
 };
 
-/// Fallback before any graph has loaded: unlit black, so an unresolved
-/// material is visibly wrong rather than silently reusing the pipeline's
-/// default. [`ShaderGraphMaterial::specialize`] overrides it once a graph
-/// loads.
-const FALLBACK_SHADER_HANDLE: Handle<Shader> = uuid_handle!("2f9e6f0a-7b1e-4d3a-9c0a-2f6b1a8e4d70");
-const FALLBACK_SHADER_SOURCE: &str = "\
-#import bevy_pbr::forward_io::VertexOutput
-
-@fragment
-fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-}
-";
+/// Unlit black, so an unresolved material is visibly wrong rather than
+/// silently reusing the pipeline's default. [`ShaderGraphMaterial::specialize`]
+/// overrides it once a graph loads.
+const FALLBACK_SHADER: &str = "embedded://bevy_hsd/attributes/shader/fallback.wgsl";
 
 #[derive(Component, Clone)]
 pub struct ShaderGraphOverridesData(pub GraphOverridesAttr);
 
-/// A prim's compiled graph, held as its encoded payload.
+/// A prim's compiled graph. The hash is computed once at parse time so a
+/// cache hit never has to decode the bytes.
 #[derive(Component, Debug, Clone)]
-pub struct HsdMaterialGraphSlot(pub Vec<u8>);
+pub struct HsdMaterialGraphSlot {
+    hash:  blake3::Hash,
+    bytes: Vec<u8>,
+}
 
 /// One group holds both the graph and its per-instance overrides, so one
-/// parser dispatches on the field it was called for.
-pub struct ShaderParser;
-
-impl AttributeParser for ShaderParser {
-    fn group(&self) -> &'static str {
-        shader::GROUP
-    }
-
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match name.field() {
-            Some("graph") => match payload {
-                Some(payload) => {
-                    commands
-                        .entity(prim)
-                        .insert(HsdMaterialGraphSlot(payload.to_vec()));
-                }
-                None => {
-                    commands.entity(prim).remove::<HsdMaterialGraphSlot>();
-                }
-            },
-            Some("overrides") => match payload {
+/// handler dispatches on the field it was called for.
+pub(crate) fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    name: &PropName,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match name.field() {
+        Some("graph") => match payload {
+            Some(payload) => {
+                commands.entity(prim).insert(HsdMaterialGraphSlot {
+                    hash:  blake3::hash(payload),
+                    bytes: payload.to_vec(),
+                });
+            }
+            None => {
+                commands.entity(prim).remove::<HsdMaterialGraphSlot>();
+            }
+        },
+        Some("overrides") => {
+            match payload {
                 Some(payload) => {
                     commands.entity(prim).insert(ShaderGraphOverridesData(
                         GraphOverridesAttr::decode(payload)?,
@@ -113,39 +107,40 @@ impl AttributeParser for ShaderParser {
                 None => {
                     commands.entity(prim).remove::<ShaderGraphOverridesData>();
                 }
-            },
-            _ => {}
+            }
         }
-        Ok(())
+        _ => {}
     }
+    Ok(())
 }
 
 #[derive(Component, Debug, Clone)]
 pub struct HsdShaderGraphMaterial(pub Handle<ShaderGraphMaterial>);
 
-/// The graph's own public-input defaults, kept so an override change can be
-/// applied without decoding and re-validating the graph again.
-#[derive(Component, Debug, Clone)]
-pub struct GraphInputDefaults(pub Vec<GraphValue>);
+/// The cache hash a prim's material was last built from, so an overrides-only
+/// edit can look up the graph's public inputs without recompiling.
+#[derive(Component, Clone, Copy)]
+pub(crate) struct BuiltFromGraph(blake3::Hash);
 
 /// Writes changed overrides straight into the existing material's uniform
 /// block, skipping decode, validation and codegen entirely.
-///
-/// A prim whose graph is still being built has no [`GraphInputDefaults`] yet
-/// and is picked up by [`rebuild_shader_material`] instead.
-pub fn apply_graph_overrides(
+pub(crate) fn apply_graph_overrides(
     changed: Query<
         (
             &HsdShaderGraphMaterial,
-            &GraphInputDefaults,
+            &BuiltFromGraph,
             Option<&ShaderGraphOverridesData>,
         ),
         Changed<ShaderGraphOverridesData>,
     >,
+    cache: Res<ShaderGraphCache>,
     mut materials: ResMut<Assets<ShaderGraphMaterial>>,
 ) {
-    for (material, defaults, overrides) in &changed {
-        let params = build_params_from(&defaults.0, overrides.map(|o| &o.0));
+    for (material, built, overrides) in &changed {
+        let Some(cached) = cache.get(built.0) else {
+            continue;
+        };
+        let params = build_params_from(&cached.public_inputs, overrides.map(|o| &o.0));
         let Some(mut asset) = materials.get_mut(&material.0) else {
             continue;
         };
@@ -157,7 +152,7 @@ pub fn apply_graph_overrides(
     }
 }
 
-pub fn rebuild_shader_material(
+pub(crate) fn rebuild_shader_material(
     changed: Query<
         Entity,
         Or<(
@@ -166,47 +161,43 @@ pub fn rebuild_shader_material(
             Changed<MaterialSource>,
         )>,
     >,
-    sources: Query<&MaterialSource>,
+    changed_slots: Query<Entity, Changed<HsdMaterialGraphSlot>>,
+    changed_images: Query<Entity, Changed<HsdImage>>,
+    sources: Query<(Entity, &MaterialSource)>,
     slots: Query<&HsdMaterialGraphSlot>,
     overrides: Query<&ShaderGraphOverridesData>,
     doc_of: Query<&HsdChild>,
-    texture_ctx: TextureCtx,
+    relations: PrimRelations,
+    images: Query<&HsdImage>,
     mut cache: ResMut<ShaderGraphCache>,
     mut shaders: ResMut<Assets<Shader>>,
     mut materials: ResMut<Assets<ShaderGraphMaterial>>,
     mut existing: Query<&mut HsdShaderGraphMaterial>,
     mut commands: Commands,
 ) {
-    for prim in &changed {
+    let mut dirty: HashSet<Entity> = changed.iter().collect();
+    mark_binders_of_changed_graphs(&mut dirty, &changed_slots, &sources);
+    mark_graphs_with_changed_textures(&mut dirty, &changed_images, &sources, &relations);
+
+    for prim in dirty {
         // The graph may live on another prim: `material/binding` names a prim,
         // and a bound prim renders the target's graph with its own overrides.
-        let Ok(&MaterialSource::Graph(source)) = sources.get(prim) else {
+        let Ok((_, &MaterialSource::Graph(source))) = sources.get(prim) else {
             continue;
         };
         let Ok(slot) = slots.get(source) else {
             continue;
         };
-        let Ok(doc) = doc_of.get(prim).map(|c| c.0) else {
+        let Ok(&HsdChild(doc)) = doc_of.get(prim) else {
             continue;
         };
 
-        let graph = match ShaderGraph::decode(&slot.0) {
-            Ok(graph) => graph,
-            Err(err) => {
-                warn!(?err, "undecodable shader graph");
-                continue;
-            }
-        };
-        let validated = match validate(&graph) {
-            Ok(validated) => validated,
-            Err(err) => {
-                warn!(?err, "invalid shader graph");
-                continue;
-            }
+        let Some(cached) = cache.get_or_build(slot.hash, &slot.bytes, doc, &mut shaders) else {
+            continue;
         };
 
         let overrides_attr = overrides.get(prim).ok().map(|o| &o.0).filter(|o| {
-            match validate_overrides(&graph, o) {
+            match validate_overrides(&cached.public_inputs, o) {
                 Ok(()) => true,
                 Err(err) => {
                     warn!(
@@ -218,50 +209,26 @@ pub fn rebuild_shader_material(
             }
         });
 
-        let hash = blake3::hash(&slot.0);
-        let compile = || {
-            let fragment_source = codegen::generate_fragment_shader(&graph, &validated);
-            let fragment = shaders.add(Shader::from_wgsl(
-                fragment_source,
-                format!("generated://shader/{hash}/fragment"),
-            ));
-            let vertex = codegen::generate_vertex_shader(&graph, &validated).map(|source| {
-                shaders.add(Shader::from_wgsl(
-                    source,
-                    format!("generated://shader/{hash}/vertex"),
-                ))
-            });
-            CachedShaders { fragment, vertex }
-        };
-        let Some(cached) = cache.charge(doc, hash, compile) else {
-            warn!(
-                "document is at its cap of {MAX_SHADER_PROGRAMS} shader programs; ignoring another"
-            );
-            continue;
-        };
-
-        let params = build_params(&graph, overrides_attr);
-        let textures = resolve_textures(prim, &texture_ctx);
+        let params = build_params_from(&cached.public_inputs, overrides_attr);
+        let [texture_0, texture_1, texture_2, texture_3] =
+            resolve_textures(prim, &relations, &images);
 
         let material = ShaderGraphMaterial {
             params,
-            texture_0: textures[0].clone(),
-            texture_1: textures[1].clone(),
-            texture_2: textures[2].clone(),
-            texture_3: textures[3].clone(),
+            texture_0,
+            texture_1,
+            texture_2,
+            texture_3,
             fragment_shader: cached.fragment.clone(),
             vertex_shader: cached.vertex.clone(),
-            alpha_mode: alpha_mode(graph.surface.blend),
-            cull_mode: cull_mode(graph.surface.cull),
-            reads_scene: reads_scene(&graph),
-            transmissive: transmissive(&graph),
+            alpha_mode: cached.alpha_mode,
+            cull_mode: cached.cull_mode,
+            reads_scene: cached.reads_scene,
+            transmissive: cached.transmissive,
         };
 
-        commands
-            .entity(prim)
-            .insert(GraphInputDefaults(graph.public_inputs.clone()));
-
-        if graph.surface.cast_shadows {
+        commands.entity(prim).insert(BuiltFromGraph(slot.hash));
+        if cached.cast_shadows {
             commands.entity(prim).remove::<NotShadowCaster>();
         } else {
             commands.entity(prim).insert(NotShadowCaster);
@@ -283,12 +250,51 @@ pub fn rebuild_shader_material(
     }
 }
 
-#[derive(SystemParam)]
-pub struct TextureCtx<'w, 's> {
-    children:      Query<'w, 's, &'static HsdChild>,
-    indices:       Query<'w, 's, &'static crate::HsdPrimIndex>,
-    relationships: Query<'w, 's, &'static HsdRelationships>,
-    images:        Query<'w, 's, &'static HsdImage>,
+/// A prim bound to a source whose graph slot just changed renders that
+/// source's program, and must rebuild with it.
+fn mark_binders_of_changed_graphs(
+    dirty: &mut HashSet<Entity>,
+    changed_slots: &Query<Entity, Changed<HsdMaterialGraphSlot>>,
+    sources: &Query<(Entity, &MaterialSource)>,
+) {
+    if changed_slots.is_empty() {
+        return;
+    }
+    let changed: HashSet<Entity> = changed_slots.iter().collect();
+    for (prim, source) in sources {
+        if let MaterialSource::Graph(target) = source
+            && changed.contains(target)
+        {
+            dirty.insert(prim);
+        }
+    }
+}
+
+/// A graph prim sampling a texture prim whose `HsdImage` just changed rebuilds
+/// too, since the handle it samples moved.
+fn mark_graphs_with_changed_textures(
+    dirty: &mut HashSet<Entity>,
+    changed_images: &Query<Entity, Changed<HsdImage>>,
+    sources: &Query<(Entity, &MaterialSource)>,
+    relations: &PrimRelations,
+) {
+    if changed_images.is_empty() {
+        return;
+    }
+    let changed: HashSet<Entity> = changed_images.iter().collect();
+    for (prim, source) in sources {
+        if !matches!(source, MaterialSource::Graph(_)) {
+            continue;
+        }
+        let samples_changed = (0..MAX_TEXTURE_SAMPLES).any(|slot| {
+            shader::texture(slot as u8)
+                .and_then(|name| relations.target(prim, &name))
+                .is_some_and(|target| changed.contains(&target))
+        });
+        if samples_changed {
+            dirty.insert(prim);
+        }
+    }
 }
 
 /// Resolves up to [`MAX_TEXTURE_SAMPLES`] fixed texture slots by relationship.
@@ -296,29 +302,18 @@ pub struct TextureCtx<'w, 's> {
 /// reads the resulting handle.
 fn resolve_textures(
     prim: Entity,
-    ctx: &TextureCtx,
+    relations: &PrimRelations,
+    images: &Query<&HsdImage>,
 ) -> [Option<Handle<Image>>; MAX_TEXTURE_SAMPLES] {
     let mut out: [Option<Handle<Image>>; MAX_TEXTURE_SAMPLES] = Default::default();
-
-    let Ok(doc_child) = ctx.children.get(prim) else {
-        return out;
-    };
-    let Ok(index) = ctx.indices.get(doc_child.0) else {
-        return out;
-    };
-    let Ok(rels) = ctx.relationships.get(prim) else {
-        return out;
-    };
 
     for (slot, handle) in out.iter_mut().enumerate() {
         let Some(name) = shader::texture(slot as u8) else {
             continue;
         };
-        *handle = rels
-            .0
-            .get(&name)
-            .and_then(|target| index.0.get(target))
-            .and_then(|&ent| ctx.images.get(ent).ok())
+        *handle = relations
+            .target(prim, &name)
+            .and_then(|ent| images.get(ent).ok())
             .map(|img| img.0.clone());
     }
 
@@ -332,10 +327,6 @@ const fn pack_input(value: GraphValue) -> Vec4 {
         GraphValue::Vec3([x, y, z]) => Vec4::new(x, y, z, 0.0),
         GraphValue::Color([r, g, b, a]) => Vec4::new(r, g, b, a),
     }
-}
-
-fn build_params(graph: &ShaderGraph, overrides: Option<&GraphOverridesAttr>) -> GraphParams {
-    build_params_from(&graph.public_inputs, overrides)
 }
 
 fn build_params_from(
@@ -354,15 +345,21 @@ fn build_params_from(
     GraphParams { inputs }
 }
 
-/// A graph's compiled shaders, keyed by the slot's content hash, so every prim
-/// referencing the same graph reuses them.
+/// A compiled graph's material inputs, cached by content hash so a hit needs
+/// no decode: everything a build needs comes off this value.
 #[derive(Clone)]
-struct CachedShaders {
-    fragment: Handle<Shader>,
+struct CachedGraph {
+    fragment:      Handle<Shader>,
     /// `None` when the graph has no
     /// [`hsd::schema::shader::graph::DisplacementGraph`] — the mesh
     /// pipeline's own default vertex shader is used instead.
-    vertex:   Option<Handle<Shader>>,
+    vertex:        Option<Handle<Shader>>,
+    public_inputs: Vec<GraphValue>,
+    alpha_mode:    AlphaMode,
+    cull_mode:     Option<Face>,
+    cast_shadows:  bool,
+    reads_scene:   bool,
+    transmissive:  bool,
 }
 
 /// Distinct compiled graphs one document may hold at once.
@@ -372,43 +369,105 @@ struct CachedShaders {
 /// ceiling a document that varies one constant mints them without bound.
 pub const MAX_SHADER_PROGRAMS: usize = 32;
 
-/// Compiled shaders, keyed by the graph bytes' hash, so identical graphs
+/// Compiled graphs, keyed by the graph bytes' hash, so identical graphs
 /// across documents compile once.
 #[derive(Resource, Default)]
 pub struct ShaderGraphCache {
-    programs: HashMap<blake3::Hash, CachedShaders>,
+    programs: HashMap<blake3::Hash, CachedGraph>,
     /// The graphs each document has charged against its cap; also what keeps
     /// a program alive: one is dropped when the last document holding it
-    /// goes. A document never gives a graph back, even once no prim renders
-    /// it — the cap bounds edit churn, and re-charging on every hash change
-    /// would leave it bounding nothing.
+    /// goes.
     charged:  HashMap<Entity, HashSet<blake3::Hash>>,
 }
 
 impl ShaderGraphCache {
-    /// The shaders for `hash`, compiled by `compile` if this is the first
-    /// document to ask for them, and charged against `doc`'s cap.
+    fn get(&self, hash: blake3::Hash) -> Option<&CachedGraph> {
+        self.programs.get(&hash)
+    }
+
+    /// The cached entry for `hash`, decoding, validating and compiling
+    /// `bytes` only on a miss, and charging `doc`'s cap only for a build
+    /// that succeeds.
     ///
-    /// `None` once `doc` is at [`MAX_SHADER_PROGRAMS`] distinct graphs and
-    /// `hash` is not already one of them.
-    fn charge(
+    /// `None` when the graph is undecodable or invalid, or `doc` is at its
+    /// cap of [`MAX_SHADER_PROGRAMS`] and `hash` is new to it.
+    fn get_or_build(
         &mut self,
-        doc: Entity,
         hash: blake3::Hash,
-        compile: impl FnOnce() -> CachedShaders,
-    ) -> Option<&CachedShaders> {
-        let charged = self.charged.entry(doc).or_default();
-        if !charged.contains(&hash) {
-            if charged.len() >= MAX_SHADER_PROGRAMS {
-                return None;
-            }
-            charged.insert(hash);
+        bytes: &[u8],
+        doc: Entity,
+        shaders: &mut Assets<Shader>,
+    ) -> Option<CachedGraph> {
+        if let Some(cached) = self.get(hash) {
+            let cached = cached.clone();
+            return self.charge(doc, hash).then_some(cached);
         }
-        Some(self.programs.entry(hash).or_insert_with(compile))
+
+        let graph = ShaderGraph::decode(bytes)
+            .inspect_err(|err| warn!(?err, "undecodable shader graph"))
+            .ok()?;
+        let validated = validate(&graph)
+            .inspect_err(|err| warn!(?err, "invalid shader graph"))
+            .ok()?;
+        let fragment_source = codegen::generate_fragment_shader(&graph, &validated)
+            .inspect_err(|err| warn!(?err, "failed to generate fragment shader"))
+            .ok()?;
+        let vertex_source = codegen::generate_vertex_shader(&graph, &validated)
+            .inspect_err(|err| warn!(?err, "failed to generate vertex shader"))
+            .ok()?;
+
+        let fragment = shaders.add(Shader::from_wgsl(
+            fragment_source,
+            format!("generated://shader/{hash}/fragment"),
+        ));
+        let vertex = vertex_source.map(|source| {
+            shaders.add(Shader::from_wgsl(
+                source,
+                format!("generated://shader/{hash}/vertex"),
+            ))
+        });
+
+        let built = CachedGraph {
+            fragment,
+            vertex,
+            public_inputs: graph.public_inputs.clone(),
+            alpha_mode: alpha_mode(graph.surface.blend),
+            cull_mode: cull_mode(graph.surface.cull),
+            cast_shadows: graph.surface.cast_shadows,
+            reads_scene: reads_scene(&graph),
+            transmissive: transmissive(&graph),
+        };
+
+        if !self.charge(doc, hash) {
+            warn!(
+                "document is at its cap of {MAX_SHADER_PROGRAMS} shader programs; ignoring another"
+            );
+            return None;
+        }
+        self.programs.entry(hash).or_insert(built.clone());
+        Some(built)
+    }
+
+    /// Charges `hash` against `doc`'s cap if it is not already charged.
+    /// `false` once `doc` is at [`MAX_SHADER_PROGRAMS`] distinct graphs and
+    /// `hash` is not already one of them.
+    fn charge(&mut self, doc: Entity, hash: blake3::Hash) -> bool {
+        let charged = self.charged.entry(doc).or_default();
+        if charged.contains(&hash) {
+            return true;
+        }
+        if charged.len() >= MAX_SHADER_PROGRAMS {
+            return false;
+        }
+        charged.insert(hash);
+        true
     }
 }
 
-pub fn evict_document_shaders(trigger: On<Remove, Hsd>, mut cache: ResMut<ShaderGraphCache>) {
+pub(crate) fn evict_document_shaders(
+    trigger: On<Remove, Hsd>,
+    mut cache: ResMut<ShaderGraphCache>,
+) {
     let Some(dropped) = cache.charged.remove(&trigger.entity) else {
         return;
     };
@@ -488,7 +547,7 @@ fn reads_scene(graph: &ShaderGraph) -> bool {
 
 /// Whether the lit surface asks for Bevy's PBR transmissive glass.
 const fn transmissive(graph: &ShaderGraph) -> bool {
-    let hsd::schema::shader::graph::SurfaceOutput::Lit(lit) = &graph.surface.output else {
+    let SurfaceOutput::Lit(lit) = &graph.surface.output else {
         return false;
     };
     lit.specular_transmission.is_some() || lit.diffuse_transmission.is_some()
@@ -515,7 +574,7 @@ impl From<&ShaderGraphMaterial> for ShaderGraphMaterialKey {
 
 impl Material for ShaderGraphMaterial {
     fn fragment_shader() -> bevy::shader::ShaderRef {
-        FALLBACK_SHADER_HANDLE.into()
+        FALLBACK_SHADER.into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
@@ -529,12 +588,9 @@ impl Material for ShaderGraphMaterial {
         self.reads_scene || self.transmissive
     }
 
-    /// Stays out of the depth prepass: the transmissive depth rejection in
-    /// `transmission.wgsl` compares the refracted sample's prepass depth
-    /// against the fragment's, and for a thin front-only shell that sample
-    /// lands on the shell's *own* depth — so it reads as "in front" and the
-    /// glass renders opaque. Excluded, the prepass at those pixels holds the
-    /// background behind the shell, which is farther and never rejected.
+    /// Excluded so the transmissive depth rejection never compares a thin
+    /// shell's refracted sample against its own prepass depth, which would
+    /// read as "in front" and render the glass opaque.
     fn enable_prepass() -> bool {
         false
     }
@@ -550,10 +606,10 @@ impl Material for ShaderGraphMaterial {
     /// pass alone: displacement is main-pass-only and shadows cast from the
     /// undisplaced mesh.
     fn specialize(
-        _pipeline: &bevy::pbr::MaterialPipeline,
-        descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
-        _layout: &bevy::mesh::MeshVertexBufferLayoutRef,
-        key: bevy::pbr::MaterialPipelineKey<Self>,
+        _pipeline: &MaterialPipeline,
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive.cull_mode = key.bind_group_data.cull_mode;
         if descriptor
@@ -578,13 +634,4 @@ impl Material for ShaderGraphMaterial {
         }
         Ok(())
     }
-}
-
-pub fn register_fallback_shader(mut shaders: ResMut<Assets<Shader>>) {
-    shaders
-        .insert(
-            &FALLBACK_SHADER_HANDLE,
-            Shader::from_wgsl(FALLBACK_SHADER_SOURCE, "generated://shader/fallback"),
-        )
-        .expect("fallback shader handle is a fixed uuid, inserted once at startup");
 }

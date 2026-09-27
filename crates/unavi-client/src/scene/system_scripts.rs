@@ -13,12 +13,6 @@ const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"]
 pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServer>) {
     for &path in TOOL_HSDS.iter().chain(std::iter::once(&SHELL_HSD)) {
         let handle = asset_server.load(path);
-        commands.spawn((
-            LoadHsd {
-                handle,
-                on_load: None,
-            },
-            QuotaExempt,
-        ));
+        commands.spawn((LoadHsd { handle }, QuotaExempt));
     }
 }

@@ -4,7 +4,6 @@
             name: "gate",
             script: "./Cargo.toml",
         ),
-        relationships: {},
         children: [
             (
                 attributes: (
@@ -17,7 +16,6 @@
                         ],
                     ),
                 ),
-                relationships: {},
                 children: [],
             ),
             (
@@ -31,7 +29,6 @@
                         ],
                     ),
                 ),
-                relationships: {},
                 children: [],
             ),
         ],

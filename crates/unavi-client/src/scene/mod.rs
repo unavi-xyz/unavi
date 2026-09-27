@@ -29,6 +29,7 @@ impl Plugin for ScenePlugin {
             .init_resource::<limbo::LimboArrival>()
             .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
+            .add_observer(home::enter_home)
             .add_systems(
                 OnEnter(HsdState::Limbo),
                 (

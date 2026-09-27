@@ -1,10 +1,14 @@
+use bytes::Bytes;
 use serde::{
     Deserialize,
     Serialize,
 };
 
 use crate::{
-    id::PrimId,
+    id::{
+        PRIM_ID_BYTES,
+        PrimId,
+    },
     prop_name,
     property::{
         Payload,
@@ -12,6 +16,7 @@ use crate::{
         name::PropName,
         value::{
             PropertyError,
+            TAG_ATTRIBUTE,
             Value,
         },
     },
@@ -38,14 +43,26 @@ impl ParentAttr {
         }
     }
 
+    /// The attribute wire encoding: a tag byte, then this variant's postcard
+    /// encoding (`Root` is `0`; `Prim` is `1` followed by its id bytes).
     #[must_use]
     pub fn to_wire(parent: Option<Self>) -> Vec<u8> {
-        parent.map_or_else(Vec::new, |parent| {
-            Value::Attribute(parent.encode().expect("a parent always encodes")).encode()
-        })
+        let Some(parent) = parent else {
+            return Vec::new();
+        };
+        let mut out = Vec::with_capacity(PRIM_ID_BYTES + 2);
+        out.push(TAG_ATTRIBUTE);
+        match parent {
+            Self::Root => out.push(0),
+            Self::Prim(id) => {
+                out.push(1);
+                out.extend_from_slice(&id.0);
+            }
+        }
+        out
     }
 
-    pub fn from_wire(bytes: &[u8]) -> Result<Option<Self>, PropertyError> {
+    pub fn from_wire(bytes: &Bytes) -> Result<Option<Self>, PropertyError> {
         if bytes.is_empty() {
             return Ok(None);
         }
@@ -67,7 +84,7 @@ mod tests {
             Some(ParentAttr::Prim(PrimId([4; 16]))),
         ] {
             assert_eq!(
-                ParentAttr::from_wire(&ParentAttr::to_wire(parent)).expect("decode"),
+                ParentAttr::from_wire(&Bytes::from(ParentAttr::to_wire(parent))).expect("decode"),
                 parent
             );
         }
@@ -84,7 +101,7 @@ mod tests {
 
     #[test]
     fn a_relationship_is_not_a_parent() {
-        let bytes = Value::Relationship(PrimId([1; 16])).encode();
+        let bytes = Bytes::from(Value::Relationship(PrimId([1; 16])).encode());
         assert!(ParentAttr::from_wire(&bytes).is_err());
     }
 }

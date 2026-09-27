@@ -20,7 +20,10 @@ use bevy_iroh::{
         BlobRequest,
         BlobResponse,
     },
-    store::LocalStore,
+    store::{
+        LocalBlobs,
+        LocalStore,
+    },
 };
 use bytes::Bytes;
 use iroh_blobs::Hash;
@@ -51,6 +54,7 @@ const DOCUMENT: &str = "assets";
 pub struct AssetSpec {
     pub rel_path: &'static str,
     pub hash:     &'static str,
+    pub size:     u64,
 }
 
 /// The manifest this plugin serves, for the reconcile that holds it.
@@ -90,7 +94,18 @@ struct Fetches(Receiver<FetchRequest>);
 #[derive(Component)]
 struct PendingFetch(Option<oneshot::Sender<Result<Bytes, String>>>);
 
-fn start_fetches(mut commands: Commands, fetches: Res<Fetches>) {
+/// A fetch waits for the blob store rather than failing on it: the reader
+/// hands off as soon as an asset is requested, which for the startup font
+/// stack is before the store has finished building.
+fn start_fetches(
+    mut commands: Commands,
+    fetches: Res<Fetches>,
+    blobs: Query<(), With<LocalBlobs>>,
+) {
+    if blobs.is_empty() {
+        return;
+    }
+
     while let Ok(fetch) = fetches.0.try_recv() {
         commands.spawn((BlobRequest(fetch.hash), PendingFetch(Some(fetch.tx))));
     }
@@ -133,7 +148,7 @@ fn hold_manifest(stores: Query<&LocalStore, Added<LocalStore>>, manifest: Res<Ma
 /// manifest.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Plan {
-    set:    Vec<(&'static str, Hash)>,
+    set:    Vec<(&'static str, Hash, u64)>,
     remove: Vec<Vec<u8>>,
 }
 
@@ -147,7 +162,7 @@ fn plan(held: &HashMap<Vec<u8>, Hash>, manifest: &[AssetSpec]) -> anyhow::Result
     for asset in manifest {
         let hash = Hash::from(blake3::Hash::from_hex(asset.hash)?);
         if held.get(asset.rel_path.as_bytes()) != Some(&hash) {
-            set.push((asset.rel_path, hash));
+            set.push((asset.rel_path, hash, asset.size));
         }
     }
 
@@ -181,11 +196,11 @@ async fn reconcile(store: &Store, manifest: &[AssetSpec]) -> anyhow::Result<()> 
 
     let changes = plan(&held, manifest)?;
 
-    for (rel_path, hash) in changes.set {
-        // The length is unknown until the content arrives. Nothing reads it
-        // back, since this document is never served and protection works off
-        // the hash alone.
-        assets.set_hash(rel_path, hash, 0).await?;
+    for (rel_path, hash, size) in changes.set {
+        // The entry's length is the manifest's recorded size. Protection reads
+        // only the hash, but iroh-docs rejects a zero-length entry, and the
+        // length feeds the store's document-size accounting.
+        assets.set_hash(rel_path, hash, size).await?;
     }
     for key in changes.remove {
         assets.remove(key).await?;
@@ -201,9 +216,12 @@ mod tests {
     const AVATAR: &str = "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281";
     const FONT: &str = "3a21ac778bcc91b57dc32576c6baffbcb493b78b4b6ad46b05c3d33bb5da7315";
 
+    const AVATAR_SIZE: u64 = 4_452_486;
+
     const MANIFEST: &[AssetSpec] = &[AssetSpec {
         rel_path: "model/default.vrm",
         hash:     AVATAR,
+        size:     AVATAR_SIZE,
     }];
 
     fn hash(hex: &str) -> Hash {
@@ -222,7 +240,7 @@ mod tests {
         assert_eq!(
             plan(&HashMap::new(), MANIFEST).expect("plan"),
             Plan {
-                set:    vec![("model/default.vrm", hash(AVATAR))],
+                set:    vec![("model/default.vrm", hash(AVATAR), AVATAR_SIZE)],
                 remove: Vec::new(),
             }
         );
@@ -254,10 +272,38 @@ mod tests {
 
         let plan = plan(&held, MANIFEST).expect("plan");
 
-        assert_eq!(plan.set, [("model/default.vrm", hash(AVATAR))]);
+        assert_eq!(plan.set, [("model/default.vrm", hash(AVATAR), AVATAR_SIZE)]);
         assert!(
             plan.remove.is_empty(),
             "a path the manifest still ships is repointed, not dropped"
+        );
+    }
+
+    #[test]
+    fn a_fetch_waits_for_the_store() {
+        let (tx, rx) = async_channel::unbounded();
+        let mut app = App::new();
+        app.insert_resource(Fetches(rx));
+        app.add_systems(Update, start_fetches);
+
+        // The receiver stays alive, so the request is queued rather than
+        // cancelled when the sender is dropped.
+        let (deliver, _keep) = oneshot::channel();
+        tx.send_blocking(FetchRequest {
+            rel_path: "model/default.vrm",
+            hash:     blake3::Hash::from_hex(AVATAR).expect("hex hash"),
+            tx:       deliver,
+        })
+        .expect("send");
+
+        app.update();
+
+        let world = app.world_mut();
+        let mut query = world.query::<&BlobRequest>();
+        assert_eq!(
+            query.iter(world).count(),
+            0,
+            "no request is dispatched before the store exists"
         );
     }
 }

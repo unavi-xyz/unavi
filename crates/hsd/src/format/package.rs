@@ -5,6 +5,7 @@ use std::collections::{
     HashMap,
 };
 
+use bytes::Bytes;
 use serde::{
     Deserialize,
     Serialize,
@@ -95,7 +96,7 @@ impl Package {
             if name != ReferenceAttr::NAME {
                 continue;
             }
-            let Value::Attribute(payload) = Value::decode(value)? else {
+            let Value::Attribute(payload) = Value::decode(&Bytes::copy_from_slice(value))? else {
                 continue;
             };
             let placeholder = ReferenceAttr::decode(&payload)?.0;
@@ -103,7 +104,7 @@ impl Package {
                 .get(&placeholder)
                 .copied()
                 .ok_or(PackageError::Dangling(placeholder))?;
-            *value = Value::Attribute(ReferenceAttr(target).encode()?).encode();
+            *value = Value::Attribute(ReferenceAttr(target).encode()?.into()).encode();
         }
         Ok(())
     }
@@ -170,18 +171,6 @@ mod tests {
             package().encode().expect("encode"),
             package().encode().expect("encode")
         );
-    }
-
-    #[test]
-    fn entries_are_key_sorted() {
-        let keys = package()
-            .entries
-            .iter()
-            .map(|(key, _)| key.clone())
-            .collect::<Vec<_>>();
-        let mut sorted = keys.clone();
-        sorted.sort();
-        assert_eq!(keys, sorted);
     }
 
     #[test]

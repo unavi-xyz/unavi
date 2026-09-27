@@ -26,13 +26,13 @@ fn overrides_must_match_declared_public_input_kind() {
     let ok = GraphOverridesAttr {
         overrides: BTreeMap::from([(0, GraphValue::Float(2.0))]),
     };
-    assert_eq!(validate_overrides(&graph, &ok), Ok(()));
+    assert_eq!(validate_overrides(&graph.public_inputs, &ok), Ok(()));
 
     let wrong_kind = GraphOverridesAttr {
         overrides: BTreeMap::from([(0, GraphValue::Vec3([0.0; 3]))]),
     };
     assert_eq!(
-        validate_overrides(&graph, &wrong_kind),
+        validate_overrides(&graph.public_inputs, &wrong_kind),
         Err(OverridesError::TypeMismatch {
             index:    0,
             expected: ValueKind::Float,
@@ -44,7 +44,7 @@ fn overrides_must_match_declared_public_input_kind() {
         overrides: BTreeMap::from([(1, GraphValue::Float(2.0))]),
     };
     assert_eq!(
-        validate_overrides(&graph, &unknown),
+        validate_overrides(&graph.public_inputs, &unknown),
         Err(OverridesError::UnknownInput(1))
     );
 }
@@ -70,7 +70,7 @@ fn a_non_finite_override_is_rejected() {
         overrides: BTreeMap::from([(0, GraphValue::Float(f32::NEG_INFINITY))]),
     };
     assert_eq!(
-        validate_overrides(&graph, &overrides),
+        validate_overrides(&graph.public_inputs, &overrides),
         Err(OverridesError::NonFinite(0))
     );
 }

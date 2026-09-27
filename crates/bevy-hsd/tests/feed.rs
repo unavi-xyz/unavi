@@ -39,7 +39,7 @@ fn root(prim: PrimId) -> Entry {
 }
 
 fn name_value(value: &str) -> Vec<u8> {
-    Value::Attribute(NameAttr(value.into()).encode().expect("encode")).encode()
+    Value::Attribute(NameAttr(value.into()).encode().expect("encode").into()).encode()
 }
 
 fn name(prim: PrimId, value: &str) -> Entry {

@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use bytes::Bytes;
+
 use crate::{
     id::PrimId,
     property::{
@@ -57,19 +59,19 @@ impl HsdState {
         &mut self,
         site: PrimId,
         LayerKey { target, name }: &LayerKey,
-        value: Option<&[u8]>,
+        value: Option<Bytes>,
         stamp: Stamp,
     ) -> Result<(), StateError> {
         let target = *target;
         let opinions = self.references.entry(site).or_default().entry(target);
         if *name == ParentAttr::NAME {
-            let parent = match value {
+            let parent = match &value {
                 Some(bytes) => ParentAttr::from_wire(bytes)?,
                 None => None,
             };
             opinions.replace_parent(Opinion::from(parent), stamp);
         } else {
-            let property = value.map(Value::decode).transpose()?;
+            let property = value.as_ref().map(Value::decode).transpose()?;
             opinions.replace_property(name, Opinion::from(property), stamp);
         }
         Ok(())

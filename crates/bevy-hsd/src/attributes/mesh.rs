@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 use bevy::{
     asset::RenderAssetUsages,
     mesh::{
@@ -11,11 +13,10 @@ use bevy::{
 };
 use bytemuck::{
     Pod,
-    PodCastError,
-    try_cast_slice,
+    pod_collect_to_vec,
 };
 use hsd::{
-    bounds::MAX_MESH_ELEMENTS,
+    bounds::MAX_MESH_STREAM_BYTES,
     property::{
         Payload,
         name::PropName,
@@ -31,8 +32,8 @@ use smol_str::SmolStr;
 use thiserror::Error;
 
 use crate::attributes::{
-    AttributeParser,
     ParseError,
+    Pending,
 };
 
 /// Assembled from `mesh/topology`, `mesh/indices` and `mesh/stream:<NAME>`,
@@ -44,66 +45,61 @@ pub struct MeshData {
     pub streams:  HashMap<SmolStr, MeshStream>,
 }
 
-pub struct MeshParser;
-
-impl AttributeParser for MeshParser {
-    fn group(&self) -> &'static str {
-        mesh::GROUP
-    }
-
-    /// `topology` gates the whole mesh: without it there is nothing to build,
-    /// so its removal tears down the mesh entirely.
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        if let Some(stream) = mesh::stream_of(name) {
-            let value = payload.map(MeshStream::decode).transpose()?;
-            let stream = SmolStr::new(stream);
-            commands
-                .entity(prim)
-                .entry::<MeshData>()
-                .or_default()
-                .and_modify(move |mut data| match value {
-                    Some(value) => {
-                        data.streams.insert(stream, value);
-                    }
-                    None => {
-                        data.streams.remove(&stream);
-                    }
-                });
-            return Ok(());
-        }
-
-        match name.field() {
-            Some("topology") => match payload.map(Topology::decode).transpose()? {
-                Some(topology) => {
-                    commands
-                        .entity(prim)
-                        .entry::<MeshData>()
-                        .or_default()
-                        .and_modify(move |mut data| data.topology = Some(topology));
-                    commands.entity(prim).insert(Mesh3d::default());
+/// `topology` gates the whole mesh: without it there is nothing to build, so
+/// its removal tears down the mesh entirely.
+pub fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    name: &PropName,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    if let Some(stream) = mesh::stream_of(name) {
+        let value = payload.map(MeshStream::decode).transpose()?;
+        let stream = SmolStr::new(stream);
+        commands
+            .entity(prim)
+            .entry::<MeshData>()
+            .or_default()
+            .and_modify(move |mut data| match value {
+                Some(value) => {
+                    data.streams.insert(stream, value);
                 }
                 None => {
-                    commands.entity(prim).remove::<(MeshData, Mesh3d)>();
+                    data.streams.remove(&stream);
                 }
-            },
-            Some("indices") => {
-                let indices = payload.map(MeshIndices::decode).transpose()?;
+            });
+        commands.entity(prim).insert(Pending::<Mesh3d>::default());
+        return Ok(());
+    }
+
+    match name.field() {
+        Some("topology") => match payload.map(Topology::decode).transpose()? {
+            Some(topology) => {
                 commands
                     .entity(prim)
                     .entry::<MeshData>()
                     .or_default()
-                    .and_modify(move |mut data| data.indices = indices);
+                    .and_modify(move |mut data| data.topology = Some(topology));
+                commands.entity(prim).insert(Pending::<Mesh3d>::default());
             }
-            _ => {}
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<(MeshData, Mesh3d, Pending<Mesh3d>)>();
+            }
+        },
+        Some("indices") => {
+            let indices = payload.map(MeshIndices::decode).transpose()?;
+            commands
+                .entity(prim)
+                .entry::<MeshData>()
+                .or_default()
+                .and_modify(move |mut data| data.indices = indices);
+            commands.entity(prim).insert(Pending::<Mesh3d>::default());
         }
-        Ok(())
+        _ => {}
     }
+    Ok(())
 }
 
 /// Rebuilds whenever any field changes. Bevy's vertex-buffer assembly needs
@@ -127,6 +123,7 @@ pub fn rebuild_mesh(
                 commands.entity(prim).remove::<Mesh3d>();
             }
         }
+        commands.entity(prim).remove::<Pending<Mesh3d>>();
     }
 }
 
@@ -140,9 +137,9 @@ pub fn rebuild_mesh(
 enum MeshRejected {
     #[error("no POSITION attribute")]
     NoPosition,
-    #[error("buffer is not a whole number of elements: {0}")]
-    Cast(PodCastError),
-    #[error("{name} buffer is {len} bytes, over the cap of {MAX_MESH_ELEMENTS}")]
+    #[error("buffer is not a whole number of elements")]
+    Cast,
+    #[error("{name} buffer is {len} bytes, over the cap of {MAX_MESH_STREAM_BYTES}")]
     TooLarge { name: String, len: usize },
     #[error("{name} has {len} vertices, but POSITION has {expected}")]
     LengthMismatch {
@@ -209,14 +206,16 @@ fn build_mesh(data: &MeshData) -> Result<Mesh, MeshRejected> {
 }
 
 fn checked<T: Pod>(name: &str, bytes: &[u8]) -> Result<Vec<T>, MeshRejected> {
-    if bytes.len() > MAX_MESH_ELEMENTS {
+    if bytes.len() > MAX_MESH_STREAM_BYTES {
         return Err(MeshRejected::TooLarge {
             name: name.to_owned(),
             len:  bytes.len(),
         });
     }
-    let slice = try_cast_slice::<u8, T>(bytes).map_err(MeshRejected::Cast)?;
-    Ok(slice.to_vec())
+    if !bytes.len().is_multiple_of(size_of::<T>()) {
+        return Err(MeshRejected::Cast);
+    }
+    Ok(pod_collect_to_vec(bytes))
 }
 
 const fn topology_to_primitive(t: Topology) -> PrimitiveTopology {

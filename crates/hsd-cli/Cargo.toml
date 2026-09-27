@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 blake3.workspace = true
+bytes.workspace  = true
 clap.workspace   = true
 hsd.path         = "../hsd"
 ron              = { features = ["indexmap"], workspace = true }

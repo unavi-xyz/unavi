@@ -40,7 +40,7 @@ pub fn place(doc: &mut EntityWorldMut, anchor: DocAnchor) {
     };
 }
 
-pub fn apply_anchors(
+pub(crate) fn apply_anchors(
     changed: Query<(Entity, &DocAnchor), (With<Hsd>, Changed<DocAnchor>)>,
     parents: Query<&ChildOf>,
     mut transforms: Query<&mut Transform>,

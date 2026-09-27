@@ -1,15 +1,15 @@
-use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use unavi_physics::body::DisabledCollider;
 
 use crate::{
     Hsd,
-    HsdChild,
+    HsdChildren,
     attributes::{
+        Pending,
         collider::HsdCollider,
         image::HsdImage,
         reference::HsdRef,
     },
+    load::RefRefused,
 };
 
 #[derive(Component)]
@@ -18,35 +18,34 @@ pub struct HsdLoaded;
 /// Set after the first event batch has been drained, so readiness is only
 /// evaluated once every prim and its pending-asset markers exist.
 #[derive(Component)]
-pub struct HsdSnapshotDrained;
+pub(crate) struct HsdSnapshotDrained;
 
-pub fn evaluate_hsd_loaded(
-    docs: Query<Entity, (With<Hsd>, With<HsdSnapshotDrained>, Without<HsdLoaded>)>,
+pub(crate) fn evaluate_hsd_loaded(
+    docs: Query<(Entity, &HsdChildren), (With<Hsd>, With<HsdSnapshotDrained>, Without<HsdLoaded>)>,
     prims: Query<(
-        &HsdChild,
-        Option<&HsdCollider>,
-        Option<&Collider>,
-        Option<&DisabledCollider>,
-        Option<&Mesh3d>,
-        Option<&HsdImage>,
+        Option<&Pending<Mesh3d>>,
+        Option<&Pending<HsdImage>>,
+        Option<&Pending<HsdCollider>>,
         Option<&HsdRef>,
+        Option<&RefRefused>,
         Option<&Children>,
     )>,
     loaded_docs: Query<(), (With<Hsd>, With<HsdLoaded>)>,
     mut commands: Commands,
 ) {
-    for doc in &docs {
-        let ready = prims.iter().filter(|(child, ..)| child.0 == doc).all(
-            |(_, hsd_collider, collider, disabled, mesh, image, reference, children)| {
-                let collider_ready =
-                    hsd_collider.is_none() || collider.is_some() || disabled.is_some();
-                let mesh_ready = mesh.is_none_or(|m| m.0 != Handle::default());
-                let image_ready = image.is_none_or(|i| i.0 != Handle::default());
-                let reference_ready = reference.is_none()
-                    || children.is_some_and(|c| c.iter().any(|e| loaded_docs.contains(e)));
-                collider_ready && mesh_ready && image_ready && reference_ready
-            },
-        );
+    for (doc, children) in &docs {
+        let ready = children.iter().all(|prim| {
+            let Ok((mesh, image, collider, reference, refused, prim_children)) = prims.get(prim)
+            else {
+                return true;
+            };
+            // A refused reference never resolves, so it must not block the
+            // rest of the document from ever loading.
+            let reference_ready = reference.is_none()
+                || refused.is_some()
+                || prim_children.is_some_and(|c| c.iter().any(|e| loaded_docs.contains(e)));
+            mesh.is_none() && image.is_none() && collider.is_none() && reference_ready
+        });
 
         if ready {
             commands.entity(doc).insert(HsdLoaded);

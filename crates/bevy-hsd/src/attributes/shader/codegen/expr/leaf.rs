@@ -1,7 +1,8 @@
 use hsd::schema::shader::node::Node;
 
 /// The zero-arity leaves: each reads shader-stage context directly, and each
-/// is legal in exactly one network (enforced by validation, not here).
+/// is legal in exactly one network (enforced by validation, not here). Never
+/// fallible: every arm is a fixed literal.
 pub(super) fn emit(out: &mut String, node: &Node) {
     match *node {
         Node::Uv => out.push_str("in.uv"),

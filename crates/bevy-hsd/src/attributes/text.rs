@@ -9,19 +9,12 @@ use bevy_msdf::{
     },
 };
 use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::{
-        material::ColorVec,
-        text::{
-            self,
-            TextAlign,
-            TextAnchor,
-            TextAttr,
-            TextBillboard,
-        },
+    property::Payload,
+    schema::text::{
+        TextAlign,
+        TextAnchor,
+        TextAttr,
+        TextBillboard,
     },
 };
 use msdf::layout::{
@@ -31,8 +24,8 @@ use msdf::layout::{
 use smol_str::SmolStr;
 
 use crate::attributes::{
-    AttributeParser,
     ParseError,
+    color::from_color_vec,
 };
 
 /// Falls back to body text read at arm's length rather than to zero, so a
@@ -47,47 +40,56 @@ const MAX_SIZE: f32 = 100.0;
 /// payload is whatever a peer wrote, so the text is cut rather than dropped.
 const MAX_CHARS: usize = MAX_GLYPHS;
 
-#[derive(Component, Debug, Clone)]
-pub struct TextData(pub TextAttr);
-
-pub struct TextParser;
-
-impl AttributeParser for TextParser {
-    fn group(&self) -> &'static str {
-        text::GROUP
-    }
-
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        _name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match payload {
-            Some(payload) => {
-                commands
-                    .entity(prim)
-                    .insert(TextData(TextAttr::decode(payload)?));
-            }
-            None => {
-                commands
-                    .entity(prim)
-                    .remove::<(TextData, MsdfText, MsdfStyle, Billboard, Mesh3d)>();
-            }
+pub fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match payload {
+        Some(payload) => build(commands, prim, &TextAttr::decode(payload)?),
+        None => {
+            commands
+                .entity(prim)
+                .remove::<(MsdfText, MsdfStyle, Billboard, Mesh3d)>();
         }
-        Ok(())
     }
+    Ok(())
 }
 
-/// A short vector pads with opaque white rather than refusing the colour: the
-/// payload is whatever a peer wrote, and a malformed one costs a wrong shade,
-/// not a missing label.
-fn color(value: Option<&ColorVec>, fallback: Color) -> Color {
-    value.map_or(fallback, |value| {
-        let channel = |index: usize| value.0.get(index).copied().unwrap_or(1.0) as f32;
-        Color::linear_rgba(channel(0), channel(1), channel(2), channel(3))
-    })
+fn build(commands: &mut Commands, entity: Entity, attr: &TextAttr) {
+    let outline = attr.outline.as_ref().map(|value| Outline {
+        color: from_color_vec(Some(value), Color::BLACK),
+        width: scalar(attr.outline_width, 0.25, 0.0..=1.0),
+    });
+
+    commands.entity(entity).insert((
+        MsdfText {
+            value:       truncated(&attr.value),
+            size:        scalar(attr.size, DEFAULT_SIZE, 0.0..=MAX_SIZE),
+            align:       align(attr.align),
+            anchor:      anchor(attr.anchor),
+            wrap:        attr
+                .wrap
+                .map(|wrap| scalar(Some(wrap), 0.0, 0.0..=MAX_SIZE))
+                .filter(|wrap| *wrap > 0.0),
+            line_height: scalar(attr.line_height, 1.0, 0.0..=MAX_SIZE),
+            font:        None,
+        },
+        MsdfStyle {
+            color: from_color_vec(attr.color.as_ref(), Color::WHITE),
+            outline,
+            emissive: scalar(attr.emissive, 0.0, 0.0..=MAX_SIZE),
+        },
+    ));
+
+    match billboard(attr.billboard) {
+        Some(billboard) => {
+            commands.entity(entity).insert(billboard);
+        }
+        None => {
+            commands.entity(entity).remove::<Billboard>();
+        }
+    }
 }
 
 const fn align(value: Option<TextAlign>) -> Align {
@@ -134,46 +136,6 @@ const fn billboard(value: Option<TextBillboard>) -> Option<Billboard> {
     }
 }
 
-pub fn apply_text(changed: Query<(Entity, &TextData), Changed<TextData>>, mut commands: Commands) {
-    for (entity, data) in &changed {
-        let attr = &data.0;
-
-        let outline = attr.outline.as_ref().map(|value| Outline {
-            color: color(Some(value), Color::BLACK),
-            width: scalar(attr.outline_width, 0.25, 0.0..=1.0),
-        });
-
-        commands.entity(entity).insert((
-            MsdfText {
-                value:       truncated(&attr.value),
-                size:        scalar(attr.size, DEFAULT_SIZE, 0.0..=MAX_SIZE),
-                align:       align(attr.align),
-                anchor:      anchor(attr.anchor),
-                wrap:        attr
-                    .wrap
-                    .map(|wrap| scalar(Some(wrap), 0.0, 0.0..=MAX_SIZE))
-                    .filter(|wrap| *wrap > 0.0),
-                line_height: scalar(attr.line_height, 1.0, 0.0..=MAX_SIZE),
-                font:        None,
-            },
-            MsdfStyle {
-                color: color(attr.color.as_ref(), Color::WHITE),
-                outline,
-                emissive: scalar(attr.emissive, 0.0, 0.0..=MAX_SIZE),
-            },
-        ));
-
-        match billboard(attr.billboard) {
-            Some(billboard) => {
-                commands.entity(entity).insert(billboard);
-            }
-            None => {
-                commands.entity(entity).remove::<Billboard>();
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,12 +152,6 @@ mod tests {
         assert_eq!(billboard(None), None);
         assert_eq!(billboard(Some(TextBillboard::Yaw)), Some(Billboard::Yaw));
         assert_eq!(billboard(Some(TextBillboard::Full)), Some(Billboard::Full));
-    }
-
-    #[test]
-    fn a_short_colour_vector_pads_rather_than_panicking() {
-        let padded = color(Some(&ColorVec(vec![0.5])), Color::WHITE);
-        assert_eq!(padded, Color::linear_rgba(0.5, 1.0, 1.0, 1.0));
     }
 
     #[test]

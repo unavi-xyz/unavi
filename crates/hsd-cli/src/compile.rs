@@ -42,6 +42,7 @@ use hsd::{
     },
     key,
     property::{
+        Payload,
         Property,
         name::PropName,
         value::Value,
@@ -326,7 +327,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             let overrides = GraphOverridesAttr {
                 overrides: shader.overrides.clone(),
             };
-            validate_overrides(&parsed, &overrides)
+            validate_overrides(&parsed.public_inputs, &overrides)
                 .with_context(|| format!("validating overrides for {}", path.display()))?;
             self.set_attribute(id, &overrides)?;
         }
@@ -371,7 +372,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         let payload = value
             .encode()
             .with_context(|| format!("encoding {} attribute", A::NAME))?;
-        self.set_property(id, &A::NAME, Value::Attribute(payload));
+        self.set_property(id, &A::NAME, Value::Attribute(payload.into()));
         Ok(())
     }
 

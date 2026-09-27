@@ -93,7 +93,7 @@ impl DocId {
     #[must_use]
     pub fn site(parent: Self, prim: PrimId) -> Self {
         let mut hasher = blake3::Hasher::new();
-        hasher.update(b"hsd:instance");
+        hasher.update(b"hsd:site");
         hasher.update(&parent.0);
         hasher.update(&prim.0);
         Self(*hasher.finalize().as_bytes())

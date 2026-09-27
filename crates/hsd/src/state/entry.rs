@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use web_time::{
     SystemTime,
     UNIX_EPOCH,
@@ -13,7 +14,7 @@ use crate::property::value::Value;
 /// cycle breaks on.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Stamp {
-    /// Milliseconds since the Unix epoch.
+    /// Microseconds since the Unix epoch.
     pub timestamp: u64,
     pub content:   [u8; 32],
 }
@@ -50,24 +51,24 @@ impl Stamp {
     }
 }
 
-pub(super) fn now_millis() -> u64 {
+pub(super) fn now_micros() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |d| u64::try_from(d.as_micros()).unwrap_or(u64::MAX))
 }
 
 /// One key and its value. An empty value is a key holding no value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
     pub key:       String,
-    pub value:     Vec<u8>,
-    /// Milliseconds since the Unix epoch.
+    pub value:     Bytes,
+    /// Microseconds since the Unix epoch.
     pub timestamp: u64,
 }
 
 impl Entry {
     #[must_use]
-    pub fn new(key: impl Into<String>, value: impl Into<Vec<u8>>, timestamp: u64) -> Self {
+    pub fn new(key: impl Into<String>, value: impl Into<Bytes>, timestamp: u64) -> Self {
         Self {
             key: key.into(),
             value: value.into(),

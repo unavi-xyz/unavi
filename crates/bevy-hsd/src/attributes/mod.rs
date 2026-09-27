@@ -1,55 +1,33 @@
-use std::sync::LazyLock;
+use std::marker::PhantomData;
 
-use bevy::{
-    platform::collections::HashMap,
-    prelude::*,
+use bevy::prelude::*;
+use hsd::{
+    property::{
+        Payload,
+        name::PropName,
+    },
+    schema,
 };
-use hsd::property::name::PropName;
 use thiserror::Error;
 
 pub mod collider;
-pub mod gravity_scale;
+mod color;
+mod gravity_scale;
 pub mod image;
 pub mod material;
-pub mod material_source;
-pub mod mesh;
-pub mod name;
+pub(crate) mod material_source;
+pub(crate) mod mesh;
+mod name;
 pub mod portal;
-pub mod reference;
-pub mod rigid_body;
+pub(crate) mod reference;
+mod relations;
+mod rigid_body;
 pub mod script;
 pub mod shader;
 pub mod spawn;
-pub mod text;
-pub mod util;
-pub mod xform;
-
-/// Keyed by group: every property under one group is one attribute's
-/// fields, so one parser dispatches on the field it is called for.
-pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
-    LazyLock::new(|| {
-        let parsers: [Box<dyn AttributeParser>; _] = [
-            Box::new(collider::ColliderParser),
-            Box::new(gravity_scale::GravityScaleParser),
-            Box::new(image::ImageParser),
-            Box::new(material::MaterialParser),
-            Box::new(mesh::MeshParser),
-            Box::new(name::NameParser),
-            Box::new(portal::PortalParser),
-            Box::new(reference::ReferenceParser),
-            Box::new(rigid_body::RigidBodyParser),
-            Box::new(script::ScriptParser),
-            Box::new(shader::ShaderParser),
-            Box::new(spawn::SpawnParser),
-            Box::new(text::TextParser),
-            Box::new(xform::XformParser),
-        ];
-        let mut map = HashMap::default();
-        for attr in parsers {
-            map.insert(attr.group(), attr);
-        }
-        map
-    });
+mod text;
+pub(crate) mod util;
+pub(crate) mod xform;
 
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -57,20 +35,72 @@ pub enum ParseError {
     Postcard(#[from] postcard::Error),
 }
 
-/// One hook per group: decode the field's payload and put the result on
-/// the prim.
-///
-/// A group this build has never heard of has no parser and is skipped —
-/// its entries still store, sync and re-serve untouched.
-pub trait AttributeParser: Send + Sync {
-    fn group(&self) -> &'static str;
+/// Marks a prim whose `T` has not been built from its latest data. The rebuild
+/// system removes it after every attempt, including a failed one.
+#[derive(Component)]
+pub(crate) struct Pending<T>(PhantomData<T>);
 
-    /// `None` means the field was removed.
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError>;
+impl<T> Default for Pending<T> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+/// Decodes `payload` as `A` and hands it to `build`; inserts the resulting
+/// bundle, or removes `B` on removal or when `build` finds the value invalid.
+pub(crate) fn apply_simple<A, B>(
+    commands: &mut Commands,
+    prim: Entity,
+    payload: Option<&[u8]>,
+    build: impl FnOnce(A) -> Option<B>,
+) -> Result<(), ParseError>
+where
+    A: Payload,
+    B: Bundle,
+{
+    match payload {
+        Some(bytes) => {
+            let attr = A::decode(bytes)?;
+            match build(attr) {
+                Some(bundle) => commands.entity(prim).insert(bundle),
+                None => commands.entity(prim).remove::<B>(),
+            };
+        }
+        None => {
+            commands.entity(prim).remove::<B>();
+        }
+    }
+    Ok(())
+}
+
+/// Decodes the field's payload and applies it to the prim, keyed by group:
+/// every property under one group is one attribute's fields, so one handler
+/// covers the field it is called for.
+///
+/// `None` payload means the field was removed. A group this build has never
+/// heard of has no handler and is skipped — its entries still store, sync and
+/// re-serve untouched.
+pub(crate) fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    name: &PropName,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match name.group() {
+        schema::collider::GROUP => collider::apply(commands, prim, name, payload),
+        schema::gravity_scale::GROUP => gravity_scale::apply(commands, prim, payload),
+        schema::image::GROUP => image::apply(commands, prim, name, payload),
+        schema::material::GROUP => material::apply(commands, prim, name, payload),
+        schema::mesh::GROUP => mesh::apply(commands, prim, name, payload),
+        schema::name::GROUP => name::apply(commands, prim, payload),
+        schema::portal::GROUP => portal::apply(commands, prim, payload),
+        schema::reference::GROUP => reference::apply(commands, prim, payload),
+        schema::rigid_body::GROUP => rigid_body::apply(commands, prim, payload),
+        schema::script::GROUP => script::apply(commands, prim, payload),
+        schema::shader::GROUP => shader::apply(commands, prim, name, payload),
+        schema::spawn::GROUP => spawn::apply(commands, prim, payload),
+        schema::text::GROUP => text::apply(commands, prim, payload),
+        schema::xform::GROUP => xform::apply(commands, prim, payload),
+        _ => Ok(()),
+    }
 }

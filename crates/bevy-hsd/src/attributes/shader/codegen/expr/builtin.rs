@@ -1,4 +1,7 @@
-use std::fmt::Write;
+use std::fmt::{
+    Result,
+    Write,
+};
 
 use hsd::schema::shader::{
     node::{
@@ -25,7 +28,7 @@ pub(super) fn emit(
     public_inputs: &[GraphValue],
     kinds: &[ValueKind],
     node: &Node,
-) {
+) -> Result {
     match *node {
         Node::Lerp { a, b, t } => ternary(out, public_inputs, "mix", a, b, t),
         Node::Dot { a, b } => binary(out, public_inputs, "dot", a, b),
@@ -33,8 +36,9 @@ pub(super) fn emit(
         Node::Cos { x } => unary(out, public_inputs, "cos", x),
         Node::OneMinus { x } => {
             out.push_str("(1.0 - ");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push(')');
+            Ok(())
         }
         Node::Abs { x } => unary(out, public_inputs, "abs", x),
         Node::Floor { x } => unary(out, public_inputs, "floor", x),
@@ -42,54 +46,60 @@ pub(super) fn emit(
         Node::Saturate { x } => unary(out, public_inputs, "saturate", x),
         Node::Sqrt { x } => {
             out.push_str("sqrt(max(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
             zero_literal(out, port_kind(public_inputs, kinds, x));
             out.push_str("))");
+            Ok(())
         }
         Node::Pow { x, y } => {
             out.push_str("pow(max(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
             zero_literal(out, port_kind(public_inputs, kinds, x));
             out.push_str("), ");
-            port_expr(out, public_inputs, y);
+            port_expr(out, public_inputs, y)?;
             out.push(')');
+            Ok(())
         }
         Node::Min { a, b } => binary(out, public_inputs, "min", a, b),
         Node::Max { a, b } => binary(out, public_inputs, "max", a, b),
         Node::Clamp { x, low, high } => {
             out.push_str("clamp(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, low);
+            port_expr(out, public_inputs, low)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, high);
+            port_expr(out, public_inputs, high)?;
             out.push(')');
+            Ok(())
         }
         Node::Step { edge, x } => {
             out.push_str("step(");
-            port_expr(out, public_inputs, edge);
+            port_expr(out, public_inputs, edge)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push(')');
+            Ok(())
         }
         Node::Smoothstep { low, high, x } => {
             out.push_str("smoothstep(");
-            port_expr(out, public_inputs, low);
+            port_expr(out, public_inputs, low)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, high);
+            port_expr(out, public_inputs, high)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push(')');
+            Ok(())
         }
         Node::Atan2 { y, x } => binary(out, public_inputs, "atan2", y, x),
         Node::Modulo { a, b } => {
             out.push('(');
-            port_expr(out, public_inputs, a);
+            port_expr(out, public_inputs, a)?;
             out.push_str(" % ");
-            port_expr(out, public_inputs, b);
+            port_expr(out, public_inputs, b)?;
             out.push(')');
+            Ok(())
         }
         Node::Distance { a, b } => binary(out, public_inputs, "distance", a, b),
         Node::Length { v } => unary(out, public_inputs, "length", v),
@@ -99,26 +109,36 @@ pub(super) fn emit(
     }
 }
 
-fn unary(out: &mut String, public_inputs: &[GraphValue], f: &str, x: Port) {
-    let _ = write!(out, "{f}(");
-    port_expr(out, public_inputs, x);
+fn unary(out: &mut String, public_inputs: &[GraphValue], f: &str, x: Port) -> Result {
+    write!(out, "{f}(")?;
+    port_expr(out, public_inputs, x)?;
     out.push(')');
+    Ok(())
 }
 
-fn binary(out: &mut String, public_inputs: &[GraphValue], f: &str, a: Port, b: Port) {
-    let _ = write!(out, "{f}(");
-    port_expr(out, public_inputs, a);
+fn binary(out: &mut String, public_inputs: &[GraphValue], f: &str, a: Port, b: Port) -> Result {
+    write!(out, "{f}(")?;
+    port_expr(out, public_inputs, a)?;
     out.push_str(", ");
-    port_expr(out, public_inputs, b);
+    port_expr(out, public_inputs, b)?;
     out.push(')');
+    Ok(())
 }
 
-fn ternary(out: &mut String, public_inputs: &[GraphValue], f: &str, a: Port, b: Port, t: Port) {
-    let _ = write!(out, "{f}(");
-    port_expr(out, public_inputs, a);
+fn ternary(
+    out: &mut String,
+    public_inputs: &[GraphValue],
+    f: &str,
+    a: Port,
+    b: Port,
+    t: Port,
+) -> Result {
+    write!(out, "{f}(")?;
+    port_expr(out, public_inputs, a)?;
     out.push_str(", ");
-    port_expr(out, public_inputs, b);
+    port_expr(out, public_inputs, b)?;
     out.push_str(", ");
-    port_expr(out, public_inputs, t);
+    port_expr(out, public_inputs, t)?;
     out.push(')');
+    Ok(())
 }

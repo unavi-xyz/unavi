@@ -1,5 +1,6 @@
 use std::{
     collections::BTreeMap,
+    mem::size_of_val,
     sync::{
         Arc,
         Mutex,
@@ -17,7 +18,7 @@ use bevy::{
 };
 use hsd::{
     bounds::{
-        MAX_MESH_ELEMENTS,
+        MAX_MESH_STREAM_BYTES,
         MAX_NAME_BYTES,
         MAX_TEXT_BYTES,
     },
@@ -647,7 +648,10 @@ pub async fn set_mesh_stream(
     let name = mesh::stream(&key)?;
     match values {
         Some(v) => {
-            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
+            anyhow::ensure!(
+                size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
+                "mesh stream too large"
+            );
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             prim.write_value(&name, &MeshStream(f32s_to_bytes(&v)))
         }
@@ -664,7 +668,10 @@ pub async fn set_mesh_indices_u32(
     ensure_writable(&prim)?;
     match values {
         Some(v) => {
-            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
+            anyhow::ensure!(
+                size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
+                "mesh indices too large"
+            );
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             prim.write_attr(&MeshIndices(u32s_to_bytes(&v)))
         }
@@ -695,7 +702,10 @@ pub async fn set_collider_vertices(
     ensure_writable(&prim)?;
     let value = match values {
         Some(v) => {
-            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider vertices too large");
+            anyhow::ensure!(
+                size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
+                "collider vertices too large"
+            );
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(ColliderVertices(f32s_to_bytes(&v)))
         }
@@ -713,7 +723,10 @@ pub async fn set_collider_indices(
     ensure_writable(&prim)?;
     let value = match values {
         Some(v) => {
-            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider indices too large");
+            anyhow::ensure!(
+                size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
+                "collider indices too large"
+            );
             crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
             Some(ColliderIndices(u32s_to_bytes(&v)))
         }

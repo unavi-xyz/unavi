@@ -20,18 +20,22 @@ pub const MANIFEST: &[bevy_iroh_assets::AssetSpec] = &[
     bevy_iroh_assets::AssetSpec {
         rel_path: unavi_assets::DEFAULT_AVATAR,
         hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
+        size:     4_452_486,
     },
     bevy_iroh_assets::AssetSpec {
         rel_path: unavi_assets::DEFAULT_CHARACTER_ANIMATIONS,
         hash:     "9fbda809b00ab14e58356721e0c0a92fe88b9234c486a43b9417c4f27555c0c6",
+        size:     506_152,
     },
     bevy_iroh_assets::AssetSpec {
         rel_path: unavi_assets::DEFAULT_FONT,
         hash:     "3a21ac778bcc91b57dc32576c6baffbcb493b78b4b6ad46b05c3d33bb5da7315",
+        size:     621_572,
     },
     bevy_iroh_assets::AssetSpec {
         rel_path: unavi_assets::CJK_FONT,
         hash:     "1580ba0d54c84191041a55ec8d442d5a7d3668e5af8c9fee5456c776c30ff16a",
+        size:     16_467_736,
     },
 ];
 
@@ -82,6 +86,13 @@ mod tests {
                 "{} is not hex",
                 asset.rel_path
             );
+        }
+    }
+
+    #[test]
+    fn a_size_is_recorded() {
+        for asset in MANIFEST {
+            assert!(asset.size > 0, "{} has no size", asset.rel_path);
         }
     }
 }

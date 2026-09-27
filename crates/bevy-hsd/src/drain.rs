@@ -16,12 +16,11 @@ use hsd::{
 use crate::{
     Hsd,
     HsdChild,
-    HsdCommitGate,
     HsdHeld,
     HsdPrimIndex,
     HsdRelationships,
     Prim,
-    attributes::PARSERS,
+    attributes,
     feed::DocFeed,
     loaded::HsdSnapshotDrained,
 };
@@ -39,26 +38,18 @@ pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: C
         .insert(HsdPrimIndex::default());
 }
 
-/// Per-prim maps accumulated across a whole batch.
-///
-/// Writes go through `Commands`, invisible until the next sync point, so two
-/// relationship writes in one batch would otherwise clobber each other. Each
-/// map seeds from the live component the first time its prim is touched.
-#[derive(Default)]
-struct Staged {
-    rels: HashMap<Entity, BTreeMap<PropName, PrimId>>,
-}
+/// Per-prim relationship maps accumulated across one drain, seeded from the
+/// live component the first time a prim is touched.
+type StagedRels = HashMap<Entity, BTreeMap<PropName, PrimId>>;
 
-impl Staged {
-    fn rels<'a>(
-        &'a mut self,
-        prim_ent: Entity,
-        live: &Query<&HsdRelationships>,
-    ) -> &'a mut BTreeMap<PropName, PrimId> {
-        self.rels
-            .entry(prim_ent)
-            .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
-    }
+fn staged_rels<'a>(
+    staged: &'a mut StagedRels,
+    prim_ent: Entity,
+    live: &Query<&HsdRelationships>,
+) -> &'a mut BTreeMap<PropName, PrimId> {
+    staged
+        .entry(prim_ent)
+        .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
 }
 
 /// Drops what a held document's writes emitted: nothing listens while it is
@@ -74,17 +65,14 @@ pub fn discard_held_events(held: Query<&HsdHeld>) {
 }
 
 pub fn drain_scene_events(
-    docs: Query<(Entity, &Hsd, Option<&HsdCommitGate>)>,
+    docs: Query<(Entity, &Hsd)>,
     mut indices: Query<&mut HsdPrimIndex>,
     rels_now: Query<&HsdRelationships>,
     drained: Query<(), With<HsdSnapshotDrained>>,
     feeds: Query<&DocFeed>,
     mut commands: Commands,
 ) {
-    for (doc_ent, doc, gate) in &docs {
-        if gate.is_some_and(HsdCommitGate::is_held) {
-            continue;
-        }
+    for (doc_ent, doc) in &docs {
         let Ok(mut state) = doc.0.lock() else {
             warn!("scene state poisoned");
             continue;
@@ -100,7 +88,7 @@ pub fn drain_scene_events(
             continue;
         };
 
-        let mut staged = Staged::default();
+        let mut staged = StagedRels::default();
         for event in events {
             process_event(
                 event,
@@ -113,7 +101,7 @@ pub fn drain_scene_events(
         }
 
         // Writing an identical map would still trip `Changed` and its rebuilds.
-        for (prim_ent, rels) in staged.rels {
+        for (prim_ent, rels) in staged {
             if rels_now.get(prim_ent).is_ok_and(|live| live.0 == rels) {
                 continue;
             }
@@ -132,7 +120,7 @@ fn process_event(
     event: SceneEvent,
     doc_ent: Entity,
     index: &mut HsdPrimIndex,
-    staged: &mut Staged,
+    staged: &mut StagedRels,
     rels_now: &Query<&HsdRelationships>,
     commands: &mut Commands,
 ) {
@@ -155,12 +143,12 @@ fn process_event(
             let Some(prim_ent) = index.0.remove(&prim) else {
                 return;
             };
-            staged.rels.remove(&prim_ent);
+            staged.remove(&prim_ent);
             commands.entity(prim_ent).despawn();
         }
         SceneEvent::Property { prim, name, value } => {
             let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!(%prim, "prim not found for property {name}");
+                warn!(%prim, %name, "prim not found for property");
                 return;
             };
             apply_property(commands, staged, rels_now, prim_ent, &name, value);
@@ -178,7 +166,7 @@ fn parent_entity(index: &HsdPrimIndex, doc_ent: Entity, parent: Option<PrimId>) 
 /// both because the key cannot tell which it was.
 fn apply_property(
     commands: &mut Commands,
-    staged: &mut Staged,
+    staged: &mut StagedRels,
     rels_now: &Query<&HsdRelationships>,
     prim_ent: Entity,
     name: &PropName,
@@ -186,21 +174,28 @@ fn apply_property(
 ) {
     match value {
         Some(Value::Relationship(target)) => {
-            staged.rels(prim_ent, rels_now).insert(name.clone(), target);
+            staged_rels(staged, prim_ent, rels_now).insert(name.clone(), target);
         }
         Some(Value::Attribute(payload)) => {
-            let Some(parser) = PARSERS.get(name.group()) else {
-                return;
-            };
-            if let Err(err) = parser.lifecycle(commands, prim_ent, name, Some(&payload)) {
+            if let Err(err) = attributes::apply(commands, prim_ent, name, Some(payload.as_ref())) {
                 error!(%name, ?err, "failed to apply attribute");
             }
         }
         None => {
-            staged.rels(prim_ent, rels_now).remove(name);
-            if let Some(parser) = PARSERS.get(name.group())
-                && let Err(err) = parser.lifecycle(commands, prim_ent, name, None)
-            {
+            // Only a key already present as a relationship needs the map
+            // cloned; an attribute removal never touches it.
+            let was_relationship = staged.get(&prim_ent).map_or_else(
+                || {
+                    rels_now
+                        .get(prim_ent)
+                        .is_ok_and(|live| live.0.contains_key(name))
+                },
+                |staged_rels| staged_rels.contains_key(name),
+            );
+            if was_relationship {
+                staged_rels(staged, prim_ent, rels_now).remove(name);
+            }
+            if let Err(err) = attributes::apply(commands, prim_ent, name, None) {
                 error!(%name, ?err, "failed to remove attribute");
             }
         }

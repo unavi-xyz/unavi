@@ -5,18 +5,18 @@ use web_time::{
 
 /// Caps peer-supplied timestamps to within the clock skew of local time, so a
 /// forged future `at` cannot pin ownership or hold, or win KV merges forever.
-const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
+const MAX_CLOCK_SKEW_MICROS: u64 = 5 * 60 * 1_000_000;
 
 #[must_use]
-pub fn current_millis() -> u64 {
+pub fn current_micros() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |d| u64::try_from(d.as_micros()).unwrap_or(u64::MAX))
 }
 
 /// Whether `at` is within the accepted clock skew of local time.
 #[must_use]
 pub fn time_valid(at: u64) -> bool {
     // TODO lower bound check or use "recieved" time only
-    at <= current_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
+    at <= current_micros().saturating_add(MAX_CLOCK_SKEW_MICROS)
 }

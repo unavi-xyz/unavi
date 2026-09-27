@@ -1,22 +1,29 @@
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    io::Cursor,
+};
 
 use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
     render::render_resource::Face,
 };
-use bevy_hsd::attributes::shader::{
-    HsdMaterialGraphSlot,
-    HsdShaderGraphMaterial,
-    MAX_SHADER_PROGRAMS,
-    ShaderGraphMaterial,
-    ShaderGraphOverridesData,
+use bevy_hsd::attributes::{
+    image::HsdImage,
+    shader::{
+        HsdMaterialGraphSlot,
+        HsdShaderGraphMaterial,
+        MAX_SHADER_PROGRAMS,
+        ShaderGraphMaterial,
+        ShaderGraphOverridesData,
+    },
 };
 use hsd::{
     property::Payload,
     schema::{
         material,
         shader::{
+            self,
             ShaderGraph,
             graph::{
                 BlendMode,
@@ -34,6 +41,10 @@ use hsd::{
             value::GraphValue,
         },
     },
+};
+use image::{
+    ImageFormat,
+    RgbaImage,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -457,4 +468,120 @@ fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestCo
         0,
         "a prim rendered by a graph must not also carry a PBR material"
     );
+}
+
+/// Editing the source prim's graph after another prim binds to it rebuilds
+/// the bound prim too, not just the source.
+#[traced_test]
+#[rstest]
+fn editing_the_source_graph_after_binding_rebuilds_the_bound_prim(
+    #[from(ctx_blobs)] mut ctx: TestContext,
+) {
+    let template = ctx.create_prim();
+    ctx.set_shader_graph(template, glow_graph().encode().expect("encode graph"));
+
+    let beam = ctx.create_prim();
+    ctx.set_relationship(beam, &material::BINDING, template);
+    ctx.app.update();
+    let beam_entity = ctx.prim_entity(ctx.doc, beam);
+
+    let mut before: Option<Handle<Shader>> = None;
+    ctx.tick_until(|world| {
+        let Some(mat) = world.get::<HsdShaderGraphMaterial>(beam_entity) else {
+            return false;
+        };
+        let assets = world.resource::<Assets<ShaderGraphMaterial>>();
+        let Some(material) = assets.get(&mat.0) else {
+            return false;
+        };
+        before = Some(material.fragment_shader.clone());
+        true
+    });
+    let before = before.expect("beam built a shader graph material");
+
+    ctx.set_shader_graph(template, distinct_graph(0).encode().expect("encode graph"));
+
+    ctx.tick_until(|world| {
+        let mat = world
+            .get::<HsdShaderGraphMaterial>(beam_entity)
+            .expect("beam still has a material");
+        let assets = world.resource::<Assets<ShaderGraphMaterial>>();
+        let material = assets.get(&mat.0).expect("material asset");
+        material.fragment_shader != before
+    });
+}
+
+/// Setting an image prim's data after a graph sampling it has already built
+/// still fills the texture slot, rather than leaving it empty forever.
+#[traced_test]
+#[rstest]
+fn setting_image_data_after_the_graph_is_built_fills_the_texture_slot(
+    #[from(ctx_blobs)] mut ctx: TestContext,
+) {
+    let image_prim = ctx.create_prim();
+
+    let graph = ShaderGraph {
+        surface: SurfaceGraph {
+            nodes: vec![Node::TextureSample {
+                uv:   Port::Const(GraphValue::Vec2([0.0, 0.0])),
+                slot: 0,
+            }],
+            output: SurfaceOutput::Unlit(UnlitOutput {
+                color:                Port::Node(0),
+                alpha_clip_threshold: None,
+            }),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let material_prim = ctx.create_prim();
+    ctx.set_shader_graph(material_prim, graph.encode().expect("encode graph"));
+    ctx.set_relationship(
+        material_prim,
+        &shader::texture(0).expect("texture slot 0"),
+        image_prim,
+    );
+
+    ctx.tick_until(|world| {
+        world
+            .query::<&HsdShaderGraphMaterial>()
+            .iter(world)
+            .next()
+            .is_some()
+    });
+
+    let mut rgba = RgbaImage::new(2, 2);
+    rgba.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
+    let mut png_bytes = Vec::new();
+    image::DynamicImage::ImageRgba8(rgba)
+        .write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
+        .expect("encode png");
+    ctx.set_image_data(image_prim, png_bytes);
+
+    let mut handle: Option<Handle<Image>> = None;
+    ctx.tick_until(|world| {
+        let Some(image) = world
+            .query::<&HsdImage>()
+            .iter(world)
+            .next()
+            .map(|i| i.0.clone())
+        else {
+            return false;
+        };
+        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let Some(mat) = q.iter(world).next() else {
+            return false;
+        };
+        let assets = world.resource::<Assets<ShaderGraphMaterial>>();
+        let Some(material) = assets.get(&mat.0) else {
+            return false;
+        };
+        if material.texture_0.as_ref() == Some(&image) {
+            handle = Some(image);
+            return true;
+        }
+        false
+    });
+    handle.expect("texture slot filled after the image decoded");
 }

@@ -502,6 +502,12 @@ impl Backing {
         block_on(async move { store.create().await.expect("create document") })
     }
 
+    /// A handle to the underlying store, for a test that needs to spawn its
+    /// own `LocalStore`.
+    pub fn store(&self) -> Store {
+        self.0.clone()
+    }
+
     /// Stores `bytes` as a blob without pointing any key at it.
     pub fn add_bytes(&self, bytes: Vec<u8>) -> Hash {
         let store = self.0.clone();

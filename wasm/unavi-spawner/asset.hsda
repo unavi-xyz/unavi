@@ -4,7 +4,6 @@
             name: "spawner",
             script: "./Cargo.toml",
         ),
-        relationships: {},
         children: [],
     ),
 ]

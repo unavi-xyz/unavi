@@ -1,4 +1,7 @@
-use std::fmt::Write;
+use std::fmt::{
+    Result,
+    Write,
+};
 
 use hsd::schema::shader::{
     node::{
@@ -12,7 +15,7 @@ use super::port_expr;
 
 /// WGSL's own `+ - * /` broadcast a `Float` across a vector's components, so
 /// this family costs codegen nothing beyond a parenthesized infix pair.
-pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) {
+pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) -> Result {
     match *node {
         Node::Add { a, b } => binary(out, public_inputs, "+", a, b),
         Node::Sub { a, b } => binary(out, public_inputs, "-", a, b),
@@ -22,10 +25,11 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
     }
 }
 
-fn binary(out: &mut String, public_inputs: &[GraphValue], op: &str, a: Port, b: Port) {
+fn binary(out: &mut String, public_inputs: &[GraphValue], op: &str, a: Port, b: Port) -> Result {
     out.push('(');
-    port_expr(out, public_inputs, a);
-    let _ = write!(out, " {op} ");
-    port_expr(out, public_inputs, b);
+    port_expr(out, public_inputs, a)?;
+    write!(out, " {op} ")?;
+    port_expr(out, public_inputs, b)?;
     out.push(')');
+    Ok(())
 }

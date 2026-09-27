@@ -183,9 +183,9 @@ pub fn log_manifest(hosted: &[HostedFile]) {
         warn!("no files hosted; drop files into {}", files_dir().display());
         return;
     }
-    info!("hosted files (name = hash)");
+    info!("hosted files (name = hash, size)");
     for file in hosted {
-        info!("  {} = {}", file.name, file.hash);
+        info!("  {} = {} ({})", file.name, file.hash, file.size);
     }
 }
 

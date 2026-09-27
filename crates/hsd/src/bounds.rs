@@ -13,11 +13,11 @@ pub const MAX_NAME_BYTES: usize = KB;
 /// network-delivered text as a backstop.
 pub const MAX_TEXT_BYTES: usize = 4 * KB;
 
-/// Largest vertex/index stream a single mesh write may upload.
-pub const MAX_MESH_ELEMENTS: usize = 4 * MB;
+/// Largest vertex/index stream a single mesh write may upload, in bytes.
+pub const MAX_MESH_STREAM_BYTES: usize = 4 * MB;
 
 /// Largest value a single document entry may hold. A mesh carries its streams
-/// in one entry, so this sits several streams above [`MAX_MESH_ELEMENTS`].
+/// in one entry, so this sits several streams above [`MAX_MESH_STREAM_BYTES`].
 pub const MAX_ENTRY_BYTES: usize = 32 * MB;
 
 /// Largest `.hsdz` package a loader reads.

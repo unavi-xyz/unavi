@@ -394,7 +394,7 @@ async fn read_entries(doc: &Document, id: DocId) -> anyhow::Result<Vec<Entry>> {
         let Some(value) = doc.value(&entry).await? else {
             anyhow::bail!("{key} has not downloaded, so {id} cannot be copied whole");
         };
-        entries.push(Entry::new(key, value.to_vec(), entry.timestamp() / 1000));
+        entries.push(Entry::new(key, value, entry.timestamp()));
     }
     Ok(entries)
 }

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use bytes::Bytes;
 use thiserror::Error;
 
 use crate::id::{
@@ -7,7 +8,7 @@ use crate::id::{
     PrimId,
 };
 
-const TAG_ATTRIBUTE: u8 = 0;
+pub(crate) const TAG_ATTRIBUTE: u8 = 0;
 const TAG_RELATIONSHIP: u8 = 1;
 
 #[derive(Error, Debug)]
@@ -28,7 +29,7 @@ pub enum PropertyError {
 /// tells them apart.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
-    Attribute(Vec<u8>),
+    Attribute(Bytes),
     Relationship(PrimId),
 }
 
@@ -71,22 +72,26 @@ impl Value {
         hasher.update(payload);
     }
 
-    pub fn decode(bytes: &[u8]) -> Result<Self, PropertyError> {
-        let (tag, rest) = bytes.split_first().ok_or(PropertyError::Empty)?;
-        match *tag {
-            TAG_ATTRIBUTE => Ok(Self::Attribute(rest.to_vec())),
+    /// Slices `bytes` rather than copying its attribute payload.
+    pub fn decode(bytes: &Bytes) -> Result<Self, PropertyError> {
+        let Some(&tag) = bytes.first() else {
+            return Err(PropertyError::Empty);
+        };
+        match tag {
+            TAG_ATTRIBUTE => Ok(Self::Attribute(bytes.slice(1..))),
             TAG_RELATIONSHIP => {
-                let bytes: [u8; PRIM_ID_BYTES] = rest
+                let rest = &bytes[1..];
+                let id: [u8; PRIM_ID_BYTES] = rest
                     .try_into()
                     .map_err(|_| PropertyError::IdLength(rest.len()))?;
-                Ok(Self::Relationship(PrimId(bytes)))
+                Ok(Self::Relationship(PrimId(id)))
             }
             other => Err(PropertyError::Tag(other)),
         }
     }
 
     #[must_use]
-    pub const fn as_attribute(&self) -> Option<&Vec<u8>> {
+    pub const fn as_attribute(&self) -> Option<&Bytes> {
         match self {
             Self::Attribute(payload) => Some(payload),
             Self::Relationship(_) => None,
@@ -108,28 +113,34 @@ mod tests {
 
     #[test]
     fn attribute_round_trips() {
-        let prop = Value::Attribute(vec![1, 2, 3]);
-        assert_eq!(Value::decode(&prop.encode()).expect("decode"), prop);
+        let prop = Value::Attribute(Bytes::from(vec![1, 2, 3]));
+        assert_eq!(
+            Value::decode(&Bytes::from(prop.encode())).expect("decode"),
+            prop
+        );
     }
 
     #[test]
     fn relationship_round_trips() {
         let prop = Value::Relationship(PrimId([9; PRIM_ID_BYTES]));
-        assert_eq!(Value::decode(&prop.encode()).expect("decode"), prop);
+        assert_eq!(
+            Value::decode(&Bytes::from(prop.encode())).expect("decode"),
+            prop
+        );
     }
 
     #[test]
     fn empty_attribute_is_still_tagged() {
-        let encoded = Value::Attribute(Vec::new()).encode();
+        let encoded = Value::Attribute(Bytes::new()).encode();
         assert_eq!(encoded.len(), 1);
         assert_eq!(
-            Value::decode(&encoded).expect("decode"),
-            Value::Attribute(Vec::new())
+            Value::decode(&Bytes::from(encoded)).expect("decode"),
+            Value::Attribute(Bytes::new())
         );
     }
 
     #[test]
     fn decoding_empty_fails() {
-        assert!(Value::decode(&[]).is_err());
+        assert!(Value::decode(&Bytes::new()).is_err());
     }
 }

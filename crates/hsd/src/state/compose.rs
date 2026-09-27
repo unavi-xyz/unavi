@@ -4,10 +4,7 @@ use std::collections::{
 };
 
 use crate::{
-    id::{
-        PRIM_ID_BYTES,
-        PrimId,
-    },
+    id::PrimId,
     property::{
         name::PropName,
         value::Value,
@@ -19,7 +16,7 @@ use crate::{
         MAX_REALIZED_PRIMS,
         entry::{
             Stamp,
-            now_millis,
+            now_micros,
         },
         event::SceneEvent,
         layer::{
@@ -35,6 +32,8 @@ enum Placement {
     Root,
     Child(PrimId),
     Held,
+    /// Held only because [`MAX_REALIZED_PRIMS`] is full.
+    Capped,
 }
 
 /// Where a prim's parent chain ends.
@@ -86,7 +85,7 @@ impl Walk {
 
 /// Now, or one past `held` when the wall clock has not passed it.
 fn after(held: Option<Stamp>) -> u64 {
-    let now = now_millis();
+    let now = now_micros();
     held.map_or(now, |held| now.max(held.timestamp.saturating_add(1)))
 }
 
@@ -130,14 +129,7 @@ impl HsdState {
             .and_then(|opinions| opinions.parent())
             .map(|(_, stamp)| *stamp);
         let timestamp = after(held);
-        let Some(parent) = parent else {
-            return Stamp::new(timestamp, &[]);
-        };
-        let mut buf = [0u8; PRIM_ID_BYTES + 1];
-        postcard::to_slice(&parent, &mut buf).map_or_else(
-            |_| Stamp::new(timestamp, &ParentAttr::to_wire(Some(parent))),
-            |encoded| Stamp::of_attribute(timestamp, encoded),
-        )
+        Stamp::new(timestamp, &ParentAttr::to_wire(parent))
     }
 
     fn resolve_parent(&self, prim: PrimId) -> (Option<ParentAttr>, Stamp) {
@@ -232,16 +224,29 @@ impl HsdState {
     pub(super) fn forget_if_unstated(&mut self, prim: PrimId) {
         if self.layers.iter().all(|layer| layer.get(prim).is_none()) {
             self.resolved.remove(&prim);
+            self.capped.remove(&prim);
         }
     }
 
-    /// Recomputes realization for `root` and its subtree. Descends through
-    /// every prim that is or was realized, since a move changes the depth and
-    /// cycle membership of everything beneath it.
+    /// Recomputes realization for `root` and its subtree, then re-admits
+    /// [`Self::capped`] prims until [`MAX_REALIZED_PRIMS`] is reached again or
+    /// none of them can be placed.
+    pub(super) fn refresh(&mut self, root: PrimId) {
+        self.refresh_walk(root);
+        while self.realized.len() < MAX_REALIZED_PRIMS {
+            let Some(&prim) = self.capped.iter().next() else {
+                break;
+            };
+            self.refresh_walk(prim);
+        }
+    }
+
+    /// Descends through every prim that is or was realized, since a move
+    /// changes the depth and cycle membership of everything beneath it.
     ///
     /// A cycle through `root` is placed from its breaker down, so every
     /// member is realized after its parent.
-    pub(super) fn refresh(&mut self, root: PrimId) {
+    fn refresh_walk(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
         let mut walk = Walk::default();
         let mut start = root;
@@ -266,7 +271,7 @@ impl HsdState {
             }
             let placement = self.placement(prim, &mut walk);
             let was_realized = self.place(prim, placement);
-            if (was_realized || placement != Placement::Held)
+            if (was_realized || !matches!(placement, Placement::Held | Placement::Capped))
                 && let Some(children) = self.children.get(&prim)
             {
                 stack.extend(children.iter().copied());
@@ -277,7 +282,12 @@ impl HsdState {
     /// Answers whether the prim was realized before.
     fn place(&mut self, prim: PrimId, placement: Placement) -> bool {
         let parent = match placement {
+            Placement::Capped => {
+                self.capped.insert(prim);
+                return false;
+            }
             Placement::Held => {
+                self.capped.remove(&prim);
                 let was_realized = self.realized.remove(&prim).is_some();
                 if was_realized {
                     self.events.push(SceneEvent::Unrealized { prim });
@@ -287,6 +297,7 @@ impl HsdState {
             Placement::Root => None,
             Placement::Child(parent) => Some(parent),
         };
+        self.capped.remove(&prim);
         match self.realized.insert(prim, parent) {
             None => {
                 self.events.push(SceneEvent::Realized { prim, parent });
@@ -329,7 +340,7 @@ impl HsdState {
             return Placement::Held;
         }
         if self.realized.len() >= MAX_REALIZED_PRIMS && !self.realized.contains_key(&prim) {
-            return Placement::Held;
+            return Placement::Capped;
         }
         let parent = match state.parent {
             None => return Placement::Held,

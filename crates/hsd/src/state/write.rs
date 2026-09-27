@@ -86,7 +86,7 @@ impl HsdState {
         name: &PropName,
         value: &V,
     ) -> Result<(), StateError> {
-        self.set_property(prim, name, Value::Attribute(value.encode()?))
+        self.set_property(prim, name, Value::Attribute(value.encode()?.into()))
     }
 
     pub fn set_relationship(

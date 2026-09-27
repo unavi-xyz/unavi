@@ -10,6 +10,7 @@ use crate::{
     id::PrimId,
     key,
     property::{
+        Payload,
         Property,
         name::PropName,
         value::Value,
@@ -39,12 +40,12 @@ impl HsdState {
     /// winner.
     pub fn project(&mut self, entry: &Entry) -> Result<(), StateError> {
         let stamp = Stamp::new(entry.timestamp, &entry.value);
-        let value = (!entry.value.is_empty()).then_some(entry.value.as_slice());
+        let value = (!entry.value.is_empty()).then(|| entry.value.clone());
 
         match key::Key::parse(&entry.key) {
-            Some(key::Key::Meta) => self.project_meta(value),
+            Some(key::Key::Meta) => self.project_meta(value.as_deref()),
             Some(key::Key::Prop { prim, name }) if name == ParentAttr::NAME => {
-                match value.map(ParentAttr::from_wire).transpose() {
+                match value.as_ref().map(ParentAttr::from_wire).transpose() {
                     Ok(parent) => {
                         self.project_parent(prim, parent.flatten(), stamp);
                         Ok(())
@@ -55,16 +56,18 @@ impl HsdState {
                     }
                 }
             }
-            Some(key::Key::Prop { prim, name }) => match value.map(Value::decode).transpose() {
-                Ok(property) => {
-                    self.project_property(prim, &name, property, stamp);
-                    Ok(())
+            Some(key::Key::Prop { prim, name }) => {
+                match value.as_ref().map(Value::decode).transpose() {
+                    Ok(property) => {
+                        self.project_property(prim, &name, property, stamp);
+                        Ok(())
+                    }
+                    Err(err) => {
+                        self.project_property(prim, &name, None, stamp);
+                        Err(err.into())
+                    }
                 }
-                Err(err) => {
-                    self.project_property(prim, &name, None, stamp);
-                    Err(err.into())
-                }
-            },
+            }
             Some(key::Key::Nested { prim, group, tail }) if group == reference_attr::GROUP => {
                 LayerKey::parse(&tail).map_or(Ok(()), |layer_key| {
                     self.write_reference(prim, &layer_key, value, stamp)
@@ -81,13 +84,17 @@ impl HsdState {
             return Ok(());
         };
         let stamp = Stamp::new(entry.timestamp, &entry.value);
-        let value = (!entry.value.is_empty()).then_some(entry.value.as_slice());
+        let value = (!entry.value.is_empty()).then(|| entry.value.clone());
 
         if name == ParentAttr::NAME {
-            let parent = value.map(ParentAttr::from_wire).transpose()?.flatten();
+            let parent = value
+                .as_ref()
+                .map(ParentAttr::from_wire)
+                .transpose()?
+                .flatten();
             self.write_parent(LayerId::Override, target, parent, Some(stamp));
         } else {
-            let property = value.map(Value::decode).transpose()?;
+            let property = value.as_ref().map(Value::decode).transpose()?;
             self.write_property(LayerId::Override, target, &name, property, stamp);
         }
         Ok(())

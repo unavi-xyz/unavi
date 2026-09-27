@@ -12,14 +12,13 @@ use bevy::{
 use hsd::schema::material;
 
 use crate::{
-    HsdChild,
-    HsdPrimIndex,
     HsdRelationships,
     attributes::{
         material::{
             HsdMaterial,
             MaterialData,
         },
+        relations::PrimRelations,
         shader::{
             HsdMaterialGraphSlot,
             HsdShaderGraphMaterial,
@@ -45,21 +44,16 @@ pub enum MaterialSource {
 
 #[derive(SystemParam)]
 pub struct SourceCtx<'w, 's> {
-    children:      Query<'w, 's, &'static HsdChild>,
-    indices:       Query<'w, 's, &'static HsdPrimIndex>,
-    relationships: Query<'w, 's, &'static HsdRelationships>,
-    graphs:        Query<'w, 's, (), With<HsdMaterialGraphSlot>>,
-    materials:     Query<'w, 's, (), With<MaterialData>>,
+    relations: PrimRelations<'w, 's>,
+    graphs:    Query<'w, 's, (), With<HsdMaterialGraphSlot>>,
+    materials: Query<'w, 's, (), With<MaterialData>>,
 }
 
 impl SourceCtx<'_, '_> {
     /// The prim a `material/binding` names, if it resolves within the same
     /// document.
     fn binding_target(&self, prim: Entity) -> Option<Entity> {
-        let rels = self.relationships.get(prim).ok()?;
-        let target = rels.0.get(&material::BINDING)?;
-        let doc = self.children.get(prim).ok()?.0;
-        let target = *self.indices.get(doc).ok()?.0.get(target)?;
+        let target = self.relations.target(prim, &material::BINDING)?;
         (target != prim).then_some(target)
     }
 

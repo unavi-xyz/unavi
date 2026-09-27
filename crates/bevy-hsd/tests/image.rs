@@ -26,9 +26,14 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_image_lifecycle(mut ctx: TestContext) {
+    let mut bytes = Cursor::new(Vec::new());
+    RgbaImage::new(2, 2)
+        .write_to(&mut bytes, ImageFormat::Png)
+        .expect("encode png");
+
     let root = ctx.create_prim();
     ctx.set_attr(root, &ImageSampler::default());
-    ctx.set_image_data(root, b"png".to_vec());
+    ctx.set_image_data(root, bytes.into_inner());
 
     ctx.app.update();
 
@@ -36,7 +41,7 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     let mut query = world.query::<&HsdImage>();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
-    assert_eq!(res[0].0, Handle::<Image>::default());
+    assert_ne!(res[0].0, Handle::<Image>::default());
 
     ctx.remove_attr::<ImageData>(root);
     ctx.app.update();
@@ -44,6 +49,22 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     let world = ctx.app.world_mut();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert!(res.is_empty());
+}
+
+/// A decode that fails never inserts `HsdImage`, rather than one holding a
+/// sentinel handle.
+#[traced_test]
+#[rstest]
+fn test_undecodable_image_never_becomes_an_asset(mut ctx: TestContext) {
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &ImageSampler::default());
+    ctx.set_image_data(root, b"not a real image".to_vec());
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut query = world.query::<&HsdImage>();
+    assert!(query.query(world).into_iter().next().is_none());
 }
 
 #[traced_test]
@@ -122,14 +143,8 @@ fn test_oversized_image_is_refused(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let mut query = world.query::<&HsdImage>();
-    let handles = query
-        .query(world)
-        .into_iter()
-        .map(|h| h.0.clone())
-        .collect::<Vec<_>>();
-    let images = world.resource::<Assets<Image>>();
     assert!(
-        handles.iter().all(|h| images.get(h).is_none()),
+        query.query(world).into_iter().next().is_none(),
         "an image past the dimension cap never becomes an asset"
     );
 }

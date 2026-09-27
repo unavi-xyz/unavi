@@ -6,6 +6,7 @@ use std::collections::{
 use anyhow::anyhow;
 use async_channel::Sender;
 use bevy::log::warn;
+use bytes::Bytes;
 use hsd::{
     bounds::MAX_ENTRY_BYTES,
     key,
@@ -26,11 +27,14 @@ use crate::feed::{
 
 /// Reads each key's winner out of a document's store and sends it on.
 pub(super) struct Reader {
-    doc:    Document,
-    tx:     Sender<Delta>,
+    doc:         Document,
+    tx:          Sender<Delta>,
     /// Keys whose winner's content has not downloaded yet, by that content's
     /// hash.
-    parked: HashMap<Hash, HashSet<String>>,
+    parked:      HashMap<Hash, HashSet<String>>,
+    /// Each parked key's current hash, so a key re-parked under a new hash is
+    /// dropped from its old one instead of leaking there forever.
+    parked_hash: HashMap<String, Hash>,
 }
 
 impl Reader {
@@ -39,6 +43,7 @@ impl Reader {
             doc,
             tx,
             parked: HashMap::new(),
+            parked_hash: HashMap::new(),
         }
     }
 
@@ -65,6 +70,7 @@ impl Reader {
                 }
                 LiveEvent::ContentReady { hash } => {
                     for key in self.parked.remove(&hash).unwrap_or_default() {
+                        self.parked_hash.remove(&key);
                         self.reread(key.as_bytes()).await?;
                     }
                 }
@@ -123,26 +129,45 @@ impl Reader {
         let len = entry.content_len();
 
         let value = if len == 0 {
-            Vec::new()
+            self.unpark(&key);
+            Bytes::new()
         } else if usize::try_from(len).map_or(true, |len| len > MAX_ENTRY_BYTES) {
             warn!(%key, len, "entry is over the size cap and reads as empty");
-            Vec::new()
+            self.unpark(&key);
+            Bytes::new()
         } else {
             let Some(bytes) = self.doc.value(entry).await? else {
-                self.parked
-                    .entry(entry.content_hash())
-                    .or_default()
-                    .insert(key);
+                self.park(key, entry.content_hash());
                 return Ok(());
             };
-            bytes.to_vec()
+            self.unpark(&key);
+            bytes
         };
 
-        // iroh-docs stamps in microseconds, and the state orders in
-        // milliseconds.
-        let timestamp = entry.timestamp() / 1000;
+        let timestamp = entry.timestamp();
         self.send(Delta::Entry(Entry::new(key, value, timestamp)))
             .await
+    }
+
+    /// Parks `key` under `hash`, dropping it from any hash it was parked
+    /// under before.
+    fn park(&mut self, key: String, hash: Hash) {
+        self.unpark(&key);
+        self.parked.entry(hash).or_default().insert(key.clone());
+        self.parked_hash.insert(key, hash);
+    }
+
+    /// Drops `key` from the hash it is parked under, if any.
+    fn unpark(&mut self, key: &str) {
+        let Some(hash) = self.parked_hash.remove(key) else {
+            return;
+        };
+        if let Some(keys) = self.parked.get_mut(&hash) {
+            keys.remove(key);
+            if keys.is_empty() {
+                self.parked.remove(&hash);
+            }
+        }
     }
 
     async fn send(&self, delta: Delta) -> anyhow::Result<()> {

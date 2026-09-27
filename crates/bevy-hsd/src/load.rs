@@ -8,10 +8,7 @@ use bevy::{
     },
     prelude::*,
     reflect::TypePath,
-    tasks::{
-        BoxedFuture,
-        ConditionalSendFuture,
-    },
+    tasks::ConditionalSendFuture,
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
@@ -72,25 +69,16 @@ impl AssetLoader for HsdLoader {
     }
 }
 
-pub struct OnLoadCtx {
-    pub entity:    Entity,
-    pub namespace: NamespaceId,
-}
-
-pub type OnLoadFn =
-    Box<dyn FnOnce(OnLoadCtx) -> BoxedFuture<'static, anyhow::Result<()>> + Send + Sync>;
-
 #[derive(Component)]
 pub struct LoadHsd {
-    pub handle:  Handle<HsdAsset>,
-    pub on_load: Option<OnLoadFn>,
+    pub handle: Handle<HsdAsset>,
 }
 
 /// Loads a `.hsdz` into a namespace of its own, so the document has a stable
 /// id from birth and can later be shared.
 pub fn instance_hsd(
     hsds: Res<Assets<HsdAsset>>,
-    loading: Query<(Entity, &mut LoadHsd)>,
+    loading: Query<(Entity, &LoadHsd)>,
     stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
@@ -98,17 +86,16 @@ pub fn instance_hsd(
         return;
     };
 
-    for (entity, mut load) in loading {
+    for (entity, load) in loading {
         let Some(asset) = hsds.get(&load.handle) else {
             continue;
         };
 
         let store = store.0.clone();
         let package = asset.0.clone();
-        let on_load = load.on_load.take();
 
         spawn_async_task(async move {
-            if let Err(err) = build_and_instance(store, package, entity, on_load).await {
+            if let Err(err) = build_and_instance(store, package, entity).await {
                 error!(?err, "failed to instance hsd document");
             }
         });
@@ -117,14 +104,32 @@ pub fn instance_hsd(
     }
 }
 
+// Removes every namespace `try_build_and_instance` minted, on the failure
+// path only: a live entity holds the rest for as long as it exists.
+//
 // n0_future futures are intentionally !Send on wasm (single-threaded, no
 // Send needed there); Send-bounded elsewhere.
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
-async fn build_and_instance(
-    store: Store,
+async fn build_and_instance(store: Store, package: Package, entity: Entity) -> anyhow::Result<()> {
+    let mut minted = Vec::new();
+    let result = try_build_and_instance(&store, package, entity, &mut minted).await;
+
+    if result.is_err() {
+        for ns in minted {
+            if let Err(err) = store.remove(ns).await {
+                error!(?err, %ns, "failed to remove a namespace minted by a failed instance");
+            }
+        }
+    }
+
+    result
+}
+
+async fn try_build_and_instance(
+    store: &Store,
     package: Package,
     entity: Entity,
-    on_load: Option<OnLoadFn>,
+    minted_namespaces: &mut Vec<NamespaceId>,
 ) -> anyhow::Result<()> {
     // A placeholder means nothing outside the package carrying it, so every
     // document it names gets a namespace here and the references are rewritten
@@ -134,6 +139,7 @@ async fn build_and_instance(
     let mut docs = Vec::with_capacity(package.documents.len());
     for (placeholder, entries) in package.documents {
         let doc = store.create().await?;
+        minted_namespaces.push(doc.id());
         minted.insert(placeholder, DocId(*doc.id().as_bytes()));
         docs.push((doc, entries));
     }
@@ -146,6 +152,7 @@ async fn build_and_instance(
     }
 
     let doc = store.create().await?;
+    minted_namespaces.push(doc.id());
     let namespace = doc.id();
 
     let mut entries = package.entries;
@@ -167,32 +174,31 @@ async fn build_and_instance(
         .send()
         .await?;
 
-    if let Some(on_load) = on_load {
-        on_load(OnLoadCtx { entity, namespace }).await?;
-    }
-
     Ok(())
 }
 
 /// Deepest chain of references a document may realize through.
 ///
-/// A reference realizes a whole document, and a document may reference more
-/// than one, so the chain is a tree: a document that transitively references
-/// itself would realize `fan-out ^ depth` states. The cap is what stops it,
-/// which is why it is low — eight is deeper than authored content goes and
-/// cheap enough to hit by accident. Every peer computes the same cap, so
-/// every peer stops in the same place.
-pub const MAX_REF_DEPTH: usize = 8;
+/// A document that transitively references itself would otherwise realize
+/// `fan-out ^ depth` states; every peer computes the same cap, so every peer
+/// stops in the same place.
+pub(crate) const MAX_REF_DEPTH: usize = 8;
 
 /// The document a prim has realized, so a change re-realizes and a removal
 /// tears down.
 #[derive(Component)]
-pub struct RefLoaded(pub DocId);
+pub(crate) struct RefLoaded(DocId);
+
+/// A reference [`realize_refs`] did not realize, either past [`MAX_REF_DEPTH`]
+/// or on a failed open. Cleared only when `HsdRef` changes, so the prim is not
+/// retried every frame for an answer that cannot change.
+#[derive(Component)]
+pub(crate) struct RefRefused;
 
 /// How many references deep a document sits. Absent on a document nothing
 /// references, which is depth zero.
 #[derive(Component, Debug, Clone, Copy)]
-pub struct RefDepth(pub usize);
+pub(crate) struct RefDepth(usize);
 
 /// Realizes each referencing prim's target as a child document.
 ///
@@ -201,15 +207,18 @@ pub struct RefDepth(pub usize);
 /// keyed by document id (the policy record, session state) is per *site*. The
 /// target rides along as the namespace the child's content is read from and
 /// synced through.
-pub fn realize_refs(
-    refs: Query<(
-        Entity,
-        &Prim,
-        &HsdRef,
-        &HsdChild,
-        Option<&RefLoaded>,
-        Option<&Children>,
-    )>,
+pub(crate) fn realize_refs(
+    refs: Query<
+        (
+            Entity,
+            &Prim,
+            &HsdRef,
+            &HsdChild,
+            Option<&RefLoaded>,
+            Option<&Children>,
+        ),
+        Or<(Changed<HsdRef>, Without<RefLoaded>)>,
+    >,
     detached: Query<(Entity, Option<&Children>), (With<RefLoaded>, Without<HsdRef>)>,
     hsd_docs: Query<(), With<Hsd>>,
     parents: Query<(&HsdDocId, Option<&RefDepth>)>,
@@ -218,7 +227,9 @@ pub fn realize_refs(
 ) {
     for (prim_ent, children) in &detached {
         despawn_instances(&mut commands, &hsd_docs, children);
-        commands.entity(prim_ent).remove::<RefLoaded>();
+        commands
+            .entity(prim_ent)
+            .remove::<(RefLoaded, RefRefused)>();
     }
 
     let Ok(store) = stores.single() else {
@@ -228,9 +239,12 @@ pub fn realize_refs(
     for (prim_ent, prim, target, doc_child, loaded, children) in &refs {
         if let Some(loaded) = loaded {
             if loaded.0 == target.0 {
+                // Rewritten to the value it already holds: whatever it
+                // resolved to, loaded or refused, still stands.
                 continue;
             }
             despawn_instances(&mut commands, &hsd_docs, children);
+            commands.entity(prim_ent).remove::<RefRefused>();
         }
 
         let Ok((parent_id, parent_depth)) = parents.get(doc_child.0) else {
@@ -240,11 +254,10 @@ pub fn realize_refs(
         let target = target.0;
         let depth = parent_depth.map_or(0, |d| d.0) + 1;
 
-        // Marked as handled either way: a refusal that left no mark would be
-        // retried every frame, and the answer cannot change at this depth.
         commands.entity(prim_ent).insert(RefLoaded(target));
         if depth > MAX_REF_DEPTH {
             debug!(%target, depth, "reference past the depth cap is not realized");
+            commands.entity(prim_ent).insert(RefRefused);
             continue;
         }
 
@@ -252,14 +265,17 @@ pub fn realize_refs(
         spawn_async_task(async move {
             if let Err(err) = realize_ref(store, target, site, depth, prim_ent).await {
                 warn!(?err, %target, "failed to realize reference");
-                let _ = AsyncCommands::default()
+                let mark_refused = AsyncCommands::default()
                     .push(move |world: &mut World| {
                         if let Ok(mut e) = world.get_entity_mut(prim_ent) {
-                            e.remove::<RefLoaded>();
+                            e.insert(RefRefused);
                         }
                     })
                     .send()
                     .await;
+                if let Err(err) = mark_refused {
+                    warn!(?err, "failed to mark a reference refused");
+                }
             }
         });
     }

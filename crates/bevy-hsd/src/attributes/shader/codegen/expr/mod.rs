@@ -5,7 +5,10 @@ mod derived;
 mod leaf;
 mod sample;
 
-use std::fmt::Write;
+use std::fmt::{
+    Result,
+    Write,
+};
 
 use hsd::schema::shader::{
     node::{
@@ -29,31 +32,23 @@ pub(super) const fn wgsl_type(kind: ValueKind) -> &'static str {
 
 /// `{:?}` rather than `{}`: `f32`'s `Debug` always prints a decimal point
 /// (`2.0`, not `2`), which a bare integer is not in WGSL.
-fn literal(out: &mut String, value: GraphValue) {
+fn literal(out: &mut String, value: GraphValue) -> Result {
     match value {
-        GraphValue::Float(v) => {
-            let _ = write!(out, "{v:?}");
-        }
-        GraphValue::Vec2([x, y]) => {
-            let _ = write!(out, "vec2<f32>({x:?}, {y:?})");
-        }
-        GraphValue::Vec3([x, y, z]) => {
-            let _ = write!(out, "vec3<f32>({x:?}, {y:?}, {z:?})");
-        }
-        GraphValue::Color([r, g, b, a]) => {
-            let _ = write!(out, "vec4<f32>({r:?}, {g:?}, {b:?}, {a:?})");
-        }
+        GraphValue::Float(v) => write!(out, "{v:?}"),
+        GraphValue::Vec2([x, y]) => write!(out, "vec2<f32>({x:?}, {y:?})"),
+        GraphValue::Vec3([x, y, z]) => write!(out, "vec3<f32>({x:?}, {y:?}, {z:?})"),
+        GraphValue::Color([r, g, b, a]) => write!(out, "vec4<f32>({r:?}, {g:?}, {b:?}, {a:?})"),
     }
 }
 
 /// A public input is stored as a full `vec4` slot; a reference swizzles down
 /// to the components its declared kind uses.
-pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Port) {
+pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Port) -> Result {
     match port {
-        Port::Const(value) => literal(out, value),
+        Port::Const(value) => literal(out, value)?,
         Port::Input(index) => {
             let kind = public_inputs[usize::from(index)].kind();
-            let _ = write!(out, "params.inputs[{index}]");
+            write!(out, "params.inputs[{index}]")?;
             match kind {
                 ValueKind::Float => out.push_str(".x"),
                 ValueKind::Vec2 => out.push_str(".xy"),
@@ -62,9 +57,10 @@ pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Po
             }
         }
         Port::Node(index) => {
-            let _ = write!(out, "n{index}");
+            write!(out, "n{index}")?;
         }
     }
+    Ok(())
 }
 
 /// The kind a port carries, for nodes whose generated expression depends on
@@ -95,10 +91,10 @@ pub(super) fn node_expr(
     public_inputs: &[GraphValue],
     kinds: &[ValueKind],
     node: &Node,
-) {
+) -> Result {
     match *node {
         Node::Add { .. } | Node::Sub { .. } | Node::Mul { .. } | Node::Div { .. } => {
-            arithmetic::emit(out, public_inputs, node);
+            arithmetic::emit(out, public_inputs, node)
         }
         Node::Lerp { .. }
         | Node::Dot { .. }
@@ -143,13 +139,14 @@ pub(super) fn node_expr(
         | Node::ObjectScale
         | Node::ViewDirection
         | Node::ScreenUv
-        | Node::Time => leaf::emit(out, node),
+        | Node::Time => {
+            leaf::emit(out, node);
+            Ok(())
+        }
         Node::Fresnel { .. }
         | Node::Noise { .. }
         | Node::TextureSample { .. }
         | Node::SceneColor { .. }
-        | Node::Select { .. } => {
-            sample::emit(out, public_inputs, node);
-        }
+        | Node::Select { .. } => sample::emit(out, public_inputs, node),
     }
 }

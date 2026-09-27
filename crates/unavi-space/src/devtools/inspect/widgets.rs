@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use bevy::{
     ecs::{
         relationship::RelatedSpawnerCommands,
@@ -25,7 +23,7 @@ use crate::{
 
 const VALUE_PREVIEW_MAX: usize = 256;
 
-/// Millisecond timestamp re-rendered as a live relative time.
+/// Microsecond timestamp re-rendered as a live relative time.
 #[derive(Component)]
 pub struct AgoText(pub u64);
 
@@ -214,7 +212,7 @@ pub fn mono_block(content: String) -> impl Bundle {
 /// plus the lossy text form, both capped.
 pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
     let shown = &value[..value.len().min(VALUE_PREVIEW_MAX)];
-    let mut hex = shown
+    let mut rows = shown
         .chunks(16)
         .map(|row| {
             row.iter()
@@ -222,11 +220,11 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
                 .collect::<Vec<_>>()
                 .join(" ")
         })
-        .collect::<Vec<_>>()
-        .join("\n");
+        .collect::<Vec<_>>();
     if value.len() > VALUE_PREVIEW_MAX {
-        let _ = write!(hex, "\n… +{} more bytes", value.len() - VALUE_PREVIEW_MAX);
+        rows.push(format!("… +{} more bytes", value.len() - VALUE_PREVIEW_MAX));
     }
+    let hex = rows.join("\n");
     let text = format!("text: {}", String::from_utf8_lossy(shown));
     (
         Node {
@@ -259,11 +257,11 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
 }
 
 pub fn fmt_ago(at: u64) -> String {
-    let now = clock::current_millis();
+    let now = clock::current_micros();
     let (secs, suffix) = if now >= at {
-        ((now - at) / 1000, "ago")
+        ((now - at) / 1_000_000, "ago")
     } else {
-        ((at - now) / 1000, "ahead")
+        ((at - now) / 1_000_000, "ahead")
     };
     if secs < 60 {
         format!("{secs}s {suffix}")

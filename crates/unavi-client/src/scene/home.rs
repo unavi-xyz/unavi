@@ -1,22 +1,27 @@
 use std::str::FromStr;
 
-use bevy::{
-    prelude::*,
-    tasks::BoxedFuture,
-};
-use bevy_hsd::load::{
-    LoadHsd,
-    OnLoadCtx,
+use bevy::prelude::*;
+use bevy_hsd::{
+    HsdNamespace,
+    load::LoadHsd,
 };
 use bevy_iroh::doc::DocSet;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
 use unavi_space::identity::RootDocument;
-use unavi_util::async_commands::AsyncCommands;
+use unavi_util::{
+    async_commands::AsyncCommands,
+    async_task::spawn_async_task,
+};
 
 /// A namespace to enter instead of the local home, from `--join`.
 #[derive(Resource, Default)]
 pub struct JoinSpace(pub Option<String>);
+
+/// Marks the entity `join_home` spawned, until [`enter_home`] claims its
+/// namespace.
+#[derive(Component)]
+pub struct JoiningHome;
 
 pub fn join_startup_space(
     join: Res<JoinSpace>,
@@ -42,25 +47,31 @@ pub fn join_startup_space(
 
 pub fn join_home(asset_server: &AssetServer, commands: &mut Commands) {
     let handle = asset_server.load("hsd/unavi_default_home.hsdz");
-    commands.spawn(LoadHsd {
-        handle,
-        on_load: Some(Box::new(on_load_spawn_space)),
-    });
+    commands.spawn((LoadHsd { handle }, JoiningHome));
 }
 
-#[must_use]
-pub fn on_load_spawn_space(ctx: OnLoadCtx) -> BoxedFuture<'static, anyhow::Result<()>> {
-    info!(id = %ctx.namespace, "Joining home");
-    Box::pin(async move {
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                world.entity_mut(ctx.entity).insert(Space(ctx.namespace));
-            })
-            .send()
-            .await?;
-        record_home(ctx.namespace).await;
-        Ok(())
-    })
+/// Enters a `join_home` entity as [`Space`] once its namespace resolves, and
+/// records it as home.
+pub fn enter_home(
+    trigger: On<Add, HsdNamespace>,
+    joining: Query<&HsdNamespace, With<JoiningHome>>,
+    root: Option<Res<RootDocument>>,
+    mut commands: Commands,
+) {
+    let Ok(namespace) = joining.get(trigger.entity) else {
+        return;
+    };
+    let ns = namespace.0.id();
+    info!(%ns, "Joining home");
+
+    commands
+        .entity(trigger.entity)
+        .insert(Space(ns))
+        .remove::<JoiningHome>();
+
+    if let Some(root) = root {
+        spawn_async_task(record_home(root.0, ns));
+    }
 }
 
 /// Key under a DID's root doc naming the space it comes home to.
@@ -72,13 +83,7 @@ const HOME_VERSION: u32 = 0;
 
 /// Writes down which space is home, so a shell can offer to travel back to it;
 /// without this entry a script has no way to learn it.
-async fn record_home(ns: NamespaceId) {
-    let Some(Some(root)) = AsyncCommands::default()
-        .send_with(|world: &mut World| world.get_resource::<RootDocument>().map(|root| root.0))
-        .await
-    else {
-        return;
-    };
+async fn record_home(root: NamespaceId, ns: NamespaceId) {
     let mut value = match postcard::to_stdvec(&HOME_VERSION) {
         Ok(value) => value,
         Err(err) => {

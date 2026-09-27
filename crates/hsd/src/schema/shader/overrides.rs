@@ -15,7 +15,6 @@ use crate::{
     },
     schema::shader::{
         GROUP,
-        ShaderGraph,
         value::{
             GraphValue,
             ValueKind,
@@ -52,17 +51,16 @@ pub enum OverridesError {
     NonFinite(u16),
 }
 
-/// Cross-checks overrides against the graph they apply to.
+/// Cross-checks overrides against the public inputs they apply to.
 ///
 /// The two attributes can arrive or go stale independently, so call this
 /// whenever either changes.
 pub fn validate_overrides(
-    graph: &ShaderGraph,
+    public_inputs: &[GraphValue],
     overrides: &GraphOverridesAttr,
 ) -> Result<(), OverridesError> {
     for (&index, value) in &overrides.overrides {
-        let expected = graph
-            .public_inputs
+        let expected = public_inputs
             .get(usize::from(index))
             .ok_or(OverridesError::UnknownInput(index))?
             .kind();

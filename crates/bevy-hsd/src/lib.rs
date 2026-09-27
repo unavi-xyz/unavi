@@ -1,4 +1,4 @@
-// Bevy`s `AsBindGroup` needs higher limit
+// Bevy's `AsBindGroup` needs a higher limit.
 #![recursion_limit = "256"]
 
 use std::{
@@ -6,14 +6,11 @@ use std::{
     sync::{
         Arc,
         Mutex,
-        atomic::{
-            AtomicBool,
-            Ordering,
-        },
     },
 };
 
 use bevy::{
+    asset::embedded_asset,
     platform::collections::HashMap,
     prelude::*,
     transform::TransformSystems,
@@ -30,7 +27,7 @@ use wds::document::Document;
 
 pub mod anchor;
 pub mod attributes;
-mod diff;
+mod drain;
 pub mod feed;
 pub mod load;
 pub mod loaded;
@@ -45,6 +42,8 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
+        embedded_asset!(app, "attributes/shader/fallback.wgsl");
+
         app.add_plugins((
             MaterialPlugin::<attributes::shader::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
@@ -52,31 +51,23 @@ impl Plugin for HsdPlugin {
             .init_asset::<load::HsdAsset>()
             .init_resource::<attributes::shader::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
-            .add_observer(diff::resync_on_spawn)
+            .add_observer(drain::resync_on_spawn)
             .add_observer(feed::feed_namespace)
             .add_observer(attributes::shader::evict_document_shaders)
-            .add_systems(Startup, attributes::shader::register_fallback_shader)
             .add_systems(
                 Update,
                 (
-                    // Bevy's tuple `IntoSystemConfigs` impl has a fixed
-                    // arity; nesting splits the systems, and `.chain()` on
-                    // the outer tuple still orders the two inner groups.
+                    // Split in two: Bevy's tuple `IntoSystemConfigs` impl has a fixed arity.
                     (
                         // Before the drain, so what the store changed reaches
                         // the world the same frame.
                         feed::apply_doc_deltas,
-                        diff::discard_held_events,
-                        diff::drain_scene_events,
+                        drain::discard_held_events,
+                        drain::drain_scene_events,
                         attributes::xform::apply_xform,
-                        attributes::name::apply_name,
-                        attributes::gravity_scale::apply_gravity_scale,
-                        attributes::rigid_body::apply_rigid_body,
-                        attributes::spawn::apply_spawn,
-                        attributes::text::apply_text,
-                        attributes::portal::apply_portal,
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
+                        attributes::image::apply_sampler,
                         attributes::collider::rebuild_collider,
                         attributes::material_source::resolve_material_source,
                         attributes::material::rebuild_material,
@@ -95,13 +86,10 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdCommitSet),
             )
-            // Text's attribute lands in `HsdCommitSet`; the renderer must
-            // run after it or every label is a frame stale.
+            // The renderer must run after `HsdCommitSet`, or a label's text is a frame stale.
             .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
-            // A document's own transform has to be current before its prims
-            // are realized: `apply_xform` seeds a body's physics position from
-            // the transform chain, and reading a stale document frame parks
-            // the body where the document used to be.
+            // `apply_xform` seeds a body's physics position from the document's
+            // transform, so the anchor must place the document first.
             .add_systems(Update, anchor::apply_anchors.before(HsdCommitSet))
             .add_systems(
                 PostUpdate,
@@ -175,15 +163,3 @@ pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
 /// byte rather than by name.
 #[derive(Component, Default, Debug)]
 pub struct HsdRelationships(pub BTreeMap<PropName, PrimId>);
-
-/// Pauses event draining while a batched writer holds it, so the batch's
-/// writes reach the world atomically instead of tearing across frames.
-#[derive(Component, Clone)]
-pub struct HsdCommitGate(pub Arc<AtomicBool>);
-
-impl HsdCommitGate {
-    #[must_use]
-    pub fn is_held(&self) -> bool {
-        self.0.load(Ordering::SeqCst)
-    }
-}

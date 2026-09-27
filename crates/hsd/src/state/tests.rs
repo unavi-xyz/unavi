@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use bytes::Bytes;
+
 use super::*;
 use crate::{
     format::meta::{
@@ -12,6 +14,7 @@ use crate::{
     },
     key,
     property::{
+        Payload,
         Property,
         name::PropName,
         value::Value,
@@ -69,7 +72,7 @@ fn child_entry(id: PrimId, parent: PrimId, timestamp: u64) -> Entry {
 fn attr_entry<A: Property>(id: PrimId, value: &A, timestamp: u64) -> Entry {
     Entry::new(
         key::Key::prop(id, &A::NAME).to_string(),
-        Value::Attribute(value.encode().expect("encode")).encode(),
+        Value::Attribute(value.encode().expect("encode").into()).encode(),
         timestamp,
     )
 }
@@ -483,7 +486,7 @@ fn an_unknown_attribute_round_trips_untouched() {
             root_entry(prim(1), 1),
             Entry::new(
                 key::Key::prop(prim(1), &"custom/blob".parse().expect("name")).to_string(),
-                Value::Attribute(payload.clone()).encode(),
+                Value::Attribute(payload.clone().into()).encode(),
                 2,
             ),
         ],
@@ -493,7 +496,7 @@ fn an_unknown_attribute_round_trips_untouched() {
     let stored = entries
         .get(&key::Key::prop(prim(1), &"custom/blob".parse().expect("name")).to_string())
         .expect("entry");
-    assert_eq!(stored, &Value::Attribute(payload).encode());
+    assert_eq!(stored, &Value::Attribute(payload.into()).encode());
 }
 
 #[test]
@@ -633,7 +636,7 @@ fn an_attribute_carrying_bytes_round_trips() {
     );
     assert_eq!(
         document(&state).get(&key::Key::prop(prim(1), &ScriptAttr::NAME).to_string()),
-        Some(&Value::Attribute(ScriptAttr(payload).encode().expect("encode")).encode()),
+        Some(&Value::Attribute(ScriptAttr(payload).encode().expect("encode").into()).encode()),
     );
 }
 
@@ -787,6 +790,39 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
 }
 
 #[test]
+fn a_prim_past_the_realized_cap_is_admitted_once_room_frees() {
+    let mut state = HsdState::new();
+
+    let ids = (0..MAX_REALIZED_PRIMS)
+        .map(|i| {
+            let mut bytes = [0u8; 32];
+            bytes[..8].copy_from_slice(&(i as u64).to_be_bytes());
+            PrimId::from_digest(&bytes)
+        })
+        .collect::<Vec<_>>();
+    for (i, &id) in ids.iter().enumerate() {
+        state.project(&root_entry(id, i as u64)).expect("root");
+    }
+    assert_eq!(state.roots().len(), MAX_REALIZED_PRIMS, "the cap is full");
+
+    let held = prim(200);
+    state.project(&root_entry(held, 1_000)).expect("root");
+    assert!(!state.is_realized(held), "one past the cap is held");
+    state.drain_events();
+
+    state.remove_prim(ids[0]);
+
+    assert!(state.is_realized(held), "removing a root frees its slot");
+    assert!(
+        state.drain_events().contains(&SceneEvent::Realized {
+            prim:   held,
+            parent: None,
+        }),
+        "the newly realized prim is announced like any other"
+    );
+}
+
+#[test]
 fn an_open_tick_withholds_its_own_writes() {
     let mut state = HsdState::new();
     state.open_tick();
@@ -918,7 +954,7 @@ fn runtime_property(state: &mut HsdState, prim: PrimId, name: PropName, value: O
 }
 
 fn name_attr(value: &str) -> Value {
-    Value::Attribute(NameAttr(value.into()).encode().expect("encode"))
+    Value::Attribute(NameAttr(value.into()).encode().expect("encode").into())
 }
 
 fn name_of(state: &HsdState, prim: PrimId) -> Option<String> {
@@ -1165,8 +1201,8 @@ fn commit_promotes_a_live_opinion_into_the_document() {
         "the promoted opinion is exactly what the store is written"
     );
     assert_eq!(
-        document(&state).get(&writes[0].key),
-        Some(&writes[0].value),
+        document(&state).get(&writes[0].key).map(Vec::as_slice),
+        Some(writes[0].value.as_ref()),
         "and the projection holds it before the store echoes it back"
     );
 
@@ -1311,10 +1347,10 @@ fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
             .map(|write| (write.key.clone(), write.value.clone()))
             .collect::<Vec<_>>(),
         vec![
-            (parent_key(prim(2)), Vec::new()),
+            (parent_key(prim(2)), Bytes::new()),
             (
                 key::Key::prop(prim(2), &NameAttr::NAME).to_string(),
-                Vec::new()
+                Bytes::new()
             ),
         ],
         "a removed prim leaves no properties behind in the store"
@@ -1555,8 +1591,10 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     project(&mut referencing, &[root_entry(site, 1)]);
     project(&mut referencing, &entries);
     assert_eq!(
-        document(&referencing).get(&entries[0].key),
-        Some(&entries[0].value),
+        document(&referencing)
+            .get(&entries[0].key)
+            .map(Vec::as_slice),
+        Some(entries[0].value.as_ref()),
         "which is what makes the edit survive the session"
     );
 

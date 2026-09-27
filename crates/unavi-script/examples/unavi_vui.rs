@@ -99,10 +99,7 @@ fn init_scene(
     // does not have to wait for the avatar to finish loading.
     let handle = asset_server.load(SCRIPT_PATH);
     commands.spawn((
-        LoadHsd {
-            handle,
-            on_load: None,
-        },
+        LoadHsd { handle },
         // Scene writes are refused for a document in no space; a standalone
         // harness needs the shell's own permissions.
     ));

@@ -29,13 +29,17 @@ impl HsdState {
             return Ok(());
         };
         let stamp = Stamp::new(entry.timestamp, &entry.value);
-        let value = (!entry.value.is_empty()).then_some(entry.value.as_slice());
+        let value = (!entry.value.is_empty()).then(|| entry.value.clone());
 
         if name == ParentAttr::NAME {
-            let parent = value.map(ParentAttr::from_wire).transpose()?.flatten();
+            let parent = value
+                .as_ref()
+                .map(ParentAttr::from_wire)
+                .transpose()?
+                .flatten();
             self.write_parent(LayerId::Session, prim, parent, Some(stamp));
         } else {
-            let property = value.map(Value::decode).transpose()?;
+            let property = value.as_ref().map(Value::decode).transpose()?;
             self.write_property(LayerId::Session, prim, &name, property, stamp);
         }
         Ok(())

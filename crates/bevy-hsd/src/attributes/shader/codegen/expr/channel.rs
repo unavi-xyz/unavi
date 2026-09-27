@@ -1,4 +1,7 @@
-use std::fmt::Write;
+use std::fmt::{
+    Result,
+    Write,
+};
 
 use hsd::schema::shader::{
     node::{
@@ -24,39 +27,42 @@ pub(super) fn emit(
     public_inputs: &[GraphValue],
     kinds: &[ValueKind],
     node: &Node,
-) {
+) -> Result {
     match *node {
         Node::Extract { v, channel } => {
             out.push('(');
-            port_expr(out, public_inputs, v);
-            let _ = write!(out, ").{}", channel_name(channel));
+            port_expr(out, public_inputs, v)?;
+            write!(out, ").{}", channel_name(channel))
         }
         Node::Combine2 { x, y } => {
             out.push_str("vec2<f32>(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, y);
+            port_expr(out, public_inputs, y)?;
             out.push(')');
+            Ok(())
         }
         Node::Combine3 { x, y, z } => {
             out.push_str("vec3<f32>(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, y);
+            port_expr(out, public_inputs, y)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, z);
+            port_expr(out, public_inputs, z)?;
             out.push(')');
+            Ok(())
         }
         Node::Combine4 { x, y, z, w } => {
             out.push_str("vec4<f32>(");
-            port_expr(out, public_inputs, x);
+            port_expr(out, public_inputs, x)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, y);
+            port_expr(out, public_inputs, y)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, z);
+            port_expr(out, public_inputs, z)?;
             out.push_str(", ");
-            port_expr(out, public_inputs, w);
+            port_expr(out, public_inputs, w)?;
             out.push(')');
+            Ok(())
         }
         Node::Convert { v, to } => convert(out, public_inputs, kinds, v, to),
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
@@ -88,32 +94,33 @@ fn convert(
     kinds: &[ValueKind],
     v: Port,
     to: ValueKind,
-) {
+) -> Result {
     let (from, to_count) = (
         port_kind(public_inputs, kinds, v).components(),
         to.components(),
     );
     if to_count <= from {
         if to_count == from {
-            port_expr(out, public_inputs, v);
+            port_expr(out, public_inputs, v)?;
         } else {
             out.push('(');
-            port_expr(out, public_inputs, v);
-            let _ = write!(out, ").{}", swizzle(to_count));
+            port_expr(out, public_inputs, v)?;
+            write!(out, ").{}", swizzle(to_count))?;
         }
     } else {
         // A widened color's alpha is 1.0 rather than zero: a zero-padded color
         // would be fully transparent.
-        let _ = write!(out, "{}(", wgsl_type(to));
-        port_expr(out, public_inputs, v);
+        write!(out, "{}(", wgsl_type(to))?;
+        port_expr(out, public_inputs, v)?;
         for pad in 0..to_count - from {
             let value = if to == ValueKind::Color && pad == to_count - from - 1 {
                 "1.0"
             } else {
                 "0.0"
             };
-            let _ = write!(out, ", {value}");
+            write!(out, ", {value}")?;
         }
         out.push(')');
     }
+    Ok(())
 }

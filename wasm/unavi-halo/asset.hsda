@@ -4,7 +4,6 @@
             name: "halo",
             script: "./Cargo.toml",
         ),
-        relationships: {},
         children: [
             (
                 attributes: (
@@ -18,7 +17,6 @@
                         ],
                     ),
                 ),
-                relationships: {},
                 children: [],
             ),
         ],

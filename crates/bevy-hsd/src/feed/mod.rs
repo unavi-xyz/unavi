@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use async_channel::{
     Receiver,
+    Sender,
     TryRecvError,
 };
 use bevy::prelude::*;
@@ -53,7 +54,7 @@ pub enum Ready {
 pub struct DocFeed {
     rx:      Receiver<Delta>,
     /// Dropping it stops the reader.
-    _cancel: async_channel::Sender<()>,
+    _cancel: Sender<()>,
     synced:  bool,
 }
 
@@ -108,7 +109,7 @@ impl DocFeed {
 
 /// Feeds a namespace-backed document the moment it gets its namespace, unless
 /// the same insert brought a feed of its own.
-pub fn feed_namespace(
+pub(crate) fn feed_namespace(
     trigger: On<Add, HsdNamespace>,
     docs: Query<&HsdNamespace, Without<DocFeed>>,
     mut commands: Commands,
@@ -122,7 +123,7 @@ pub fn feed_namespace(
 
 /// Projects what each feed read since the last frame. An override entry is
 /// also projected into every reference its site realizes.
-pub fn apply_doc_deltas(
+pub(crate) fn apply_doc_deltas(
     mut feeds: Query<(&mut DocFeed, AnyOf<(&Hsd, &HsdHeld)>, Option<&HsdPrimIndex>)>,
     children: Query<&Children>,
     references: Query<&Hsd, With<HsdSource>>,

@@ -1,3 +1,5 @@
+use bytes::Bytes;
+
 use crate::{
     id::PrimId,
     key,
@@ -122,7 +124,7 @@ impl HsdState {
         target: LayerId,
         prim: PrimId,
         name: &PropName,
-    ) -> Option<(Vec<u8>, u64)> {
+    ) -> Option<(Bytes, u64)> {
         let (opinion, _) = self.take_live(prim, |layer, id| layer.take_property(id, name))?;
         let timestamp = self.local_property_time(target, prim, name);
         let (value, stamp) = opinion.value().map_or_else(
@@ -136,10 +138,10 @@ impl HsdState {
             opinions.set_property(name, opinion, stamp);
         }
         self.settle_property(prim, name);
-        Some((value, timestamp))
+        Some((value.into(), timestamp))
     }
 
-    fn commit_parent(&mut self, target: LayerId, prim: PrimId) -> Option<(Vec<u8>, u64)> {
+    fn commit_parent(&mut self, target: LayerId, prim: PrimId) -> Option<(Bytes, u64)> {
         let (opinion, _) = self.take_live(prim, Layer::take_parent)?;
         let parent = opinion.value().copied();
         let stamp = self.local_parent_stamp(target, prim, parent);
@@ -150,7 +152,7 @@ impl HsdState {
             opinions.set_parent(opinion, stamp);
         }
         self.settle_parent(prim);
-        Some((ParentAttr::to_wire(parent), stamp.timestamp))
+        Some((ParentAttr::to_wire(parent).into(), stamp.timestamp))
     }
 
     /// Takes the strongest live opinion on a key and clears the key from every

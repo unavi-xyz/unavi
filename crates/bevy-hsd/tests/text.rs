@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_hsd::attributes::text::TextData;
 use bevy_msdf::{
     billboard::Billboard,
     mesh::Anchor,
@@ -50,12 +49,8 @@ fn test_text_lifecycle(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut query = world.query::<(Option<&MsdfText>, Option<&TextData>)>();
-    let remaining = query
-        .query(world)
-        .into_iter()
-        .filter(|(text, data)| text.is_some() || data.is_some())
-        .count();
+    let mut query = world.query::<&MsdfText>();
+    let remaining = query.query(world).into_iter().count();
     assert_eq!(
         remaining, 0,
         "clearing the attribute takes the text with it"

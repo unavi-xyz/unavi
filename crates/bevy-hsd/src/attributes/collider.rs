@@ -1,17 +1,15 @@
+use std::mem::size_of;
+
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bytemuck::{
-    PodCastError,
-    try_cast_slice,
-};
+use bytemuck::pod_collect_to_vec;
 use hsd::{
-    bounds::MAX_MESH_ELEMENTS,
+    bounds::MAX_MESH_STREAM_BYTES,
     property::{
         Payload,
         name::PropName,
     },
     schema::collider::{
-        self,
         ColliderIndices,
         ColliderKind,
         ColliderVertices,
@@ -26,15 +24,15 @@ use unavi_physics::{
 };
 
 use crate::attributes::{
-    AttributeParser,
     ParseError,
+    Pending,
     util::compute_global_transform,
 };
 
 /// Assembled from `collider/kind`, `collider/vertices` and `collider/indices`,
 /// each its own field so a change to one never re-decodes the others.
 #[derive(Component, Debug, Clone, Default)]
-pub struct ColliderData {
+pub(crate) struct ColliderData {
     pub kind:     Option<ColliderKind>,
     pub vertices: Option<ColliderVertices>,
     pub indices:  Option<ColliderIndices>,
@@ -43,69 +41,74 @@ pub struct ColliderData {
 #[derive(Component)]
 pub struct HsdCollider;
 
-pub struct ColliderParser;
-
-impl AttributeParser for ColliderParser {
-    fn group(&self) -> &'static str {
-        collider::GROUP
-    }
-
-    /// `kind` gates the whole collider: without it nothing can be built, so
-    /// its removal tears down the collider entirely rather than leaving a
-    /// half-built one.
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match name.field() {
-            Some("kind") => match payload.map(ColliderKind::decode).transpose()? {
-                Some(kind) => {
-                    commands
-                        .entity(prim)
-                        .entry::<ColliderData>()
-                        .or_default()
-                        .and_modify(move |mut data| data.kind = Some(kind));
-                    commands.entity(prim).insert(HsdCollider);
-                }
-                None => {
-                    commands
-                        .entity(prim)
-                        .remove::<(ColliderData, HsdCollider, Collider, DisabledCollider)>();
-                }
-            },
-            Some("vertices") => {
-                let vertices = payload.map(ColliderVertices::decode).transpose()?;
+/// `kind` gates the whole collider: without it nothing can be built, so its
+/// removal tears down the collider entirely rather than leaving a half-built
+/// one.
+pub(crate) fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    name: &PropName,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match name.field() {
+        Some("kind") => match payload.map(ColliderKind::decode).transpose()? {
+            Some(kind) => {
                 commands
                     .entity(prim)
                     .entry::<ColliderData>()
                     .or_default()
-                    .and_modify(move |mut data| data.vertices = vertices);
-            }
-            Some("indices") => {
-                let indices = payload.map(ColliderIndices::decode).transpose()?;
+                    .and_modify(move |mut data| data.kind = Some(kind));
                 commands
                     .entity(prim)
-                    .entry::<ColliderData>()
-                    .or_default()
-                    .and_modify(move |mut data| data.indices = indices);
+                    .insert((HsdCollider, Pending::<HsdCollider>::default()));
             }
-            _ => {}
+            None => {
+                commands.entity(prim).remove::<(
+                    ColliderData,
+                    HsdCollider,
+                    Collider,
+                    DisabledCollider,
+                    Pending<HsdCollider>,
+                )>();
+            }
+        },
+        Some("vertices") => {
+            let vertices = payload.map(ColliderVertices::decode).transpose()?;
+            commands
+                .entity(prim)
+                .entry::<ColliderData>()
+                .or_default()
+                .and_modify(move |mut data| data.vertices = vertices);
+            commands
+                .entity(prim)
+                .insert(Pending::<HsdCollider>::default());
         }
-        Ok(())
+        Some("indices") => {
+            let indices = payload.map(ColliderIndices::decode).transpose()?;
+            commands
+                .entity(prim)
+                .entry::<ColliderData>()
+                .or_default()
+                .and_modify(move |mut data| data.indices = indices);
+            commands
+                .entity(prim)
+                .insert(Pending::<HsdCollider>::default());
+        }
+        _ => {}
     }
+    Ok(())
 }
 
-pub fn rebuild_collider(
+pub(crate) fn rebuild_collider(
     changed: Query<(Entity, &ColliderData), Changed<ColliderData>>,
     locals: Query<&Transform>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
     for (prim, data) in &changed {
-        commands.entity(prim).remove::<Collider>();
+        commands
+            .entity(prim)
+            .remove::<(Collider, Pending<HsdCollider>)>();
 
         let Some(kind) = data.kind else {
             continue;
@@ -142,16 +145,7 @@ pub fn rebuild_collider(
 }
 
 fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
-    if !within_cap("convex hull", bytes) {
-        return None;
-    }
-    let points: Vec<Vec3> = match cast_to_vec3(bytes) {
-        Ok(v) => v,
-        Err(err) => {
-            warn!(?err, "convex hull: failed to cast point buffer");
-            return None;
-        }
-    };
+    let points = cast_to_vec3("convex hull", bytes)?;
     if points.is_empty() {
         warn!("convex hull: empty point buffer");
         return None;
@@ -164,24 +158,8 @@ fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
 }
 
 fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
-    if !within_cap("trimesh vertices", vertex_bytes) || !within_cap("trimesh indices", index_bytes)
-    {
-        return None;
-    }
-    let vertices: Vec<Vec3> = match cast_to_vec3(vertex_bytes) {
-        Ok(v) => v,
-        Err(err) => {
-            warn!(?err, "trimesh: failed to cast vertex buffer");
-            return None;
-        }
-    };
-    let raw_indices: Vec<[u32; 3]> = match try_cast_slice::<u8, [u32; 3]>(index_bytes) {
-        Ok(s) => s.to_vec(),
-        Err(err) => {
-            warn!(?err, "trimesh: failed to cast index buffer");
-            return None;
-        }
-    };
+    let vertices = cast_to_vec3("trimesh vertices", vertex_bytes)?;
+    let raw_indices = cast_to_indices("trimesh indices", index_bytes)?;
     if vertices.is_empty() || raw_indices.is_empty() {
         warn!("trimesh: empty vertex or index buffer");
         return None;
@@ -195,20 +173,29 @@ fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
     }
 }
 
-fn cast_to_vec3(bytes: &[u8]) -> Result<Vec<Vec3>, PodCastError> {
-    let raw: &[[f32; 3]] = try_cast_slice(bytes)?;
-    Ok(raw.iter().map(|&[x, y, z]| Vec3::new(x, y, z)).collect())
+/// Collider buffers arrive over document sync; hull and trimesh construction
+/// are superlinear in point count, so input is bounded and length-checked
+/// before use.
+fn cast_to_vec3(name: &str, bytes: &[u8]) -> Option<Vec<Vec3>> {
+    let raw: Vec<[f32; 3]> = checked(name, bytes)?;
+    Some(raw.into_iter().map(Vec3::from_array).collect())
 }
 
-/// Collider buffers arrive over document sync; hull and trimesh construction
-/// are superlinear in point count, so input is bounded before use.
-fn within_cap(name: &str, bytes: &[u8]) -> bool {
-    if bytes.len() > MAX_MESH_ELEMENTS {
+fn cast_to_indices(name: &str, bytes: &[u8]) -> Option<Vec<[u32; 3]>> {
+    checked(name, bytes)
+}
+
+fn checked<T: bytemuck::Pod>(name: &str, bytes: &[u8]) -> Option<Vec<T>> {
+    if bytes.len() > MAX_MESH_STREAM_BYTES {
         warn!(
-            "{name}: buffer is {} bytes, over the cap of {MAX_MESH_ELEMENTS}",
+            "{name}: buffer is {} bytes, over the cap of {MAX_MESH_STREAM_BYTES}",
             bytes.len()
         );
-        return false;
+        return None;
     }
-    true
+    if !bytes.len().is_multiple_of(size_of::<T>()) {
+        warn!("{name}: buffer is not a whole number of elements");
+        return None;
+    }
+    Some(pod_collect_to_vec(bytes))
 }

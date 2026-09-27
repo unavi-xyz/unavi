@@ -49,7 +49,7 @@ const SITE: PrimId = PrimId([3; 16]);
 const TARGET: PrimId = PrimId([7; 16]);
 
 fn name_property(value: &str) -> Value {
-    Value::Attribute(NameAttr(value.into()).encode().expect("encode"))
+    Value::Attribute(NameAttr(value.into()).encode().expect("encode").into())
 }
 
 fn root(prim: PrimId) -> Entry {

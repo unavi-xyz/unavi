@@ -58,8 +58,8 @@ pub enum StateError {
 /// Deeper prims are still held in state.
 pub const MAX_PRIM_DEPTH: usize = 512;
 
-/// Most prims one document may realize at once.
-/// Prims past the cap are held until room frees up.
+/// Most prims one document may realize at once. Prims past the cap are held
+/// until room frees up.
 pub const MAX_REALIZED_PRIMS: usize = 100_000;
 
 /// The layer a [`HsdState::commit`] promotes opinions into.
@@ -87,6 +87,9 @@ pub struct HsdState {
     children:   HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their parent, `None` for a root.
     realized:   HashMap<PrimId, Option<PrimId>>,
+    /// Prims held only because [`MAX_REALIZED_PRIMS`] was full when last
+    /// placed. [`HsdState::refresh`] re-admits them as room frees.
+    capped:     BTreeSet<PrimId>,
     events:     Vec<SceneEvent>,
     ticks:      usize,
     /// Where the oldest open write boundary started writing.
@@ -109,6 +112,7 @@ impl HsdState {
             resolved:   HashMap::new(),
             children:   HashMap::new(),
             realized:   HashMap::new(),
+            capped:     BTreeSet::new(),
             events:     Vec::new(),
             ticks:      0,
             tick_start: 0,

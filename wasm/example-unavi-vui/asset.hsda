@@ -4,7 +4,6 @@
             name: "example-unavi-vui",
             script: "./Cargo.toml",
         ),
-        relationships: {},
         children: [],
     ),
 ]

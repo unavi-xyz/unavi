@@ -5,6 +5,7 @@ use std::path::{
     PathBuf,
 };
 
+use bytes::Bytes;
 use common::{
     compile,
     prim_named,
@@ -50,8 +51,8 @@ fn graph_bytes(package: &Package, prim: PrimId) -> Vec<u8> {
         .iter()
         .find(|(k, _)| *k == key)
         .map_or_else(|| panic!("no graph entry at {key}"), |(_, v)| v.as_slice());
-    match Value::decode(value).expect("decode property") {
-        Value::Attribute(payload) => payload,
+    match Value::decode(&Bytes::copy_from_slice(value)).expect("decode property") {
+        Value::Attribute(payload) => payload.to_vec(),
         other @ Value::Relationship(_) => panic!("expected an attribute, got {other:?}"),
     }
 }

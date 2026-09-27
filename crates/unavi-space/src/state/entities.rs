@@ -509,7 +509,7 @@ fn restore_session(world: &mut World, restored: Restored) {
     state.clear_session(restored.key.prim, &restored.key.name);
     if let Standing::Prior { value, at } = restored.standing {
         let bytes = value
-            .map(|bytes| Value::Attribute(bytes).encode())
+            .map(|bytes| Value::Attribute(bytes.into()).encode())
             .unwrap_or_default();
         if let Err(err) = state.apply_session(&Entry::new(
             key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
@@ -545,7 +545,7 @@ fn compose_session(world: &mut World, doc: DocId, writes: &[(SessionWrite, PropN
         let value = write
             .value
             .as_ref()
-            .map(|bytes| Value::Attribute(bytes.clone()).encode())
+            .map(|bytes| Value::Attribute(bytes.clone().into()).encode())
             .unwrap_or_default();
         if let Err(err) = state.apply_session(&Entry::new(
             key::Key::prop(write.prim, name).to_string(),
@@ -561,7 +561,7 @@ fn compose_session(world: &mut World, doc: DocId, writes: &[(SessionWrite, PropN
 impl SpaceView {
     pub async fn self_pin(&self, space: DocId, doc: DocId) -> bool {
         let me = self.me();
-        let at = clock::current_millis();
+        let at = clock::current_micros();
         AsyncCommands::default()
             .send_with(move |world: &mut World| {
                 let peer_ent = local_peer_entity(world);
@@ -573,7 +573,7 @@ impl SpaceView {
 
     pub fn take_hold(&self, space: DocId, doc: DocId) {
         let me = self.me();
-        let at = clock::current_millis();
+        let at = clock::current_micros();
         let _ = AsyncCommands::default()
             .push(move |world: &mut World| {
                 let peer_ent = local_peer_entity(world);
@@ -594,7 +594,7 @@ impl SpaceView {
         writes: Vec<SessionWrite>,
     ) -> Result<(), SessionError> {
         let me = self.me();
-        let at = clock::current_millis();
+        let at = clock::current_micros();
         AsyncCommands::default()
             .send_with(move |world: &mut World| {
                 set_session(world, me, doc, space, writes, at, true)

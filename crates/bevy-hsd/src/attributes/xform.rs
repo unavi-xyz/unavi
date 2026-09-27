@@ -4,19 +4,12 @@ use avian3d::prelude::{
 };
 use bevy::prelude::*;
 use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::xform::{
-        self,
-        XformAttr,
-    },
+    property::Payload,
+    schema::xform::XformAttr,
 };
 use unavi_physics::finite;
 
 use crate::attributes::{
-    AttributeParser,
     ParseError,
     util::compute_global_transform,
 };
@@ -24,37 +17,27 @@ use crate::attributes::{
 #[derive(Component, Debug, Clone, Copy)]
 pub struct XformData(pub XformAttr);
 
-pub struct XformParser;
-
-impl AttributeParser for XformParser {
-    fn group(&self) -> &'static str {
-        xform::GROUP
-    }
-
-    /// Removal resets the transform rather than removing it: `Prim` requires
-    /// `Transform`, and a removed one breaks propagation to every child.
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        _name: &PropName,
-        payload: Option<&[u8]>,
-    ) -> Result<(), ParseError> {
-        match payload {
-            Some(payload) => {
-                commands
-                    .entity(prim)
-                    .insert(XformData(XformAttr::decode(payload)?));
-            }
-            None => {
-                commands
-                    .entity(prim)
-                    .remove::<XformData>()
-                    .insert(Transform::default());
-            }
+/// Removal resets the transform rather than removing it: `Prim` requires
+/// `Transform`, and a removed one breaks propagation to every child.
+pub fn apply(
+    commands: &mut Commands,
+    prim: Entity,
+    payload: Option<&[u8]>,
+) -> Result<(), ParseError> {
+    match payload {
+        Some(payload) => {
+            commands
+                .entity(prim)
+                .insert(XformData(XformAttr::decode(payload)?));
         }
-        Ok(())
+        None => {
+            commands
+                .entity(prim)
+                .remove::<XformData>()
+                .insert(Transform::default());
+        }
     }
+    Ok(())
 }
 
 /// A guest writes these floats directly, and they land in avian's `Position`
@@ -82,7 +65,7 @@ pub fn apply_xform(
 
         {
             let Ok(mut transform) = transforms.get_mut(entity) else {
-                warn!("Transform not found");
+                warn!(?entity, "xform: Transform not found");
                 continue;
             };
             *transform = xform;

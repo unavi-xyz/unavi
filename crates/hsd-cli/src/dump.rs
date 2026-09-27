@@ -12,6 +12,7 @@ use anyhow::{
     Context,
     Result,
 };
+use bytes::Bytes;
 use hsd::{
     format::package::Package,
     id::PrimId,
@@ -95,11 +96,12 @@ pub fn dump_file(input: &Path) -> Result<String> {
     for (raw, value) in &package.entries {
         match key::Key::parse(raw) {
             Some(key::Key::Prop { prim, name }) if name == ParentAttr::NAME => {
-                nodes.entry(prim).or_default().parent = ParentAttr::from_wire(value)?;
+                nodes.entry(prim).or_default().parent =
+                    ParentAttr::from_wire(&Bytes::copy_from_slice(value))?;
             }
             Some(key::Key::Prop { prim, name }) => {
                 let node = nodes.entry(prim).or_default();
-                match Value::decode(value)? {
+                match Value::decode(&Bytes::copy_from_slice(value))? {
                     Value::Relationship(target) => {
                         node.relationships
                             .insert(name.to_string(), target.to_string());
@@ -153,10 +155,11 @@ fn render_override(name: &PropName, value: &[u8]) -> Result<String> {
     if value.is_empty() {
         return Ok("<blocked>".to_owned());
     }
+    let value = Bytes::copy_from_slice(value);
     if *name == ParentAttr::NAME {
-        return Ok(format!("{:?}", ParentAttr::from_wire(value)?));
+        return Ok(format!("{:?}", ParentAttr::from_wire(&value)?));
     }
-    Ok(match Value::decode(value)? {
+    Ok(match Value::decode(&value)? {
         Value::Relationship(target) => target.to_string(),
         Value::Attribute(payload) => render(name, &payload),
     })

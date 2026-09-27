@@ -10,7 +10,10 @@ pub mod body;
 
 mod expr;
 
-use std::fmt::Write;
+use std::fmt::{
+    self,
+    Write,
+};
 
 use body::{
     generate_displacement_body,
@@ -34,17 +37,17 @@ const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wgsl");
 /// something other than the graph's own hash.
 const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wgsl");
 
-fn texture_bindings() -> String {
+fn texture_bindings() -> Result<String, fmt::Error> {
     let mut out = String::new();
     for slot in 0..MAX_TEXTURE_SAMPLES {
         let tex_binding = 1 + slot * 2;
         let sampler_binding = tex_binding + 1;
-        let _ = writeln!(
+        writeln!(
             out,
             "@group(#{{MATERIAL_BIND_GROUP}}) @binding({tex_binding})\nvar tex_{slot}: texture_2d<f32>;\n@group(#{{MATERIAL_BIND_GROUP}}) @binding({sampler_binding})\nvar samp_{slot}: sampler;"
-        );
+        )?;
     }
-    out
+    Ok(out)
 }
 
 fn uniform_block() -> String {
@@ -68,18 +71,20 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 /// fragment output. Not naga-testable standalone: the `#import`s are Bevy's
 /// shader-preprocessor syntax, so the integration tests wrap the bodies in a
 /// bare harness.
-#[must_use]
-pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> String {
-    let body = generate_surface_body(graph, validated);
+pub fn generate_fragment_shader(
+    graph: &ShaderGraph,
+    validated: &Validated,
+) -> Result<String, fmt::Error> {
+    let body = generate_surface_body(graph, validated)?;
     let preamble = format!(
         "{uniform}\n{textures}\n{noise}\n{context}",
         uniform = uniform_block(),
-        textures = texture_bindings(),
+        textures = texture_bindings()?,
         noise = NOISE_FUNCTIONS,
         context = CONTEXT_FUNCTIONS,
     );
 
-    match &graph.surface.output {
+    Ok(match &graph.surface.output {
         SurfaceOutput::Lit(_) => splice(
             include_str!("templates/fragment_lit.wgsl"),
             &body,
@@ -90,7 +95,7 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> S
             &body,
             &preamble,
         ),
-    }
+    })
 }
 
 /// The full vertex shader, generated only when a graph has a
@@ -101,18 +106,22 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> S
 ///
 /// `None` for a graph with no displacement network, where the mesh pipeline's
 /// own vertex shader runs unmodified.
-#[must_use]
-pub fn generate_vertex_shader(graph: &ShaderGraph, validated: &Validated) -> Option<String> {
-    let body = generate_displacement_body(graph, validated)?;
+pub fn generate_vertex_shader(
+    graph: &ShaderGraph,
+    validated: &Validated,
+) -> Result<Option<String>, fmt::Error> {
+    let Some(body) = generate_displacement_body(graph, validated)? else {
+        return Ok(None);
+    };
     let preamble = format!(
         "{uniform}\n{noise}\n{context}",
         uniform = uniform_block(),
         noise = NOISE_FUNCTIONS,
         context = CONTEXT_FUNCTIONS,
     );
-    Some(splice(
+    Ok(Some(splice(
         include_str!("templates/vertex.wgsl"),
         &body,
         &preamble,
-    ))
+    )))
 }

@@ -84,7 +84,7 @@ def main [--locked] {
     let dirty = (git diff --exit-code -- ...$locks | complete)
     if $dirty.exit_code != 0 {
       error make {
-        msg: "deps.lock is out of sync with wit/deps.toml manifests — rerun `update-wasm.nu` without --locked and commit the result"
+        msg: "deps.lock is out of sync with wit/deps.toml manifests — rerun `update-wit-deps.nu` without --locked and commit the result"
       }
     }
   }

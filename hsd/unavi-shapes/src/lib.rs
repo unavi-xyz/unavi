@@ -33,7 +33,7 @@ struct RawMesh {
     indices:   Vec<u32>,
 }
 
-fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Prim {
+fn convert_raw_mesh(doc: Option<&Document>, raw: &RawMesh) -> Prim {
     let prim = doc
         .map_or_else(
             || {

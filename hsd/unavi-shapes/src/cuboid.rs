@@ -36,7 +36,7 @@ impl GuestCuboid for CuboidWrapped {
     }
 
     fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(self.doc.borrow().as_ref(), build(self.half))
+        crate::convert_raw_mesh(self.doc.borrow().as_ref(), &build(self.half))
     }
 
     fn set_doc(&self, doc: Document) {
@@ -44,68 +44,76 @@ impl GuestCuboid for CuboidWrapped {
     }
 }
 
+/// One flat face of the cuboid: its outward normal, its four corners wound
+/// counter-clockwise, and the UV at each corner.
+struct Face {
+    normal: [f32; 3],
+    verts:  [[f32; 3]; 4],
+    uvs:    [[f32; 2]; 4],
+}
+
 fn build(h: Vec3) -> RawMesh {
-    let faces: [([f32; 3], [[f32; 3]; 4], [[f32; 2]; 4]); 6] = [
-        (
-            [1.0, 0.0, 0.0],
-            [
+    let faces = [
+        Face {
+            normal: [1.0, 0.0, 0.0],
+            verts:  [
                 [h.x, -h.y, -h.z],
                 [h.x, h.y, -h.z],
                 [h.x, h.y, h.z],
                 [h.x, -h.y, h.z],
             ],
-            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
-        ),
-        (
-            [-1.0, 0.0, 0.0],
-            [
+            uvs:    [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        },
+        Face {
+            normal: [-1.0, 0.0, 0.0],
+            verts:  [
                 [-h.x, -h.y, h.z],
                 [-h.x, h.y, h.z],
                 [-h.x, h.y, -h.z],
                 [-h.x, -h.y, -h.z],
             ],
-            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
-        ),
-        (
-            [0.0, 1.0, 0.0],
-            [
+            uvs:    [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        },
+        Face {
+            normal: [0.0, 1.0, 0.0],
+            verts:  [
                 [-h.x, h.y, -h.z],
                 [-h.x, h.y, h.z],
                 [h.x, h.y, h.z],
                 [h.x, h.y, -h.z],
             ],
-            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
-        ),
-        (
-            [0.0, -1.0, 0.0],
-            [
+            uvs:    [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        },
+        Face {
+            normal: [0.0, -1.0, 0.0],
+            verts:  [
                 [-h.x, -h.y, h.z],
                 [-h.x, -h.y, -h.z],
                 [h.x, -h.y, -h.z],
                 [h.x, -h.y, h.z],
             ],
-            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
-        ),
-        (
-            [0.0, 0.0, 1.0],
-            [
+            uvs:    [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        },
+        Face {
+            normal: [0.0, 0.0, 1.0],
+            verts:  [
                 [-h.x, -h.y, h.z],
                 [h.x, -h.y, h.z],
                 [h.x, h.y, h.z],
                 [-h.x, h.y, h.z],
             ],
-            [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
-        ),
-        (
-            [0.0, 0.0, -1.0],
-            [
+            uvs:    [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
+        },
+        Face {
+            normal: [0.0, 0.0, -1.0],
+            verts:  [
                 [h.x, -h.y, -h.z],
                 [-h.x, -h.y, -h.z],
                 [-h.x, h.y, -h.z],
                 [h.x, h.y, -h.z],
             ],
-            [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
-        ),
+            uvs:    [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
+        },
     ];
 
     let mut positions = Vec::with_capacity(24);
@@ -113,12 +121,12 @@ fn build(h: Vec3) -> RawMesh {
     let mut uvs = Vec::with_capacity(24);
     let mut indices = Vec::with_capacity(36);
 
-    for (i, (normal, verts, face_uvs)) in faces.iter().enumerate() {
+    for (i, face) in faces.iter().enumerate() {
         let base = (i * 4) as u32;
         for j in 0..4 {
-            positions.push(verts[j]);
-            normals.push(*normal);
-            uvs.push(face_uvs[j]);
+            positions.push(face.verts[j]);
+            normals.push(face.normal);
+            uvs.push(face.uvs[j]);
         }
         indices.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
     }

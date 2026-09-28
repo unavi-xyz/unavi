@@ -52,7 +52,7 @@ impl GuestCapsule for CapsuleWrapped {
     fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
-            build(
+            &build(
                 self.radius,
                 self.half_length,
                 self.latitudes.get(),

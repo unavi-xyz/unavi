@@ -36,7 +36,7 @@ impl GuestCone for ConeWrapped {
     fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
-            build(self.radius, self.height, self.resolution.get()),
+            &build(self.radius, self.height, self.resolution.get()),
         )
     }
 

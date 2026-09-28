@@ -162,8 +162,8 @@
         ];
 
         preBuild = ''
-          nu nu/update-wasm.nu --locked
-          nu nu/build-wasm.nu --release
+          nu nu/update-wit-deps.nu --locked
+          nu nu/build-hsd.nu --no-examples
         '';
 
         postInstall = ''
@@ -203,8 +203,8 @@
           inherit wasm-bindgen-cli;
 
           preBuild = ''
-            nu nu/update-wasm.nu --locked
-            nu nu/build-wasm.nu --release
+            nu nu/update-wit-deps.nu --locked
+            nu nu/build-hsd.nu --no-examples
           '';
 
           buildPhaseCargoCommand = ''

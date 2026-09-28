@@ -41,7 +41,7 @@ impl GuestSphere for SphereWrapped {
     fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
-            build(self.radius, self.subdivisions.get()),
+            &build(self.radius, self.subdivisions.get()),
         )
     }
 

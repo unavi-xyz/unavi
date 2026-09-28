@@ -64,7 +64,7 @@ pub fn launch_client() -> anyhow::Result<()> {
         "Launching client version {version} from {}",
         exe_path.display()
     );
-    let mut cmd = platform::client_command(&exe_path);
+    let mut cmd = platform::client_command(&exe_path, &version)?;
     if crate::CONFIG.get().xr_mode {
         cmd.arg("--xr");
     }

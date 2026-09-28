@@ -14,6 +14,7 @@ use crate::{
         Cast,
         State,
     },
+    layout::Layout,
     palette::Palette,
     pointer::{
         self,
@@ -151,16 +152,8 @@ impl Vui {
         rows: usize,
         mount: Mount,
     ) -> anyhow::Result<SurfaceId> {
-        let grid = Grid::new(
-            &self.doc,
-            root,
-            columns,
-            rows,
-            Vec2::splat(self.tuning.grid_pitch),
-            mount,
-            &self.tuning,
-            self.palette,
-        )?;
+        let layout = Layout::grid(columns, rows, Vec2::splat(self.tuning.grid_pitch));
+        let grid = Grid::new(&self.doc, root, layout, mount, &self.tuning, self.palette)?;
         Ok(self.push(Box::new(grid)))
     }
 

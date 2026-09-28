@@ -24,8 +24,8 @@ pub const LAUNCHER_EXT: &str = "xz";
 
 const LAUNCHER_EXE: &str = "unavi-launcher";
 
-pub fn client_command(exe: &Path) -> Command {
-    Command::new(exe)
+pub fn client_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
+    Ok(Command::new(exe))
 }
 
 pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {

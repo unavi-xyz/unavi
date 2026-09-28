@@ -69,6 +69,19 @@ struct Net {
     nodes: Vec<Node>,
 }
 
+/// The ports a shell's carried light is composited from: the room behind it,
+/// the glass terms, and the attention driving it.
+#[derive(Clone, Copy)]
+struct Carried {
+    power:  Port,
+    rim:    Port,
+    phase:  Port,
+    gate:   Port,
+    behind: Port,
+    tint:   Port,
+    heat:   Port,
+}
+
 impl Net {
     fn push(&mut self, node: Node) -> Port {
         self.nodes.push(node);
@@ -206,16 +219,17 @@ impl Net {
     /// Added rather than multiplied through, the way a highlight sits on top
     /// of the glass it is reflected in. Gating the bubble keeps a mote that
     /// did not ask for it on a stable colour.
-    fn carried(
-        &mut self,
-        power: Port,
-        rim: Port,
-        phase: Port,
-        gate: Port,
-        behind: Port,
-        tint: Port,
-        heat: Port,
-    ) -> Port {
+    fn carried(&mut self, c: Carried) -> Port {
+        let Carried {
+            power,
+            rim,
+            phase,
+            gate,
+            behind,
+            tint,
+            heat,
+        } = c;
+
         // A rim that is always drawn, and lights up with attention so a
         // selected mote glows at its silhouette rather than washing its
         // colour grey.
@@ -424,15 +438,15 @@ fn shell() -> ShaderGraph {
     // looking at it.
     let lit = net.push(Node::Mul(binary(hue, Port::Input(SHELL_EMISSIVE))));
 
-    let carried = net.carried(
+    let carried = net.carried(Carried {
         power,
         rim,
         phase,
         gate,
         behind,
-        Port::Input(SHELL_TINT),
+        tint: Port::Input(SHELL_TINT),
         heat,
-    );
+    });
     let color = net.push(Node::Add(binary(glass, carried)));
     let color = net.push(Node::Add(binary(color, lit)));
 

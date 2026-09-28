@@ -12,16 +12,13 @@ check-hsd:
 check-launcher:
     cargo check --manifest-path launcher/Cargo.toml --all-features
 
-clippy: clippy-main clippy-hsd clippy-launcher
+clippy mode="fix": \
+    (_clippy mode "--workspace --examples --tests") \
+    (_clippy mode "--manifest-path hsd/Cargo.toml --workspace") \
+    (_clippy mode "--manifest-path launcher/Cargo.toml")
 
-clippy-main:
-    cargo clippy --no-deps --examples --tests --all-features --workspace -- -D warnings
-
-clippy-hsd:
-    cargo clippy --no-deps --manifest-path hsd/Cargo.toml --workspace --all-features -- -D warnings
-
-clippy-launcher:
-    cargo clippy --no-deps --manifest-path launcher/Cargo.toml --all-features -- -D warnings
+_clippy mode flags:
+    cargo clippy --no-deps --all-features {{flags}} {{ if mode == "deny" { "-- -D warnings" } else { "--fix --allow-dirty" } }}
 
 fmt:
     nix fmt
@@ -38,23 +35,23 @@ deny:
 npm-install:
     npm install --prefix crates/unavi-script
 
-ci: wasm-update-locked npm-install check clippy deny fmt-check
+ci: update-wit-deps-locked npm-install check (clippy "deny") deny fmt-check
 
-# Build the guest HSD wasm components into crates/unavi-client/assets/hsd.
-wasm *ARGS:
-    nu nu/build-wasm.nu {{ARGS}}
+# Build the guest HSD components into crates/unavi-client/assets/hsd.
+hsd *ARGS:
+    nu nu/build-hsd.nu {{ARGS}}
 
 # Build only the HSD components a release ships (skips example-* crates).
-wasm-release:
-    nu nu/build-wasm.nu --release
+hsd-release:
+    nu nu/build-hsd.nu --no-examples
 
-# Re-resolve WIT deps and rewrite deps.lock.
-wasm-update:
-    nu nu/update-wasm.nu
+# Resolve WIT deps and rewrite deps.lock.
+update-wit-deps:
+    nu nu/update-wit-deps.nu
 
-# Materialize WIT deps from the committed locks; fails if they drifted.
-wasm-update-locked:
-    nu nu/update-wasm.nu --locked
+# Materialize WIT deps and fail if it drifts from deps.lock.
+update-wit-deps-locked:
+    nu nu/update-wit-deps.nu --locked
 
 # Build both web client variants (WebGL + WebGPU) into dist/.
 web *ARGS:

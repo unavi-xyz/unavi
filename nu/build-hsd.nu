@@ -1,15 +1,15 @@
 const hsd_out = "crates/unavi-client/assets/hsd"
-const wasm_src = "hsd"
+const hsd_src = "hsd"
 
 def main [
-  --crate: string  # Build only this wasm crate
-  --release        # Skip the example crates, which only the cargo examples load
+  --crate: string      # Build only this HSD crate
+  --no-examples        # Skip the example crates, which only the cargo examples load
 ] {
-  let crates = ls $wasm_src | where type == "dir" | where {|d|
+  let crates = ls $hsd_src | where type == "dir" | where {|d|
     ($"($d.name)/asset.hsda" | path exists)
   }
 
-  let crates = if $release {
+  let crates = if $no_examples {
     $crates | where {|d| not ($d.name | path basename | str starts-with "example-") }
   } else {
     $crates
@@ -22,7 +22,7 @@ def main [
   }
 
   if ($crates | is-empty) {
-    error make { msg: $"no wasm crate named '($crate)'" }
+    error make { msg: $"no HSD crate named '($crate)'" }
   }
 
   if $crate != null {

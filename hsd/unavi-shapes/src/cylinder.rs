@@ -47,7 +47,7 @@ impl GuestCylinder for CylinderWrapped {
     fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
-            build(
+            &build(
                 self.radius,
                 self.half_height,
                 self.resolution.get(),

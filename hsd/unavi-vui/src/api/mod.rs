@@ -44,9 +44,10 @@ fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<S
     VUI.with_borrow_mut(|slot| {
         let vui = match slot {
             Some(vui) => vui,
-            None => slot.insert(Vui::new(Tuning::DEFAULT, Palette::DEFAULT).map_err(failed)?),
+            None => slot
+                .insert(Vui::new(Tuning::DEFAULT, Palette::DEFAULT).map_err(|err| failed(&err))?),
         };
-        shape(vui).map_err(failed)
+        shape(vui).map_err(|err| failed(&err))
     })
 }
 
@@ -78,10 +79,10 @@ fn shown(surface: SurfaceId) -> bool {
 fn drive(step: impl FnOnce(&mut Vui) -> anyhow::Result<()>) -> Result<(), Error> {
     VUI.with_borrow_mut(|slot| {
         slot.as_mut()
-            .map_or(Ok(()), |vui| step(vui).map_err(failed))
+            .map_or(Ok(()), |vui| step(vui).map_err(|err| failed(&err)))
     })
 }
 
-fn failed(err: anyhow::Error) -> Error {
+fn failed(err: &anyhow::Error) -> Error {
     Error::Other(format!("{err:?}"))
 }

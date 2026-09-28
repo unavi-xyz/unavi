@@ -17,8 +17,8 @@ pub const LAUNCHER_EXT: &str = "msi";
 /// `msiexec` reports success but defers the file swap to the next boot.
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 
-pub fn client_command(exe: &Path) -> Command {
-    Command::new(exe)
+pub fn client_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
+    Ok(Command::new(exe))
 }
 
 pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {

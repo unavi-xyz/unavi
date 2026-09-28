@@ -11,7 +11,7 @@ on:
       WINDOWS_CERTIFICATE_PASSWORD:
         required: false
 jobs:
-  build-wasm:
+  build-hsd:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -22,11 +22,11 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Generate missing WIT
-        run: nix develop .#minimal -c just wasm-update-locked
+        run: nix develop .#minimal -c just update-wit-deps-locked
       - name: Install npm dependencies
         run: nix develop .#minimal -c just npm-install
-      - name: Build WASM assets
-        run: nix develop .#minimal -c just wasm-release
+      - name: Build HSD assets
+        run: nix develop .#minimal -c just hsd-release
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -40,7 +40,7 @@ jobs:
           path: protocol/wit
           retention-days: 1
   build-windows:
-    needs: build-wasm
+    needs: build-hsd
     runs-on: windows-latest
     strategy:
       matrix:

@@ -100,7 +100,7 @@ impl Layout {
         match *self {
             Self::Star { points, .. } | Self::Arc { points, .. } => points,
             Self::Centred { points, .. } => points + 1,
-            Self::Grid { columns, rows, .. } => columns * rows,
+            Self::Grid { columns, rows, .. } => columns.saturating_mul(rows),
         }
     }
 

@@ -50,13 +50,10 @@ struct Script {
     thrown: Vec<Throw>,
 }
 
-fn mote(kind: Kind, label: &str, description: &str, children: Vec<Mote>) -> Mote {
+fn mote(kind: Kind, label: &str, description: &str) -> Mote {
     let mote = Mote::new(kind, label);
     if !description.is_empty() {
         mote.describe(description);
-    }
-    for child in &children {
-        mote.add_child(child);
     }
     mote
 }
@@ -175,7 +172,7 @@ const TREE_FRUIT: [Variety; 3] = [
 ];
 
 fn grove(label: &str, description: &str, varieties: &[Variety], fruit: &mut Vec<Fruit>) -> Mote {
-    let group = mote(Kind::Group, label, description, Vec::new());
+    let group = mote(Kind::Group, label, description);
     for variety in varieties {
         let grown = Fruit::grow(variety);
         group.add_child(&grown.mote);

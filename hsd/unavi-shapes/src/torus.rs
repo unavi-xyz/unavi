@@ -40,7 +40,7 @@ impl GuestTorus for TorusWrapped {
     fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
-            build(
+            &build(
                 self.minor_radius,
                 self.major_radius,
                 self.minor_resolution.get() as usize,

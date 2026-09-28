@@ -10,10 +10,8 @@ use std::{
 };
 
 use anyhow::Context;
-use tracing::{
-    info,
-    warn,
-};
+use semver::Version;
+use tracing::info;
 
 pub const RELEASE_TARGET: &str = "linux";
 pub const CLIENT_EXE: &str = "unavi-client.AppImage";
@@ -21,7 +19,17 @@ pub const CLIENT_EXT: &str = "AppImage";
 pub const LAUNCHER_EXT: &str = "AppImage";
 
 const NIXOS_MARKER: &str = "/etc/NIXOS";
-const APPIMAGE_RUN: &str = "appimage-run";
+
+// An AppImage on NixOS chroots into its own bundled /nix, so it cannot see the
+// host GPU driver exposed at /run/opengl-driver and only produces a blank
+// window. Refuse rather than launch something that cannot work, and point at
+// the release tag matching the installed client.
+fn nixos_refusal(version: &Version) -> String {
+    format!(
+        "UNAVI's AppImage cannot reach the host GPU driver on NixOS. Run the client from \
+         the flake instead: nix run github:unavi-xyz/unavi/v{version}#unavi-client"
+    )
+}
 
 // Set for this process by the outer AppImage runtime or Nix wrapper; inherited
 // by a nested AppImage, they would point it at libraries that only exist in our
@@ -32,8 +40,15 @@ const BUNDLE_ENV: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "LD_LIBRARY_PATH", 
 // binfmt_misc; these copies are not the user's to keep.
 const INTEGRATION_ENV: (&str, &str) = ("APPIMAGELAUNCHER_DISABLE", "1");
 
-pub fn client_command(exe: &Path) -> Command {
-    launch_command(exe)
+pub fn client_command(exe: &Path, version: &Version) -> anyhow::Result<Command> {
+    client_command_for(exe, version, is_nixos())
+}
+
+fn client_command_for(exe: &Path, version: &Version, nixos: bool) -> anyhow::Result<Command> {
+    if nixos {
+        anyhow::bail!("{}", nixos_refusal(version));
+    }
+    Ok(build_command(exe))
 }
 
 pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
@@ -70,46 +85,19 @@ fn stage(downloaded: &Path, staged: &Path) -> anyhow::Result<()> {
 }
 
 fn launch_command(appimage: &Path) -> Command {
-    build_command(appimage, appimage_runner(appimage).as_deref())
-}
-
-// On NixOS an AppImage chroots into a private /nix without the host's real
-// graphics drivers; appimage-run's FHS sandbox exposes them instead.
-fn appimage_runner(appimage: &Path) -> Option<PathBuf> {
-    if !is_nixos() {
-        return None;
-    }
-
-    let runner = find_appimage_run();
-    if runner.is_none() {
-        warn!(
-            "{APPIMAGE_RUN} is not on PATH, so {} runs without the host's graphics drivers",
-            appimage.display()
-        );
-    }
-
-    runner
+    build_command(appimage)
 }
 
 fn is_nixos() -> bool {
-    Path::new(NIXOS_MARKER).exists()
+    is_nixos_at(Path::new(NIXOS_MARKER))
 }
 
-fn find_appimage_run() -> Option<PathBuf> {
-    env::split_paths(&env::var_os("PATH")?)
-        .map(|dir| dir.join(APPIMAGE_RUN))
-        .find(|path| path.is_file())
+fn is_nixos_at(marker: &Path) -> bool {
+    marker.exists()
 }
 
-fn build_command(appimage: &Path, appimage_run: Option<&Path>) -> Command {
-    let mut cmd = appimage_run.map_or_else(
-        || Command::new(appimage),
-        |runner| {
-            let mut cmd = Command::new(runner);
-            cmd.arg(appimage);
-            cmd
-        },
-    );
+fn build_command(appimage: &Path) -> Command {
+    let mut cmd = Command::new(appimage);
 
     for key in BUNDLE_ENV {
         cmd.env_remove(key);
@@ -135,25 +123,32 @@ mod tests {
     use super::*;
 
     const APPIMAGE: &str = "/home/user/.local/share/unavi/clients/1.0.0/unavi-client.AppImage";
-    const RUNNER: &str = "/run/current-system/sw/bin/appimage-run";
+
+    #[test]
+    fn refuses_to_launch_on_nixos() {
+        let version = Version::new(1, 2, 3);
+        let err = client_command_for(Path::new(APPIMAGE), &version, true)
+            .expect_err("NixOS should refuse to launch the AppImage");
+        assert!(err.to_string().contains("v1.2.3"));
+    }
 
     #[test]
     fn runs_appimage_directly() {
-        let cmd = build_command(Path::new(APPIMAGE), None);
+        let version = Version::new(1, 2, 3);
+        let cmd = client_command_for(Path::new(APPIMAGE), &version, false).unwrap();
         assert_eq!(cmd.get_program(), OsStr::new(APPIMAGE));
         assert_eq!(cmd.get_args().count(), 0);
     }
 
     #[test]
-    fn routes_through_appimage_run() {
-        let cmd = build_command(Path::new(APPIMAGE), Some(Path::new(RUNNER)));
-        assert_eq!(cmd.get_program(), OsStr::new(RUNNER));
-        assert_eq!(cmd.get_args().collect::<Vec<_>>(), [OsStr::new(APPIMAGE)]);
+    fn detects_nixos_marker() {
+        assert!(is_nixos_at(Path::new("/")));
+        assert!(!is_nixos_at(Path::new("/nonexistent-nixos-marker")));
     }
 
     #[test]
     fn drops_this_bundles_env() {
-        let cmd = build_command(Path::new(APPIMAGE), None);
+        let cmd = build_command(Path::new(APPIMAGE));
         let cleared = cmd
             .get_envs()
             .filter(|(_, value)| value.is_none())
@@ -170,7 +165,7 @@ mod tests {
 
     #[test]
     fn disables_appimage_integration() {
-        let cmd = build_command(Path::new(APPIMAGE), None);
+        let cmd = build_command(Path::new(APPIMAGE));
         let (key, value) = INTEGRATION_ENV;
 
         assert!(

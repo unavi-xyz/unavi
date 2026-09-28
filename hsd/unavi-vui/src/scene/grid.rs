@@ -51,9 +51,7 @@ pub struct Grid {
     surface: Surface,
     bodies:  Bodies,
     site:    Site,
-    columns: usize,
-    rows:    usize,
-    pitch:   Vec2,
+    layout:  Layout,
     casting: Option<Casting>,
     mount:   Mount,
     /// The pressed mote's depth along the view ray, standing in for a tracked
@@ -71,16 +69,14 @@ impl Grid {
     pub fn new(
         doc: &Document,
         root: Mote,
-        columns: usize,
-        rows: usize,
-        pitch: Vec2,
+        layout: Layout,
         mount: Mount,
         tuning: &Tuning,
         palette: Palette,
     ) -> anyhow::Result<Self> {
-        let capacity = columns.saturating_mul(rows);
+        let capacity = layout.len();
         let surface = Surface::new(capacity, *tuning, palette);
-        let extents = Layout::grid(columns, rows, pitch).extents(tuning);
+        let extents = layout.extents(tuning);
         let bodies = Bodies::new(doc, capacity, tuning, Hit::Slab { extents })?;
         let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
@@ -89,9 +85,7 @@ impl Grid {
             surface,
             bodies,
             site,
-            columns,
-            rows,
-            pitch,
+            layout,
             casting: None,
             mount,
             depth: None,
@@ -135,8 +129,7 @@ impl Mounted for Grid {
 
         let motes = self.contents();
         let specs = motes.iter().map(Mote::spec).collect::<Vec<_>>();
-        let layout = Layout::grid(self.columns, self.rows, self.pitch);
-        self.surface.update(&specs, layout, 0, &frame);
+        self.surface.update(&specs, self.layout, 0, &frame);
 
         self.bodies.icons(
             &motes,
@@ -190,7 +183,7 @@ impl Mounted for Grid {
 
     /// A grid is a destination: a release over its housing files into it.
     fn accepts(&self, local: Vec2) -> bool {
-        Layout::grid(self.columns, self.rows, self.pitch).accepts(local, self.surface.tuning())
+        self.layout.accepts(local, self.surface.tuning())
     }
 
     fn stow(&mut self, mote: &Mote) -> bool {

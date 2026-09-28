@@ -122,10 +122,27 @@
               #   src = ./.;
               #   pname = "unavi";
               # };
-              deny = pkgs.crane.cargoDeny {
-                src = ./.;
-                pname = "unavi";
-              };
+              deny = pkgs.runCommand "unavi-cargo-deny" {
+                nativeBuildInputs = [
+                  (pkgs.crane.cargoDeny {
+                    src = ./.;
+                    pname = "unavi";
+                  })
+                  # The launcher and guests are separate workspaces with their
+                  # own locks; each needs its own vendored check. The shared
+                  # config lives outside their roots, so it is passed in.
+                  (pkgs.crane.cargoDeny {
+                    src = ./launcher;
+                    pname = "unavi-launcher";
+                    cargoDenyExtraArgs = "--config ${./.deny.toml}";
+                  })
+                  (pkgs.crane.cargoDeny {
+                    src = ./hsd;
+                    pname = "unavi-hsd";
+                    cargoDenyExtraArgs = "--config ${./.deny.toml}";
+                  })
+                ];
+              } "mkdir $out";
             };
 
             packages.default = config.packages.unavi-client;
@@ -174,7 +191,7 @@
                     |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
                     |> lib.concatLists
                   )
-                  ++ (with pkgs; [ nushell ]);
+                  ++ (with pkgs; [ just nushell ]);
 
                 LD_LIBRARY_PATH =
                   config.packages

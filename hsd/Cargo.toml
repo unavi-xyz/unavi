@@ -1,0 +1,66 @@
+[workspace]
+members  = ["example-*", "unavi-*", "wired-*"]
+resolver = "3"
+
+[workspace.package]
+edition    = "2024"
+license    = "MPL-2.0"
+repository = "https://github.com/unavi-xyz/unavi"
+version    = "0.0.16"
+
+[workspace.lints.clippy]
+cast_possible_truncation = "allow"
+cast_precision_loss      = "allow"
+cast_sign_loss           = "allow"
+clone_on_ref_ptr         = "warn"
+missing_errors_doc       = "allow"
+missing_panics_doc       = "allow"
+nursery                  = { level = "warn", priority = -1 }
+pedantic                 = { level = "warn", priority = -1 }
+unwrap_used              = "deny"
+
+# wit-bindgen generated code
+collection_is_never_read = "allow"
+same_length_and_capacity = "allow"
+
+[workspace.dependencies]
+anyhow       = "1.0.104"
+arrayvec     = "0.7.8"
+blake3       = { features = ["serde"], version = "1.8.7" }
+glam         = "0.32.1"
+postcard     = { features = ["experimental-derive", "use-std"], version = "1.1.3" }
+prettyplease = "0.3.0"
+proc-macro2  = "1.0.107"
+quote        = "1.0.47"
+serde        = "1.0.229"
+smol_str     = { features = ["serde"], version = "0.3.6" }
+syn          = "3.0.4"
+wit-bindgen  = "0.55.0"
+
+# Mirrors the root workspace: guest components are built by `hsd-cli` with
+# `--profile release-wasm`, which is resolved against this workspace.
+[profile.release]
+codegen-units = 1
+lto           = true
+panic         = "abort"
+strip         = true
+
+[profile.release-wasm]
+inherits  = "release"
+opt-level = "z"
+
+[profile.dev]
+codegen-backend = "cranelift"
+debug           = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+codegen-backend = "llvm"
+opt-level       = 1
+
+[profile.test]
+incremental = false
+
+[profile.wasm-dev]
+inherits  = "dev"
+opt-level = 1

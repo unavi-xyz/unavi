@@ -31,7 +31,7 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 pub static CONFIG: LazyLock<ConfigStore> = LazyLock::new(ConfigStore::new);
 pub static CLIENT_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
 
-const ICON_BYTES: &[u8] = include_bytes!("../../../assets/icon-rounded.png");
+const ICON_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon-rounded.png"));
 
 fn load_icon() -> Icon {
     let image = image::load_from_memory(ICON_BYTES)

@@ -1,5 +1,5 @@
 const protocol_src = "protocol/wit"
-const component_srcs = ["crates", "wasm"]
+const component_srcs = ["crates", "hsd"]
 const max_passes = 10
 
 # wit-deps hoists a path dependency's transitive deps by reading its

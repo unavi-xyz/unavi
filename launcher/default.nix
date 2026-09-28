@@ -10,7 +10,7 @@ _: {
       pname = "unavi-launcher";
 
       src = lib.fileset.toSource rec {
-        root = ../..;
+        root = ./.;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
           (lib.fileset.fileFilter (
@@ -21,7 +21,10 @@ _: {
               "png"
             ]
           ) root)
-          ../../LICENSE
+          ./build.rs
+          ./Dioxus.toml
+          ./assets
+          ./wix
         ];
       };
 
@@ -33,6 +36,8 @@ _: {
 
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
+
+        UNAVI_ASSETS = "${../assets}";
 
         nativeBuildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux (
           with pkgs;
@@ -95,7 +100,7 @@ _: {
           ];
 
           postInstall = ''
-            cp LICENSE $out
+            cp ${../LICENSE} $out
             patchelf --set-rpath "${libraryPath}" $out/bin/${pname}
             wrapProgram $out/bin/${pname} \
               --prefix LD_LIBRARY_PATH : "${libraryPath}"
@@ -105,7 +110,7 @@ _: {
 
             ${lib.concatMapStringsSep "\n" (size: ''
               install -dm755 $out/share/icons/hicolor/${toString size}x${toString size}/apps
-              magick assets/icon-nobg.png -resize ${toString size}x${toString size} \
+              magick ${../assets/icon-nobg.png} -resize ${toString size}x${toString size} \
                 $out/share/icons/hicolor/${toString size}x${toString size}/apps/${pname}.png
             '') iconSizes}
           '';

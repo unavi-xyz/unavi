@@ -1,5 +1,5 @@
 const hsd_out = "crates/unavi-client/assets/hsd"
-const wasm_src = "wasm"
+const wasm_src = "hsd"
 
 def main [
   --crate: string  # Build only this wasm crate

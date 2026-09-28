@@ -37,7 +37,7 @@
           ../../Trunk.toml
           ../../assets
           ../../scripts
-          ../../wasm
+          ../../hsd
           ../unavi-script/package.json
           ../unavi-script/package-lock.json
           ../unavi-script/runtime.ts

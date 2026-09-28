@@ -1,0 +1,99 @@
+[workspace]
+resolver = "3"
+
+[workspace.package]
+edition    = "2024"
+license    = "MPL-2.0"
+repository = "https://github.com/unavi-xyz/unavi"
+version    = "0.0.16"
+
+[workspace.lints.clippy]
+cast_possible_truncation = "allow"
+cast_precision_loss      = "allow"
+cast_sign_loss           = "allow"
+clone_on_ref_ptr         = "warn"
+missing_errors_doc       = "allow"
+missing_panics_doc       = "allow"
+nursery                  = { level = "warn", priority = -1 }
+pedantic                 = { level = "warn", priority = -1 }
+unwrap_used              = "deny"
+
+# dioxus macro
+volatile_composites = "allow"
+
+[workspace.dependencies]
+anyhow        = "1.0.104"
+async-channel = "2.5.0"
+base64        = "0.22"
+directories   = "6.0.0"
+futures       = "0.3.34"
+image         = { default-features = false, version = "=0.25.6" }
+parking_lot   = "0.12.5"
+reqwest       = "0.13.4"
+ron           = "0.12.2"
+serde         = "1.0.229"
+tempfile      = "3.27.0"
+tokio         = "1.53.1"
+tracing       = "0.1.44"
+
+[package]
+build                = "build.rs"
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-launcher"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[features]
+default  = []
+devtools = ["dioxus/devtools"]
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace        = true
+async-channel.workspace = true
+dioxus                  = { default-features = false, features = ["lib", "logger", "native", "router"], version = "0.8.0-alpha.1" }
+directories.workspace   = true
+futures.workspace       = true
+image                   = { features = ["png"], workspace = true }
+parking_lot.workspace   = true
+reqwest                 = { default-features = false, features = ["json", "native-tls", "stream", "system-proxy"], workspace = true }
+ron.workspace           = true
+semver                  = "1.0.28"
+serde.workspace         = true
+tempfile.workspace      = true
+tokio.workspace         = true
+tracing.workspace       = true
+
+# Linux ships an AppImage, which needs no unpacking.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+tar = "0.4.46"
+xz2 = "0.1.7"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+self-replace = "1.5.0"
+
+[target.'cfg(windows)'.dependencies]
+runas = "1.2.0"
+
+[build-dependencies]
+base64.workspace = true
+
+# Mirrors the root workspace: profiles do not carry across workspaces.
+[profile.dev]
+codegen-backend = "cranelift"
+debug           = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+codegen-backend = "llvm"
+opt-level       = 1
+
+[profile.release]
+codegen-units = 1
+lto           = true
+panic         = "abort"
+strip         = true

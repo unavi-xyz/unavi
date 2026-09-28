@@ -219,7 +219,7 @@ fn a_wrong_network_leaf_fails_the_build() {
     );
 }
 
-/// The physgun beam graph, as actually shipped in `wasm/unavi-physgun`.
+/// The physgun beam graph, as actually shipped in `hsd/unavi-physgun`.
 ///
 /// It is the most demanding graph in the tree — both networks, both
 /// displacement offsets, and every public input — so parsing and validating
@@ -227,7 +227,7 @@ fn a_wrong_network_leaf_fails_the_build() {
 /// next asset build.
 #[test]
 fn the_physgun_beam_graph_is_valid() {
-    let src = include_str!("../../../wasm/unavi-physgun/beam.hss");
+    let src = include_str!("../../../hsd/unavi-physgun/beam.hss");
     let graph = parse(src).expect("parse beam.hss");
     validate(&graph).expect("validate beam.hss");
 
@@ -260,7 +260,7 @@ fn the_physgun_beam_graph_is_valid() {
 /// The physgun prop-highlight graph, as shipped.
 #[test]
 fn the_physgun_glow_graph_is_valid() {
-    let src = include_str!("../../../wasm/unavi-physgun/glow.hss");
+    let src = include_str!("../../../hsd/unavi-physgun/glow.hss");
     let graph = parse(src).expect("parse glow.hss");
     validate(&graph).expect("validate glow.hss");
 

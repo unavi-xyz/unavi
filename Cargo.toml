@@ -1,6 +1,7 @@
 [workspace]
 default-members = ["crates/*"]
-members         = ["crates/*", "wasm/*"]
+exclude         = ["hsd", "launcher"]
+members         = ["crates/*"]
 resolver        = "3"
 
 [workspace.package]
@@ -55,7 +56,6 @@ clap                 = { features = ["derive"], version = "4.6.6" }
 const_format         = "0.2.36"
 directories          = "6.0.0"
 embed-resource       = "3.0.11"
-futures              = "0.3.34"
 glam                 = "0.32.1"
 hex                  = "0.4.3"
 image                = { default-features = false, version = "=0.25.6" }
@@ -74,7 +74,6 @@ prettyplease         = "0.3.0"
 proc-macro2          = "1.0.107"
 quote                = "1.0.47"
 rand                 = "0.9.5"
-reqwest              = "0.13.4"
 ron                  = "0.12.2"
 rstest               = "0.26.1"
 scc                  = "3.8.6"

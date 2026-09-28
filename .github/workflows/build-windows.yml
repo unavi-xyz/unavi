@@ -47,6 +47,7 @@ jobs:
         package: [unavi-client, unavi-launcher]
     name: ${{ matrix.package }}-x86_64-windows
     env:
+      CARGO_TARGET_DIR: target
       CERTIFICATE_PATH: certificate.pfx
     steps:
       - uses: actions/checkout@v7
@@ -69,7 +70,12 @@ jobs:
       - run: cargo binstall cargo-wix --locked --no-confirm
       - name: Build package
         shell: bash
-        run: cargo build -p ${{ matrix.package }} --release
+        run: |
+          if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
+            cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
+          else
+            cargo build -p unavi-client --release
+          fi
       - name: Check DLL dependencies
         if: ${{ matrix.package == 'unavi-client' }}
         shell: powershell
@@ -131,7 +137,7 @@ jobs:
       - name: Build wix
         if: ${{ matrix.package == 'unavi-launcher' }}
         run: |
-          cargo wix -p ${{ matrix.package }} --nocapture --no-build
+          cargo wix --manifest-path launcher/Cargo.toml -p ${{ matrix.package }} --nocapture --no-build
       - name: Package release
         if: ${{ matrix.package != 'unavi-launcher' }}
         shell: bash

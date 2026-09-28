@@ -12,7 +12,6 @@
       url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
     # Rust
@@ -39,7 +38,6 @@
     inputs@{
       self,
       flake-parts,
-      systems,
       nixpkgs,
       deploy-rs,
       sops-nix,
@@ -51,7 +49,11 @@
         deployInfo = builtins.fromJSON (builtins.readFile ./infra/terraform/deploy.json);
       in
       {
-        systems = import systems;
+        systems = [
+          "aarch64-linux"
+          "x86_64-linux"
+          "aarch64-darwin"
+        ];
 
         _module.args = { inherit deployInfo; };
 

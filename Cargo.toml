@@ -30,9 +30,6 @@ type_complexity        = "allow"
 collection_is_never_read = "allow"
 same_length_and_capacity = "allow"
 
-# dioxus macro
-volatile_composites = "allow"
-
 [workspace.metadata.release]
 publish        = false
 shared-version = true

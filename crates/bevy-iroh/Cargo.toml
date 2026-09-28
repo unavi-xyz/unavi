@@ -18,7 +18,6 @@ bytes.workspace         = true
 iroh.workspace          = true
 iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace     = true
-iroh-gossip.workspace   = true
 n0-future.workspace     = true
 thiserror.workspace     = true
 tokio.workspace         = true

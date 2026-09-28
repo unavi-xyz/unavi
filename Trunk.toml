@@ -7,5 +7,5 @@ watch  = ["crates"]
 
 [[hooks]]
 command           = "nu"
-command_arguments = ["scripts/fix-jco-snippets.nu"]
+command_arguments = ["nu/fix-jco-snippets.nu"]
 stage             = "post_build"

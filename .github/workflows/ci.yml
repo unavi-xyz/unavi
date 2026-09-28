@@ -26,12 +26,12 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix develop .#minimal --command printenv PATH >> "$GITHUB_PATH"
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop .#minimal --command nu scripts/update-wasm.nu --locked
+      - run: nix develop .#minimal --command nu nu/update-wasm.nu --locked
       - run: nix develop .#minimal --command cargo check --examples --tests --all-features --workspace
       - run: nix develop .#minimal --command cargo check --manifest-path hsd/Cargo.toml --workspace --all-features
       - run: nix develop .#minimal --command cargo check --manifest-path launcher/Cargo.toml --all-features
       - run: nix develop .#minimal --command npm install --prefix crates/unavi-script
-      # - run: nix develop .#minimal --command nu scripts/build-wasm.nu
+      # - run: nix develop .#minimal --command nu nu/build-wasm.nu
       # - run: nix develop .#minimal --command cargo test --all-features
       - run: nix develop .#minimal --command cargo clippy --no-deps --examples --tests --all-features --workspace -- -D warnings
       - run: nix develop .#minimal --command cargo clippy --no-deps --manifest-path hsd/Cargo.toml --workspace --all-features -- -D warnings

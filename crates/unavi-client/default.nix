@@ -36,7 +36,7 @@
           ../../LICENSE
           ../../Trunk.toml
           ../../assets
-          ../../scripts
+          ../../nu
           ../../hsd
           ../unavi-script/package.json
           ../unavi-script/package-lock.json
@@ -162,8 +162,8 @@
         ];
 
         preBuild = ''
-          nu scripts/update-wasm.nu --locked
-          nu scripts/build-wasm.nu --release
+          nu nu/update-wasm.nu --locked
+          nu nu/build-wasm.nu --release
         '';
 
         postInstall = ''
@@ -202,12 +202,12 @@
           inherit wasm-bindgen-cli;
 
           preBuild = ''
-            nu scripts/update-wasm.nu --locked
-            nu scripts/build-wasm.nu --release
+            nu nu/update-wasm.nu --locked
+            nu nu/build-wasm.nu --release
           '';
 
           buildPhaseCargoCommand = ''
-            nu scripts/build-web.nu --release
+            nu nu/build-web.nu --release
           '';
 
           installPhaseCommand = ''

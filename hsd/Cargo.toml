@@ -57,7 +57,3 @@ opt-level       = 1
 
 [profile.test]
 incremental = false
-
-[profile.wasm-dev]
-inherits  = "dev"
-opt-level = 1

@@ -22,11 +22,11 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Generate missing WIT
-        run: nix develop .#minimal -c nu scripts/update-wasm.nu --locked
+        run: nix develop .#minimal -c nu nu/update-wasm.nu --locked
       - name: Install npm dependencies
         run: nix develop .#minimal -c npm install --prefix crates/unavi-script
       - name: Build WASM assets
-        run: nix develop .#minimal -c nu scripts/build-wasm.nu --release
+        run: nix develop .#minimal -c nu nu/build-wasm.nu --release
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

@@ -38,8 +38,4 @@ web-sys = { features = [
 ], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
-
-[dev-dependencies]
-rstest.workspace = true

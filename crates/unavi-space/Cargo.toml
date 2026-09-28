@@ -20,7 +20,6 @@ bevy.workspace          = true
 bevy-hsd.path           = "../bevy-hsd"
 bevy-iroh.path          = "../bevy-iroh"
 blake3.workspace        = true
-bytes.workspace         = true
 half                    = { features = ["serde"], version = "2.7.1" }
 hsd.path                = "../hsd"
 iroh.workspace          = true
@@ -32,7 +31,6 @@ postcard.workspace      = true
 rand.workspace          = true
 serde.workspace         = true
 serde_vrm               = "0.4.0"
-smol_str.workspace      = true
 thiserror.workspace     = true
 time.workspace          = true
 tokio.workspace         = true

@@ -14,17 +14,7 @@ use anyhow::{
 };
 use bytes::Bytes;
 use hsd::{
-    format::package::Package,
-    id::PrimId,
-    key,
-    property::{
-        Payload,
-        Property,
-        name::PropName,
-        render_bytes,
-        value::Value,
-    },
-    schema::{
+    attributes::{
         collider::{
             ColliderIndices,
             ColliderKind,
@@ -59,6 +49,16 @@ use hsd::{
         spawn::SpawnAttr,
         text::TextAttr,
         xform::XformAttr,
+    },
+    format::package::Package,
+    id::PrimId,
+    key,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        render_bytes,
+        value::Value,
     },
 };
 use ron::extensions::Extensions;

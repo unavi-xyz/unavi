@@ -7,7 +7,7 @@ use avian3d::prelude::{
     RigidBody,
 };
 use bevy::prelude::*;
-use hsd::schema::rigid_body::{
+use hsd::attributes::rigid_body::{
     RigidBodyAttr,
     RigidBodyKind,
 };

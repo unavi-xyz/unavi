@@ -4,15 +4,15 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bytemuck::pod_collect_to_vec;
 use hsd::{
+    attributes::collider::{
+        ColliderIndices,
+        ColliderKind,
+        ColliderVertices,
+    },
     bounds::MAX_MESH_STREAM_BYTES,
     property::{
         Payload,
         name::PropName,
-    },
-    schema::collider::{
-        ColliderIndices,
-        ColliderKind,
-        ColliderVertices,
     },
 };
 use unavi_physics::{

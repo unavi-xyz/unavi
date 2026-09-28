@@ -17,22 +17,7 @@ use bevy::{
     transform::components::Transform,
 };
 use hsd::{
-    bounds::{
-        MAX_MESH_STREAM_BYTES,
-        MAX_NAME_BYTES,
-        MAX_TEXT_BYTES,
-    },
-    id::{
-        DocId,
-        PrimId,
-    },
-    property::{
-        Payload,
-        Property,
-        name::PropName,
-        value::Value,
-    },
-    schema::{
+    attributes::{
         collider::{
             ColliderIndices,
             ColliderKind,
@@ -84,6 +69,21 @@ use hsd::{
             TextBillboard,
         },
         xform::XformAttr,
+    },
+    bounds::{
+        MAX_MESH_STREAM_BYTES,
+        MAX_NAME_BYTES,
+        MAX_TEXT_BYTES,
+    },
+    id::{
+        DocId,
+        PrimId,
+    },
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        value::Value,
     },
     state::HsdState,
 };

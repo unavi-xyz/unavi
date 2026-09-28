@@ -9,7 +9,7 @@ use common::{
     node,
     unlit,
 };
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     MAX_NODES,
     MAX_PUBLIC_INPUTS,
     MAX_TEXTURE_SAMPLES,

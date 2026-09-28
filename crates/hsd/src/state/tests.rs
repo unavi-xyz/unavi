@@ -4,6 +4,20 @@ use bytes::Bytes;
 
 use super::*;
 use crate::{
+    attributes::{
+        material::{
+            BINDING,
+            MaterialAttr,
+        },
+        name::NameAttr,
+        parent::ParentAttr,
+        reference::{
+            LayerKey,
+            ReferenceAttr,
+        },
+        script::ScriptAttr,
+        xform::XformAttr,
+    },
     format::meta::{
         DOC_VERSION,
         DocMeta,
@@ -18,20 +32,6 @@ use crate::{
         Property,
         name::PropName,
         value::Value,
-    },
-    schema::{
-        material::{
-            BINDING,
-            MaterialAttr,
-        },
-        name::NameAttr,
-        parent::ParentAttr,
-        reference::{
-            LayerKey,
-            ReferenceAttr,
-        },
-        script::ScriptAttr,
-        xform::XformAttr,
     },
     state::{
         entry::Entry,

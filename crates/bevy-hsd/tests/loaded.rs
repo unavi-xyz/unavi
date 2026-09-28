@@ -7,6 +7,11 @@ use bevy_hsd::{
 use bevy_iroh::store::LocalStore;
 use bytemuck::cast_slice;
 use hsd::{
+    attributes::{
+        collider::ColliderKind,
+        parent::ParentAttr,
+        reference::ReferenceAttr,
+    },
     id::{
         DocId,
         PrimId,
@@ -16,11 +21,6 @@ use hsd::{
         Payload,
         Property,
         value::Value,
-    },
-    schema::{
-        collider::ColliderKind,
-        parent::ParentAttr,
-        reference::ReferenceAttr,
     },
     state::entry::Entry,
 };

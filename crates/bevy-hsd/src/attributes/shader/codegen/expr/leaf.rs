@@ -1,4 +1,4 @@
-use hsd::schema::shader::node::Node;
+use hsd::attributes::shader::node::Node;
 
 /// The zero-arity leaves: each reads shader-stage context directly, and each
 /// is legal in exactly one network (enforced by validation, not here). Never

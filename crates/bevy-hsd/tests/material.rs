@@ -8,7 +8,7 @@ use bevy_hsd::attributes::{
     image::HsdImage,
     material::HsdMaterial,
 };
-use hsd::schema::{
+use hsd::attributes::{
     image::ImageSampler,
     material::{
         self,

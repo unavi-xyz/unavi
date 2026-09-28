@@ -23,13 +23,7 @@ use bevy_hsd::attributes::shader::ShaderGraphMaterial;
 use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
 use hsd::{
-    id::PrimId,
-    property::{
-        Payload,
-        Property,
-        name::PropName,
-    },
-    schema::{
+    attributes::{
         collider::{
             ColliderIndices,
             ColliderVertices,
@@ -54,6 +48,12 @@ use hsd::{
             },
             value::GraphValue,
         },
+    },
+    id::PrimId,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
     },
     state::{
         HsdState,

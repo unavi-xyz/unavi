@@ -25,11 +25,7 @@ use bevy::{
     },
 };
 use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::shader::{
+    attributes::shader::{
         self,
         MAX_PUBLIC_INPUTS,
         MAX_TEXTURE_SAMPLES,
@@ -46,6 +42,10 @@ use hsd::{
         },
         validate::validate,
         value::GraphValue,
+    },
+    property::{
+        Payload,
+        name::PropName,
     },
 };
 

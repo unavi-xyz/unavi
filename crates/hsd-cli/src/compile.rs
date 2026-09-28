@@ -21,33 +21,7 @@ use anyhow::{
     ensure,
 };
 use hsd::{
-    format::{
-        meta::DocMeta,
-        package::Package,
-        source::{
-            Source,
-            SourceAttributes,
-            SourceCollider,
-            SourceImage,
-            SourceMaterial,
-            SourcePrim,
-            SourceRigidBody,
-            SourceShader,
-            SourceXform,
-        },
-    },
-    id::{
-        DocId,
-        PrimId,
-    },
-    key,
-    property::{
-        Payload,
-        Property,
-        name::PropName,
-        value::Value,
-    },
-    schema::{
+    attributes::{
         collider::ColliderKind,
         gravity_scale::GravityScaleAttr,
         image::{
@@ -78,6 +52,32 @@ use hsd::{
         },
         spawn::SpawnAttr,
         xform::XformAttr,
+    },
+    format::{
+        meta::DocMeta,
+        package::Package,
+        source::{
+            Source,
+            SourceAttributes,
+            SourceCollider,
+            SourceImage,
+            SourceMaterial,
+            SourcePrim,
+            SourceRigidBody,
+            SourceShader,
+            SourceXform,
+        },
+    },
+    id::{
+        DocId,
+        PrimId,
+    },
+    key,
+    property::{
+        Payload,
+        Property,
+        name::PropName,
+        value::Value,
     },
 };
 

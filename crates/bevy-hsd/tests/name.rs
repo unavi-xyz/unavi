@@ -1,5 +1,5 @@
 use bevy::prelude::Name;
-use hsd::schema::name::NameAttr;
+use hsd::attributes::name::NameAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
 

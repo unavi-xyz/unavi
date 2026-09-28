@@ -2,7 +2,7 @@ use super::{
     ctx::Ctx,
     error::GraphError,
 };
-use crate::schema::shader::{
+use crate::attributes::shader::{
     graph::{
         DisplacementGraph,
         LitOutput,

@@ -1,4 +1,4 @@
-use hsd::schema::{
+use hsd::attributes::{
     image::{
         AddressMode,
         FilterMode,

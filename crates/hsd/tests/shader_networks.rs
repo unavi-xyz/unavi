@@ -6,7 +6,7 @@ use common::{
     graph,
     node,
 };
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     node::{
         Network,
         Node,

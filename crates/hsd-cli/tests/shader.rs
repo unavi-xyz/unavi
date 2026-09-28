@@ -12,15 +12,7 @@ use common::{
     realize,
 };
 use hsd::{
-    format::package::Package,
-    id::PrimId,
-    key,
-    property::{
-        Payload,
-        Property,
-        value::Value,
-    },
-    schema::shader::{
+    attributes::shader::{
         MAX_NODES,
         ShaderGraph,
         graph::{
@@ -31,6 +23,14 @@ use hsd::{
         parse::parse,
         validate::validate,
         value::GraphValue,
+    },
+    format::package::Package,
+    id::PrimId,
+    key,
+    property::{
+        Payload,
+        Property,
+        value::Value,
     },
 };
 

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hsd::schema::name::NameAttr;
+use hsd::attributes::name::NameAttr;
 
 use crate::attributes::{
     ParseError,

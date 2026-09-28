@@ -17,7 +17,7 @@ use self::{
         unlit_terminals,
     },
 };
-use crate::schema::shader::{
+use crate::attributes::shader::{
     MAX_NODES,
     MAX_PUBLIC_INPUTS,
     MAX_TEXTURE_SAMPLES,

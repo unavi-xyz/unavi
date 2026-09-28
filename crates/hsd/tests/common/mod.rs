@@ -10,7 +10,7 @@
 //! would exercise RON deserialization, which is `hsd-cli`'s job and not what
 //! this suite tests.
 
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     ShaderGraph,
     graph::{
         DisplacementGraph,

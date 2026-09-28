@@ -10,7 +10,7 @@ use std::fmt::{
     Write,
 };
 
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     node::{
         Node,
         Port,

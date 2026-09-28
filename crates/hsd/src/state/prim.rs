@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use crate::{
+    attributes::parent::ParentAttr,
     property::{
         name::PropName,
         value::Value,
     },
-    schema::parent::ParentAttr,
     state::entry::Stamp,
 };
 

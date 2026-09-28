@@ -2,11 +2,11 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use hsd::{
+    attributes,
     property::{
         Payload,
         name::PropName,
     },
-    schema,
 };
 use thiserror::Error;
 
@@ -87,20 +87,20 @@ pub(crate) fn apply(
     payload: Option<&[u8]>,
 ) -> Result<(), ParseError> {
     match name.group() {
-        schema::collider::GROUP => collider::apply(commands, prim, name, payload),
-        schema::gravity_scale::GROUP => gravity_scale::apply(commands, prim, payload),
-        schema::image::GROUP => image::apply(commands, prim, name, payload),
-        schema::material::GROUP => material::apply(commands, prim, name, payload),
-        schema::mesh::GROUP => mesh::apply(commands, prim, name, payload),
-        schema::name::GROUP => name::apply(commands, prim, payload),
-        schema::portal::GROUP => portal::apply(commands, prim, payload),
-        schema::reference::GROUP => reference::apply(commands, prim, payload),
-        schema::rigid_body::GROUP => rigid_body::apply(commands, prim, payload),
-        schema::script::GROUP => script::apply(commands, prim, payload),
-        schema::shader::GROUP => shader::apply(commands, prim, name, payload),
-        schema::spawn::GROUP => spawn::apply(commands, prim, payload),
-        schema::text::GROUP => text::apply(commands, prim, payload),
-        schema::xform::GROUP => xform::apply(commands, prim, payload),
+        attributes::collider::GROUP => collider::apply(commands, prim, name, payload),
+        attributes::gravity_scale::GROUP => gravity_scale::apply(commands, prim, payload),
+        attributes::image::GROUP => image::apply(commands, prim, name, payload),
+        attributes::material::GROUP => material::apply(commands, prim, name, payload),
+        attributes::mesh::GROUP => mesh::apply(commands, prim, name, payload),
+        attributes::name::GROUP => name::apply(commands, prim, payload),
+        attributes::portal::GROUP => portal::apply(commands, prim, payload),
+        attributes::reference::GROUP => reference::apply(commands, prim, payload),
+        attributes::rigid_body::GROUP => rigid_body::apply(commands, prim, payload),
+        attributes::script::GROUP => script::apply(commands, prim, payload),
+        attributes::shader::GROUP => shader::apply(commands, prim, name, payload),
+        attributes::spawn::GROUP => spawn::apply(commands, prim, payload),
+        attributes::text::GROUP => text::apply(commands, prim, payload),
+        attributes::xform::GROUP => xform::apply(commands, prim, payload),
         _ => Ok(()),
     }
 }

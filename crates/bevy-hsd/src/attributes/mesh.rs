@@ -16,16 +16,16 @@ use bytemuck::{
     pod_collect_to_vec,
 };
 use hsd::{
-    bounds::MAX_MESH_STREAM_BYTES,
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::mesh::{
+    attributes::mesh::{
         self,
         MeshIndices,
         MeshStream,
         Topology,
+    },
+    bounds::MAX_MESH_STREAM_BYTES,
+    property::{
+        Payload,
+        name::PropName,
     },
 };
 use smol_str::SmolStr;

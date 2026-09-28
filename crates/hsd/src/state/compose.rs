@@ -4,12 +4,12 @@ use std::collections::{
 };
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
     property::{
         name::PropName,
         value::Value,
     },
-    schema::parent::ParentAttr,
     state::{
         HsdState,
         MAX_PRIM_DEPTH,

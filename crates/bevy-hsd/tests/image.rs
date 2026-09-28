@@ -6,7 +6,7 @@ use bevy::{
     render::render_resource::TextureFormat,
 };
 use bevy_hsd::attributes::image::HsdImage;
-use hsd::schema::image::{
+use hsd::attributes::image::{
     AddressMode,
     FilterMode,
     ImageData,

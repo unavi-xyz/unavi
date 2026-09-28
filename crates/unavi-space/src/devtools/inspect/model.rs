@@ -11,6 +11,7 @@ use bevy_hsd::{
     HsdPrimIndex,
 };
 use hsd::{
+    attributes::name::NameAttr,
     id::{
         DocId,
         PrimId,
@@ -19,7 +20,6 @@ use hsd::{
         Property,
         name::PropName,
     },
-    schema::name::NameAttr,
     state::HsdState,
 };
 use iroh::EndpointId;

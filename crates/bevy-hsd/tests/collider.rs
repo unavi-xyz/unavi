@@ -2,7 +2,7 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::HsdCollider;
 use bytemuck::cast_slice;
-use hsd::schema::collider::ColliderKind;
+use hsd::attributes::collider::ColliderKind;
 use rstest::rstest;
 use tracing_test::traced_test;
 

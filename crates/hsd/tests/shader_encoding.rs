@@ -7,8 +7,7 @@ use common::{
     node,
 };
 use hsd::{
-    property::Payload,
-    schema::shader::{
+    attributes::shader::{
         ShaderGraph,
         graph::{
             DisplacementGraph,
@@ -20,6 +19,7 @@ use hsd::{
         node::Node,
         value::GraphValue,
     },
+    property::Payload,
 };
 
 /// Cross-prim dedup depends on this: two structurally identical graphs

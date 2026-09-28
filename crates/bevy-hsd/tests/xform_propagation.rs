@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdPrimIndex;
-use hsd::schema::{
+use hsd::attributes::{
     name::NameAttr,
     xform::XformAttr,
 };

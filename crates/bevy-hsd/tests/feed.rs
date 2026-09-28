@@ -6,6 +6,10 @@ use bevy_hsd::{
     HsdPrimIndex,
 };
 use hsd::{
+    attributes::{
+        name::NameAttr,
+        parent::ParentAttr,
+    },
     bounds::MAX_ENTRY_BYTES,
     id::PrimId,
     key,
@@ -13,10 +17,6 @@ use hsd::{
         Payload,
         Property,
         value::Value,
-    },
-    schema::{
-        name::NameAttr,
-        parent::ParentAttr,
     },
     state::entry::Entry,
 };

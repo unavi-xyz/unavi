@@ -8,18 +8,18 @@ use serde::{
 use thiserror::Error;
 
 use crate::{
-    prop_name,
-    property::{
-        Property,
-        name::PropName,
-    },
-    schema::shader::{
+    attributes::shader::{
         GROUP,
         value::{
             GraphValue,
             ValueKind,
             is_finite,
         },
+    },
+    prop_name,
+    property::{
+        Property,
+        name::PropName,
     },
 };
 

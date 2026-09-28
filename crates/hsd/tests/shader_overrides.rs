@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 
 use hsd::{
-    property::Payload,
-    schema::shader::{
+    attributes::shader::{
         ShaderGraph,
         overrides::{
             GraphOverridesAttr,
@@ -14,6 +13,7 @@ use hsd::{
             ValueKind,
         },
     },
+    property::Payload,
 };
 
 #[test]

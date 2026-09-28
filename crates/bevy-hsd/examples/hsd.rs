@@ -16,8 +16,7 @@ use bevy_panorbit_camera::{
 };
 use bytemuck::cast_slice;
 use hsd::{
-    id::PrimId,
-    schema::{
+    attributes::{
         material::{
             self,
             ColorVec,
@@ -46,6 +45,7 @@ use hsd::{
         },
         xform::XformAttr,
     },
+    id::PrimId,
     state::HsdState,
 };
 use iroh_blobs::{

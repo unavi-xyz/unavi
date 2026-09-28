@@ -4,14 +4,14 @@ use bevy::{
     prelude::*,
 };
 use hsd::{
+    attributes::material::{
+        self,
+        MaterialAttr,
+    },
     property::{
         Payload,
         Property,
         name::PropName,
-    },
-    schema::material::{
-        self,
-        MaterialAttr,
     },
 };
 

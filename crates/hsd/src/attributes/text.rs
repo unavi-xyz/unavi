@@ -4,12 +4,12 @@ use serde::{
 };
 
 use crate::{
+    attributes::material::ColorVec,
     prop_name,
     property::{
         Property,
         name::PropName,
     },
-    schema::material::ColorVec,
 };
 
 pub const GROUP: &str = "text";

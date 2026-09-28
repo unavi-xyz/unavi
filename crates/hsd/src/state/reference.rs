@@ -3,14 +3,14 @@ use std::collections::HashSet;
 use bytes::Bytes;
 
 use crate::{
+    attributes::{
+        parent::ParentAttr,
+        reference::LayerKey,
+    },
     id::PrimId,
     property::{
         Property,
         value::Value,
-    },
-    schema::{
-        parent::ParentAttr,
-        reference::LayerKey,
     },
     state::{
         HsdState,

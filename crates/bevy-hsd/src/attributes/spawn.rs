@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hsd::schema::spawn::SpawnAttr;
+use hsd::attributes::spawn::SpawnAttr;
 use unavi_physics::finite;
 
 use crate::attributes::{

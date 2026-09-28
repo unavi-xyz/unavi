@@ -9,7 +9,7 @@ use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
 };
-use hsd::schema::material;
+use hsd::attributes::material;
 
 use crate::{
     HsdRelationships,

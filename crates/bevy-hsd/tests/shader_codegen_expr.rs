@@ -13,7 +13,7 @@ use common::{
     graph,
     node,
 };
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     node::Node,
     validate::validate,
     value::ValueKind,

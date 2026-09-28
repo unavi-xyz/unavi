@@ -9,13 +9,13 @@ use bevy_msdf::{
     },
 };
 use hsd::{
-    property::Payload,
-    schema::text::{
+    attributes::text::{
         TextAlign,
         TextAnchor,
         TextAttr,
         TextBillboard,
     },
+    property::Payload,
 };
 use msdf::layout::{
     Align,

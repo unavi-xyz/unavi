@@ -1,5 +1,5 @@
 use super::error::GraphError;
-use crate::schema::shader::{
+use crate::attributes::shader::{
     node::{
         Network,
         Port,

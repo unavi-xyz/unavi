@@ -11,8 +11,7 @@ use avian3d::prelude::{
 use bevy::prelude::*;
 use bevy_hsd::Hsd;
 use hsd::{
-    id::PrimId,
-    schema::{
+    attributes::{
         collider::ColliderKind,
         rigid_body::{
             RigidBodyAttr,
@@ -20,6 +19,7 @@ use hsd::{
         },
         xform::XformAttr,
     },
+    id::PrimId,
 };
 use rstest::rstest;
 use tracing_test::traced_test;

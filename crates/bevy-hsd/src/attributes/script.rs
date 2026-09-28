@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use hsd::{
+    attributes::script::ScriptAttr,
     property::Payload,
-    schema::script::ScriptAttr,
 };
 
 use crate::attributes::ParseError;

@@ -8,7 +8,7 @@ use bevy_msdf::{
         MsdfText,
     },
 };
-use hsd::schema::{
+use hsd::attributes::{
     material::ColorVec,
     text::{
         TextAlign,

@@ -14,13 +14,13 @@ use common::{
     realize,
 };
 use hsd::{
-    format::package::Package,
-    id::DocId,
-    schema::{
+    attributes::{
         image::ImageData,
         material,
         reference::ReferenceAttr,
     },
+    format::package::Package,
+    id::DocId,
     state::{
         HsdState,
         entry::Entry,

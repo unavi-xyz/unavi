@@ -3,6 +3,13 @@
 //! the store holds no value for.
 
 use crate::{
+    attributes::{
+        parent::ParentAttr,
+        reference::{
+            self as reference_attr,
+            LayerKey,
+        },
+    },
     format::meta::{
         DOC_VERSION,
         DocMeta,
@@ -14,13 +21,6 @@ use crate::{
         Property,
         name::PropName,
         value::Value,
-    },
-    schema::{
-        parent::ParentAttr,
-        reference::{
-            self as reference_attr,
-            LayerKey,
-        },
     },
     state::{
         HsdState,

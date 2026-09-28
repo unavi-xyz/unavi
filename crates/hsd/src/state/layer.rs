@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
     property::{
         name::PropName,
         value::Value,
     },
-    schema::parent::ParentAttr,
     state::{
         entry::Stamp,
         opinion::{

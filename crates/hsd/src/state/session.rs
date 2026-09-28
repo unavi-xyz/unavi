@@ -2,6 +2,7 @@
 //! older than the one held is refused.
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
     key,
     property::{
@@ -9,7 +10,6 @@ use crate::{
         name::PropName,
         value::Value,
     },
-    schema::parent::ParentAttr,
     state::{
         HsdState,
         StateError,

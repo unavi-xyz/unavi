@@ -9,7 +9,7 @@ use serde::{
 };
 use serde_with::skip_serializing_none;
 
-use crate::schema::{
+use crate::attributes::{
     image::{
         AddressMode,
         FilterMode,

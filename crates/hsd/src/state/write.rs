@@ -1,6 +1,7 @@
 //! Local writes, into the runtime layer.
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
     property::{
         Payload,
@@ -8,7 +9,6 @@ use crate::{
         name::PropName,
         value::Value,
     },
-    schema::parent::ParentAttr,
     state::{
         HsdState,
         StateError,

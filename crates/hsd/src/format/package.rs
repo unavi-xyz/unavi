@@ -13,6 +13,7 @@ use serde::{
 use thiserror::Error;
 
 use crate::{
+    attributes::reference::ReferenceAttr,
     bounds::{
         MAX_ENTRY_BYTES,
         MAX_PACKAGE_BYTES,
@@ -29,7 +30,6 @@ use crate::{
             Value,
         },
     },
-    schema::reference::ReferenceAttr,
 };
 
 pub const MAGIC: &[u8; 4] = b"HSDZ";

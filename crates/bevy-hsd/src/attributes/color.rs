@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hsd::schema::material::ColorVec;
+use hsd::attributes::material::ColorVec;
 
 /// Reads up to four linear channels as `r, g, b, a`. Missing channels pad
 /// with `1.0`. Any non-finite channel yields `fallback`.

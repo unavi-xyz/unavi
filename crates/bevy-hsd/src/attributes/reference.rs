@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use hsd::{
+    attributes::reference::ReferenceAttr,
     id::DocId,
     property::Payload,
-    schema::reference::ReferenceAttr,
 };
 
 use crate::attributes::ParseError;

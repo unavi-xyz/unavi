@@ -77,8 +77,8 @@ impl LayerKey {
 mod tests {
     use super::*;
     use crate::{
+        attributes::xform::XformAttr,
         property::Payload,
-        schema::xform::XformAttr,
     };
 
     fn site() -> PrimId {

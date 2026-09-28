@@ -20,7 +20,7 @@ use common::{
     node,
     unlit,
 };
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     ShaderGraph,
     graph::{
         DisplacementGraph,

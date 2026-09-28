@@ -5,7 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
-use hsd::schema::mesh::{
+use hsd::attributes::mesh::{
     self,
     Topology,
 };

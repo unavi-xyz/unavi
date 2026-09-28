@@ -18,6 +18,11 @@ use bevy_hsd::{
     HsdSource,
 };
 use hsd::{
+    attributes::{
+        name::NameAttr,
+        parent::ParentAttr,
+        reference::LayerKey,
+    },
     id::{
         DocId,
         PrimId,
@@ -27,11 +32,6 @@ use hsd::{
         Payload,
         Property,
         value::Value,
-    },
-    schema::{
-        name::NameAttr,
-        parent::ParentAttr,
-        reference::LayerKey,
     },
     state::{
         HsdState,

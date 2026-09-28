@@ -11,7 +11,7 @@ use async_channel::{
 };
 use bevy::prelude::*;
 use hsd::{
-    schema::reference::LayerKey,
+    attributes::reference::LayerKey,
     state::entry::Entry,
 };
 use n0_future::FutureExt;

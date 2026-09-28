@@ -19,7 +19,7 @@ use body::{
     generate_displacement_body,
     generate_surface_body,
 };
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     MAX_PUBLIC_INPUTS,
     MAX_TEXTURE_SAMPLES,
     ShaderGraph,

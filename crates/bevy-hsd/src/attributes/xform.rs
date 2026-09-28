@@ -4,8 +4,8 @@ use avian3d::prelude::{
 };
 use bevy::prelude::*;
 use hsd::{
+    attributes::xform::XformAttr,
     property::Payload,
-    schema::xform::XformAttr,
 };
 use unavi_physics::finite;
 

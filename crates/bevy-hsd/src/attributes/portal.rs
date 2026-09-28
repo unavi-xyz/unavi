@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hsd::schema::portal::PortalAttr;
+use hsd::attributes::portal::PortalAttr;
 
 use crate::attributes::{
     ParseError,

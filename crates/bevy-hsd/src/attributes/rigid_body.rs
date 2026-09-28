@@ -10,11 +10,11 @@ use avian3d::prelude::{
 };
 use bevy::prelude::*;
 use hsd::{
-    property::Payload,
-    schema::rigid_body::{
+    attributes::rigid_body::{
         RigidBodyAttr,
         RigidBodyKind,
     },
+    property::Payload,
 };
 use unavi_physics::{
     body::DisabledRigidBody,

@@ -1,6 +1,6 @@
 use std::fmt::Result;
 
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     node::Node,
     value::GraphValue,
 };

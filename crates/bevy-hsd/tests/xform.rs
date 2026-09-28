@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::Hsd;
-use hsd::schema::xform::XformAttr;
+use hsd::attributes::xform::XformAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
 

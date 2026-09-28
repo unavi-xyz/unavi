@@ -1,6 +1,6 @@
 use avian3d::prelude::GravityScale;
 use bevy::prelude::*;
-use hsd::schema::gravity_scale::GravityScaleAttr;
+use hsd::attributes::gravity_scale::GravityScaleAttr;
 
 use crate::attributes::{
     ParseError,

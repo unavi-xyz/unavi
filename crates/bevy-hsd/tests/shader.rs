@@ -19,8 +19,7 @@ use bevy_hsd::attributes::{
     },
 };
 use hsd::{
-    property::Payload,
-    schema::{
+    attributes::{
         material,
         shader::{
             self,
@@ -41,6 +40,7 @@ use hsd::{
             value::GraphValue,
         },
     },
+    property::Payload,
 };
 use image::{
     ImageFormat,

@@ -2,7 +2,7 @@ use bevy_hsd::{
     HsdPrimIndex,
     HsdRelationships,
 };
-use hsd::schema::material;
+use hsd::attributes::material;
 use rstest::rstest;
 use tracing_test::traced_test;
 

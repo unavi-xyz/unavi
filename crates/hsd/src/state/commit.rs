@@ -1,15 +1,15 @@
 use bytes::Bytes;
 
 use crate::{
+    attributes::{
+        parent::ParentAttr,
+        reference::LayerKey,
+    },
     id::PrimId,
     key,
     property::{
         Property,
         name::PropName,
-    },
-    schema::{
-        parent::ParentAttr,
-        reference::LayerKey,
     },
     state::{
         CommitTarget,

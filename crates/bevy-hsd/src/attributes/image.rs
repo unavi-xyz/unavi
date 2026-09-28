@@ -14,14 +14,14 @@ use bevy::{
     },
 };
 use hsd::{
-    property::{
-        Payload,
-        name::PropName,
-    },
-    schema::image::{
+    attributes::image::{
         self as hsd_image,
         AddressMode,
         FilterMode,
+    },
+    property::{
+        Payload,
+        name::PropName,
     },
 };
 use image::GenericImageView;

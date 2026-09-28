@@ -24,10 +24,14 @@ use iroh_docs::{
     CapabilityKind,
     NamespaceId,
 };
-use unavi_policy::quota::{
-    Flow,
-    Stock,
+use unavi_policy::{
+    quota::{
+        Flow,
+        Stock,
+    },
+    space::Space,
 };
+use unavi_space::anchor::ActiveSpace;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -157,13 +161,30 @@ async fn spawn_child_doc(
     // guessing. The host is what its author and its permissions resolve
     // through, so a script's child runs with the grant of whoever wrote the
     // script.
-    let space = api.view.policy().registered_space(api.doc_id);
+    //
+    // The space is the host's, or the one the local agent stands in when the
+    // host belongs to none. The shell and its tools hang at the app root, so a
+    // beacon minted there would otherwise belong nowhere — no space to sync
+    // through, and `is_self_owner` false forever.
+    let space = child_space(
+        api.view.policy().registered_space(api.doc_id),
+        active_space().await,
+    );
     api.view.policy().update(id, |record| {
         record.host = Some(api.doc_id);
         record.space = space;
     });
 
     api.view.policy().attribute_child_document(id, api.doc_id);
+
+    // Serving enrols the namespace so a peer fetching the pin is answered
+    // rather than told `NotFound`; without it the document is space-local.
+    if space.is_some()
+        && let Err(err) = doc.serve().await
+    {
+        warn!(?err, %id, "failed to serve a script-minted document");
+    }
+
     AsyncCommands::default()
         .spawn((
             HsdHeld(state),
@@ -174,7 +195,39 @@ async fn spawn_child_doc(
         .send()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
+
+    // A script's child is only self-owned once it is pinned into a space; the
+    // space layer resolves its documents through the pin, not the host chain.
+    if let Some(space) = space {
+        api.view.self_pin(space, id).await;
+    }
     Ok(())
+}
+
+/// Which space a script-minted child belongs to: its host's, else the space
+/// the local agent currently stands in.
+fn child_space(host_space: Option<DocId>, active: Option<DocId>) -> Option<DocId> {
+    host_space.or(active)
+}
+
+/// The space the local agent currently stands in, if the world has one. Read
+/// off the world rather than the script's view, since the active space is
+/// per-peer runtime state and not document state.
+async fn active_space() -> Option<DocId> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let space = world
+                .get_resource::<ActiveSpace>()
+                .and_then(|active| active.0)
+                .and_then(|entity| world.get::<Space>(entity))
+                .map(Space::doc_id);
+            tx.try_send(space).ok();
+        })
+        .send()
+        .await
+        .ok()?;
+    rx.recv().await.ok().flatten()
 }
 
 pub async fn self_prim(api: &Api) -> anyhow::Result<u32> {
@@ -430,4 +483,31 @@ async fn mint_document(api: &Api, entries: Vec<Entry>) -> Result<u32, ScriptErro
         },
         &api.quota,
     )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use hsd::id::DocId;
+
+    use super::child_space;
+
+    fn doc(seed: u8) -> DocId {
+        DocId([seed; 32])
+    }
+
+    /// The shell has no space, so a beacon it mints has to take the one the
+    /// local agent stands in or it never becomes self-owned.
+    #[test]
+    fn a_spaceless_host_falls_back_to_the_active_space() {
+        let space = doc(1);
+        assert_eq!(child_space(None, Some(space)), Some(space));
+    }
+
+    /// A host that already belongs to a space keeps it; the active space is
+    /// only a fallback for documents that would otherwise belong nowhere.
+    #[test]
+    fn a_host_space_is_not_overridden() {
+        let (host, active) = (doc(1), doc(2));
+        assert_eq!(child_space(Some(host), Some(active)), Some(host));
+    }
 }

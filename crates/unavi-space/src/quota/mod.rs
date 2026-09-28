@@ -48,9 +48,13 @@ pub(crate) fn trust_of(viewer: Option<Viewer>, peer: EndpointId) -> Trust {
 }
 
 pub(crate) fn space_of(policy: &Policy, replicas: &Replicas, doc: DocId) -> Option<DocId> {
+    // The document's own registered space first: a script-minted child of the
+    // shell states one for itself while its host belongs to none, and the
+    // host-chain fallback inside `registered_space` alone would miss it.
     let root = policy.root(doc);
     policy
-        .registered_space(root)
+        .registered_space(doc)
+        .or_else(|| replicas.space_of(doc))
         .or_else(|| replicas.space_of(root))
 }
 
@@ -116,4 +120,35 @@ fn space_document_owner(
 /// system exists.
 fn peer_quota(policy: &Policy, viewer: Option<Viewer>, peer: EndpointId) -> Arc<Quota> {
     policy.peer_quota(peer, || Limits::for_trust(trust_of(viewer, peer)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn doc(seed: u8) -> DocId {
+        DocId([seed; 32])
+    }
+
+    /// The shell hangs at the app root and belongs to no space, so a document
+    /// it mints names its own space. Resolving `space_of` through the host
+    /// chain alone loses that, and the beacon never reads as self-owned.
+    #[test]
+    fn a_child_of_a_spaceless_host_resolves_by_its_own_space() {
+        let policy = Policy::new();
+        let replicas = Replicas::new();
+        let (space, halo, beacon) = (doc(1), doc(2), doc(3));
+
+        policy.update(space, |record| record.space = Some(space));
+        policy.update(beacon, |record| {
+            record.host = Some(halo);
+            record.space = Some(space);
+        });
+
+        assert_eq!(
+            space_of(&policy, &replicas, beacon),
+            Some(space),
+            "a script-minted child keeps its own space when its host has none"
+        );
+    }
 }

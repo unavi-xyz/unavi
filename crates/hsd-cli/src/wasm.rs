@@ -51,7 +51,7 @@ pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
     let target_dir = PathBuf::from("target").join(&output_name);
     let src = target_dir
         .join("wasm32-wasip2")
-        .join("release-wasm")
+        .join("release")
         .join(&wasm_file_name);
 
     let tmp_dir = target_dir.join("hsd-cli");
@@ -65,10 +65,9 @@ pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
         &[
             "build",
             "--quiet",
+            "--release",
             "--target",
             "wasm32-wasip2",
-            "--profile",
-            "release-wasm",
             "--manifest-path",
             cargo_toml.to_str().context("cargo toml path")?,
             "--target-dir",

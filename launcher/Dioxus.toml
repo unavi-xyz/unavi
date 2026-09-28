@@ -2,4 +2,4 @@
 name = "unavi-launcher"
 
 [bundle]
-icon = ["../../assets/icon-rounded.ico"]
+icon = ["../assets/icon-rounded.ico"]

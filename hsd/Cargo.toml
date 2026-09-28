@@ -37,17 +37,14 @@ smol_str     = { features = ["serde"], version = "0.3.6" }
 syn          = "3.0.4"
 wit-bindgen  = "0.55.0"
 
-# Mirrors the root workspace: guest components are built by `hsd-cli` with
-# `--profile release-wasm`, which is resolved against this workspace.
+# Guest components are the only release build in this workspace, so `release`
+# is tuned for wasm size; `hsd-cli` builds them with `--release`.
 [profile.release]
 codegen-units = 1
 lto           = true
+opt-level     = "z"
 panic         = "abort"
 strip         = true
-
-[profile.release-wasm]
-inherits  = "release"
-opt-level = "z"
 
 [profile.dev]
 codegen-backend = "cranelift"

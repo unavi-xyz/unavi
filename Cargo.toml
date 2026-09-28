@@ -123,10 +123,6 @@ lto           = true
 panic         = "abort"
 strip         = true
 
-[profile.release-wasm]
-inherits  = "release"
-opt-level = "z"
-
 [profile.dev]
 codegen-backend = "cranelift"
 debug           = "line-tables-only"

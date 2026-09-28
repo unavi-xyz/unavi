@@ -22,8 +22,11 @@ fn main() {
     println!("cargo:rerun-if-changed={}", logo.display());
     let png = fs::read(&logo).expect("read logo");
     let encoded = base64::engine::general_purpose::STANDARD.encode(png);
-    fs::write(out_dir.join("logo.uri"), format!("data:image/png;base64,{encoded}"))
-        .expect("write logo data uri");
+    fs::write(
+        out_dir.join("logo.uri"),
+        format!("data:image/png;base64,{encoded}"),
+    )
+    .expect("write logo data uri");
 
     let icon = assets.join("icon-rounded.png");
     println!("cargo:rerun-if-changed={}", icon.display());

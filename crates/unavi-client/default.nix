@@ -1,7 +1,6 @@
 { inputs, ... }: {
   perSystem =
     {
-      mkAppImage,
       pkgs,
       lib,
       system,
@@ -34,6 +33,7 @@
             ]
           ) root)
           ../../LICENSE
+          ../../.justfile
           ../../Trunk.toml
           ../../assets
           ../../nu
@@ -195,6 +195,7 @@
           inherit npmDeps;
 
           nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+            pkgs.just
             pkgs.nodejs
             pkgs.npmHooks.npmConfigHook
             pkgs.nushell
@@ -207,7 +208,7 @@
           '';
 
           buildPhaseCargoCommand = ''
-            nu nu/build-web.nu --release
+            just web --release
           '';
 
           installPhaseCommand = ''
@@ -227,7 +228,9 @@
         "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        "${pname}-appimage" = mkAppImage { program = "${packageDrv}/bin/${pname}"; };
+        "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
+          program = "${packageDrv}/bin/${pname}";
+        };
       };
     };
 }

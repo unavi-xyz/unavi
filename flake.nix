@@ -5,8 +5,8 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    # Pinned by revision because nix/appimage patches this AppRun source by
-    # context, which a newer revision can silently invalidate.
+    # Pinned for reproducibility. The AppRun is no longer patched, so this
+    # can be bumped with `nix flake update nix-appimage` at any time.
     nix-appimage = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
@@ -60,7 +60,6 @@
           ./crates/unavi-client
           ./launcher
           ./crates/unavi-server
-          ./nix/appimage
         ];
 
         flake = {
@@ -191,7 +190,10 @@
                     |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
                     |> lib.concatLists
                   )
-                  ++ (with pkgs; [ just nushell ]);
+                  ++ (with pkgs; [
+                    just
+                    nushell
+                  ]);
 
                 LD_LIBRARY_PATH =
                   config.packages

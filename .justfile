@@ -1,11 +1,6 @@
-# One source of truth for CI: the `check` job runs `just ci`. The `nu`
-# wrappers call the same scripts the Nix packages do.
-
-# List recipes.
 default:
     @just --list
 
-# Check all three cargo workspaces (root, hsd, launcher).
 check: check-main check-hsd check-launcher
 
 check-main:
@@ -17,7 +12,6 @@ check-hsd:
 check-launcher:
     cargo check --manifest-path launcher/Cargo.toml --all-features
 
-# Lint all three workspaces, denying warnings as CI does.
 clippy: clippy-main clippy-hsd clippy-launcher
 
 clippy-main:
@@ -29,27 +23,21 @@ clippy-hsd:
 clippy-launcher:
     cargo clippy --no-deps --manifest-path launcher/Cargo.toml --all-features -- -D warnings
 
-# Format the whole tree with treefmt (Rust, Nix, TOML, YAML, ...).
 fmt:
     nix fmt
 
-# Fail if anything is unformatted, without rewriting files.
 fmt-check:
     nix build -L .#checks.x86_64-linux.treefmt
 
-# Run the workspace test suite.
 test *ARGS:
     cargo nextest run --build-jobs 1 -j 2 {{ARGS}}
 
-# cargo-deny over all three workspaces.
 deny:
     nix build -L .#checks.x86_64-linux.deny
 
-# Install the script runtime's npm deps (the wasm build's build.rs needs them).
 npm-install:
     npm install --prefix crates/unavi-script
 
-# The CI check job; the wasm build and tests are deliberately not wired in yet.
 ci: wasm-update-locked npm-install check clippy deny fmt-check
 
 # Build the guest HSD wasm components into crates/unavi-client/assets/hsd.
@@ -60,7 +48,7 @@ wasm *ARGS:
 wasm-release:
     nu nu/build-wasm.nu --release
 
-# Re-resolve WIT deps and rewrite deps.lock. Commit the result.
+# Re-resolve WIT deps and rewrite deps.lock.
 wasm-update:
     nu nu/update-wasm.nu
 
@@ -70,11 +58,28 @@ wasm-update-locked:
 
 # Build both web client variants (WebGL + WebGPU) into dist/.
 web *ARGS:
-    nu nu/build-web.nu {{ARGS}}
+    trunk build --dist dist-webgl --public-url /webgl/ {{ARGS}}
+    trunk build --dist dist-webgpu --public-url /webgpu/ --features webgpu {{ARGS}}
+    rm -rf dist
+    mkdir dist
+    cp crates/unavi-client/loader.html dist/index.html
+    mv dist-webgl dist/webgl
+    mv dist-webgpu dist/webgpu
 
-web-release:
-    nu nu/build-web.nu --release
+port := "5000"
+debug := ""
+dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-client"
 
-# Run a local server plus N clients for multiplayer testing.
-multi-client *ARGS:
-    nu nu/multi-client.nu {{ARGS}}
+dev-build:
+    {{dev_env}} cargo build -p unavi-server -p unavi-client
+
+server: dev-build
+    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-server --port {{port}}
+
+client n: dev-build
+    sleep 2
+    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-client --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
+
+# Run a server plus two clients.
+[parallel]
+multi-client: server (client "1") (client "2")

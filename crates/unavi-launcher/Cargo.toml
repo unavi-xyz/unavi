@@ -42,4 +42,4 @@ self-replace = "1.5.0"
 runas = "1.2.0"
 
 [build-dependencies]
-base64 = "0.22.1"
+base64.workspace = true

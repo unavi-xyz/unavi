@@ -35,7 +35,7 @@ unavi-agent.path           = "../unavi-agent"
 unavi-avatar.path          = "../unavi-avatar"
 unavi-identity.path        = "../unavi-identity"
 unavi-input.path           = "../unavi-input"
-unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
+unavi-manifold.path        = "../unavi-manifold"
 unavi-physics.path         = "../unavi-physics"
 unavi-policy.path          = "../unavi-policy"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
@@ -47,8 +47,8 @@ web-time.workspace         = true
 xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-wasmtime      = "47.0.4"
-wasmtime-wasi = "47.0.4"
+wasmtime.workspace      = true
+wasmtime-wasi.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 js-sys                         = "0.3.94"

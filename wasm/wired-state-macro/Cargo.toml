@@ -13,10 +13,10 @@ proc-macro = true
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
-proc-macro2      = "1.0.107"
-quote            = "1.0.47"
-syn              = { features = ["full"], version = "3.0.4" }
+anyhow.workspace      = true
+proc-macro2.workspace = true
+quote.workspace       = true
+syn                   = { features = ["full"], workspace = true }
 
 [dev-dependencies]
-prettyplease = "0.3.0"
+prettyplease.workspace = true

@@ -57,10 +57,7 @@ impl Plugin for HsdPlugin {
             .add_systems(
                 Update,
                 (
-                    // Split in two: Bevy's tuple `IntoSystemConfigs` impl has a fixed arity.
                     (
-                        // Before the drain, so what the store changed reaches
-                        // the world the same frame.
                         feed::apply_doc_deltas,
                         drain::discard_held_events,
                         drain::drain_scene_events,
@@ -86,7 +83,6 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdCommitSet),
             )
-            // The renderer must run after `HsdCommitSet`, or a label's text is a frame stale.
             .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
             // `apply_xform` seeds a body's physics position from the document's
             // transform, so the anchor must place the document first.
@@ -98,11 +94,7 @@ impl Plugin for HsdPlugin {
     }
 }
 
-/// A live document.
-///
-/// Script writes land here synchronously and reach the ECS immediately;
-/// whether they reach peers or the document's entries is decided by the space
-/// protocol and by an explicit save.
+/// A live HSD document.
 #[derive(Component, Clone)]
 #[require(HsdChildren, Transform, Visibility)]
 pub struct Hsd(pub Arc<Mutex<HsdState>>);

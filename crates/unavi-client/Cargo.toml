@@ -55,7 +55,7 @@ unavi-identity.path     = "../unavi-identity"
 unavi-input.path        = "../unavi-input"
 unavi-local.path        = "../unavi-local"
 unavi-manifold.path     = "../unavi-manifold"
-unavi-physics           = { path = "../unavi-physics", version = "0.0.16" }
+unavi-physics.path      = "../unavi-physics"
 unavi-policy.path       = "../unavi-policy"
 unavi-registry.path     = "../unavi-registry"
 unavi-script.path       = "../unavi-script"

@@ -192,6 +192,10 @@
                     |> lib.concatLists
                   )
                   ++ (with pkgs; [
+                    # Nix and cargo resolve `git` from PATH. The Nix git is
+                    # patched against Nix's glibc, so it ignores the
+                    # LD_LIBRARY_PATH exported below that breaks host git.
+                    git
                     just
                     nushell
                   ]);

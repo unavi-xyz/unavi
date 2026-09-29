@@ -59,4 +59,6 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
       - name: Deploy
+        # The dev shell's LD_LIBRARY_PATH hands deploy-rs's host ssh tooling
+        # Nix's openssl, whose glibc is newer than the runner's.
         run: nix develop --command env -u LD_LIBRARY_PATH deploy .#unavi-stable

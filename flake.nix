@@ -129,18 +129,17 @@
                     src = ./.;
                     pname = "unavi";
                   })
-                  # The launcher and guests are separate workspaces with their
-                  # own locks; each needs its own vendored check. The shared
-                  # config lives outside their roots, so it is passed in.
                   (pkgs.crane.cargoDeny {
-                    src = ./launcher;
+                    src = ./.;
                     pname = "unavi-launcher";
-                    cargoDenyExtraArgs = "--config ${./.deny.toml}";
+                    cargoLock = ./launcher/Cargo.lock;
+                    cargoDenyExtraArgs = "--config ${./.deny.toml} --manifest-path launcher/Cargo.toml";
                   })
                   (pkgs.crane.cargoDeny {
-                    src = ./hsd;
+                    src = ./.;
                     pname = "unavi-hsd";
-                    cargoDenyExtraArgs = "--config ${./.deny.toml}";
+                    cargoLock = ./hsd/Cargo.lock;
+                    cargoDenyExtraArgs = "--config ${./.deny.toml} --manifest-path hsd/Cargo.toml";
                   })
                 ];
               } "mkdir $out";

@@ -40,14 +40,7 @@ impl Plugin for ScriptPlugin {
             load::LoadPlugin,
             runtime::shared::SharedRuntimePlugin,
         ))
-        .add_systems(
-            FixedUpdate,
-            (
-                portal_host::service_portal_watches,
-                portal_host::drain_pending,
-            )
-                .chain(),
-        );
+        .add_systems(FixedUpdate, portal_host::emit_link_intents);
     }
 }
 

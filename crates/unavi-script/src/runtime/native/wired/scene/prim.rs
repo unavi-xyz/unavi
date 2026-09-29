@@ -4,6 +4,10 @@ use hsd::attributes::{
         FilterMode,
         ImageSampler,
     },
+    portal::{
+        LinkId,
+        PortalDestination,
+    },
     xform::XformAttr,
 };
 use wasmtime::component::Resource;
@@ -35,8 +39,7 @@ use crate::{
                         Material,
                         Mesh,
                         Portal,
-                        PortalDestination,
-                        PortalReceptor,
+                        PortalDestination as WitPortalDestination,
                         RigidBody,
                         RigidBodyKind,
                         ShaderGraph,
@@ -61,8 +64,6 @@ use crate::{
                 PrimMaterial,
                 PrimMesh,
                 PrimPortal,
-                PrimPortalDestination,
-                PrimPortalReceptor,
                 PrimRes,
                 PrimRigidBody,
                 PrimRigidBodyKind,
@@ -400,12 +401,9 @@ const fn collider_shared(c: Collider) -> PrimCollider {
 
 fn portal_wit(p: PrimPortal) -> Portal {
     Portal {
-        destination: p.destination.map(|d| PortalDestination {
-            receptor: d.receptor.map(|r| PortalReceptor {
-                document: r.document.to_vec(),
-                prim:     r.prim,
-            }),
-            space:    d.space.to_vec(),
+        destination: p.destination.map(|d| WitPortalDestination {
+            space: d.space.to_vec(),
+            link:  d.link.map(|l| l.0.to_vec()),
         }),
         size_x:      p.size_x,
         size_y:      p.size_y,
@@ -417,23 +415,23 @@ fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
         destination: p
             .destination
             .map(|d| -> wasmtime::Result<_> {
-                Ok(PrimPortalDestination {
-                    receptor: d
-                        .receptor
-                        .map(|r| -> wasmtime::Result<_> {
-                            Ok(PrimPortalReceptor {
-                                document: to_blob_array(r.document)?,
-                                prim:     r.prim,
-                            })
-                        })
-                        .transpose()?,
-                    space:    to_blob_array(d.space)?,
+                Ok(PortalDestination {
+                    space: to_blob_array(d.space)?,
+                    link:  d.link.map(to_link_id).transpose()?,
                 })
             })
             .transpose()?,
         size_x:      p.size_x,
         size_y:      p.size_y,
     })
+}
+
+fn to_link_id(bytes: Vec<u8>) -> wasmtime::Result<LinkId> {
+    bytes
+        .as_slice()
+        .try_into()
+        .map(LinkId)
+        .map_err(|_| wasmtime::Error::msg("link id must be 16 bytes"))
 }
 
 const fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {

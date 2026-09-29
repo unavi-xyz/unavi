@@ -44,7 +44,6 @@ use hsd::{
         portal::{
             PortalAttr,
             PortalDestination,
-            PortalReceptor,
         },
         reference::ReferenceAttr,
         rigid_body::{
@@ -232,18 +231,8 @@ pub struct PrimText {
     pub billboard:     Option<PrimTextBillboard>,
 }
 
-pub struct PrimPortalReceptor {
-    pub document: [u8; 32],
-    pub prim:     String,
-}
-
-pub struct PrimPortalDestination {
-    pub receptor: Option<PrimPortalReceptor>,
-    pub space:    [u8; 32],
-}
-
 pub struct PrimPortal {
-    pub destination: Option<PrimPortalDestination>,
+    pub destination: Option<PortalDestination>,
     pub size_x:      f32,
     pub size_y:      f32,
 }
@@ -1129,48 +1118,59 @@ pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
 pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(&prim)?;
-    match value {
-        Some(p) => prim.write_attr(&prim_portal_to_attr(p)?),
-        None => prim.clear(&PortalAttr::NAME),
+    value.map_or_else(
+        || prim.clear(&PortalAttr::NAME),
+        |p| prim.write_attr(&prim_portal_to_attr(p)),
+    )
+}
+
+/// States `destination` on this prim's portal for the session, keeping the
+/// portal's composed size.
+///
+/// A session opinion replaces the whole attribute, so the size rides along with
+/// the destination every peer receives.
+pub async fn set_session_destination(
+    api: &Api,
+    rep: u32,
+    destination: PortalDestination,
+) -> anyhow::Result<Result<(), ScriptError>> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(&prim)?;
+    let Some(mut portal) = prim.read_attr::<PortalAttr>()? else {
+        bail!("prim has no portal");
+    };
+    portal.destination = Some(destination);
+    let value = portal.encode()?;
+    let Some(space) = api.view.space_of(prim.doc_id) else {
+        bail!("document is not in a tracked space");
+    };
+
+    Ok(api
+        .view
+        .set_session(
+            space,
+            prim.doc_id,
+            vec![SessionWrite {
+                prim:  prim.id,
+                name:  PortalAttr::NAME.to_string(),
+                value: Some(value),
+            }],
+        )
+        .await
+        .map_err(Into::into))
+}
+
+fn prim_portal_to_attr(p: PrimPortal) -> PortalAttr {
+    PortalAttr {
+        destination: p.destination,
+        size_x:      f64::from(p.size_x),
+        size_y:      f64::from(p.size_y),
     }
 }
 
-fn prim_portal_to_attr(p: PrimPortal) -> anyhow::Result<PortalAttr> {
-    let destination = match p.destination {
-        Some(d) => {
-            let receptor = match d.receptor {
-                Some(r) => Some(PortalReceptor {
-                    document: DocId(r.document),
-                    prim:     r
-                        .prim
-                        .parse::<PrimId>()
-                        .map_err(|err| anyhow::anyhow!("invalid receptor prim id: {err}"))?,
-                }),
-                None => None,
-            };
-            Some(PortalDestination {
-                receptor,
-                space: d.space,
-            })
-        }
-        None => None,
-    };
-    Ok(PortalAttr {
-        destination,
-        size_x: f64::from(p.size_x),
-        size_y: f64::from(p.size_y),
-    })
-}
-
-fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
+const fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
     PrimPortal {
-        destination: attr.destination.map(|d| PrimPortalDestination {
-            receptor: d.receptor.map(|r| PrimPortalReceptor {
-                document: r.document.0,
-                prim:     r.prim.to_string(),
-            }),
-            space:    d.space,
-        }),
+        destination: attr.destination,
         size_x:      attr.size_x as f32,
         size_y:      attr.size_y as f32,
     }

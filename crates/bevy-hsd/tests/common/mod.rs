@@ -70,7 +70,10 @@ use iroh_blobs::{
     api::blobs::Blobs,
     store::mem::MemStore,
 };
-use iroh_docs::Author;
+use iroh_docs::{
+    Author,
+    NamespaceId,
+};
 use rstest::fixture;
 use unavi_util::async_task::spawn_async_task;
 use wds::{
@@ -506,6 +509,29 @@ impl Backing {
     /// own `LocalStore`.
     pub fn store(&self) -> Store {
         self.0.clone()
+    }
+
+    /// Every namespace the store holds.
+    pub fn namespaces(&self) -> Vec<NamespaceId> {
+        let store = self.0.clone();
+        block_on(async move {
+            store
+                .list()
+                .await
+                .expect("list namespaces")
+                .into_iter()
+                .map(|(ns, _)| ns)
+                .collect()
+        })
+    }
+
+    /// Whether `ns` is in the sync set, answering peers that request it.
+    pub fn is_served(&self, ns: NamespaceId) -> bool {
+        let store = self.0.clone();
+        block_on(async move {
+            let doc = store.open(ns).await.expect("open namespace");
+            doc.status().await.expect("namespace status").sync
+        })
     }
 
     /// Stores `bytes` as a blob without pointing any key at it.

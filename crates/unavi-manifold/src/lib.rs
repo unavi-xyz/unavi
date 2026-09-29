@@ -8,9 +8,9 @@ use bevy::{
     math::Affine3A,
     prelude::*,
 };
-use hsd::id::{
-    DocId,
-    PrimId,
+use hsd::{
+    attributes::portal::LinkId,
+    id::DocId,
 };
 
 use crate::{
@@ -77,8 +77,7 @@ impl Plugin for ManifoldPlugin {
         .add_systems(
             Update,
             (
-                resolver::resolve_target_doc,
-                resolver::resolve_target_receptor,
+                resolver::resolve_seams,
                 visuals::ensure_seam_mesh,
                 visuals::update_seam_state,
                 horizon::select_developed_seams,
@@ -139,11 +138,13 @@ pub const SEAM_DEPTH: f32 = 0.05;
 #[derive(Component, Clone, Copy)]
 pub struct SeamTargetDoc(pub DocId);
 
-#[derive(Component, Clone, PartialEq, Eq)]
-pub struct SeamTargetReceptor {
-    pub document: DocId,
-    pub prim:     PrimId,
-}
+/// The link pairing this seam with a seam in its target space.
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub struct SeamLink(pub LinkId);
+
+/// The space this seam stands in, which its link partner must target.
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub struct SeamHome(pub DocId);
 
 #[derive(Component, Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SeamState {

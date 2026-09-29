@@ -35,6 +35,7 @@ use crate::{
     HsdDocId,
     HsdNamespace,
     HsdSource,
+    HsdSyncPeers,
     Prim,
     attributes::reference::HsdRef,
 };
@@ -144,11 +145,14 @@ async fn try_build_and_instance(
         docs.push((doc, entries));
     }
 
+    // Served so a client that fetches the instance can resolve its references;
+    // a namespace outside the sync set answers every request with `NotFound`.
     for (doc, mut entries) in docs {
         Package::rewrite_refs(&mut entries, &minted)?;
         for (key, value) in entries {
             doc.set(key, value).await?;
         }
+        doc.serve().await?;
     }
 
     let doc = store.create().await?;
@@ -221,7 +225,7 @@ pub(crate) fn realize_refs(
     >,
     detached: Query<(Entity, Option<&Children>), (With<RefLoaded>, Without<HsdRef>)>,
     hsd_docs: Query<(), With<Hsd>>,
-    parents: Query<(&HsdDocId, Option<&RefDepth>)>,
+    parents: Query<(&HsdDocId, Option<&RefDepth>, Option<&HsdSyncPeers>)>,
     stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
@@ -247,9 +251,10 @@ pub(crate) fn realize_refs(
             commands.entity(prim_ent).remove::<RefRefused>();
         }
 
-        let Ok((parent_id, parent_depth)) = parents.get(doc_child.0) else {
+        let Ok((parent_id, parent_depth, parent_peers)) = parents.get(doc_child.0) else {
             continue;
         };
+        let peers = parent_peers.cloned().unwrap_or_default();
         let site = DocId::site(parent_id.0, prim.0);
         let target = target.0;
         let depth = parent_depth.map_or(0, |d| d.0) + 1;
@@ -263,7 +268,7 @@ pub(crate) fn realize_refs(
 
         let store = store.0.clone();
         spawn_async_task(async move {
-            if let Err(err) = realize_ref(store, target, site, depth, prim_ent).await {
+            if let Err(err) = realize_ref(store, target, site, depth, peers, prim_ent).await {
                 warn!(?err, %target, "failed to realize reference");
                 let mark_refused = AsyncCommands::default()
                     .push(move |world: &mut World| {
@@ -289,12 +294,14 @@ async fn realize_ref(
     target: DocId,
     site: DocId,
     depth: usize,
+    peers: HsdSyncPeers,
     prim_ent: Entity,
 ) -> anyhow::Result<()> {
     // A target no peer has served yet opens empty and fills in as it syncs,
     // which is the dangling case a reference has and an embedded package does
-    // not.
+    // not. An empty peer list serves the target without dialing anyone.
     let doc = store.open(NamespaceId::from(&target.0)).await?;
+    doc.start_sync(peers.0.clone()).await?;
 
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -319,6 +326,7 @@ async fn realize_ref(
                 HsdSource(target),
                 HsdNamespace(doc),
                 RefDepth(depth),
+                peers,
                 ChildOf(prim_ent),
             ));
         })

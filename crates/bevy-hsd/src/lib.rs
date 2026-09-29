@@ -23,6 +23,7 @@ use hsd::{
     property::name::PropName,
     state::HsdState,
 };
+use iroh::EndpointAddr;
 use wds::document::Document;
 
 pub mod anchor;
@@ -134,6 +135,13 @@ pub struct HsdSource(pub DocId);
 /// one the scene is still drawing.
 #[derive(Component, Debug, Clone)]
 pub struct HsdNamespace(pub Document);
+
+/// Endpoints a document syncs from, inherited by every reference it realizes.
+///
+/// Absent on a document this client created, whose references are served
+/// rather than fetched.
+#[derive(Component, Debug, Clone, Default)]
+pub struct HsdSyncPeers(pub Vec<EndpointAddr>);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship=HsdChild, linked_spawn)]

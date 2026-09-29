@@ -1,4 +1,4 @@
-use hsd::schema::xform::XformAttr;
+use hsd::attributes::xform::XformAttr;
 use wasm_bindgen::JsValue;
 
 pub fn vec3_to_js(x: f32, y: f32, z: f32) -> JsValue {

@@ -200,6 +200,7 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:portal/api": {
       open: rt.wiredPortalOpen.bind(rt),
+      pair: rt.wiredPortalPair.bind(rt),
       travel: rt.wiredPortalTravel.bind(rt),
     },
     "wired:scene/api": {

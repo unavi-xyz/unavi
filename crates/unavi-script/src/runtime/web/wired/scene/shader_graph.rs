@@ -6,7 +6,7 @@
 //! JS, so an unknown tag is an error rather than a compile failure the way the
 //! native mirror gets.
 
-use hsd::schema::shader::{
+use hsd::attributes::shader::{
     ShaderGraph,
     graph::{
         BlendMode,

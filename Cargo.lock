@@ -11592,6 +11592,7 @@ dependencies = [
  "unavi-space",
  "unavi-util",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
  "wds",

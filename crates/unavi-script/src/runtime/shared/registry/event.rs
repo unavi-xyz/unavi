@@ -102,10 +102,11 @@ impl EventBus {
             .any(|e| e.doc_id == doc && e.channels.iter().any(|c| c == channel))
     }
 
-    /// Delivers a host-originated event directly to every receptor `target_doc`
-    /// opened on `channel`, bypassing the write and scope checks a
-    /// script-originated emit is subject to.
-    pub fn emit_from_host(&self, target_doc: DocId, channel: &str, payload: Vec<u8>) {
+    /// Delivers a host-originated event directly to every receptor any of
+    /// `target_docs` opened on `channel`, bypassing the write and scope checks
+    /// a script-originated emit is subject to. Every delivery shares one
+    /// claim.
+    pub fn emit_from_host(&self, target_docs: &[DocId], channel: &str, payload: Vec<u8>) {
         let payload = Arc::new(payload);
         let claimed = Arc::new(AtomicBool::new(false));
         let time = SystemTime::now()
@@ -115,7 +116,7 @@ impl EventBus {
 
         let receptors = self.0.receptors.read();
         for entry in receptors.values() {
-            if entry.doc_id != target_doc {
+            if !target_docs.contains(&entry.doc_id) {
                 continue;
             }
             if !entry.channels.iter().any(|c| c == channel) {

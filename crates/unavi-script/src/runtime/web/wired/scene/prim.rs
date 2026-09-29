@@ -1,9 +1,15 @@
 use std::sync::Arc;
 
-use hsd::schema::image::{
-    AddressMode,
-    FilterMode,
-    ImageSampler,
+use hsd::attributes::{
+    image::{
+        AddressMode,
+        FilterMode,
+        ImageSampler,
+    },
+    portal::{
+        LinkId,
+        PortalDestination,
+    },
 };
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
@@ -41,8 +47,6 @@ use crate::runtime::{
             PrimMaterial,
             PrimMesh,
             PrimPortal,
-            PrimPortalDestination,
-            PrimPortalReceptor,
             PrimRigidBody,
             PrimRigidBodyKind,
             PrimSpawn,
@@ -866,13 +870,14 @@ fn portal_to_js(p: &PrimPortal) -> JsValue {
     let obj = js_sys::Object::new();
     if let Some(d) = &p.destination {
         let dest = js_sys::Object::new();
-        if let Some(r) = &d.receptor {
-            let rec = js_sys::Object::new();
-            obj_set(&rec, "document", &bytes32_to_js(&r.document));
-            obj_set(&rec, "prim", &JsValue::from_str(&r.prim));
-            obj_set(&dest, "receptor", &rec.into());
-        }
         obj_set(&dest, "space", &bytes32_to_js(&d.space));
+        if let Some(link) = &d.link {
+            obj_set(
+                &dest,
+                "link",
+                &js_sys::Uint8Array::from(link.0.as_slice()).into(),
+            );
+        }
         obj_set(&obj, "destination", &dest.into());
     }
     obj_set(&obj, "sizeX", &p.size_x.into());
@@ -904,20 +909,16 @@ fn js_to_portal(v: &JsValue) -> Result<Option<PrimPortal>, String> {
         if d.is_null() || d.is_undefined() {
             None
         } else {
-            let receptor = {
-                let r = obj_get(&d, "receptor");
-                if r.is_null() || r.is_undefined() {
-                    None
-                } else {
-                    let document = js_to_bytes32(&obj_get(&r, "document"))
-                        .ok_or_else(|| "portal receptor document must be 32 bytes".to_string())?;
-                    let prim = obj_get_string(&r, "prim").unwrap_or_default();
-                    Some(PrimPortalReceptor { document, prim })
-                }
-            };
             let space = js_to_bytes32(&obj_get(&d, "space"))
                 .ok_or_else(|| "portal destination space must be 32 bytes".to_string())?;
-            Some(PrimPortalDestination { receptor, space })
+            let link = js_to_bytes(&obj_get(&d, "link"))
+                .map(|bytes| {
+                    <[u8; 16]>::try_from(bytes.as_slice())
+                        .map(LinkId)
+                        .map_err(|_| "portal link must be 16 bytes".to_string())
+                })
+                .transpose()?;
+            Some(PortalDestination { space, link })
         }
     };
     Ok(Some(PrimPortal {

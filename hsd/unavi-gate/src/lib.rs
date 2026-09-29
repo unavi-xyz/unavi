@@ -2,11 +2,8 @@ use std::f32::consts::GOLDEN_RATIO;
 
 use anyhow::Context;
 use unavi_portal_protocol::{
-    BACKLINK_CHANNEL,
-    BacklinkPayload,
-    INCOMING_CHANNEL,
-    IncomingPayload,
-    LinkState,
+    INTENT_CHANNEL,
+    LinkIntent,
 };
 use wired_prelude::prelude::*;
 
@@ -20,16 +17,11 @@ use crate::{
             SpatialScope,
         },
         scene::{
-            api::{
-                self_document,
-                self_prim,
-            },
+            api::self_document,
             types::{
                 Document,
                 Material,
                 Portal,
-                PortalDestination,
-                PortalReceptor,
                 Prim,
                 RigidBody,
                 RigidBodyKind,
@@ -41,7 +33,6 @@ use crate::{
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
-const LINK_KEY: &str = "state/link";
 const PORTAL_PRIM_NAME: &str = "portal";
 const RECEPTOR_PRIM_NAME: &str = "receptor";
 
@@ -56,12 +47,8 @@ const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
 
 struct Script {
     portal_prim: Prim,
-    /// This script's own prim, where its session state hangs.
-    state:       Prim,
     beacon_rx:   EventReceptor,
-    incoming_rx: EventReceptor,
-    backlink_rx: EventReceptor,
-    applied:     Option<LinkState>,
+    intent_rx:   EventReceptor,
 }
 
 impl ScriptBehavior for Script {
@@ -73,7 +60,11 @@ impl ScriptBehavior for Script {
         // peer; a prim minted at runtime gets a per-peer id.
         let portal_prim = named_prim(&doc, PORTAL_PRIM_NAME)?;
         let receptor_prim = named_prim(&doc, RECEPTOR_PRIM_NAME)?;
-        portal_prim.set_portal(Some(&portal_from_link(None)))?;
+        portal_prim.set_portal(Some(&Portal {
+            destination: None,
+            size_x:      PORTAL_WIDTH,
+            size_y:      PORTAL_HEIGHT,
+        }))?;
 
         let material = gate_material();
         spawn_frame(&root, material);
@@ -105,16 +96,8 @@ impl ScriptBehavior for Script {
             },
         )?;
 
-        let incoming_rx = wired::event::api::listen(
-            &[INCOMING_CHANNEL.to_string()],
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )?;
-
-        let backlink_rx = wired::event::api::listen(
-            &[BACKLINK_CHANNEL.to_string()],
+        let intent_rx = wired::event::api::listen(
+            &[INTENT_CHANNEL.to_string()],
             EventFilter {
                 documents: None,
                 scope:     EventScope::Global,
@@ -125,11 +108,8 @@ impl ScriptBehavior for Script {
 
         Ok(Self {
             portal_prim,
-            state: self_prim()?,
             beacon_rx,
-            incoming_rx,
-            backlink_rx,
-            applied: None,
+            intent_rx,
         })
     }
 
@@ -139,62 +119,33 @@ impl ScriptBehavior for Script {
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
                 continue;
             };
-            if read_link(&self.state).is_some_and(|s| s.target_space == target) {
+            let current = self.portal_prim.portal().and_then(|p| p.destination);
+            if current.is_some_and(|d| d.space == target) {
                 continue;
             }
-            write_link(
-                &self.state,
-                &LinkState {
-                    target_space:  target,
-                    receptor_doc:  None,
-                    receptor_prim: None,
-                },
-            );
             wired::portal::api::open(self.portal_prim.clone(), target.as_ref())?;
         }
 
-        while let Some(event) = self.incoming_rx.poll() {
+        while let Some(event) = self.intent_rx.poll() {
+            // A gate already leading somewhere leaves the intent for another.
+            let idle = self
+                .portal_prim
+                .portal()
+                .is_none_or(|p| p.destination.is_none());
+            if !idle {
+                continue;
+            }
+            let Ok(intent) = postcard::from_bytes::<LinkIntent>(&event.payload()) else {
+                continue;
+            };
             if !event.consume() {
                 continue;
             }
-            let Ok(req) = postcard::from_bytes::<IncomingPayload>(&event.payload()) else {
-                continue;
-            };
-            write_link(
-                &self.state,
-                &LinkState {
-                    target_space:  req.source_space,
-                    receptor_doc:  Some(req.source_doc),
-                    receptor_prim: Some(req.source_prim),
-                },
-            );
-        }
-
-        while let Some(event) = self.backlink_rx.poll() {
-            let Ok(payload) = postcard::from_bytes::<BacklinkPayload>(&event.payload()) else {
-                continue;
-            };
-            if payload.source_prim != self.portal_prim.id() {
-                continue;
-            }
-            let Some(mut state) = read_link(&self.state) else {
-                continue;
-            };
-            let new_doc = Some(payload.receptor_doc);
-            let new_prim = Some(payload.receptor_prim);
-            if state.receptor_doc == new_doc && state.receptor_prim == new_prim {
-                continue;
-            }
-            state.receptor_doc = new_doc;
-            state.receptor_prim = new_prim;
-            write_link(&self.state, &state);
-        }
-
-        let next = read_link(&self.state);
-        if next != self.applied {
-            self.portal_prim
-                .set_portal(Some(&portal_from_link(next.as_ref())))?;
-            self.applied = next;
+            wired::portal::api::pair(
+                self.portal_prim.clone(),
+                intent.source_space.as_ref(),
+                intent.link.as_ref(),
+            )?;
         }
         Ok(())
     }
@@ -290,37 +241,4 @@ const fn gate_material() -> Material {
         metallic:     Some(0.6),
         roughness:    Some(0.4),
     }
-}
-
-fn portal_from_link(link: Option<&LinkState>) -> Portal {
-    Portal {
-        destination: link.map(|s| PortalDestination {
-            space:    s.target_space.to_vec(),
-            receptor: s
-                .receptor_doc
-                .zip(s.receptor_prim.clone())
-                .map(|(d, p)| PortalReceptor {
-                    document: d.to_vec(),
-                    prim:     p,
-                }),
-        }),
-        size_x:      PORTAL_WIDTH,
-        size_y:      PORTAL_HEIGHT,
-    }
-}
-
-/// The gate's link is session state: every peer present sees the same portal,
-/// and it is gone when the space empties.
-fn write_link(prim: &Prim, state: &LinkState) {
-    let bytes = postcard::to_allocvec(state).expect("encode link state");
-    if let Err(err) = prim.set_session(&[(LINK_KEY.to_string(), Some(bytes))]) {
-        eprintln!("Gate session write failed: {err:?}");
-    }
-}
-
-fn read_link(prim: &Prim) -> Option<LinkState> {
-    prim.session()
-        .into_iter()
-        .find(|(key, _)| key == LINK_KEY)
-        .and_then(|(_, bytes)| postcard::from_bytes::<LinkState>(&bytes).ok())
 }

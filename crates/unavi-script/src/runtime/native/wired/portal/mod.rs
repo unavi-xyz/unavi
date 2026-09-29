@@ -42,6 +42,19 @@ impl bindings::wired::portal::api::Host for Runtime {
         Ok(result.map_err(Into::into))
     }
 
+    async fn pair(
+        &mut self,
+        prim: Resource<PrimRes>,
+        source_space: Vec<u8>,
+        link: Vec<u8>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        let result = match self.api.require(ApiName::Portal) {
+            Ok(()) => shared::wired::portal::pair(&self.api, prim.rep(), source_space, link).await,
+            Err(err) => Err(err),
+        };
+        Ok(result.map_err(Into::into))
+    }
+
     async fn travel(&mut self, target_space: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
         let result = match self.api.require(ApiName::Travel) {
             Ok(()) => shared::wired::portal::travel(&self.api, target_space).await,

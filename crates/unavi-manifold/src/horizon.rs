@@ -6,12 +6,11 @@ use bevy::{
 use crate::{
     DevelopCamera,
     DevelopmentHorizon,
+    GluedTo,
     ManifoldViewer,
     Seam,
     SeamActiveRender,
     SeamState,
-    SeamTargetDoc,
-    SeamTargetReceptor,
 };
 
 const HYSTERESIS_FACTOR: f32 = 1.1;
@@ -27,8 +26,7 @@ pub fn select_developed_seams(
             Entity,
             Ref<SeamState>,
             Ref<GlobalTransform>,
-            Has<SeamTargetDoc>,
-            Has<SeamTargetReceptor>,
+            Option<&GluedTo>,
         ),
         With<Seam>,
     >,
@@ -54,12 +52,13 @@ pub fn select_developed_seams(
 
     let mut candidates: Vec<(Entity, f32)> = seams
         .iter()
-        .filter_map(|(e, state, t, has_space, has_receptor)| {
+        .filter_map(|(e, state, t, glued)| {
             if *state != SeamState::Open {
                 return None;
             }
-            // Opaque seams (without a receptor) are cheap to render.
-            if has_space && !has_receptor {
+            // A seam glued to a document root rather than to another seam is
+            // opaque, and never developed.
+            if !glued.is_some_and(|g| seams.contains(g.0)) {
                 return None;
             }
             let d2 = t.translation().distance_squared(origin);

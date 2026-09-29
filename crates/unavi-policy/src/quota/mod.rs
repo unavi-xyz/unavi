@@ -24,7 +24,6 @@ pub mod limits;
 pub enum Stock {
     Documents,
     SessionMemory,
-    PortalWatches,
     Prims,
     Receptors,
     Slots,
@@ -32,10 +31,9 @@ pub enum Stock {
 }
 
 impl Stock {
-    const ALL: [Self; 7] = [
+    const ALL: [Self; 6] = [
         Self::Documents,
         Self::SessionMemory,
-        Self::PortalWatches,
         Self::Prims,
         Self::Receptors,
         Self::Slots,

@@ -122,6 +122,10 @@ impl Plugin for SpacePlugin {
             )
             .add_systems(
                 Update,
+                portal_bridge::sync_seam_home.before(unavi_manifold::resolver::resolve_seams),
+            )
+            .add_systems(
+                Update,
                 (
                     gossip::publish_active_space,
                     connection::ecs::agent::inbound::apply_remote_poses,

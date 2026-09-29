@@ -32,6 +32,8 @@ interface types {
   type record-id   = list<u8>;
   type document-id = record-id;
   type blob-id     = list<u8>;
+  /// 16 bytes shared by the two halves of a two-way portal.
+  type link-id     = list<u8>;
 
   enum topology {
     point-list,
@@ -369,14 +371,11 @@ interface types {
     restitution:     option<f32>,
   }
 
-  record portal-receptor {
-    document: document-id,
-    prim:     prim-id,
-  }
-
   record portal-destination {
-    receptor: option<portal-receptor>,
-    space:    record-id,
+    space: record-id,
+    /// Pairs this portal with the one in `space` bearing the same link. A
+    /// destination without one is a one-way gateway.
+    link:  option<link-id>,
   }
 
   record portal {

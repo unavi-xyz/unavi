@@ -39,14 +39,19 @@ fn main() {
         Level::INFO
     };
 
-    App::new()
-        .add_plugins(unavi_client::UnaviPlugin {
-            in_memory: args.in_memory,
-            join: args.join,
-            log_level,
-            xr: args.xr,
-        })
-        .run();
+    let mut app = App::new();
+
+    // Don't panic on ECS errors in release builds.
+    #[cfg(not(debug_assertions))]
+    app.set_error_handler(bevy::ecs::error::warn);
+
+    app.add_plugins(unavi_client::UnaviPlugin {
+        in_memory: args.in_memory,
+        join: args.join,
+        log_level,
+        xr: args.xr,
+    })
+    .run();
 
     // Give time for other threads to finish.
     unavi_wasm_compat::sleep_thread(Duration::from_millis(200));

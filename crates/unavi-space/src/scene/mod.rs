@@ -6,6 +6,7 @@ use bevy_hsd::{
     Hsd,
     HsdDocId,
     HsdNamespace,
+    HsdSyncPeers,
     feed::{
         DocFeed,
         Ready,
@@ -44,6 +45,7 @@ pub struct PendingScene {
     /// Carries the document alongside its feed, so the component that lands
     /// on the entity holds the same handle the fetch opened.
     rx:      Receiver<(Document, DocFeed)>,
+    peers:   Vec<EndpointAddr>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -89,11 +91,13 @@ pub fn spawn_space_scene(
     }
     info!(%ns, "Reading space");
 
-    commands.entity(trigger.entity).insert(PendingSpacePeers {
-        ns,
-        sync_targets: sync_targets.0.clone(),
-        waiting_since: time.elapsed(),
-    });
+    commands
+        .entity(trigger.entity)
+        .try_insert(PendingSpacePeers {
+            ns,
+            sync_targets: sync_targets.0.clone(),
+            waiting_since: time.elapsed(),
+        });
 }
 
 /// Starts the actual space-document fetch once gossip has confirmed an
@@ -137,6 +141,7 @@ pub fn start_space_fetch(
         let store = store.0.clone();
         let (tx, rx) = async_channel::bounded(1);
         let (cancel_tx, cancel_rx) = oneshot::channel();
+        let sync_peers = peers.clone();
 
         spawn_async_task(async move {
             let fetch = async {
@@ -165,9 +170,10 @@ pub fn start_space_fetch(
 
         commands
             .entity(entity)
-            .remove::<PendingSpacePeers>()
-            .insert(PendingScene {
+            .try_remove::<PendingSpacePeers>()
+            .try_insert(PendingScene {
                 rx,
+                peers: sync_peers,
                 _cancel: cancel_tx,
             });
     }
@@ -185,13 +191,14 @@ pub fn instantiate_pending_scenes(
         info!(space = %space.0, "Instantiating scene");
         commands
             .entity(entity)
-            .insert((
+            .try_insert((
                 Hsd::new(HsdState::new()),
                 HsdDocId(DocId(*space.0.as_bytes())),
                 HsdNamespace(doc),
+                HsdSyncPeers(pending.peers.clone()),
                 feed,
             ))
-            .remove::<PendingScene>();
+            .try_remove::<PendingScene>();
     }
 }
 

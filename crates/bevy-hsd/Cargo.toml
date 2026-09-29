@@ -21,6 +21,7 @@ bytemuck                = "1.25.2"
 bytes.workspace         = true
 hsd.path                = "../hsd"
 image                   = { features = ["jpeg", "png"], workspace = true }
+iroh.workspace          = true
 iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace     = true
 msdf.path               = "../msdf"
@@ -34,7 +35,6 @@ wds.path                = "../wds"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
-iroh.workspace                 = true
 iroh-blobs.workspace           = true
 naga.workspace                 = true
 notosans.workspace             = true

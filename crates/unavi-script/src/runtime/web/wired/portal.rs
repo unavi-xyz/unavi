@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use super::{
     raise,
-    scene::util::opt_rep,
+    scene::prim::PrimHandle,
 };
 use crate::runtime::{
     Runtime,
@@ -15,12 +15,24 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredPortalOpen")]
     pub async fn wired_portal_open(
         &self,
-        prim: JsValue,
+        prim: &PrimHandle,
         target_space: Vec<u8>,
     ) -> Result<(), JsValue> {
         self.api.require(ApiName::Portal).map_err(raise)?;
-        let rep = opt_rep(&prim).ok_or_else(|| "invalid prim handle".to_string())?;
-        shared::wired::portal::open(&self.api, rep, target_space)
+        shared::wired::portal::open(&self.api, prim.rep(), target_space)
+            .await
+            .map_err(raise)
+    }
+
+    #[wasm_bindgen(js_name = "wiredPortalPair")]
+    pub async fn wired_portal_pair(
+        &self,
+        prim: &PrimHandle,
+        source_space: Vec<u8>,
+        link: Vec<u8>,
+    ) -> Result<(), JsValue> {
+        self.api.require(ApiName::Portal).map_err(raise)?;
+        shared::wired::portal::pair(&self.api, prim.rep(), source_space, link)
             .await
             .map_err(raise)
     }

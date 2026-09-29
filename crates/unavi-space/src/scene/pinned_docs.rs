@@ -9,6 +9,7 @@ use bevy_hsd::{
     Hsd,
     HsdDocId,
     HsdNamespace,
+    HsdSyncPeers,
     feed::{
         DocFeed,
         Ready,
@@ -16,6 +17,7 @@ use bevy_hsd::{
 };
 use bevy_iroh::store::LocalStore;
 use hsd::state::HsdState;
+use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
@@ -45,6 +47,7 @@ pub struct PendingPinnedDoc {
     /// Carries the document alongside its feed, so the component that lands
     /// on the entity holds the same handle the fetch opened.
     rx:      Receiver<(Document, DocFeed)>,
+    peers:   Vec<EndpointAddr>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -68,7 +71,7 @@ pub fn adopt_tracked_docs(
     };
     for (entity, doc) in &trackers {
         if doc.space == space.doc_id() {
-            commands.entity(entity).insert(ChildOf(trigger.entity));
+            commands.entity(entity).try_insert(ChildOf(trigger.entity));
         }
     }
 }
@@ -120,6 +123,7 @@ pub fn fetch_tracked_docs(
         let store = store.0.clone();
         let (tx, rx) = async_channel::bounded(1);
         let (cancel_tx, cancel_rx) = oneshot::channel();
+        let peers = sync_from.clone();
 
         spawn_async_task(async move {
             let fetch = async {
@@ -145,9 +149,10 @@ pub fn fetch_tracked_docs(
 
         commands
             .entity(entity)
-            .remove::<FetchBackoff>()
-            .insert(PendingPinnedDoc {
+            .try_remove::<FetchBackoff>()
+            .try_insert(PendingPinnedDoc {
                 rx,
+                peers,
                 _cancel: cancel_tx,
             });
     }
@@ -163,13 +168,14 @@ pub fn instantiate_tracked_docs(
             Ok((namespace, feed)) => {
                 commands
                     .entity(entity)
-                    .insert((
+                    .try_insert((
                         Hsd::new(HsdState::new()),
                         HsdDocId(doc.doc),
                         HsdNamespace(namespace),
+                        HsdSyncPeers(pending.peers.clone()),
                         feed,
                     ))
-                    .remove::<PendingPinnedDoc>();
+                    .try_remove::<PendingPinnedDoc>();
             }
             Err(TryRecvError::Empty) => {}
             Err(TryRecvError::Closed) => {
@@ -178,8 +184,8 @@ pub fn instantiate_tracked_docs(
                 warn!("fetch of pinned doc {} failed, retrying", doc.doc);
                 commands
                     .entity(entity)
-                    .remove::<PendingPinnedDoc>()
-                    .insert(FetchBackoff(time.elapsed() + REFETCH_DELAY));
+                    .try_remove::<PendingPinnedDoc>()
+                    .try_insert(FetchBackoff(time.elapsed() + REFETCH_DELAY));
             }
         }
     }
@@ -206,7 +212,7 @@ pub fn prune_tracked_docs(
                 commands.entity(entity).despawn();
             }
         } else {
-            commands.entity(entity).insert(UnpinnedAt(now));
+            commands.entity(entity).try_insert(UnpinnedAt(now));
         }
     }
 

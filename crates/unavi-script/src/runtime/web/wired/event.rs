@@ -13,13 +13,17 @@ use super::{
         prim::PrimHandle,
         util::opt_rep,
     },
+    trap,
 };
 use crate::runtime::{
     Runtime,
     shared::{
         self,
         Api,
-        registry::event::SenderScope,
+        registry::event::{
+            InboundEvent,
+            SenderScope,
+        },
         wired::{
             event::{
                 EventFilter,
@@ -30,26 +34,28 @@ use crate::runtime::{
     },
 };
 
-async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
+async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> Result<JsValue, JsError> {
     let obj = js_sys::Object::new();
     match scope {
         SenderScope::Global => {
             js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
         }
         SenderScope::Spatial { distance, node } => {
-            let inserted = api.wired_scene.lock().await.prims.insert(
-                PrimRes {
-                    state:    Arc::clone(&api.state),
-                    doc_id:   node.doc,
-                    id:       node.node,
-                    is_proxy: true,
-                },
-                &api.quota,
-            );
-            let Ok(node_rep) = inserted else {
-                js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
-                return obj.into();
-            };
+            let node_rep = api
+                .wired_scene
+                .lock()
+                .await
+                .prims
+                .insert(
+                    PrimRes {
+                        state:    Arc::clone(&api.state),
+                        doc_id:   node.doc,
+                        id:       node.node,
+                        is_proxy: true,
+                    },
+                    &api.quota,
+                )
+                .map_err(|err| JsError::new(&err.to_string()))?;
             let val = js_sys::Object::new();
             js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
             js_sys::Reflect::set(
@@ -62,7 +68,7 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
             js_sys::Reflect::set(&obj, &"val".into(), &val.into()).ok();
         }
     }
-    obj.into()
+    Ok(obj.into())
 }
 
 #[wasm_bindgen]
@@ -74,6 +80,12 @@ pub struct EventHandle {
 impl EventHandle {
     pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
+    }
+
+    async fn inner(&self) -> Result<InboundEvent, JsError> {
+        shared::wired::event::event_clone_inner(&self.api, self.rep)
+            .await
+            .map_err(|err| trap(&err))
     }
 }
 
@@ -91,41 +103,32 @@ impl Drop for EventHandle {
 
 #[wasm_bindgen]
 impl EventHandle {
-    pub async fn channel(&self) -> String {
-        shared::wired::event::event_clone_inner(&self.api, self.rep)
-            .await
-            .map(|e| e.channel)
-            .unwrap_or_default()
+    pub async fn channel(&self) -> Result<String, JsError> {
+        Ok(self.inner().await?.channel)
     }
 
-    pub async fn payload(&self) -> JsValue {
-        match shared::wired::event::event_clone_inner(&self.api, self.rep).await {
-            Ok(inner) => js_sys::Uint8Array::from(inner.payload.as_slice()).into(),
-            Err(_) => JsValue::UNDEFINED,
-        }
+    pub async fn payload(&self) -> Result<JsValue, JsError> {
+        let inner = self.inner().await?;
+        Ok(js_sys::Uint8Array::from(inner.payload.as_slice()).into())
     }
 
-    pub async fn sender(&self) -> JsValue {
-        let Ok(inner) = shared::wired::event::event_clone_inner(&self.api, self.rep).await else {
-            return JsValue::UNDEFINED;
-        };
+    pub async fn sender(&self) -> Result<JsValue, JsError> {
+        let inner = self.inner().await?;
         let sender_doc: js_sys::Uint8Array = inner.sender_document.as_slice().into();
         let sender = js_sys::Object::new();
         js_sys::Reflect::set(&sender, &"document".into(), &sender_doc.into()).ok();
         js_sys::Reflect::set(
             &sender,
             &"scope".into(),
-            &scope_to_js(inner.sender_scope, &self.api).await,
+            &scope_to_js(inner.sender_scope, &self.api).await?,
         )
         .ok();
-        sender.into()
+        Ok(sender.into())
     }
 
-    pub async fn time(&self) -> JsValue {
-        match shared::wired::event::event_clone_inner(&self.api, self.rep).await {
-            Ok(inner) => js_sys::BigInt::from(inner.time).into(),
-            Err(_) => JsValue::UNDEFINED,
-        }
+    pub async fn time(&self) -> Result<JsValue, JsError> {
+        let inner = self.inner().await?;
+        Ok(js_sys::BigInt::from(inner.time).into())
     }
 
     pub async fn consume(&self) -> bool {

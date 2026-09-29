@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hsd::schema::xform::XformAttr;
+use hsd::attributes::xform::XformAttr;
 use unavi_policy::permissions::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
@@ -19,8 +19,25 @@ use crate::runtime::{
         Api,
         wired::scene::document::XformValue,
     },
-    web::wired::raise,
+    web::wired::{
+        malformed,
+        raise,
+    },
 };
+
+/// `list<tuple<prim-id, string>>`, which `jco` lowers as an array of pairs.
+fn js_to_commit_props(v: &JsValue) -> Result<Vec<(String, String)>, String> {
+    js_sys::Array::from(v)
+        .iter()
+        .map(|entry| {
+            let pair = js_sys::Array::from(&entry);
+            match (pair.get(0).as_string(), pair.get(1).as_string()) {
+                (Some(prim), Some(prop)) => Ok((prim, prop)),
+                _ => Err("a commit entry is a [prim-id, string] pair".to_string()),
+            }
+        })
+        .collect()
+}
 
 #[wasm_bindgen]
 pub struct DocHandle {
@@ -115,8 +132,9 @@ impl DocHandle {
         }
     }
 
-    pub async fn commit(&self, props: Vec<(String, String)>) -> Result<(), JsValue> {
+    pub async fn commit(&self, props: JsValue) -> Result<(), JsValue> {
         self.api.require(ApiName::Commit).map_err(raise)?;
+        let props = js_to_commit_props(&props).map_err(malformed)?;
         shared::wired::scene::document::commit(&self.api, self.rep, props)
             .await
             .map_err(raise)
@@ -131,7 +149,7 @@ impl DocHandle {
 
     #[wasm_bindgen(js_name = "setOffset")]
     pub async fn set_offset(&self, value: JsValue) -> Result<(), JsValue> {
-        let x = js_to_xform(&value).unwrap_or_default();
+        let x = js_to_xform(&value).ok_or_else(|| malformed("an offset is a transform".into()))?;
         shared::wired::scene::document::set_offset(
             &self.api,
             self.rep,

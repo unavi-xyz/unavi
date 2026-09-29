@@ -4,10 +4,6 @@ use serde::{
 };
 
 use crate::{
-    id::{
-        DocId,
-        PrimId,
-    },
     prop_name,
     property::{
         Property,
@@ -17,16 +13,18 @@ use crate::{
 
 pub const GROUP: &str = "portal";
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PortalReceptor {
-    pub document: DocId,
-    pub prim:     PrimId,
-}
+/// Shared by the two halves of a two-way portal.
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
+pub struct LinkId(pub [u8; 16]);
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PortalDestination {
-    pub receptor: Option<PortalReceptor>,
-    pub space:    [u8; 32],
+    pub space: [u8; 32],
+    /// Pairs this portal with the one in `space` bearing the same link. A
+    /// destination without one is a one-way gateway.
+    pub link:  Option<LinkId>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]

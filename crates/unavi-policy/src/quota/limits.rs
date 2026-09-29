@@ -68,7 +68,6 @@ impl Limits {
                 Stock::WasmMemory => Some(budget),
                 Stock::Documents
                 | Stock::SessionMemory
-                | Stock::PortalWatches
                 | Stock::Prims
                 | Stock::Receptors
                 | Stock::Slots => None,
@@ -91,7 +90,6 @@ impl Limits {
                 Stock::WasmMemory => Some(128 * MB as u64),
                 Stock::Documents => Some(256),
                 Stock::Prims | Stock::Slots => Some(50_000),
-                Stock::PortalWatches => Some(16),
                 Stock::Receptors => Some(64),
             },
             |flow| match flow {
@@ -125,7 +123,6 @@ impl Limits {
                 Stock::Documents => Some(4_000),
                 Stock::Prims => Some(4_000_000),
                 Stock::Slots => Some(8_000_000),
-                Stock::PortalWatches => Some(128),
                 Stock::Receptors => Some(32_000),
             },
             |flow| match flow {
@@ -162,7 +159,6 @@ impl Limits {
                 Stock::Documents => Some(1_000),
                 Stock::Prims => Some(1_000_000),
                 Stock::Slots => Some(2_000_000),
-                Stock::PortalWatches => Some(32),
                 Stock::Receptors => Some(2_000),
             },
             |flow| match flow {

@@ -12,6 +12,7 @@ use crate::runtime::{
     },
     web::wired::{
         raise,
+        trap,
         variant_obj,
     },
 };
@@ -90,18 +91,18 @@ impl Drop for ListFutureHandle {
 
 #[wasm_bindgen]
 impl StorageHandle {
-    pub async fn get(&self, ns: Vec<u8>, key: String) -> GetFutureHandle {
+    pub async fn get(&self, ns: Vec<u8>, key: String) -> Result<GetFutureHandle, JsError> {
         let rep = shared::wired::storage::get(&self.api, self.rep, ns, key)
             .await
-            .unwrap_or(u32::MAX);
-        GetFutureHandle::new(rep, Arc::clone(&self.api))
+            .map_err(|err| trap(&err))?;
+        Ok(GetFutureHandle::new(rep, Arc::clone(&self.api)))
     }
 
-    pub async fn list(&self, ns: Vec<u8>, prefix: String) -> ListFutureHandle {
+    pub async fn list(&self, ns: Vec<u8>, prefix: String) -> Result<ListFutureHandle, JsError> {
         let rep = shared::wired::storage::list(&self.api, self.rep, ns, prefix)
             .await
-            .unwrap_or(u32::MAX);
-        ListFutureHandle::new(rep, Arc::clone(&self.api))
+            .map_err(|err| trap(&err))?;
+        Ok(ListFutureHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "rootDoc")]
@@ -126,27 +127,31 @@ impl StorageHandle {
 
 #[wasm_bindgen]
 impl GetFutureHandle {
-    pub async fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::storage::get_future_poll(&self.api, self.rep).await
+    pub async fn poll(&self) -> Result<JsValue, JsError> {
+        let Some(result) = shared::wired::storage::get_future_poll(&self.api, self.rep)
+            .await
+            .map_err(|err| trap(&err))?
         else {
-            return JsValue::UNDEFINED;
+            return Ok(JsValue::UNDEFINED);
         };
-        match result {
+        Ok(match result {
             Ok(Some(bytes)) => variant_obj("ok", js_sys::Uint8Array::from(bytes.as_slice()).into()),
             Ok(None) => variant_obj("ok", JsValue::UNDEFINED),
             Err(()) => variant_obj("err", JsValue::UNDEFINED),
-        }
+        })
     }
 }
 
 #[wasm_bindgen]
 impl ListFutureHandle {
-    pub async fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::storage::list_future_poll(&self.api, self.rep).await
+    pub async fn poll(&self) -> Result<JsValue, JsError> {
+        let Some(result) = shared::wired::storage::list_future_poll(&self.api, self.rep)
+            .await
+            .map_err(|err| trap(&err))?
         else {
-            return JsValue::UNDEFINED;
+            return Ok(JsValue::UNDEFINED);
         };
-        match result {
+        Ok(match result {
             Ok(entries) => {
                 let arr: js_sys::Array = entries
                     .into_iter()
@@ -165,7 +170,7 @@ impl ListFutureHandle {
                 variant_obj("ok", arr.into())
             }
             Err(()) => variant_obj("err", JsValue::UNDEFINED),
-        }
+        })
     }
 }
 

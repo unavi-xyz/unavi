@@ -1,5 +1,8 @@
 use unavi_policy::error::PolicyError;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{
+    JsError,
+    JsValue,
+};
 
 use crate::error::ScriptError;
 
@@ -13,11 +16,13 @@ pub mod scene;
 pub mod storage;
 
 /// A WIT variant crosses into JS as a tag and an optional value, which is how
-/// `jco` lowers one.
+/// `jco` lowers one. A case carrying nothing has no `val` key at all.
 pub fn variant_obj(tag: &str, val: JsValue) -> JsValue {
     let obj = js_sys::Object::new();
     js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
-    js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+    if !val.is_undefined() {
+        js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+    }
     obj.into()
 }
 
@@ -31,7 +36,16 @@ pub fn raise(err: impl Into<ScriptError>) -> JsValue {
     error_obj(&err.into())
 }
 
-/// The same, for a guest value that did not parse into what the WIT declares.
+/// How a host function the WIT declares infallible fails: the exception passes
+/// through `jco` uncaught and aborts the guest call, as a trap does natively.
+/// Substituting a default in its place hands the guest a value it cannot tell
+/// from a real one.
+pub fn trap(err: &anyhow::Error) -> JsError {
+    JsError::new(&format!("{err:#}"))
+}
+
+/// The same as `raise`, for a guest value that did not parse into what the
+/// WIT declares.
 pub fn malformed(detail: String) -> JsValue {
     error_obj(&ScriptError::Other(detail))
 }
@@ -46,6 +60,6 @@ pub fn error_obj(err: &ScriptError) -> JsValue {
         ScriptError::Policy(PolicyError::Permission(_)) => {
             variant_obj("permission", JsValue::UNDEFINED)
         }
-        ScriptError::Policy(_) => variant_obj("reach", JsValue::UNDEFINED),
+        ScriptError::Policy(_) => variant_obj("forbidden", JsValue::UNDEFINED),
     }
 }

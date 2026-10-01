@@ -1,5 +1,8 @@
 use unavi_policy::{
-    error::PolicyError,
+    permissions::{
+        HostApi,
+        PermissionDenied,
+    },
     quota::{
         Flow,
         QuotaError,
@@ -25,8 +28,12 @@ pub enum ScriptError {
     /// releases: a retry without freeing will not.
     #[error("resource ceiling reached: {0:?}")]
     QuotaStock(Stock),
-    #[error(transparent)]
-    Policy(PolicyError),
+    /// The document's author is not trusted for this API.
+    #[error("permission denied: {0:?}")]
+    Permission(HostApi),
+    /// A write to a peer-owned document by a peer that does not own it.
+    #[error("write to a peer-owned document by a non-owner")]
+    NotOwner,
 }
 
 impl ScriptError {
@@ -48,15 +55,15 @@ impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
             SessionError::QuotaExceeded => Self::QuotaStock(Stock::SessionMemory),
-            SessionError::NotOwner => Self::Policy(PolicyError::NotOwner),
+            SessionError::NotOwner => Self::NotOwner,
             SessionError::BadName | SessionError::Other => Self::Other(err.to_string()),
         }
     }
 }
 
-impl From<PolicyError> for ScriptError {
-    fn from(err: PolicyError) -> Self {
-        Self::Policy(err)
+impl From<PermissionDenied> for ScriptError {
+    fn from(PermissionDenied(api): PermissionDenied) -> Self {
+        Self::Permission(api)
     }
 }
 
@@ -69,8 +76,12 @@ impl From<anyhow::Error> for ScriptError {
         // Before the `Self` arm: a policy denial boxed into `anyhow` and
         // re-raised by a caller must keep its variant, not fall through to
         // `Other` and change the error a guest sees.
-        let err = match err.downcast::<PolicyError>() {
-            Ok(policy) => return policy.into(),
+        let err = match err.downcast::<PermissionDenied>() {
+            Ok(denied) => return denied.into(),
+            Err(err) => err,
+        };
+        let err = match err.downcast::<SessionError>() {
+            Ok(session) => return session.into(),
             Err(err) => err,
         };
         match err.downcast::<Self>() {
@@ -82,23 +93,20 @@ impl From<anyhow::Error> for ScriptError {
 
 #[cfg(test)]
 mod tests {
-    use unavi_policy::permissions::ApiName;
-
     use super::*;
 
     #[test]
     fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
-        for policy in [
-            PolicyError::Permission(ApiName::Physics),
-            PolicyError::NotOwner,
-        ] {
-            assert_eq!(
-                ScriptError::from(anyhow::Error::new(policy)),
-                ScriptError::Policy(policy),
-                "a denial that reaches a guest as `other` is a different WIT \
-                 error than the one raised"
-            );
-        }
+        assert_eq!(
+            ScriptError::from(anyhow::Error::new(PermissionDenied(HostApi::Physics))),
+            ScriptError::Permission(HostApi::Physics),
+            "a denial that reaches a guest as `other` is a different WIT error \
+             than the one raised"
+        );
+        assert_eq!(
+            ScriptError::from(anyhow::Error::new(SessionError::NotOwner)),
+            ScriptError::NotOwner,
+        );
     }
 
     #[test]

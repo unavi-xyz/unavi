@@ -14,13 +14,14 @@ use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
-use unavi_policy::space::{
-    Space,
-    SpaceOwner,
-};
 use unavi_portal::{
     PrevTranslation,
     transition::CrossedSeam,
+};
+
+use crate::membership::{
+    Space,
+    SpaceOwner,
 };
 
 #[derive(Component, Default)]

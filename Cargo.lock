@@ -693,28 +693,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "axum-server"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1df331683d982a0b9492b38127151e6453639cd34926eb9c07d4cd8c6d22bfc"
-dependencies = [
- "arc-swap",
- "bytes",
- "either",
- "fs-err",
- "http",
- "http-body",
- "hyper",
- "hyper-util",
- "pin-project-lite",
- "rustls",
- "rustls-pki-types",
- "tokio",
- "tokio-rustls",
- "tower-service",
-]
-
-[[package]]
 name = "backon"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4602,16 +4580,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "fs-err"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b91aa448ca50d7e79433bdf3ee8d99215430d2ec02ade5aefab2a073a1822e8a"
-dependencies = [
- "autocfg",
- "tokio",
 ]
 
 [[package]]
@@ -9718,12 +9686,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
-name = "saa"
-version = "5.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68f5acb362a0e75c2a963532fa7fabf13dff81626dc494df16488d30befcbea0"
-
-[[package]]
 name = "safe_arch"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9739,16 +9701,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "scc"
-version = "3.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8af0b99483d1c3e59471d4f0cb58b244169436a8979c889a91a3f697075ea01"
-dependencies = [
- "saa",
- "sdd",
 ]
 
 [[package]]
@@ -9807,15 +9759,6 @@ dependencies = [
  "memmap2",
  "smithay-client-toolkit 0.19.2",
  "tiny-skia",
-]
-
-[[package]]
-name = "sdd"
-version = "4.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f95d4cc3459db1e608946153c95cf20158af0b86131ae4ae451f90f54549e7d1"
-dependencies = [
- "saa",
 ]
 
 [[package]]
@@ -11367,6 +11310,7 @@ dependencies = [
  "unavi-agent",
  "unavi-assets",
  "unavi-avatar",
+ "unavi-config",
  "unavi-devtools",
  "unavi-grab",
  "unavi-identity",
@@ -11377,12 +11321,23 @@ dependencies = [
  "unavi-portal",
  "unavi-registry",
  "unavi-script",
- "unavi-secrets",
  "unavi-space",
  "unavi-store",
  "web-sys",
  "winit",
  "xdid",
+]
+
+[[package]]
+name = "unavi-config"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "secretspec",
+ "syn 3.0.4",
 ]
 
 [[package]]
@@ -11476,11 +11431,9 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "bevy",
- "bevy-hsd",
  "blake3",
  "hsd",
  "iroh",
- "iroh-docs",
  "parking_lot",
  "ron",
  "serde",
@@ -11525,11 +11478,11 @@ dependencies = [
  "n0-future",
  "parking_lot",
  "postcard",
- "scc",
  "serde",
  "smol_str 0.3.6",
  "thiserror 2.0.20",
  "time",
+ "tokio",
  "tracing",
  "unavi-identity",
  "unavi-store",
@@ -11576,7 +11529,6 @@ dependencies = [
  "unavi-policy",
  "unavi-portal",
  "unavi-portal-protocol",
- "unavi-registry",
  "unavi-space",
  "unavi-store",
  "wasm-bindgen",
@@ -11588,40 +11540,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-secrets"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "prettyplease",
- "proc-macro2",
- "quote",
- "secretspec",
- "syn 3.0.4",
-]
-
-[[package]]
 name = "unavi-server"
 version = "0.0.16"
 dependencies = [
  "anyhow",
  "axum",
- "axum-server",
  "clap",
  "console-subscriber",
  "directories",
  "iroh",
  "iroh-blobs",
+ "iroh-docs",
  "n0-future",
+ "ron",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "unavi-config",
  "unavi-identity",
  "unavi-local",
  "unavi-registry",
- "unavi-secrets",
  "unavi-store",
  "xdid",
 ]

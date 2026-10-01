@@ -22,7 +22,7 @@ use crate::{
 #[cfg(test)] mod tests;
 
 pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(), ScriptError> {
-    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1).await?;
 
     let target = space_id(&target_space)?;
     let (doc, prim) = {
@@ -49,7 +49,7 @@ pub async fn pair(
     source_space: Vec<u8>,
     link: Vec<u8>,
 ) -> Result<(), ScriptError> {
-    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1).await?;
 
     let link = <[u8; 16]>::try_from(link.as_slice())
         .map(LinkId)
@@ -64,7 +64,7 @@ pub async fn pair(
 }
 
 pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError> {
-    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1).await?;
 
     let target = space_id(&target_space)?;
     let hash = NamespaceId::from(&target);

@@ -1,4 +1,4 @@
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -109,7 +109,7 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
         props: Vec<(String, String)>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        if let Err(err) = self.api.require(ApiName::Commit) {
+        if let Err(err) = self.api.require(HostApi::Commit) {
             return Ok(Err(err.into()));
         }
         Ok(

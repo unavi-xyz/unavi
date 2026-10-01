@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy_async::task;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::{
     JsValue,
     prelude::*,
@@ -242,7 +242,7 @@ impl Runtime {
         payload: Vec<u8>,
         filter: JsValue,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Event).map_err(raise)?;
+        self.api.require(HostApi::Event).map_err(raise)?;
         shared::wired::event::emit(&self.api, channel, payload, js_to_event_filter(&filter))
             .await
             .map_err(raise)
@@ -254,7 +254,7 @@ impl Runtime {
         channels: JsValue,
         filter: JsValue,
     ) -> Result<EventReceptorHandle, JsValue> {
-        self.api.require(ApiName::Event).map_err(raise)?;
+        self.api.require(HostApi::Event).map_err(raise)?;
         let channels = js_sys::Array::from(&channels)
             .iter()
             .filter_map(|v| v.as_string())

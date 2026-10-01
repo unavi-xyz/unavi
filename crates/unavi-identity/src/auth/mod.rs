@@ -21,33 +21,37 @@ use tokio::sync::{
     mpsc,
     oneshot,
 };
-use xdid::resolver::DidResolver;
 
+pub use crate::auth::{
+    bindings::Bindings,
+    protocol::AuthProtocol,
+};
 use crate::{
     auth::{
-        bindings::Bindings,
         hooks::Hooks,
         outgoing::Outgoing,
-        protocol::Protocol,
     },
     identity::Identity,
+    resolver::Resolver,
 };
 
 pub mod bindings;
-pub mod handshake;
-pub mod hooks;
-pub mod outgoing;
-pub mod protocol;
+mod handshake;
+mod hooks;
+mod outgoing;
+mod protocol;
 
 pub const ALPN: &[u8] = b"wired/auth";
 
-/// Bounds the proof, because a dial waits on it.
+/// Bounds a handshake in either direction: a dial waits on it, and an inbound
+/// one holds a task.
 const PROOF_DEADLINE: Duration = Duration::from_secs(20);
 const CLOSE_REFUSED: u32 = 403;
 
-pub enum Message {
+pub(crate) enum Message {
     Prove(EndpointId, oneshot::Sender<()>),
-    Proved(EndpointId),
+    /// A handshake finished; `true` if the remote proved a DID.
+    Proved(EndpointId, bool),
 }
 
 /// The `wired/auth` wiring for one endpoint.
@@ -59,12 +63,12 @@ pub struct EndpointAuth {
     rx:       Mutex<Option<mpsc::Receiver<Message>>>,
     bindings: Arc<Bindings>,
     identity: Arc<Identity>,
-    resolver: Arc<DidResolver>,
+    resolver: Arc<Resolver>,
 }
 
 impl EndpointAuth {
     #[must_use]
-    pub fn new(identity: Arc<Identity>, resolver: Arc<DidResolver>) -> Self {
+    pub fn new(identity: Arc<Identity>, resolver: Arc<Resolver>) -> Self {
         let (tx, rx) = mpsc::channel(16);
 
         Self {
@@ -85,7 +89,8 @@ impl EndpointAuth {
     }
 
     /// Installs the hooks that dial `wired/auth` ahead of an outgoing
-    /// connection. Only the endpoint that goes on to bind uses them.
+    /// connection and track how long each peer stays connected, which is how
+    /// long its binding lasts.
     #[must_use]
     pub fn install(&self, builder: Builder) -> Builder {
         builder.hooks(Hooks {
@@ -99,15 +104,15 @@ impl EndpointAuth {
     ///
     /// Returns `None` if this endpoint is already served.
     #[must_use]
-    pub fn serve(&self, endpoint: Endpoint) -> Option<(Protocol, AbortOnDropHandle<()>)> {
+    pub fn serve(&self, endpoint: Endpoint) -> Option<(AuthProtocol, AbortOnDropHandle<()>)> {
         let rx = self.rx.lock().take()?;
 
-        let protocol = Protocol {
-            local:    endpoint.id(),
-            bindings: Arc::clone(&self.bindings),
-            identity: Arc::clone(&self.identity),
-            resolver: Arc::clone(&self.resolver),
-        };
+        let protocol = AuthProtocol::new(
+            endpoint.id(),
+            Arc::clone(&self.bindings),
+            Arc::clone(&self.identity),
+            Arc::clone(&self.resolver),
+        );
 
         let outgoing = Outgoing {
             endpoint,

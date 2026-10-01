@@ -10,7 +10,10 @@ use std::{
     time::Duration,
 };
 
-use parking_lot::Mutex;
+use parking_lot::{
+    Mutex,
+    RwLock,
+};
 use web_time::Instant;
 
 use crate::quota::limits::{
@@ -103,7 +106,7 @@ impl Bucket {
 
 /// One scope's caps, and the quota its charges roll up into.
 pub struct Quota {
-    limits:  Limits,
+    limits:  RwLock<Limits>,
     stock:   Mutex<HashMap<Stock, u64>>,
     buckets: Mutex<HashMap<Flow, Bucket>>,
     owner:   Mutex<Option<Arc<Self>>>,
@@ -113,10 +116,10 @@ impl Quota {
     #[must_use]
     pub fn new(limits: Limits, owner: Option<Arc<Self>>) -> Arc<Self> {
         Arc::new(Self {
-            limits,
-            stock: Mutex::default(),
+            limits:  RwLock::new(limits),
+            stock:   Mutex::default(),
             buckets: Mutex::default(),
-            owner: Mutex::new(owner),
+            owner:   Mutex::new(owner),
         })
     }
 
@@ -130,6 +133,20 @@ impl Quota {
         self.owner.lock().clone()
     }
 
+    /// Replaces this scope's caps in place, so every document rolling up into
+    /// it feels the change at once.
+    ///
+    /// Standing stock is kept even past a lowered cap; it only blocks new
+    /// charges. Buckets keep their tokens up to the new capacity.
+    pub fn set_limits(&self, limits: Limits) {
+        for (flow, bucket) in self.buckets.lock().iter_mut() {
+            if let Some(limit) = limits.flow.get(flow) {
+                bucket.tokens = bucket.tokens.min(limit.capacity);
+            }
+        }
+        *self.limits.write() = limits;
+    }
+
     #[must_use]
     pub fn usage(&self, stock: Stock) -> u64 {
         self.stock.lock().get(&stock).copied().unwrap_or(0)
@@ -141,7 +158,13 @@ impl Quota {
         let mut map = self.stock.lock();
         let cur = map.entry(stock).or_insert(0);
         let next = cur.saturating_add(n);
-        if self.limits.stock.get(&stock).is_some_and(|&max| next > max) {
+        if self
+            .limits
+            .read()
+            .stock
+            .get(&stock)
+            .is_some_and(|&max| next > max)
+        {
             return Err(QuotaError::Stock(stock));
         }
         *cur = next;
@@ -193,23 +216,24 @@ impl Quota {
         }
     }
 
-    /// Reads the whole owner chain. Nothing is taken until [`Self::commit`].
+    /// Takes `n` of `flow` at every level of the chain, or nothing if any
+    /// level cannot give it now.
+    ///
+    /// Each level's bucket stays locked until the levels above it have
+    /// answered, so two callers sharing an owner cannot both spend its last
+    /// tokens. Locks are taken child before owner, which an owner chain makes
+    /// a consistent order.
     #[must_use]
-    pub fn reserve(&self, flow: Flow, n: f64) -> Reservation {
-        self.reserve_inner(flow, n, Instant::now())
+    pub fn try_take(&self, flow: Flow, n: u32) -> Reservation {
+        self.try_take_at(flow, f64::from(n), Instant::now())
     }
 
-    fn reserve_inner(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
-        let here = self.reserve_local(flow, n, now);
-        let Some(owner) = self.owner() else {
-            return here;
-        };
-        here.max(owner.reserve_inner(flow, n, now))
-    }
-
-    fn reserve_local(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
-        let Some(limit) = self.limits.flow.get(&flow).copied() else {
-            return Reservation::Ready;
+    fn try_take_at(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let limit = self.limits.read().flow.get(&flow).copied();
+        let Some(limit) = limit else {
+            return self
+                .owner()
+                .map_or(Reservation::Ready, |owner| owner.try_take_at(flow, n, now));
         };
         if n > limit.capacity {
             return Reservation::Never;
@@ -219,38 +243,48 @@ impl Quota {
         let bucket = buckets
             .entry(flow)
             .or_insert_with(|| Bucket::full(limit, now));
-        // Refilling mutates the bucket but takes nothing.
         bucket.refill(limit, now);
-        let tokens = bucket.tokens;
-        drop(buckets);
 
-        if tokens >= n {
-            Reservation::Ready
-        } else if limit.refill_per_sec <= 0.0 {
-            Reservation::Never
-        } else {
-            Reservation::After(Duration::from_secs_f64((n - tokens) / limit.refill_per_sec))
+        if bucket.tokens < n {
+            let here = wait_for(n - bucket.tokens, limit);
+            drop(buckets);
+            return self
+                .owner()
+                .map_or(here, |owner| here.max(owner.peek_at(flow, n, now)));
         }
+
+        let above = self
+            .owner()
+            .map_or(Reservation::Ready, |owner| owner.try_take_at(flow, n, now));
+        if above == Reservation::Ready {
+            bucket.tokens -= n;
+        }
+        above
     }
 
-    /// Takes `n` at every level that caps `flow`. Only sound immediately after
-    /// a [`Reservation::Ready`], which anything else may drive negative.
-    pub fn commit(&self, flow: Flow, n: f64) {
-        self.commit_inner(flow, n, Instant::now());
-    }
-
-    fn commit_inner(&self, flow: Flow, n: f64, now: Instant) {
-        if let Some(limit) = self.limits.flow.get(&flow).copied() {
-            // A bucket that does not exist yet is a full one, not a free one.
-            let mut buckets = self.buckets.lock();
-            buckets
-                .entry(flow)
-                .or_insert_with(|| Bucket::full(limit, now))
-                .tokens -= n;
-        }
-        if let Some(owner) = self.owner() {
-            owner.commit_inner(flow, n, now);
-        }
+    /// What [`Self::try_take_at`] would answer, taking nothing.
+    fn peek_at(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let limit = self.limits.read().flow.get(&flow).copied();
+        let here = match limit {
+            None => Reservation::Ready,
+            Some(limit) if n > limit.capacity => Reservation::Never,
+            Some(limit) => {
+                let mut buckets = self.buckets.lock();
+                let bucket = buckets
+                    .entry(flow)
+                    .or_insert_with(|| Bucket::full(limit, now));
+                bucket.refill(limit, now);
+                let tokens = bucket.tokens;
+                drop(buckets);
+                if tokens < n {
+                    wait_for(n - tokens, limit)
+                } else {
+                    Reservation::Ready
+                }
+            }
+        };
+        self.owner()
+            .map_or(here, |owner| here.max(owner.peek_at(flow, n, now)))
     }
 
     /// Repoints this quota at a new owner, moving its standing stock across.
@@ -302,6 +336,17 @@ impl Quota {
         }
         false
     }
+}
+
+/// How long `missing` tokens take to refill. Saturates rather than panicking on
+/// a rate that would overflow a [`Duration`].
+fn wait_for(missing: f64, limit: FlowLimit) -> Reservation {
+    if limit.refill_per_sec <= 0.0 || limit.refill_per_sec.is_nan() {
+        return Reservation::Never;
+    }
+    Reservation::After(
+        Duration::try_from_secs_f64(missing / limit.refill_per_sec).unwrap_or(Duration::MAX),
+    )
 }
 
 /// A stock charge that refunds what it leases on drop.
@@ -470,18 +515,14 @@ mod tests {
         let t0 = Instant::now();
 
         for _ in 0..2 {
-            assert_eq!(
-                q.reserve_inner(Flow::PortalOpen, 1.0, t0),
-                Reservation::Ready
-            );
-            q.commit_inner(Flow::PortalOpen, 1.0, t0);
+            assert_eq!(q.try_take_at(Flow::PortalOpen, 1.0, t0), Reservation::Ready);
         }
         assert!(matches!(
-            q.reserve_inner(Flow::PortalOpen, 1.0, t0),
+            q.try_take_at(Flow::PortalOpen, 1.0, t0),
             Reservation::After(_)
         ));
         assert_eq!(
-            q.reserve_inner(Flow::PortalOpen, 1.0, t0 + Duration::from_secs(1)),
+            q.try_take_at(Flow::PortalOpen, 1.0, t0 + Duration::from_secs(1)),
             Reservation::Ready
         );
     }
@@ -490,14 +531,13 @@ mod tests {
     fn a_refill_stops_at_capacity() {
         let q = Quota::new(limits_flow(Flow::Emit, 4.0, 1_000.0), None);
         let t0 = Instant::now();
-        q.commit_inner(Flow::Emit, 4.0, t0);
+        assert_eq!(q.try_take_at(Flow::Emit, 4.0, t0), Reservation::Ready);
 
         let t1 = t0 + Duration::from_secs(10);
-        assert_eq!(q.reserve_inner(Flow::Emit, 4.0, t1), Reservation::Ready);
-        q.commit_inner(Flow::Emit, 4.0, t1);
+        assert_eq!(q.try_take_at(Flow::Emit, 4.0, t1), Reservation::Ready);
         assert!(
             matches!(
-                q.reserve_inner(Flow::Emit, 1.0, t1),
+                q.try_take_at(Flow::Emit, 1.0, t1),
                 Reservation::After(_) | Reservation::Never
             ),
             "ten seconds of refill must still leave only one bucketful"
@@ -505,30 +545,28 @@ mod tests {
     }
 
     #[test]
-    fn a_reservation_takes_nothing_until_it_commits() {
-        let q = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
+    fn a_refused_take_leaves_every_level_untouched() {
+        let peer = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
+        let doc = Quota::new(limits_flow(Flow::Emit, 4.0, 1.0), Some(Arc::clone(&peer)));
         let t0 = Instant::now();
+        assert_eq!(peer.try_take_at(Flow::Emit, 8.0, t0), Reservation::Ready);
 
-        for _ in 0..3 {
-            assert_eq!(
-                q.reserve_inner(Flow::Emit, 10.0, t0),
-                Reservation::Ready,
-                "peeking must not drain the bucket"
-            );
-        }
-
-        q.commit_inner(Flow::Emit, 10.0, t0);
         assert!(matches!(
-            q.reserve_inner(Flow::Emit, 10.0, t0),
+            doc.try_take_at(Flow::Emit, 4.0, t0),
             Reservation::After(_)
         ));
+        assert_eq!(
+            doc.try_take_at(Flow::Emit, 2.0, t0),
+            Reservation::Ready,
+            "the refused ask must not have spent the document's tokens"
+        );
     }
 
     #[test]
     fn an_ask_past_capacity_is_refused_rather_than_waited_on() {
         let q = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         assert_eq!(
-            q.reserve(Flow::Emit, 11.0),
+            q.try_take(Flow::Emit, 11),
             Reservation::Never,
             "no wait fills a bucket past its own capacity"
         );
@@ -538,10 +576,10 @@ mod tests {
     fn the_wait_is_what_the_bucket_needs_to_refill() {
         let q = Quota::new(limits_flow(Flow::Emit, 10.0, 2.0), None);
         let t0 = Instant::now();
-        q.commit_inner(Flow::Emit, 10.0, t0);
+        assert_eq!(q.try_take_at(Flow::Emit, 10.0, t0), Reservation::Ready);
 
         assert_eq!(
-            q.reserve_inner(Flow::Emit, 4.0, t0),
+            q.try_take_at(Flow::Emit, 4.0, t0),
             Reservation::After(Duration::from_secs(2)),
             "four tokens at two per second is two seconds"
         );
@@ -552,27 +590,48 @@ mod tests {
         let peer = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 10.0), Some(Arc::clone(&peer)));
         let t0 = Instant::now();
-        doc.commit_inner(Flow::Emit, 10.0, t0);
+        assert_eq!(doc.try_take_at(Flow::Emit, 10.0, t0), Reservation::Ready);
 
         assert_eq!(
-            doc.reserve_inner(Flow::Emit, 5.0, t0),
+            doc.try_take_at(Flow::Emit, 5.0, t0),
             Reservation::After(Duration::from_secs(5)),
             "the slow peer bucket governs, not the fast document one"
         );
     }
 
     #[test]
-    fn committing_charges_every_level() {
+    fn taking_charges_every_level() {
         let peer = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), Some(Arc::clone(&peer)));
         let t0 = Instant::now();
 
-        assert_eq!(doc.reserve_inner(Flow::Emit, 6.0, t0), Reservation::Ready);
-        doc.commit_inner(Flow::Emit, 6.0, t0);
+        assert_eq!(doc.try_take_at(Flow::Emit, 6.0, t0), Reservation::Ready);
 
         assert!(matches!(
-            peer.reserve_inner(Flow::Emit, 6.0, t0),
+            peer.try_take_at(Flow::Emit, 6.0, t0),
             Reservation::After(_)
         ));
+    }
+
+    #[test]
+    fn lowered_limits_reach_a_quota_already_handed_out() {
+        let q = Quota::new(limits_stock(Stock::Prims, 10), None);
+        let _lease = q.lease(Stock::Prims, 5).expect("within the cap");
+
+        q.set_limits(limits_stock(Stock::Prims, 2));
+
+        assert!(
+            q.lease(Stock::Prims, 1).is_err(),
+            "a peer demoted mid-session must not keep its old ceiling"
+        );
+    }
+
+    #[test]
+    fn an_unrepresentable_wait_saturates() {
+        let limit = FlowLimit {
+            capacity:       f64::MAX,
+            refill_per_sec: f64::MIN_POSITIVE,
+        };
+        assert_eq!(wait_for(1.0, limit), Reservation::After(Duration::MAX));
     }
 }

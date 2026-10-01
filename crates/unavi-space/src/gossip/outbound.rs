@@ -5,8 +5,8 @@ use iroh_docs::NamespaceId;
 use iroh_gossip::api::GossipSender;
 use tokio::sync::Notify;
 use tracing::info;
-use unavi_identity::signed_bytes::{
-    IrohSigner,
+use unavi_identity::signed::{
+    EndpointSigner,
     Signable,
 };
 
@@ -26,7 +26,7 @@ pub async fn handle_gossip_outbound(
     wake: &Notify,
 ) -> anyhow::Result<()> {
     let mut active = ctx.active.clone();
-    let signer = IrohSigner(ctx.endpoint.secret_key());
+    let signer = EndpointSigner(ctx.endpoint.secret_key());
     let mut watcher = ctx.endpoint.watch_addr();
 
     let _ = n0_future::time::timeout(Duration::from_secs(15), ctx.endpoint.online()).await;

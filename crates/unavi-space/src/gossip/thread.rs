@@ -31,6 +31,7 @@ use tokio::sync::{
     watch,
 };
 use tracing::Instrument;
+use unavi_registry::client::Followed;
 
 use crate::inbox::Inbox;
 
@@ -41,6 +42,8 @@ pub struct GossipCtx {
     /// The occupied space. Only it broadcasts presence.
     pub active:   watch::Receiver<Option<NamespaceId>>,
     pub presence: Inbox<(EndpointId, DocId), EndpointAddr>,
+    /// Asked who is in a space before its gossip topic has neighbors.
+    pub followed: Followed,
 }
 
 /// Separates this crate's per-space gossip from iroh-docs'.

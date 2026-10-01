@@ -12,8 +12,8 @@ use bevy_async::{
 use hsd::id::DocId;
 use iroh::EndpointId;
 use unavi_policy::{
+    Policy,
     permissions::Permissions,
-    registry::Policy,
     trust::{
         Trust,
         TrustTable,
@@ -89,7 +89,7 @@ impl SpaceView {
     }
 
     /// How far `peer` is trusted, judged against the identity the local writer
-    /// proved. A peer that proved no DID is a guest.
+    /// proved. A peer that proved no DID is anonymous.
     #[must_use]
     pub fn trust_of(&self, peer: EndpointId) -> Trust {
         quota::trust_of(Some(self.viewer()), peer)

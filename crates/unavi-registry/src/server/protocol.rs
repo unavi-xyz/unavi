@@ -1,3 +1,5 @@
+//! The `wired/registry` protocol handler.
+
 use std::sync::Arc;
 
 use iroh::{
@@ -10,20 +12,20 @@ use iroh::{
 use tracing::error;
 
 use crate::{
-    RegistryContext,
-    control::{
-        RegistryService,
-        handle_message,
+    rpc::RegistryService,
+    server::{
+        Shared,
+        handlers::handle_message,
     },
 };
 
-/// Accepts registry calls, pairing each with the DID its connection proved.
+/// Accepts registry calls, pairing each with the endpoint it arrived from.
 ///
 /// `IrohProtocol::with_sender` would be the shorter path, but it hands the
 /// handler a message with no way back to the connection it arrived on, which is
 /// the only thing that says who is calling.
 pub struct RegistryProtocol {
-    ctx: Arc<RegistryContext>,
+    shared: Arc<Shared>,
 }
 
 impl std::fmt::Debug for RegistryProtocol {
@@ -33,26 +35,22 @@ impl std::fmt::Debug for RegistryProtocol {
 }
 
 impl RegistryProtocol {
-    #[must_use]
-    pub const fn new(ctx: Arc<RegistryContext>) -> Self {
-        Self { ctx }
+    pub(crate) const fn new(shared: Arc<Shared>) -> Self {
+        Self { shared }
     }
 }
 
 impl ProtocolHandler for RegistryProtocol {
     async fn accept(&self, connection: Connection) -> Result<(), AcceptError> {
-        // Read once per connection: an endpoint id is fixed for a connection's
-        // lifetime, and so is the DID bound to it.
-        let caller = self.ctx.bindings.did_of(connection.remote_id());
+        let remote = connection.remote_id();
 
         while let Some(msg) = irpc_iroh::read_request::<RegistryService>(&connection)
             .await
             .map_err(AcceptError::from_err)?
         {
-            let ctx = Arc::clone(&self.ctx);
-            let caller = caller.clone();
+            let shared = Arc::clone(&self.shared);
             n0_future::task::spawn(async move {
-                if let Err(err) = handle_message(ctx, caller, msg).await {
+                if let Err(err) = handle_message(shared, remote, msg).await {
                     error!("registry request failed: {err:?}");
                 }
             });

@@ -1,6 +1,12 @@
+//! The local user's verdicts on peers: block, unblock, trust.
+
 use bevy::prelude::*;
 use iroh::EndpointId;
-use unavi_policy::trust::Trust;
+use unavi_policy::{
+    ledger::PeerKey,
+    quota::limits::Limits,
+    trust::Trust,
+};
 
 use crate::{
     connection::PeerLink,
@@ -9,22 +15,25 @@ use crate::{
 
 /// Blocks `peer` and undoes what they contributed.
 ///
-/// The trust level is written before anything unwinds, so a reconnect arriving
-/// mid-teardown is not readmitted as a guest. Pins, holds and
-/// owner-authored KV cascade away with the connection; only neutral cells need
-/// rolling back by hand, since they outlive a disconnect.
-pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) -> Result<(), NoIdentity> {
-    set_trust(view, peer, Some(Trust::Blocked))?;
+/// The block is written before anything unwinds, so a reconnect arriving
+/// mid-teardown is not readmitted. A peer that proved a DID is blocked by it,
+/// durably; one that proved none is blocked by endpoint for this session.
+/// Pins, holds and owner-authored KV cascade away with the connection; only
+/// neutral cells need rolling back by hand, since they outlive a disconnect.
+pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) {
+    if set_trust(view, peer, Some(Trust::Blocked)).is_err() {
+        view.trust().block_endpoint(peer);
+    }
 
     let reverted = crate::state::entities::revert_session(view, peer);
     info!(reverted, "Ejected peer");
 
     link.disconnect(peer);
-    Ok(())
 }
 
 /// Lifts a block, so the peer is judged by the default again.
 pub fn unblock(view: &SpaceView, peer: EndpointId) -> Result<(), NoIdentity> {
+    view.trust().unblock_endpoint(peer);
     set_trust(view, peer, None)
 }
 
@@ -36,17 +45,22 @@ pub fn trust_peer(view: &SpaceView, peer: EndpointId) -> Result<(), NoIdentity> 
 
 /// Records `trust` for `peer`, or clears it when `trust` is `None`.
 ///
-/// The peer's quota is dropped rather than adjusted, so the next document it
-/// owns derives its caps from the new trust level. Adjusting in place would
-/// have to re-scale buckets that are partly spent.
+/// The peer's quota takes the new level's limits in place, so documents it
+/// already owns are bound by them at once.
 fn set_trust(view: &SpaceView, peer: EndpointId, trust: Option<Trust>) -> Result<(), NoIdentity> {
     let did = view.identity().bindings.did_of(peer).ok_or(NoIdentity)?;
 
     match trust {
-        Some(trust) => view.trust().set(did, trust),
+        Some(trust) => {
+            if let Err(err) = view.trust().set(did.clone(), trust) {
+                warn!(%err, "refused trust level");
+                return Ok(());
+            }
+        }
         None => view.trust().clear(&did),
     }
-    view.policy().forget_peer(peer);
+    view.policy()
+        .retrust_peer(&PeerKey::Did(did), Limits::for_trust(view.trust_of(peer)));
 
     if let Err(err) = view.trust().save() {
         warn!(?err, "failed to persist the trust table");

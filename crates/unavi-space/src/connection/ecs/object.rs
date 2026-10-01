@@ -25,11 +25,11 @@ use hsd::id::{
     DocId,
     PrimId,
 };
-use unavi_policy::space::Space;
 use web_time::Instant;
 
 use crate::{
     connection::PeerLink,
+    membership::Space,
     view::SpaceView,
 };
 

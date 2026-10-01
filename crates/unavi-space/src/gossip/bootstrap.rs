@@ -6,7 +6,6 @@ use tracing::{
     info,
     warn,
 };
-use unavi_registry::follow::registry_clients;
 
 use crate::gossip::GossipCtx;
 
@@ -19,7 +18,7 @@ pub async fn find_bootstrap_peers(
 ) -> anyhow::Result<BTreeSet<PublicKey>> {
     let mut bootstrap = BTreeSet::new();
 
-    for registry in registry_clients() {
+    for registry in ctx.followed.clients() {
         let occupants = match registry.occupants(space).await {
             Ok(occupants) => occupants,
             Err(err) => {

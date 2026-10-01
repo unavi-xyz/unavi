@@ -1,5 +1,12 @@
+//! Which space each document belongs to, and which document composed it.
+//!
+//! Observers keep the [`Policy`] ledger's records in step with the scene
+//! graph: a document hanging under a space is a member of it, and one
+//! instanced at a reference site is hosted by the document that composed it.
+
 use bevy::prelude::*;
 use bevy_hsd::{
+    HsdSystems,
     document::{
         Hsd,
         HsdDocId,
@@ -9,9 +16,25 @@ use bevy_hsd::{
 };
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use unavi_policy::Policy;
 
-use crate::registry::Policy;
+/// Keeps space membership and document hosts recorded in [`Policy`].
+pub struct MembershipPlugin;
 
+impl Plugin for MembershipPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Policy>()
+            .add_observer(register_document)
+            .add_observer(forget_document)
+            .add_observer(register_space)
+            .add_observer(register_membership)
+            .add_observer(forget_membership)
+            .add_observer(forget_space)
+            .add_systems(Update, parent_docs_under_space.before(HsdSystems));
+    }
+}
+
+/// A loaded space, rooted at its own document.
 #[derive(Component)]
 #[require(Transform, Visibility)]
 pub struct Space(pub NamespaceId);
@@ -24,6 +47,7 @@ impl Space {
     }
 }
 
+/// The space a document belongs to.
 #[derive(Component)]
 #[relationship(relationship_target = SpaceMembers)]
 pub struct SpaceOwner(pub Entity);
@@ -124,6 +148,45 @@ pub fn forget_space(trigger: On<Remove, Space>, spaces: Query<&Space>, policy: R
     }
 }
 
+/// Records the document that composed `doc`, once it has an id to key on.
+pub fn register_document(
+    trigger: On<Insert, HsdDocId>,
+    docs: Query<(&HsdDocId, Option<&ChildOf>)>,
+    prims: Query<&PrimOf>,
+    ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
+) {
+    let Ok((doc, parent)) = docs.get(trigger.entity) else {
+        return;
+    };
+    let Some(host) = host_of(parent, &prims, &ids) else {
+        // A document composed some other way — one a script created — states
+        // its own host before it is spawned, and the prim chain has nothing to
+        // say about it. Clearing it here would orphan it from its author.
+        return;
+    };
+    policy.update(doc.0, |record| record.host = Some(host));
+}
+
+/// The document that composed this one in, for a reference site.
+fn host_of(
+    parent: Option<&ChildOf>,
+    prims: &Query<&PrimOf>,
+    ids: &Query<&HsdDocId>,
+) -> Option<DocId> {
+    let prim = parent.map(ChildOf::parent)?;
+    let host = prims.get(prim).ok()?.0;
+    ids.get(host).ok().map(|id| id.0)
+}
+
+/// Drops a despawned document's record. Keyed off the document id, which
+/// every document has.
+pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>, policy: Res<Policy>) {
+    if let Ok(doc) = docs.get(trigger.entity) {
+        policy.forget_document(doc.0);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bevy_hsd::prim::Prim;
@@ -131,24 +194,14 @@ mod tests {
         id::PrimId,
         state::HsdState,
     };
+    use unavi_policy::ledger::Record;
 
     use super::*;
-    use crate::{
-        registry::Record,
-        sync,
-    };
 
-    /// An app with its own registry.
+    /// An app with its own ledger.
     fn app() -> (App, Policy) {
         let mut app = App::new();
-        app.init_resource::<Policy>()
-            .add_observer(register_space)
-            .add_observer(register_membership)
-            .add_observer(forget_membership)
-            .add_observer(forget_space)
-            .add_observer(sync::register_document)
-            .add_observer(sync::forget_document)
-            .add_systems(Update, parent_docs_under_space);
+        app.add_plugins(MembershipPlugin);
         let policy = app.world().resource::<Policy>().clone();
         (app, policy)
     }
@@ -234,6 +287,63 @@ mod tests {
 
         app.world_mut().entity_mut(doc).despawn();
 
+        assert_eq!(policy.get(id), Record::default());
+    }
+
+    #[test]
+    fn a_scene_reference_records_the_host_that_composed_it() {
+        let (mut app, policy) = app();
+        let host_id = DocId([23; 32]);
+
+        let host = app
+            .world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(host_id)))
+            .id();
+        let prim_id = PrimId::new();
+        let prim = app.world_mut().spawn((Prim(prim_id), PrimOf(host))).id();
+
+        let site_id = DocId::site(host_id, prim_id);
+        app.world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(site_id), ChildOf(prim)));
+
+        assert_eq!(policy.get(site_id).host, Some(host_id));
+        assert_eq!(
+            policy.root(site_id),
+            host_id,
+            "an instance resolves its author through the document that \
+             composed it"
+        );
+    }
+
+    #[test]
+    fn a_host_stated_before_the_spawn_survives_registration() {
+        let (mut app, policy) = app();
+        let (parent, child) = (DocId([24; 32]), DocId([25; 32]));
+
+        policy.update(child, |record| record.host = Some(parent));
+        app.world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(child)));
+
+        assert_eq!(
+            policy.get(child).host,
+            Some(parent),
+            "a script-created document hangs off no prim, so the prim chain \
+             must not answer for it"
+        );
+    }
+
+    #[test]
+    fn a_despawned_document_leaves_no_record() {
+        let (mut app, policy) = app();
+        let id = DocId([21; 32]);
+
+        let entity = app
+            .world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(id)))
+            .id();
+        policy.update(id, |record| record.space = Some(id));
+
+        app.world_mut().entity_mut(entity).despawn();
         assert_eq!(policy.get(id), Record::default());
     }
 }

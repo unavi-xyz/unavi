@@ -1,3 +1,5 @@
+//! Renders the `Config` type a manifest describes.
+
 use std::collections::BTreeMap;
 
 use anyhow::{
@@ -15,9 +17,10 @@ use syn::Ident;
 
 /// Renders the struct and constructor for `fields`.
 ///
-/// A secret the manifest gives a value becomes a [`String`] carrying it,
-/// overridable through the build environment; a secret with no declared value
-/// is never compiled in, only read at runtime.
+/// A field the manifest gives a value is public by declaration: it becomes a
+/// [`String`] carrying that value, overridable through the build environment
+/// and then the runtime one. A field with no declared value is never compiled
+/// in, only read at runtime, and fails the load if it is required and unset.
 pub fn accessor(
     profile: &str,
     fields: &[IrField],
@@ -29,7 +32,7 @@ pub fn accessor(
     for field in fields {
         if field.as_path {
             bail!(
-                "secret '{}' is `as_path`, which only a runtime resolve can materialize",
+                "field '{}' is `as_path`, which only a runtime resolve can materialize",
                 field.name
             );
         }
@@ -43,18 +46,29 @@ pub fn accessor(
 
     Ok(quote! {
         #[doc = #summary]
-        pub struct Secrets {
+        pub struct Config {
             #(#declarations)*
         }
 
-        impl Secrets {
-            /// Reads each secret from the environment, falling back on the value
-            /// its profile declared.
-            #[must_use]
-            pub fn load() -> Self {
-                Self {
+        /// A required field with no declared value was unset at runtime.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub struct MissingConfig(pub &'static str);
+
+        impl ::core::fmt::Display for MissingConfig {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                write!(f, "required configuration `{}` is not set", self.0)
+            }
+        }
+
+        impl ::core::error::Error for MissingConfig {}
+
+        impl Config {
+            /// Reads each field from the environment, falling back on the
+            /// value its profile declared.
+            pub fn load() -> ::core::result::Result<Self, MissingConfig> {
+                ::core::result::Result::Ok(Self {
                     #(#initializers)*
-                }
+                })
             }
         }
     })
@@ -68,7 +82,7 @@ fn declaration(field: &IrField, defaults: &BTreeMap<String, String>) -> Result<T
         quote! { #[doc = #text] }
     });
 
-    let ty = if defaults.contains_key(&field.name) {
+    let ty = if defaults.contains_key(&field.name) || !field.optional {
         quote!(String)
     } else {
         quote!(Option<String>)
@@ -85,7 +99,13 @@ fn initializer(field: &IrField, defaults: &BTreeMap<String, String>) -> Result<T
     let name = Literal::string(&field.name);
 
     let read = defaults.get(&field.name).map_or_else(
-        || quote! { ::std::env::var(#name).ok() },
+        || {
+            if field.optional {
+                quote! { ::std::env::var(#name).ok() }
+            } else {
+                quote! { ::std::env::var(#name).map_err(|_| MissingConfig(#name))? }
+            }
+        },
         |declared| {
             let declared = Literal::string(declared);
             quote! {
@@ -102,7 +122,7 @@ fn initializer(field: &IrField, defaults: &BTreeMap<String, String>) -> Result<T
 
 fn ident(name: &str) -> Result<Ident> {
     syn::parse_str(&name.to_lowercase())
-        .with_context(|| format!("secret '{name}' does not name a Rust field"))
+        .with_context(|| format!("field '{name}' does not name a Rust field"))
 }
 
 #[cfg(test)]
@@ -112,7 +132,7 @@ mod tests {
     fn field(name: &str) -> IrField {
         IrField {
             name:        name.to_owned(),
-            optional:    false,
+            optional:    true,
             as_path:     false,
             description: None,
         }
@@ -140,6 +160,17 @@ mod tests {
 
         assert!(rendered.contains("pub token: Option<String>,"));
         assert!(rendered.contains(r#"env::var("TOKEN").ok()"#));
+        assert!(!rendered.contains("option_env!"));
+    }
+
+    #[test]
+    fn a_required_value_fails_the_load_when_unset() {
+        let mut required = field("TOKEN");
+        required.optional = false;
+        let rendered = render(&[required], &BTreeMap::new());
+
+        assert!(rendered.contains("pub token: String,"));
+        assert!(rendered.contains(r#"map_err(|_| MissingConfig("TOKEN"))?"#));
         assert!(!rendered.contains("option_env!"));
     }
 

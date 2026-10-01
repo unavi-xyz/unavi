@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -190,7 +190,7 @@ impl bindings::wired::event::api::Host for Runtime {
         payload: Vec<u8>,
         filter: WitFilter,
     ) -> wasmtime::Result<Result<(), Error>> {
-        if let Err(err) = self.api.require(ApiName::Event) {
+        if let Err(err) = self.api.require(HostApi::Event) {
             return Ok(Err(err.into()));
         }
         Ok(
@@ -205,7 +205,7 @@ impl bindings::wired::event::api::Host for Runtime {
         channels: Vec<String>,
         filter: WitFilter,
     ) -> wasmtime::Result<Result<Resource<EventReceptor>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Event) {
+        if let Err(err) = self.api.require(HostApi::Event) {
             return Ok(Err(err.into()));
         }
         Ok(

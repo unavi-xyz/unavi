@@ -4,7 +4,6 @@ use std::sync::atomic::{
 };
 
 use hsd::id::DocId;
-use iroh::Signature;
 use iroh_docs::NamespaceId;
 use iroh_gossip::api::{
     Event,
@@ -16,7 +15,7 @@ use tracing::{
     info,
     warn,
 };
-use unavi_identity::signed_bytes::SignedBytes;
+use unavi_identity::signed::Signed;
 
 use crate::gossip::{
     GossipCtx,
@@ -52,16 +51,15 @@ pub async fn handle_gossip_inbound(
             }
             Event::Lagged => warn!("lagged"),
             Event::Received(msg) => {
-                let signed_bytes =
-                    match postcard::from_bytes::<SignedBytes<SpaceBroadcast>>(&msg.content) {
-                        Ok(v) => v,
-                        Err(err) => {
-                            warn!(?err, "Got invalid gossip message");
-                            continue;
-                        }
-                    };
+                let signed = match postcard::from_bytes::<Signed<SpaceBroadcast>>(&msg.content) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        warn!(?err, "Got invalid gossip message");
+                        continue;
+                    }
+                };
 
-                let broadcast = match signed_bytes.payload() {
+                let broadcast = match signed.payload() {
                     Ok(v) => v,
                     Err(err) => {
                         warn!(?err, "Failed to decode gossip payload");
@@ -69,16 +67,7 @@ pub async fn handle_gossip_inbound(
                     }
                 };
 
-                let Ok(sig_bytes) = signed_bytes.signature().try_into() else {
-                    warn!(
-                        "Invalid signature length: {}",
-                        signed_bytes.signature().len()
-                    );
-                    continue;
-                };
-                let sig = Signature::from_bytes(sig_bytes);
-
-                if let Err(err) = broadcast.sender.verify(&signed_bytes.signing_bytes(), &sig) {
+                if let Err(err) = signed.verify_endpoint(broadcast.sender) {
                     warn!(?err, "Invalid gossip signature");
                     continue;
                 }

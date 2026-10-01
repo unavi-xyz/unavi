@@ -26,12 +26,14 @@ use hsd::{
 use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
-use unavi_policy::space::Space;
 use unavi_store::Document;
 
-use crate::peer::{
-    ActiveSpaces,
-    Peer,
+use crate::{
+    membership::Space,
+    peer::{
+        ActiveSpaces,
+        Peer,
+    },
 };
 
 pub mod pinned_docs;

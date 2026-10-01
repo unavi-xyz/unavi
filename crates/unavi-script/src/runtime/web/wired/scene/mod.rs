@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -37,7 +37,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneSelfPrim")]
     pub async fn wired_scene_self_prim(&self) -> Result<PrimHandle, JsValue> {
-        self.api.require(ApiName::Scene).map_err(raise)?;
+        self.api.require(HostApi::Scene).map_err(raise)?;
         let rep = shared::wired::scene::self_prim(&self.api)
             .await
             .map_err(raise)?;
@@ -46,7 +46,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneSelfDocument")]
     pub async fn wired_scene_self_document(&self) -> Result<DocHandle, JsValue> {
-        self.api.require(ApiName::Scene).map_err(raise)?;
+        self.api.require(HostApi::Scene).map_err(raise)?;
         let rep = shared::wired::scene::self_document(&self.api)
             .await
             .map_err(raise)?;
@@ -58,7 +58,7 @@ impl Runtime {
         &self,
         id: Vec<u8>,
     ) -> Result<Option<DocHandle>, JsValue> {
-        self.api.require(ApiName::Scene).map_err(raise)?;
+        self.api.require(HostApi::Scene).map_err(raise)?;
         let rep = shared::wired::scene::get_document(&self.api, id)
             .await
             .map_err(raise)?;
@@ -67,7 +67,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneCreateDocument")]
     pub async fn wired_scene_create_document(&self) -> Result<DocHandle, JsValue> {
-        self.api.require(ApiName::CreateDocument).map_err(raise)?;
+        self.api.require(HostApi::CreateDocument).map_err(raise)?;
         let rep = shared::wired::scene::create_document(&self.api)
             .await
             .map_err(raise)?;
@@ -76,7 +76,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneRemoveDocument")]
     pub async fn wired_scene_remove_document(&self, id: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::Scene).map_err(raise)?;
+        self.api.require(HostApi::Scene).map_err(raise)?;
         shared::wired::scene::remove_document(&self.api, id)
             .await
             .map_err(raise)
@@ -84,7 +84,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneCopyDocument")]
     pub async fn wired_scene_copy_document(&self, id: Vec<u8>) -> Result<DocHandle, JsValue> {
-        self.api.require(ApiName::CreateDocument).map_err(raise)?;
+        self.api.require(HostApi::CreateDocument).map_err(raise)?;
         let rep = shared::wired::scene::copy_document(&self.api, id)
             .await
             .map_err(raise)?;

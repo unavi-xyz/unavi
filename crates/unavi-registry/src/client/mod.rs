@@ -1,3 +1,6 @@
+//! Following registries: one [`RegistryClient`] per registry, and the
+//! [`Followed`] set the rest of the app reads them from.
+
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -7,18 +10,33 @@ use iroh::{
 };
 use iroh_docs::NamespaceId;
 use irpc::Client;
+use n0_future::{
+    BufferedStreamExt,
+    StreamExt,
+};
+use time::OffsetDateTime;
 use unavi_identity::{
+    authorship::Authorship,
     identity::Identity,
-    signed_bytes::{
+    resolver::Resolver,
+    signed::{
         Signable,
-        SignedBytes,
+        Signed,
     },
 };
 use unavi_store::Store;
-use xdid::resolver::DidResolver;
 
+pub use crate::client::follow::{
+    Followed,
+    Target,
+    resolve_batch,
+};
 use crate::{
-    control::{
+    claim::{
+        Presence,
+        Submission,
+    },
+    rpc::{
         ALPN,
         Announce,
         Occupants,
@@ -27,12 +45,13 @@ use crate::{
         Submit,
         Views,
     },
-    entry::{
-        Presence,
-        Submission,
-    },
     views::ViewIds,
 };
+
+mod follow;
+
+/// Most occupant signatures verified at once.
+const VERIFY_CONCURRENCY: usize = 8;
 
 /// Client handle for one registry.
 ///
@@ -43,7 +62,7 @@ pub struct RegistryClient {
     client:   Client<RegistryService>,
     host:     EndpointAddr,
     identity: Arc<Identity>,
-    resolver: Arc<DidResolver>,
+    resolver: Arc<Resolver>,
 }
 
 impl RegistryClient {
@@ -52,7 +71,7 @@ impl RegistryClient {
         endpoint: &Endpoint,
         host: EndpointAddr,
         identity: Arc<Identity>,
-        resolver: Arc<DidResolver>,
+        resolver: Arc<Resolver>,
     ) -> Self {
         let client = irpc_iroh::client(endpoint.clone(), host.clone(), ALPN);
         Self {
@@ -63,17 +82,26 @@ impl RegistryClient {
         }
     }
 
-    fn sign<T: Signable>(&self, payload: &T) -> anyhow::Result<SignedBytes<T>> {
+    fn sign<T: Signable>(&self, payload: &T) -> anyhow::Result<Signed<T>> {
         payload
             .sign(self.identity.signing_key())
             .context("sign registry payload")
     }
 
-    pub async fn submit(&self, submission: &Submission) -> anyhow::Result<()> {
+    /// Lists `submission.ns`, which `authorship` must prove this identity
+    /// authors (see [`unavi_identity::authorship::claim`]).
+    pub async fn submit(
+        &self,
+        submission: &Submission,
+        authorship: Authorship,
+    ) -> anyhow::Result<()> {
         let submission = self.sign(submission)?;
 
         self.client
-            .rpc(Submit { submission })
+            .rpc(Submit {
+                submission,
+                authorship,
+            })
             .await?
             .map_err(|e| anyhow::anyhow!("submit failed: {e}"))?;
 
@@ -100,7 +128,8 @@ impl RegistryClient {
         Ok(())
     }
 
-    /// Occupants of a namespace, verified against each announcer's DID.
+    /// Occupants of `ns`, each unexpired and verified against its announcer's
+    /// DID. A registry is not trusted to have filtered them.
     pub async fn occupants(&self, ns: NamespaceId) -> anyhow::Result<Vec<Presence>> {
         let signed = self
             .client
@@ -108,17 +137,27 @@ impl RegistryClient {
             .await?
             .map_err(|e| anyhow::anyhow!("occupants failed: {e}"))?;
 
-        let mut out = Vec::new();
-        for entry in signed {
-            let Ok(presence) = entry.payload() else {
-                continue;
-            };
-            if entry.verify(&presence.did, &self.resolver).await.is_ok() {
-                out.push(presence);
-            }
-        }
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+        let claimed = signed.into_iter().filter_map(|entry| {
+            let presence = entry.payload().ok()?;
+            (presence.ns == ns && presence.expires > now).then_some((entry, presence))
+        });
 
-        Ok(out)
+        let resolver = &self.resolver;
+        let verified = n0_future::stream::iter(claimed)
+            .map(|(entry, presence)| async move {
+                entry
+                    .verify_did(&presence.did, resolver)
+                    .await
+                    .is_ok()
+                    .then_some(presence)
+            })
+            .buffered_unordered(VERIFY_CONCURRENCY)
+            .filter_map(|presence| presence)
+            .collect::<Vec<_>>()
+            .await;
+
+        Ok(verified)
     }
 
     pub async fn views(&self) -> anyhow::Result<ViewIds> {
@@ -140,12 +179,17 @@ impl RegistryClient {
         let ids = self.views().await?;
         let mut synced = Vec::new();
 
-        for ns in [ids.recent, ids.featured, ids.categories, ids.active] {
+        for ns in ids.all() {
             // Syncing and fetching outlive the handles join returns.
             let _joined = store.join(ns, vec![self.host.clone()]).await?;
             synced.push(ns);
         }
 
         Ok(synced)
+    }
+
+    #[must_use]
+    pub const fn host(&self) -> &EndpointAddr {
+        &self.host
     }
 }

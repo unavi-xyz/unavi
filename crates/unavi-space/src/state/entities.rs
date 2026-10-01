@@ -26,12 +26,10 @@ use hsd::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use unavi_policy::{
-    registry::Policy,
-    space::Space,
-};
+use unavi_policy::Policy;
 
 use crate::{
+    membership::Space,
     quota::Viewer,
     state::{
         cell::{

@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -52,7 +52,7 @@ impl bindings::wired::input::api::Host for Runtime {
         &mut self,
         target: Resource<PrimRes>,
     ) -> wasmtime::Result<Result<Resource<InputListenerRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Input) {
+        if let Err(err) = self.api.require(HostApi::Input) {
             return Ok(Err(err.into()));
         }
         Ok(
@@ -68,7 +68,7 @@ impl bindings::wired::input::context::Host for Runtime {
     async fn register_global_input_listener(
         &mut self,
     ) -> wasmtime::Result<Result<Resource<InputListenerRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::InputContext) {
+        if let Err(err) = self.api.require(HostApi::InputContext) {
             return Ok(Err(err.into()));
         }
         Ok(
@@ -80,7 +80,7 @@ impl bindings::wired::input::context::Host for Runtime {
     }
 
     fn pointers(&mut self) -> impl Future<Output = wasmtime::Result<Result<Vec<Pointer>, Error>>> {
-        std::future::ready(if let Err(err) = self.api.require(ApiName::InputContext) {
+        std::future::ready(if let Err(err) = self.api.require(HostApi::InputContext) {
             Ok(Err(err.into()))
         } else {
             Ok(Ok(shared::wired::input::pointers(&self.api)

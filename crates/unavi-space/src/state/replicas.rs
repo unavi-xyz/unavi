@@ -17,12 +17,12 @@ use hsd::{
 use iroh::EndpointId;
 use parking_lot::Mutex;
 use unavi_policy::{
+    Policy,
     quota::{
         Quota,
         Stock,
         StockLease,
     },
-    registry::Policy,
 };
 
 #[cfg(feature = "devtools")] use crate::state::debug;

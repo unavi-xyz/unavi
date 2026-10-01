@@ -27,14 +27,14 @@ use iroh_docs::{
     CapabilityKind,
     NamespaceId,
 };
-use unavi_policy::{
-    quota::{
-        Flow,
-        Stock,
-    },
-    space::Space,
+use unavi_policy::quota::{
+    Flow,
+    Stock,
 };
-use unavi_space::anchor::ActiveSpace;
+use unavi_space::{
+    anchor::ActiveSpace,
+    membership::Space,
+};
 use unavi_store::Document;
 
 use crate::{
@@ -464,7 +464,7 @@ async fn read_entries(doc: &Document, id: DocId) -> anyhow::Result<Vec<Entry>> {
 /// The entries land in the new namespace before the document spawns, and are
 /// projected into its state so a script sees them at once.
 async fn mint_document(api: &Api, entries: Vec<Entry>) -> Result<u32, ScriptError> {
-    crate::quota::acquire(&api.quota, Flow::CreateDocument, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::CreateDocument, 1).await?;
 
     let mut state = HsdState::new();
     for entry in &entries {

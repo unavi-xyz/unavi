@@ -25,12 +25,10 @@ use tracing::{
     warn,
 };
 
-use crate::DIRS;
-
-/// The runtime directory holding hosted files, one file per blob.
+/// The directory under `data_dir` holding hosted files, one file per blob.
 #[must_use]
-pub fn files_dir() -> PathBuf {
-    DIRS.data_local_dir().join("files")
+pub fn files_dir(data_dir: &Path) -> PathBuf {
+    data_dir.join("files")
 }
 
 /// Tag prefix for hosted blobs, so pins are namespaced.
@@ -54,8 +52,8 @@ pub struct HostedFile {
 }
 
 /// Ensures [`files_dir`] exists, with a README explaining what it is for.
-pub fn init_files_dir() -> anyhow::Result<()> {
-    init_files(&files_dir())
+pub fn init_files_dir(data_dir: &Path) -> anyhow::Result<()> {
+    init_files(&files_dir(data_dir))
 }
 
 fn init_files(dir: &Path) -> anyhow::Result<()> {
@@ -125,11 +123,12 @@ fn rel_name(root: &Path, path: &Path) -> Option<String> {
 /// Adds every file in [`files_dir`] to the blob store under a `files/` tag and
 /// writes `files.json`. Idempotent: re-hosting the same content refreshes the
 /// pin instead of duplicating the blob.
-pub async fn host_files(store: &BlobStore) -> anyhow::Result<Vec<HostedFile>> {
+pub async fn host_files(store: &BlobStore, data_dir: &Path) -> anyhow::Result<Vec<HostedFile>> {
     let blobs: &Blobs = store.blobs();
+    let dir = files_dir(data_dir);
     let mut hosted = Vec::new();
 
-    for (name, path) in hosted_files(&files_dir())? {
+    for (name, path) in hosted_files(&dir)? {
         let size = fs::metadata(&path)?.len();
         let haf = blobs.add_path(&path).with_named_tag(tag(&name)).await?;
         hosted.push(HostedFile {
@@ -141,7 +140,7 @@ pub async fn host_files(store: &BlobStore) -> anyhow::Result<Vec<HostedFile>> {
 
     sweep(store, &hosted).await?;
 
-    let index = files_dir().join("files.json");
+    let index = dir.join("files.json");
     fs::write(index, serde_json::to_string_pretty(&hosted)?)?;
     Ok(hosted)
 }
@@ -178,9 +177,12 @@ async fn sweep(store: &BlobStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
 /// Prints the hosted hashes in the manifest shape the client consumes, so an
 /// operator can paste them into the `unavi-assets` manifest and verify what the
 /// server actually serves.
-pub fn log_manifest(hosted: &[HostedFile]) {
+pub fn log_manifest(hosted: &[HostedFile], data_dir: &Path) {
     if hosted.is_empty() {
-        warn!("no files hosted; drop files into {}", files_dir().display());
+        warn!(
+            "no files hosted; drop files into {}",
+            files_dir(data_dir).display()
+        );
         return;
     }
     info!("hosted files (name = hash, size)");

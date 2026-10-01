@@ -27,9 +27,9 @@ use unavi_input::{
         nearest_hit,
     },
 };
-use unavi_policy::space::Space;
 use unavi_space::{
     anchor::ActiveSpace,
+    membership::Space,
     state::replicas::Replicas,
     view::SpaceView,
 };

@@ -1,5 +1,5 @@
 use bevy_vrm::BoneName;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -130,7 +130,7 @@ impl HostAgent for Runtime {
 
 impl bindings::wired::agent::api::Host for Runtime {
     async fn local_agent(&mut self) -> wasmtime::Result<Result<Resource<AgentRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::LocalAgent) {
+        if let Err(err) = self.api.require(HostApi::LocalAgent) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::agent::local_agent(&self.api)
@@ -140,7 +140,7 @@ impl bindings::wired::agent::api::Host for Runtime {
     }
 
     async fn local_camera(&mut self) -> wasmtime::Result<Result<Resource<PrimRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::LocalAgent) {
+        if let Err(err) = self.api.require(HostApi::LocalAgent) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::agent::local_camera(&self.api)

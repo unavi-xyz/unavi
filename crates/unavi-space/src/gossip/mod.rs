@@ -18,14 +18,15 @@ use tokio::sync::{
     oneshot,
     watch,
 };
-use unavi_identity::signed_bytes::Signable;
-use unavi_policy::space::Space;
+use unavi_identity::signed::Signable;
 
 use crate::{
     gossip::thread::{
         GossipCommand,
         GossipCtx,
     },
+    identity::LocalIdentity,
+    membership::Space,
     peer::presence::PresenceInbox,
 };
 
@@ -125,11 +126,15 @@ pub fn join_space_topics(
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
     signal: Res<ActiveSpaceSignal>,
     presence: Res<PresenceInbox>,
+    identity: Option<Res<LocalIdentity>>,
     mut commands: Commands,
 ) {
     if spaces.is_empty() {
         return;
     }
+    let Some(identity) = identity else {
+        return;
+    };
 
     let Ok(sender) = sender.single() else {
         return;
@@ -144,6 +149,7 @@ pub fn join_space_topics(
             gossip:   gossip.0.clone(),
             active:   signal.0.subscribe(),
             presence: presence.inbox(),
+            followed: identity.followed.clone(),
         };
 
         let (cancel_tx, cancel_rx) = oneshot::channel();

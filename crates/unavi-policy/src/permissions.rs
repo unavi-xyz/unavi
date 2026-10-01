@@ -1,12 +1,16 @@
-use crate::{
-    error::PolicyError,
-    trust::Trust,
-};
+//! Which host APIs a document may call, by how far its author is trusted.
+
+use crate::trust::Trust;
+
+/// A call refused because the document lacks the API it needs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("permission denied: {0:?}")]
+pub struct PermissionDenied(pub HostApi);
 
 /// A host API surface a document may be granted. Every variant has an
 /// enforcement site.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ApiName {
+pub enum HostApi {
     Commit,
     CreateDocument,
     Event,
@@ -26,7 +30,7 @@ pub enum ApiName {
     Travel,
 }
 
-impl ApiName {
+impl HostApi {
     const fn bit(self) -> u16 {
         1 << (self as u16)
     }
@@ -38,7 +42,7 @@ impl ApiName {
 pub struct Permissions(u16);
 
 impl Permissions {
-    const fn of(names: &[ApiName]) -> Self {
+    const fn of(names: &[HostApi]) -> Self {
         let mut bits = 0;
         let mut i = 0;
         while i < names.len() {
@@ -62,14 +66,18 @@ impl Permissions {
             // the peer first; this is what remains if content of theirs is
             // already resident.
             Trust::Blocked => Self::of(&[]),
-            Trust::Guest => Self::of(&[
-                ApiName::CreateDocument,
-                ApiName::Event,
-                ApiName::Input,
-                ApiName::Peer,
-                ApiName::Portal,
-                ApiName::Scene,
+            // An unproven author can make its own prop work, but cannot
+            // multiply itself or send anyone elsewhere.
+            Trust::Anonymous => Self::of(&[
+                HostApi::Event,
+                HostApi::Input,
+                HostApi::Peer,
+                HostApi::Scene,
             ]),
+            Trust::Guest => Self(
+                Self::for_trust(Trust::Anonymous).0
+                    | Self::of(&[HostApi::CreateDocument, HostApi::Portal]).0,
+            ),
             // Identity is the durable handle the whole trust model is keyed
             // to, and the agent pose is continuous motion capture of a real
             // person. Neither is something a stranger's prop may read.
@@ -80,17 +88,17 @@ impl Permissions {
             // tools it ships are authored at this rung; content is not.
             Trust::Trusted => Self(
                 Self::for_trust(Trust::Guest).0
-                    | Self::of(&[ApiName::Commit, ApiName::Identity, ApiName::LocalAgent]).0,
+                    | Self::of(&[HostApi::Commit, HostApi::Identity, HostApi::LocalAgent]).0,
             ),
             // Global input listening, the physics solver and cross-space
             // reach. Nothing the local user did not author holds these.
             Trust::Myself => Self(
                 Self::for_trust(Trust::Trusted).0
                     | Self::of(&[
-                        ApiName::InputContext,
-                        ApiName::Physics,
-                        ApiName::Storage,
-                        ApiName::Travel,
+                        HostApi::InputContext,
+                        HostApi::Physics,
+                        HostApi::Storage,
+                        HostApi::Travel,
                     ])
                     .0,
             ),
@@ -98,9 +106,9 @@ impl Permissions {
     }
 
     /// Gates a call on this document holding `name`.
-    pub const fn require(self, name: ApiName) -> Result<(), PolicyError> {
+    pub const fn require(self, name: HostApi) -> Result<(), PermissionDenied> {
         if self.0 & name.bit() == 0 {
-            Err(PolicyError::Permission(name))
+            Err(PermissionDenied(name))
         } else {
             Ok(())
         }
@@ -111,23 +119,29 @@ impl Permissions {
 mod tests {
     use super::*;
 
-    const ALL: [ApiName; 13] = [
-        ApiName::Commit,
-        ApiName::CreateDocument,
-        ApiName::Event,
-        ApiName::Identity,
-        ApiName::Input,
-        ApiName::InputContext,
-        ApiName::LocalAgent,
-        ApiName::Peer,
-        ApiName::Physics,
-        ApiName::Portal,
-        ApiName::Scene,
-        ApiName::Storage,
-        ApiName::Travel,
+    const ALL: [HostApi; 13] = [
+        HostApi::Commit,
+        HostApi::CreateDocument,
+        HostApi::Event,
+        HostApi::Identity,
+        HostApi::Input,
+        HostApi::InputContext,
+        HostApi::LocalAgent,
+        HostApi::Peer,
+        HostApi::Physics,
+        HostApi::Portal,
+        HostApi::Scene,
+        HostApi::Storage,
+        HostApi::Travel,
     ];
 
-    const LADDER: [Trust; 4] = [Trust::Blocked, Trust::Guest, Trust::Trusted, Trust::Myself];
+    const LADDER: [Trust; 5] = [
+        Trust::Blocked,
+        Trust::Anonymous,
+        Trust::Guest,
+        Trust::Trusted,
+        Trust::Myself,
+    ];
 
     #[test]
     fn a_rung_holds_everything_the_rung_below_it_does() {
@@ -156,15 +170,23 @@ mod tests {
     }
 
     #[test]
+    fn an_unproven_author_cannot_spawn_or_send_anyone_away() {
+        let anonymous = Permissions::for_trust(Trust::Anonymous);
+        assert!(anonymous.require(HostApi::CreateDocument).is_err());
+        assert!(anonymous.require(HostApi::Portal).is_err());
+        assert!(anonymous.require(HostApi::Scene).is_ok());
+    }
+
+    #[test]
     fn a_first_time_visitors_prop_works_with_no_configuration() {
         let guest = Permissions::for_trust(Trust::Guest);
         for name in [
-            ApiName::CreateDocument,
-            ApiName::Event,
-            ApiName::Input,
-            ApiName::Peer,
-            ApiName::Portal,
-            ApiName::Scene,
+            HostApi::CreateDocument,
+            HostApi::Event,
+            HostApi::Input,
+            HostApi::Peer,
+            HostApi::Portal,
+            HostApi::Scene,
         ] {
             assert!(guest.require(name).is_ok(), "a guest needs {name:?}");
         }
@@ -174,11 +196,11 @@ mod tests {
     fn a_strangers_document_cannot_read_the_local_user() {
         let guest = Permissions::for_trust(Trust::Guest);
         assert!(
-            guest.require(ApiName::Identity).is_err(),
+            guest.require(HostApi::Identity).is_err(),
             "a DID is the durable handle the whole trust model is keyed to"
         );
         assert!(
-            guest.require(ApiName::LocalAgent).is_err(),
+            guest.require(HostApi::LocalAgent).is_err(),
             "the agent pose is continuous motion capture of a real person"
         );
     }
@@ -186,10 +208,10 @@ mod tests {
     #[test]
     fn only_the_local_users_own_content_reaches_the_shell_apis() {
         for name in [
-            ApiName::InputContext,
-            ApiName::Physics,
-            ApiName::Storage,
-            ApiName::Travel,
+            HostApi::InputContext,
+            HostApi::Physics,
+            HostApi::Storage,
+            HostApi::Travel,
         ] {
             assert!(
                 Permissions::for_trust(Trust::Trusted)

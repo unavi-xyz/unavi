@@ -1,8 +1,14 @@
+//! Payloads signed under a per-type context, by a DID or by an endpoint key.
+
 use std::{
     convert::Infallible,
     marker::PhantomData,
 };
 
+use iroh::{
+    EndpointId,
+    Signature,
+};
 use serde::{
     Deserialize,
     Serialize,
@@ -13,10 +19,12 @@ use xdid::{
         did::Did,
     },
     method::key::Signer,
-    resolver::DidResolver,
 };
 
-use crate::jwk;
+use crate::{
+    jwk,
+    resolver::Resolver,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum VerifyError {
@@ -29,10 +37,14 @@ pub enum VerifyError {
     NoAuthenticationKey(Did),
     #[error("not signed by any authentication key of {0}")]
     NotSigned(Did),
+    #[error("not signed by endpoint {0}")]
+    NotSignedByEndpoint(EndpointId),
 }
 
+/// A `T` and a signature over it. Who signed is not recorded: the verifier
+/// names the DID or endpoint it expects.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SignedBytes<T>
+pub struct Signed<T>
 where
     T: Signable,
 {
@@ -41,7 +53,7 @@ where
     _type:         PhantomData<T>,
 }
 
-impl<T> SignedBytes<T>
+impl<T> Signed<T>
 where
     T: Signable,
 {
@@ -56,23 +68,25 @@ where
         })
     }
 
-    #[must_use]
-    pub fn signature(&self) -> &[u8] {
-        &self.signature
-    }
-
     /// The exact bytes a signature covers. The payload alone is not signed.
-    #[must_use]
-    pub fn signing_bytes(&self) -> Vec<u8> {
+    pub(crate) fn signing_bytes(&self) -> Vec<u8> {
         signing_bytes(T::SIGNING_CONTEXT, &self.payload_bytes)
     }
 
+    /// The payload. Unverified until [`Self::verify_did`] or
+    /// [`Self::verify_endpoint`] says otherwise.
     pub fn payload(&self) -> postcard::Result<T> {
         postcard::from_bytes(&self.payload_bytes)
     }
 
+    /// Bytes the encoded payload takes, without decoding it.
+    #[must_use]
+    pub const fn payload_len(&self) -> usize {
+        self.payload_bytes.len()
+    }
+
     /// Checks the signature against `did`'s authentication keys.
-    pub async fn verify(&self, did: &Did, resolver: &DidResolver) -> Result<(), VerifyError>
+    pub async fn verify_did(&self, did: &Did, resolver: &Resolver) -> Result<(), VerifyError>
     where
         T: Sync,
     {
@@ -102,6 +116,16 @@ where
 
         Err(VerifyError::NotSigned(did.clone()))
     }
+
+    /// Checks the signature against an endpoint key, as made by
+    /// [`EndpointSigner`].
+    pub fn verify_endpoint(&self, endpoint: EndpointId) -> Result<(), VerifyError> {
+        let signature = <[u8; 64]>::try_from(self.signature.as_slice())
+            .map_err(|_| VerifyError::NotSignedByEndpoint(endpoint))?;
+        endpoint
+            .verify(&self.signing_bytes(), &Signature::from_bytes(&signature))
+            .map_err(|_| VerifyError::NotSignedByEndpoint(endpoint))
+    }
 }
 
 /// Contexts are ASCII literals, so a NUL terminator keeps the framing
@@ -124,14 +148,16 @@ where
     /// reuse a context.
     const SIGNING_CONTEXT: &'static str;
 
-    fn sign(&self, key: &impl Signer) -> anyhow::Result<SignedBytes<Self>> {
-        SignedBytes::sign(self, key)
+    fn sign(&self, key: &impl Signer) -> anyhow::Result<Signed<Self>> {
+        Signed::sign(self, key)
     }
 }
 
-pub struct IrohSigner<'a>(pub &'a iroh::SecretKey);
+/// Signs with an endpoint's key, for payloads verified by
+/// [`Signed::verify_endpoint`].
+pub struct EndpointSigner<'a>(pub &'a iroh::SecretKey);
 
-impl Signer for IrohSigner<'_> {
+impl Signer for EndpointSigner<'_> {
     type Error = Infallible;
 
     fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Infallible> {
@@ -141,6 +167,8 @@ impl Signer for IrohSigner<'_> {
 
 #[cfg(test)]
 mod tests {
+    use iroh::SecretKey;
+
     use super::*;
 
     #[derive(Serialize, Deserialize)]
@@ -155,7 +183,7 @@ mod tests {
         const SIGNING_CONTEXT: &'static str = "test/b";
     }
 
-    impl<T: Signable> SignedBytes<T> {
+    impl<T: Signable> Signed<T> {
         fn from_payload(payload_bytes: Vec<u8>) -> Self {
             Self {
                 payload_bytes,
@@ -167,8 +195,8 @@ mod tests {
 
     #[test]
     fn identical_payloads_sign_over_different_bytes() {
-        let a = SignedBytes::<A>::from_payload(postcard::to_stdvec(&A(7)).expect("encode a"));
-        let b = SignedBytes::<B>::from_payload(postcard::to_stdvec(&B(7)).expect("encode b"));
+        let a = Signed::<A>::from_payload(postcard::to_stdvec(&A(7)).expect("encode a"));
+        let b = Signed::<B>::from_payload(postcard::to_stdvec(&B(7)).expect("encode b"));
 
         assert_eq!(a.payload_bytes, b.payload_bytes);
         assert_ne!(
@@ -180,9 +208,24 @@ mod tests {
 
     #[test]
     fn context_cannot_absorb_payload_prefix() {
-        let split = SignedBytes::<A>::from_payload(b"\0extra".to_vec());
-        let joined = SignedBytes::<A>::from_payload(b"extra".to_vec());
+        let split = Signed::<A>::from_payload(b"\0extra".to_vec());
+        let joined = Signed::<A>::from_payload(b"extra".to_vec());
 
         assert_ne!(split.signing_bytes(), joined.signing_bytes());
+    }
+
+    #[test]
+    fn an_endpoint_signature_verifies_only_for_its_endpoint() {
+        let key = SecretKey::generate();
+        let signed = A(7).sign(&EndpointSigner(&key)).expect("sign");
+
+        signed
+            .verify_endpoint(key.public())
+            .expect("the signing endpoint verifies");
+        assert!(
+            signed
+                .verify_endpoint(SecretKey::generate().public())
+                .is_err()
+        );
     }
 }

@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 
 use crate::runtime::{
     Runtime,
@@ -35,7 +35,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     ) -> impl Future<Output = wasmtime::Result<Result<Option<Vec<u8>>, Error>>> {
         std::future::ready(Ok(self
             .api
-            .require(ApiName::Identity)
+            .require(HostApi::Identity)
             .map(|()| shared::wired::peer::self_peer(&self.api))
             .map_err(Into::into)))
     }
@@ -45,7 +45,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     ) -> impl Future<Output = wasmtime::Result<Result<Option<String>, Error>>> {
         std::future::ready(Ok(self
             .api
-            .require(ApiName::Identity)
+            .require(HostApi::Identity)
             .map(|()| shared::wired::peer::self_did(&self.api))
             .map_err(Into::into)))
     }
@@ -56,7 +56,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     ) -> impl Future<Output = wasmtime::Result<Result<Option<Vec<u8>>, Error>>> {
         std::future::ready(Ok(self
             .api
-            .require(ApiName::Peer)
+            .require(HostApi::Peer)
             .map(|()| shared::wired::peer::doc_owner(&self.api, doc))
             .map_err(Into::into)))
     }
@@ -64,7 +64,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     fn is_self_owner(&mut self) -> impl Future<Output = wasmtime::Result<Result<bool, Error>>> {
         std::future::ready(Ok(self
             .api
-            .require(ApiName::Peer)
+            .require(HostApi::Peer)
             .map(|()| shared::wired::peer::is_self_owner(&self.api))
             .map_err(Into::into)))
     }

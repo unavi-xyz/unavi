@@ -1,4 +1,4 @@
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -50,7 +50,7 @@ impl Runtime {
         dir: JsValue,
         max_dist: f32,
     ) -> Result<JsValue, JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         let origin = js_to_vec3(&origin, [0.0; 3]);
         let dir = js_to_vec3(&dir, [0.0; 3]);
         let hit = shared::wired::physics::raycast(&self.api, origin, dir, max_dist)
@@ -64,7 +64,7 @@ impl Runtime {
         &self,
         prim: &PrimHandle,
     ) -> Result<JsValue, JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         let v = shared::wired::physics::get_linear_velocity(&self.api, prim.rep())
             .await
             .map_err(raise)?;
@@ -77,7 +77,7 @@ impl Runtime {
         prim: &PrimHandle,
         force: JsValue,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         let f = js_to_vec3(&force, [0.0; 3]);
         shared::wired::physics::apply_force(&self.api, prim.rep(), f)
             .await
@@ -90,7 +90,7 @@ impl Runtime {
         prim: &PrimHandle,
         v: JsValue,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         let v = js_to_vec3(&v, [0.0; 3]);
         shared::wired::physics::set_linear_velocity(&self.api, prim.rep(), v)
             .await
@@ -103,7 +103,7 @@ impl Runtime {
         prim: &PrimHandle,
         v: JsValue,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         let v = js_to_vec3(&v, [0.0; 3]);
         shared::wired::physics::set_angular_velocity(&self.api, prim.rep(), v)
             .await
@@ -112,13 +112,13 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredPhysicsTakeHold")]
     pub fn wired_physics_take_hold(&self, doc: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         shared::wired::physics::take_hold(&self.api, doc).map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredPhysicsReleaseHold")]
     pub fn wired_physics_release_hold(&self, doc: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::Physics).map_err(raise)?;
+        self.api.require(HostApi::Physics).map_err(raise)?;
         shared::wired::physics::release_hold(&self.api, doc).map_err(raise)
     }
 }

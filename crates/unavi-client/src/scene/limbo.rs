@@ -18,10 +18,12 @@ use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
-use unavi_policy::space::Space;
-use unavi_space::anchor::{
-    ActiveSpace,
-    SPACE_CELL_SIZE,
+use unavi_space::{
+    anchor::{
+        ActiveSpace,
+        SPACE_CELL_SIZE,
+    },
+    membership::Space,
 };
 
 use crate::scene::{

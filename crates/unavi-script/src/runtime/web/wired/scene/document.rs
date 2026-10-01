@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy_async::task;
 use hsd::attributes::xform::XformAttr;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -133,7 +133,7 @@ impl DocHandle {
     }
 
     pub async fn commit(&self, props: JsValue) -> Result<(), JsValue> {
-        self.api.require(ApiName::Commit).map_err(raise)?;
+        self.api.require(HostApi::Commit).map_err(raise)?;
         let props = js_to_commit_props(&props).map_err(malformed)?;
         shared::wired::scene::document::commit(&self.api, self.rep, props)
             .await

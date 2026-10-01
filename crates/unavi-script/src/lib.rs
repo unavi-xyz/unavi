@@ -7,7 +7,7 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use unavi_policy::PolicyPlugin;
+use unavi_space::membership::MembershipPlugin;
 
 use crate::load::asset::Wasm;
 
@@ -31,8 +31,8 @@ pub struct ScriptPlugin;
 
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
-        if !app.is_plugin_added::<PolicyPlugin>() {
-            app.add_plugins(PolicyPlugin);
+        if !app.is_plugin_added::<MembershipPlugin>() {
+            app.add_plugins(MembershipPlugin);
         }
 
         app.add_plugins((

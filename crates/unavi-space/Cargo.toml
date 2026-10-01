@@ -43,7 +43,7 @@ unavi-identity.path     = "../unavi-identity"
 unavi-local.path        = "../unavi-local"
 unavi-policy.path       = "../unavi-policy"
 unavi-portal.path       = "../unavi-portal"
-unavi-registry.path     = "../unavi-registry"
+unavi-registry          = { features = ["client"], path = "../unavi-registry" }
 unavi-store.path        = "../unavi-store"
 web-time.workspace      = true
 xdid.workspace          = true

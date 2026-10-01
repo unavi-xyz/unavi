@@ -1,3 +1,5 @@
+//! A user identity and the device it runs on.
+
 use std::sync::Arc;
 
 use iroh::SecretKey;
@@ -12,9 +14,12 @@ use xdid::{
     },
 };
 
-pub mod root;
-pub mod store;
+use crate::identity::keys::NodeKeys;
 
+pub mod keys;
+pub mod root_document;
+
+/// A DID and the key that signs for it.
 #[derive(Clone)]
 pub struct Identity {
     did:         Did,
@@ -57,18 +62,26 @@ pub struct NodeIdentity {
 
 impl NodeIdentity {
     #[must_use]
-    pub fn new(signing_key: P256KeyPair, endpoint: SecretKey) -> Self {
-        let did = signing_key.public().to_did();
-
+    pub fn new(user: Identity, endpoint: SecretKey) -> Self {
         Self {
-            user: Arc::new(Identity::new(did, signing_key)),
+            user: Arc::new(user),
             endpoint,
         }
     }
 
+    /// Loads this device's keys, answering as the `did:key` of its identity
+    /// key.
     pub fn load(storage: &DeviceStorage) -> anyhow::Result<Self> {
-        let keys = store::load(storage)?;
-        Ok(Self::new(keys.identity, keys.endpoint))
+        let keys = NodeKeys::load(storage)?;
+        let did = keys.identity.public().to_did();
+        Ok(Self::new(Identity::new(did, keys.identity), keys.endpoint))
+    }
+
+    /// Loads this device's keys, answering as `did`. Peers verify against
+    /// `did`'s document, so it must list the identity key.
+    pub fn load_as(storage: &DeviceStorage, did: Did) -> anyhow::Result<Self> {
+        let keys = NodeKeys::load(storage)?;
+        Ok(Self::new(Identity::new(did, keys.identity), keys.endpoint))
     }
 
     #[must_use]
@@ -96,7 +109,10 @@ mod tests {
 
     #[test]
     fn author_id_is_the_endpoint_id() {
-        let identity = NodeIdentity::new(P256KeyPair::generate(), SecretKey::generate());
+        let key = P256KeyPair::generate();
+        let did = key.public().to_did();
+        let user = Identity::new(did, key);
+        let identity = NodeIdentity::new(user, SecretKey::generate());
 
         assert_eq!(
             identity.author().id().as_bytes(),

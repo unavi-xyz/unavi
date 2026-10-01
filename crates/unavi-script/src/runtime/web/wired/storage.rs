@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy_async::task;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -202,7 +202,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredStorageGetStorage")]
     pub async fn wired_storage_get_storage(&self) -> Result<StorageHandle, JsValue> {
-        self.api.require(ApiName::Storage).map_err(raise)?;
+        self.api.require(HostApi::Storage).map_err(raise)?;
         let rep = shared::wired::storage::get_storage(&self.api)
             .await
             .map_err(raise)?;

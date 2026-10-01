@@ -4,7 +4,8 @@ use bevy::{
 };
 use bevy_hsd::attributes::portal::PortalConfig;
 use iroh_docs::NamespaceId;
-use unavi_policy::space::Space;
+
+use crate::membership::Space;
 
 pub fn spawn_portal_space(
     trigger: On<Insert, PortalConfig>,

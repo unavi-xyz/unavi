@@ -17,6 +17,7 @@ mod connection;
 mod gossip;
 pub mod identity;
 pub mod inbox;
+pub mod membership;
 pub mod peer;
 mod portal;
 mod portal_bridge;
@@ -42,8 +43,8 @@ impl Plugin for SpacePlugin {
         #[cfg(feature = "devtools")]
         app.add_plugins(devtools::SpaceDevToolsPlugin);
 
-        if !app.is_plugin_added::<unavi_policy::PolicyPlugin>() {
-            app.add_plugins(unavi_policy::PolicyPlugin);
+        if !app.is_plugin_added::<membership::MembershipPlugin>() {
+            app.add_plugins(membership::MembershipPlugin);
         }
 
         let storage = self.storage.clone().unwrap_or_default();

@@ -11,7 +11,6 @@ use bevy::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use unavi_policy::space::Space;
 
 use crate::{
     anchor::ActiveSpace,
@@ -27,6 +26,7 @@ use crate::{
         },
         short,
     },
+    membership::Space,
     state::replicas::Replicas,
     view::SpaceView,
 };

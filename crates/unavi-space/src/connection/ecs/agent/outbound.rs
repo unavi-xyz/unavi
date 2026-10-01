@@ -14,7 +14,6 @@ use unavi_agent::{
     config::XrMode,
 };
 use unavi_avatar::bones::AvatarBones;
-use unavi_policy::space::Space;
 
 use crate::{
     anchor::ActiveSpace,
@@ -34,6 +33,7 @@ use crate::{
             rigid_transform::RigidTransform,
         },
     },
+    membership::Space,
     peer::Peer,
 };
 

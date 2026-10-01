@@ -1,8 +1,10 @@
-//! Declares the configuration a crate's `secretspec.toml` describes, as a type
-//! carrying the values its profile named.
+//! Declares the configuration a crate's `secretspec.toml` describes, as a
+//! `Config` type carrying the values its profile named.
 //!
-//! Reading the manifest during expansion keeps `secretspec` a host dependency
-//! of this macro that never reaches the binary.
+//! Only a field the manifest gives its own default is compiled into the
+//! binary, so never give a secret one. Reading the manifest during expansion
+//! keeps `secretspec` a host dependency of this macro that never reaches the
+//! binary.
 
 mod emit;
 mod merge;
@@ -34,13 +36,14 @@ use syn::{
 const DEFAULT_PROFILE: &str = "default";
 const PROFILE_VAR: &str = "SECRETSPEC_PROFILE";
 
-/// Declares a `Secrets` type for the manifest at `input`, a path relative to
-/// the calling crate's root, under the profile [`PROFILE_VAR`] names.
+/// Declares a `Config` type for the manifest at `input`, a path relative to
+/// the calling crate's root, under the profile [`PROFILE_VAR`] names when the
+/// binary is *built*.
 ///
-/// Each secret reads from the environment the binary runs under, falling back
+/// Each field reads from the environment the binary runs under, falling back
 /// on the value its profile declared.
 #[proc_macro]
-pub fn declare(input: TokenStream) -> TokenStream {
+pub fn config(input: TokenStream) -> TokenStream {
     let manifest = parse_macro_input!(input as LitStr).value();
 
     match expand(&manifest) {

@@ -1,12 +1,17 @@
+//! The host's record of every document it holds, and the quota each spends
+//! against.
+
 use std::{
     collections::HashMap,
     sync::Arc,
 };
 
-use bevy::prelude::Resource;
+use bevy::ecs::resource::Resource;
 use hsd::id::DocId;
 use iroh::EndpointId;
 use parking_lot::RwLock;
+use unavi_identity::auth::Bindings;
+use xdid::core::did::Did;
 
 use crate::quota::{
     Quota,
@@ -27,11 +32,30 @@ pub struct Record {
     pub host:  Option<DocId>,
 }
 
+/// Who a peer's quota belongs to: the DID it proved, so every device of one
+/// identity shares a budget and a reconnect does not refill it, or its
+/// endpoint until it proves one.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PeerKey {
+    Did(Did),
+    Endpoint(EndpointId),
+}
+
+impl PeerKey {
+    /// `peer`'s key as `bindings` currently knows it.
+    #[must_use]
+    pub fn of(peer: EndpointId, bindings: &Bindings) -> Self {
+        bindings
+            .did_of(peer)
+            .map_or(Self::Endpoint(peer), Self::Did)
+    }
+}
+
 /// What a quota is attributed to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Principal {
     Document(DocId),
-    Peer(EndpointId),
+    Peer(PeerKey),
     Space(DocId),
 }
 
@@ -79,7 +103,7 @@ impl Policy {
     }
 
     /// Drops `doc`'s record and quota, releasing what the quota held.
-    pub fn forget(&self, doc: DocId) {
+    pub fn forget_document(&self, doc: DocId) {
         self.0.documents.write().remove(&doc);
         let quota = self.0.quotas.write().remove(&Principal::Document(doc));
         if let Some(quota) = quota {
@@ -101,9 +125,25 @@ impl Policy {
         self.0.quotas.write().remove(&Principal::Space(space));
     }
 
-    /// Drops `peer`'s quota. The next document it owns re-derives the caps.
-    pub fn forget_peer(&self, peer: EndpointId) {
-        self.0.quotas.write().remove(&Principal::Peer(peer));
+    /// Drops `peer`'s quota. Documents already charging it keep it; the next
+    /// lookup starts a fresh one.
+    pub fn forget_peer(&self, peer: &PeerKey) {
+        self.0.quotas.write().remove(&Principal::Peer(peer.clone()));
+    }
+
+    /// Applies `limits` to `peer`'s quota in place, reaching every document
+    /// already charging it. A peer with no quota yet gets `limits` on first
+    /// sight anyway.
+    pub fn retrust_peer(&self, peer: &PeerKey, limits: Limits) {
+        let quota = self
+            .0
+            .quotas
+            .read()
+            .get(&Principal::Peer(peer.clone()))
+            .map(Arc::clone);
+        if let Some(quota) = quota {
+            quota.set_limits(limits);
+        }
     }
 
     /// Every document registered into `space`.
@@ -147,11 +187,11 @@ impl Policy {
         self.quota(Principal::Space(space), Limits::space)
     }
 
-    /// A peer's quota, with `limits` applied on first sight. Re-derived by
-    /// [`Self::forget_peer`].
+    /// A peer's quota, with `limits` applied on first sight. Changed by
+    /// [`Self::retrust_peer`].
     #[must_use]
-    pub fn peer_quota(&self, peer: EndpointId, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
-        self.quota(Principal::Peer(peer), limits)
+    pub fn peer_quota(&self, peer: &PeerKey, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
+        self.quota(Principal::Peer(peer.clone()), limits)
     }
 
     /// `doc`'s quota, rolling its charges up into `owner`. An owner-less
@@ -297,7 +337,7 @@ mod tests {
     #[test]
     fn session_memory_rolls_up_to_peer_across_docs() {
         let policy = Policy::new();
-        let peer = policy.peer_quota(peer(7), Limits::peer);
+        let peer = policy.peer_quota(&PeerKey::Endpoint(peer(7)), Limits::peer);
         let cap = |limits: Limits| {
             *limits
                 .stock
@@ -323,14 +363,14 @@ mod tests {
     #[test]
     fn forgetting_a_document_releases_what_it_held_from_its_owner() {
         let policy = Policy::new();
-        let peer = policy.peer_quota(peer(9), Limits::peer);
+        let peer = policy.peer_quota(&PeerKey::Endpoint(peer(9)), Limits::peer);
         let id = doc(b"released");
 
         let quota = policy.document_quota(id, || Some(Arc::clone(&peer)));
         quota.charge(Stock::Prims, 100).expect("charge");
         assert_eq!(peer.usage(Stock::Prims), 100);
 
-        policy.forget(id);
+        policy.forget_document(id);
 
         assert_eq!(
             peer.usage(Stock::Prims),

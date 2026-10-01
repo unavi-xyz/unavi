@@ -1,3 +1,6 @@
+//! One `wired/auth` exchange: each end answers the other's nonce with a signed
+//! proof of its DID.
+
 use anyhow::{
     Context,
     bail,
@@ -18,16 +21,14 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use xdid::{
-    core::did::Did,
-    resolver::DidResolver,
-};
+use xdid::core::did::Did;
 
 use crate::{
     identity::Identity,
-    signed_bytes::{
+    resolver::Resolver,
+    signed::{
         Signable,
-        SignedBytes,
+        Signed,
     },
 };
 
@@ -42,11 +43,11 @@ pub type Nonce = [u8; 32];
 /// endpoint, and `verifier`, so it cannot be relayed to a third party. A nonce
 /// is answered once, so a proof cannot be replayed.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IdentityProof {
-    pub did:      Did,
-    pub prover:   EndpointId,
-    pub verifier: EndpointId,
-    pub nonce:    Nonce,
+struct IdentityProof {
+    did:      Did,
+    prover:   EndpointId,
+    verifier: EndpointId,
+    nonce:    Nonce,
 }
 
 impl Signable for IdentityProof {
@@ -55,7 +56,7 @@ impl Signable for IdentityProof {
 
 pub struct Handshake<'a> {
     pub identity: &'a Identity,
-    pub resolver: &'a DidResolver,
+    pub resolver: &'a Resolver,
     pub local:    EndpointId,
     pub remote:   EndpointId,
 }
@@ -84,7 +85,15 @@ impl Handshake<'_> {
 
     /// Answers the remote's challenge, then challenges it back, returning the
     /// DID it proved.
-    pub async fn accept(&self, tx: &mut SendStream, rx: &mut RecvStream) -> anyhow::Result<Did> {
+    ///
+    /// `on_verified` runs before the verdict is written, so the remote never
+    /// learns it was accepted before the DID is recorded here.
+    pub async fn accept(
+        &self,
+        tx: &mut SendStream,
+        rx: &mut RecvStream,
+        on_verified: impl FnOnce(&Did),
+    ) -> anyhow::Result<Did> {
         let mut nonce = Nonce::default();
         rx.read_exact(&mut nonce).await.context("read nonce")?;
         self.write_proof(tx, nonce).await?;
@@ -94,6 +103,7 @@ impl Handshake<'_> {
 
         let signed = read_proof(rx).await?;
         let remote_did = self.verified_did(&signed, counter).await?;
+        on_verified(&remote_did);
 
         tx.write_u8(ACCEPTED).await.context("write verdict")?;
         // A reset stream here means the remote never learned it was accepted,
@@ -121,7 +131,7 @@ impl Handshake<'_> {
 
     async fn verified_did(
         &self,
-        signed: &SignedBytes<IdentityProof>,
+        signed: &Signed<IdentityProof>,
         nonce: Nonce,
     ) -> anyhow::Result<Did> {
         let proof = signed.payload().context("parse proof")?;
@@ -139,7 +149,7 @@ impl Handshake<'_> {
         if proof.nonce != nonce {
             bail!("proof answers a different challenge")
         }
-        signed.verify(&proof.did, self.resolver).await?;
+        signed.verify_did(&proof.did, self.resolver).await?;
 
         Ok(proof.did)
     }
@@ -151,7 +161,7 @@ fn fresh_nonce() -> Nonce {
     nonce
 }
 
-async fn read_proof(rx: &mut RecvStream) -> anyhow::Result<SignedBytes<IdentityProof>> {
+async fn read_proof(rx: &mut RecvStream) -> anyhow::Result<Signed<IdentityProof>> {
     let len = rx.read_u32().await.context("read proof len")? as usize;
     if len > MAX_PROOF_LEN {
         bail!("proof too large")
@@ -171,7 +181,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::resolve::new_did_resolver;
+    use crate::resolver::Resolver;
 
     fn endpoint() -> EndpointId {
         SecretKey::generate().public()
@@ -183,7 +193,7 @@ mod tests {
         prover: EndpointId,
         verifier: EndpointId,
         nonce: Nonce,
-    ) -> SignedBytes<IdentityProof> {
+    ) -> Signed<IdentityProof> {
         IdentityProof {
             did,
             prover,
@@ -197,7 +207,7 @@ mod tests {
     /// The DID is `did:key`, so verification resolves without any network.
     fn handshake<'a>(
         identity: &'a Identity,
-        resolver: &'a DidResolver,
+        resolver: &'a Resolver,
         prover: EndpointId,
         verifier: EndpointId,
     ) -> Handshake<'a> {
@@ -220,7 +230,7 @@ mod tests {
         let key = P256KeyPair::generate();
         let did = key.public().to_did();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
+        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
 
         let proof = signed(&key, did.clone(), prover, verifier, nonce);
 
@@ -237,7 +247,7 @@ mod tests {
     async fn a_proof_cannot_be_relayed_to_another_verifier() {
         let key = P256KeyPair::generate();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
+        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, nonce);
 
@@ -254,7 +264,7 @@ mod tests {
     async fn a_proof_cannot_be_presented_for_another_prover() {
         let key = P256KeyPair::generate();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
+        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, nonce);
 
@@ -271,7 +281,7 @@ mod tests {
     async fn a_proof_answering_a_different_nonce_is_refused() {
         let key = P256KeyPair::generate();
         let (prover, verifier) = (endpoint(), endpoint());
-        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
+        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, [7u8; 32]);
 
@@ -288,7 +298,7 @@ mod tests {
     async fn a_did_the_signer_does_not_control_is_refused() {
         let (key, other) = (P256KeyPair::generate(), P256KeyPair::generate());
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
+        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
 
         let proof = signed(&key, other.public().to_did(), prover, verifier, nonce);
 

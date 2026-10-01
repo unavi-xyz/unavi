@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy_async::task;
 use bevy_vrm::BoneName;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -126,7 +126,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
     pub async fn wired_agent_local_agent(&self) -> Result<AgentHandle, JsValue> {
-        self.api.require(ApiName::LocalAgent).map_err(raise)?;
+        self.api.require(HostApi::LocalAgent).map_err(raise)?;
         let rep = shared::wired::agent::local_agent(&self.api)
             .await
             .map_err(raise)?;
@@ -138,7 +138,7 @@ impl Runtime {
     /// of the error leaves it holding a dead prim forever.
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
     pub async fn wired_agent_local_camera(&self) -> Result<PrimHandle, JsValue> {
-        self.api.require(ApiName::LocalAgent).map_err(raise)?;
+        self.api.require(HostApi::LocalAgent).map_err(raise)?;
         let rep = shared::wired::agent::local_camera(&self.api)
             .await
             .map_err(raise)?;

@@ -8,10 +8,10 @@ use directories::ProjectDirs;
 use unavi_identity::{
     auth::EndpointAuth,
     identity::NodeIdentity,
-    resolve::new_did_resolver,
+    resolver::Resolver,
 };
+use unavi_registry::client::Followed;
 use unavi_space::identity::LocalIdentity;
-use xdid::resolver::DidResolver;
 
 mod load;
 
@@ -33,11 +33,6 @@ pub struct LocalNode(pub Arc<NodeIdentity>);
 /// endpoint builder and served once the endpoint binds.
 #[derive(Resource, Clone)]
 pub struct Auth(pub Arc<EndpointAuth>);
-
-/// Resolves the DIDs this node verifies against. One per process: each carries
-/// its own HTTP connection pool.
-#[derive(Resource, Clone)]
-pub struct Resolve(pub Arc<DidResolver>);
 
 pub struct IdentityPlugin {
     pub storage: unavi_local::DeviceStorage,
@@ -96,7 +91,7 @@ impl Plugin for IdentityPlugin {
         };
         info!(did = %node.user().did(), "Running as");
 
-        let resolver = match new_did_resolver() {
+        let resolver = match Resolver::new() {
             Ok(resolver) => Arc::new(resolver),
             Err(err) => {
                 error!(
@@ -116,12 +111,12 @@ impl Plugin for IdentityPlugin {
             identity: Arc::clone(node.user()),
             bindings: Arc::clone(auth.bindings()),
             resolver: Arc::clone(&resolver),
+            followed: Followed::default(),
         })
         .insert_resource(KeyStorage(storage))
         .insert_resource(self.sync.clone())
         .insert_resource(LocalNode(Arc::new(node)))
         .insert_resource(Auth(auth))
-        .insert_resource(Resolve(resolver))
         .add_observer(load::serve_auth)
         .add_observer(load::load_store);
     }

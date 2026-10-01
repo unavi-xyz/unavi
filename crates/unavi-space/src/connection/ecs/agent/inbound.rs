@@ -16,12 +16,12 @@ use unavi_avatar::{
     },
     bones::AvatarBones,
 };
-use unavi_policy::space::Space;
 use unavi_portal::EchoBody;
 use web_time::Instant;
 
 use crate::{
     connection::PeerLink,
+    membership::Space,
     peer::{
         ActiveSpaces,
         Peer,

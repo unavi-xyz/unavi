@@ -1,4 +1,4 @@
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::runtime::{
@@ -35,7 +35,7 @@ impl bindings::wired::portal::api::Host for Runtime {
         prim: Resource<PrimRes>,
         target_space: Vec<u8>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Portal) {
+        let result = match self.api.require(HostApi::Portal) {
             Ok(()) => shared::wired::portal::open(&self.api, prim.rep(), target_space).await,
             Err(err) => Err(err),
         };
@@ -48,7 +48,7 @@ impl bindings::wired::portal::api::Host for Runtime {
         source_space: Vec<u8>,
         link: Vec<u8>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Portal) {
+        let result = match self.api.require(HostApi::Portal) {
             Ok(()) => shared::wired::portal::pair(&self.api, prim.rep(), source_space, link).await,
             Err(err) => Err(err),
         };
@@ -56,7 +56,7 @@ impl bindings::wired::portal::api::Host for Runtime {
     }
 
     async fn travel(&mut self, target_space: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Travel) {
+        let result = match self.api.require(HostApi::Travel) {
             Ok(()) => shared::wired::portal::travel(&self.api, target_space).await,
             Err(err) => Err(err),
         };

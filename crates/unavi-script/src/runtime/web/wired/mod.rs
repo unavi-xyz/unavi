@@ -1,4 +1,3 @@
-use unavi_policy::error::PolicyError;
 use wasm_bindgen::{
     JsError,
     JsValue,
@@ -57,9 +56,7 @@ pub fn error_obj(err: &ScriptError) -> JsValue {
         ScriptError::Other(detail) => variant_obj("other", detail.into()),
         ScriptError::QuotaFlow(_) => variant_obj("quota-flow", JsValue::UNDEFINED),
         ScriptError::QuotaStock(_) => variant_obj("quota-stock", JsValue::UNDEFINED),
-        ScriptError::Policy(PolicyError::Permission(_)) => {
-            variant_obj("permission", JsValue::UNDEFINED)
-        }
-        ScriptError::Policy(_) => variant_obj("forbidden", JsValue::UNDEFINED),
+        ScriptError::Permission(_) => variant_obj("permission", JsValue::UNDEFINED),
+        ScriptError::NotOwner => variant_obj("forbidden", JsValue::UNDEFINED),
     }
 }

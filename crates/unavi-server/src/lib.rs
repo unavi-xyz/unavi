@@ -1,22 +1,24 @@
+//! A unavi node: hosts documents and files over iroh, serves its `did:web`
+//! document over HTTP, and optionally runs a registry.
+
 use std::{
     net::{
         Ipv4Addr,
         SocketAddr,
         SocketAddrV4,
     },
+    path::PathBuf,
     str::FromStr,
-    sync::{
-        Arc,
-        LazyLock,
-    },
+    sync::Arc,
     time::Duration,
 };
 
-use axum::Json;
-use directories::ProjectDirs;
+use axum::{
+    body::Bytes,
+    http::header,
+};
 use iroh::{
     Endpoint,
-    EndpointId,
     endpoint::presets::N0,
 };
 use tower_http::cors::CorsLayer;
@@ -25,75 +27,59 @@ use tracing::{
     warn,
 };
 use unavi_identity::{
-    ENDPOINT_SERVICE_ID,
-    ENDPOINT_SERVICE_TYPE,
     auth::{
         self,
         EndpointAuth,
     },
+    did_document,
     identity::NodeIdentity,
-    resolve::new_did_resolver,
+    resolver::Resolver,
 };
 use unavi_local::DeviceStorage;
-use unavi_registry::{
+use unavi_registry::server::{
+    Config as RegistryConfig,
     Registry,
-    config::Config as RegistryConfig,
 };
 use unavi_store::StoreBuilder;
-use xdid::{
-    core::{
-        did::Did,
-        did_url::{
-            DidUrl,
-            relative::{
-                RelativeDidUrl,
-                RelativeDidUrlPath,
-            },
-        },
-        document::{
-            Document,
-            ServiceEndpoint,
-            VerificationMethod,
-            VerificationMethodMap,
-        },
-    },
-    method::key::{
-        DidKeyPair,
-        PublicKey,
-    },
-};
+use xdid::core::did::Did;
 
+pub mod config;
 mod files;
-pub mod secrets;
-
-pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
-    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
-    dirs
-});
 
 /// Bytes of documents the server holds before the retention sweep evicts
 /// read-only ones, least recently joined first.
 const DOC_BUDGET: u64 = 16 * 1024 * 1024 * 1024;
 
 pub struct ServerOptions {
-    pub in_memory: bool,
-    pub port:      u16,
-    /// Whether this node serves discovery: catalog, curated views, and live
-    /// presence. One DID, endpoint, and storage directory serve every role it
+    /// The domain this node's `did:web` resolves from.
+    pub domain:   String,
+    /// Where keys, documents and hosted files live. `None` keeps keys and
+    /// documents in memory and hosts no files.
+    pub data_dir: Option<PathBuf>,
+    pub port:     u16,
+    /// Serves discovery (catalog, curated views and live presence) under this
+    /// policy. One DID, endpoint and data directory serve every role the node
     /// takes on; document sync and file hosting are always on.
-    pub registry:  bool,
+    pub registry: Option<RegistryConfig>,
 }
 
-pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
-    let port = opts.port;
+/// Runs the node until `shutdown` resolves, then flushes the stores.
+pub async fn run_server(
+    opts: ServerOptions,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> anyhow::Result<()> {
+    let did = did_web(&opts.domain)?;
+    let storage = opts
+        .data_dir
+        .as_ref()
+        .map_or_else(DeviceStorage::memory, |dir| DeviceStorage::at(dir.clone()));
 
-    let did = create_did(&secrets::Secrets::load().unavi_domain)?;
-    let storage = key_storage(opts.in_memory);
-    let node = Arc::new(NodeIdentity::load(&storage)?);
-    info!("Running server as {did}");
+    // The node proves the DID it publishes, so a client that followed it binds
+    // this endpoint to that DID.
+    let node = Arc::new(NodeIdentity::load_as(&storage, did.clone())?);
+    info!(%did, "Running server");
 
-    let resolver = Arc::new(new_did_resolver()?);
+    let resolver = Arc::new(Resolver::new()?);
     let auth = Arc::new(EndpointAuth::new(
         Arc::clone(node.user()),
         Arc::clone(&resolver),
@@ -111,26 +97,27 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("identity handshake already served"))?;
 
     let endpoint_id = endpoint.id();
-    let builder = StoreBuilder::new(endpoint.clone(), node.author())
+    let store = StoreBuilder::new(endpoint.clone(), node.author())
         .sweep_interval(Duration::from_mins(15))
         .doc_budget(DOC_BUDGET)
-        .storage(storage.clone());
+        .storage(storage.clone())
+        .build()
+        .await?;
 
-    let store = builder.build().await?;
-
-    if let Err(err) = files::init_files_dir() {
-        warn!(?err, "failed to init files dir");
-    }
-    match files::host_files(store.blob_store()).await {
-        Ok(hosted) => files::log_manifest(&hosted),
-        Err(err) => warn!(?err, "failed to host files"),
+    if let Some(data_dir) = &opts.data_dir {
+        if let Err(err) = files::init_files_dir(data_dir) {
+            warn!(?err, "failed to init files dir");
+        }
+        match files::host_files(store.blob_store(), data_dir).await {
+            Ok(hosted) => files::log_manifest(&hosted, data_dir),
+            Err(err) => warn!(?err, "failed to host files"),
+        }
     }
 
     let mut rb = iroh::protocol::Router::builder(endpoint);
     rb = store.accept(rb).accept(auth::ALPN, auth_protocol);
 
-    let _registry = if opts.registry {
-        let config = RegistryConfig::default();
+    let _registry = if let Some(config) = opts.registry {
         let (registry, protocol) = Registry::create(
             &store,
             config,
@@ -140,7 +127,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .await?;
 
         info!(recent = %registry.views().recent, "Serving registry");
-        rb = rb.accept(unavi_registry::control::ALPN, protocol);
+        rb = rb.accept(unavi_registry::rpc::ALPN, protocol);
         Some(registry)
     } else {
         None
@@ -148,83 +135,43 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let router = rb.spawn();
 
-    let app = create_did_document_route(did, node.user().signing_key(), endpoint_id)?;
+    let document = did_document::node_document(&did, node.user().signing_key(), endpoint_id)?;
+    let app = did_document_route(Bytes::from(serde_json::to_vec(&document)?));
 
-    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
-    info!("HTTP listening on port {port}");
+    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, opts.port));
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(port = opts.port, "HTTP listening");
 
-    axum_server::bind(addr)
-        .serve(app.into_make_service())
-        .await?;
+    let served = axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown)
+        .await;
 
+    info!("Shutting down");
     router.shutdown().await?;
+    served?;
 
     Ok(())
 }
 
-fn key_storage(in_memory: bool) -> DeviceStorage {
-    if in_memory {
-        DeviceStorage::memory()
-    } else {
-        DeviceStorage::at(DIRS.data_local_dir().to_path_buf())
-    }
+/// The `did:web` for `domain`. A port's colon is percent-encoded, as the
+/// method requires.
+fn did_web(domain: &str) -> anyhow::Result<Did> {
+    let domain = domain.replace(':', "%3A");
+    Ok(Did::from_str(&format!("did:web:{domain}"))?)
 }
 
-fn create_did(domain: &str) -> anyhow::Result<Did> {
-    let domain_encoded = domain.replace(':', "%3A");
-    Ok(Did::from_str(&format!("did:web:{domain_encoded}"))?)
-}
-
-const KEY_FRAGMENT: &str = "key";
-
-fn create_did_document_route(
-    did: Did,
-    vc: &impl DidKeyPair,
-    endpoint_id: EndpointId,
-) -> anyhow::Result<axum::Router> {
-    let key_ref = VerificationMethod::RelativeUrl(RelativeDidUrl::new(
-        RelativeDidUrlPath::Empty,
-        None,
-        Some(KEY_FRAGMENT.into()),
-    )?);
-
-    let doc = Document {
-        context:               None,
-        id:                    did.clone(),
-        also_known_as:         None,
-        assertion_method:      Some(vec![key_ref.clone()]),
-        authentication:        Some(vec![key_ref]),
-        capability_delegation: None,
-        capability_invocation: None,
-        controller:            None,
-        key_agreement:         None,
-        service:               Some(vec![ServiceEndpoint {
-            id:               ENDPOINT_SERVICE_ID.into(),
-            typ:              vec![ENDPOINT_SERVICE_TYPE.into()],
-            service_endpoint: vec![endpoint_id.to_string()],
-        }]),
-        verification_method:   Some(vec![VerificationMethodMap {
-            id:                   DidUrl::new(did.clone(), None, None, Some(KEY_FRAGMENT.into()))?,
-            controller:           did,
-            typ:                  "JsonWebKey2020".into(),
-            public_key_multibase: None,
-            public_key_jwk:       Some(vc.public().to_jwk()),
-        }]),
-    };
-
-    let body = serde_json::to_value(&doc)?;
-
-    Ok(axum::Router::new()
+fn did_document_route(body: Bytes) -> axum::Router {
+    axum::Router::new()
         .route(
             "/.well-known/did.json",
             axum::routing::get(move || {
                 let body = body.clone();
-                async move { Json(body) }
+                async move { ([(header::CONTENT_TYPE, "application/did+json")], body) }
             }),
         )
         .layer(
             CorsLayer::new()
                 .allow_origin(tower_http::cors::Any)
                 .allow_methods([axum::http::Method::GET]),
-        ))
+        )
 }

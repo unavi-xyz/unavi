@@ -15,7 +15,6 @@ use bevy_iroh::store::DataStore;
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
 use n0_future::StreamExt;
-use unavi_registry::follow::registries;
 use unavi_store::{
     Document,
     MAX_ENTRY_BYTES,
@@ -68,7 +67,7 @@ pub async fn get_storage(api: &Api) -> anyhow::Result<u32> {
 /// The root document and followed registry views, which is all the shell
 /// reads. The script's own documents are `wired:scene`'s.
 fn readable(api: &Api, ns: NamespaceId) -> bool {
-    api.root_doc == Some(ns) || registries().contains(&ns)
+    api.root_doc == Some(ns) || api.view.identity().followed.is_view(ns)
 }
 
 /// The store's document for `ns`, if `ns` is readable and held.
@@ -169,8 +168,12 @@ pub fn root_doc_ns(api: &Api, _rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
     Ok(api.root_doc.map(|ns| ns.to_bytes().to_vec()))
 }
 
-pub fn registry_namespaces(_api: &Api, _rep: u32) -> anyhow::Result<Vec<Vec<u8>>> {
-    Ok(registries()
+pub fn registry_namespaces(api: &Api, _rep: u32) -> anyhow::Result<Vec<Vec<u8>>> {
+    Ok(api
+        .view
+        .identity()
+        .followed
+        .views()
         .into_iter()
         .map(|ns| ns.to_bytes().to_vec())
         .collect())

@@ -14,11 +14,11 @@ use iroh::endpoint_info::AddrFilter;
 use tracing::Level;
 
 mod camera;
+mod config;
 mod fade;
 mod icon;
 mod identity;
 mod scene;
-mod secrets;
 
 #[cfg(feature = "devtools")] mod dev_tools;
 
@@ -109,7 +109,7 @@ impl Plugin for UnaviPlugin {
             unavi_avatar::AvatarPlugin,
             identity::IdentityPlugin {
                 storage: storage.clone(),
-                sync:    secrets::sync_config(),
+                sync:    config::sync_config(),
             },
             unavi_input::InputPlugin {
                 storage: Some(config_storage),

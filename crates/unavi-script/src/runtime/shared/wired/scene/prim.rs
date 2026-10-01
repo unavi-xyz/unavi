@@ -641,7 +641,7 @@ pub async fn set_mesh_stream(
                 size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
                 "mesh stream too large"
             );
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             prim.write_value(&name, &MeshStream(f32s_to_bytes(&v)))
         }
         None => prim.clear(&name),
@@ -661,7 +661,7 @@ pub async fn set_mesh_indices_u32(
                 size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
                 "mesh indices too large"
             );
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             prim.write_attr(&MeshIndices(u32s_to_bytes(&v)))
         }
         None => prim.clear(&MeshIndices::NAME),
@@ -695,7 +695,7 @@ pub async fn set_collider_vertices(
                 size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
                 "collider vertices too large"
             );
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             Some(ColliderVertices(f32s_to_bytes(&v)))
         }
         None => None,
@@ -716,7 +716,7 @@ pub async fn set_collider_indices(
                 size_of_val(v.as_slice()) <= MAX_MESH_STREAM_BYTES,
                 "collider indices too large"
             );
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             Some(ColliderIndices(u32s_to_bytes(&v)))
         }
         None => None,
@@ -729,7 +729,7 @@ pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyh
     ensure_writable(&prim)?;
     match bytes {
         Some(b) => {
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             prim.write_attr(&ImageData(b))
         }
         None => prim.clear(&ImageData::NAME),
@@ -788,7 +788,7 @@ pub async fn set_material_graph(
     match value {
         Some(graph) => {
             validate(&graph)?;
-            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
+            crate::quota::acquire(&api.quota, Flow::BlobUpload, 1).await?;
             prim.write_attr(&graph)
         }
         // Clearing the graph drops its overrides and texture bindings too.

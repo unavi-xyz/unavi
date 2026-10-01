@@ -65,17 +65,19 @@ web *ARGS:
 
 port := "5000"
 debug := ""
+# SECRETSPEC_PROFILE is read when unavi-config expands, at compile time, so it
+# has to reach the build; at runtime it does nothing.
 dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-client"
 
 dev-build:
     {{dev_env}} cargo build -p unavi-server -p unavi-client
 
 server: dev-build
-    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-server --port {{port}}
+    {{dev_env}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-server --port {{port}}
 
 client n: dev-build
     sleep 2
-    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-client --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
+    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-client --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
 
 # Run a server plus two clients.
 [parallel]

@@ -8,8 +8,10 @@ use bevy_hsd::{
 };
 use bevy_iroh::store::DataStore;
 use iroh_docs::NamespaceId;
-use unavi_policy::space::Space;
-use unavi_space::identity::RootDocument;
+use unavi_space::{
+    identity::RootDocument,
+    membership::Space,
+};
 use unavi_store::Store;
 
 /// A namespace to enter instead of the local home, from `--join`.

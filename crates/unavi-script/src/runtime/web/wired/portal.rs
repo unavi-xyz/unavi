@@ -1,4 +1,4 @@
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -18,7 +18,7 @@ impl Runtime {
         prim: &PrimHandle,
         target_space: Vec<u8>,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Portal).map_err(raise)?;
+        self.api.require(HostApi::Portal).map_err(raise)?;
         shared::wired::portal::open(&self.api, prim.rep(), target_space)
             .await
             .map_err(raise)
@@ -31,7 +31,7 @@ impl Runtime {
         source_space: Vec<u8>,
         link: Vec<u8>,
     ) -> Result<(), JsValue> {
-        self.api.require(ApiName::Portal).map_err(raise)?;
+        self.api.require(HostApi::Portal).map_err(raise)?;
         shared::wired::portal::pair(&self.api, prim.rep(), source_space, link)
             .await
             .map_err(raise)
@@ -39,7 +39,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredPortalTravel")]
     pub async fn wired_portal_travel(&self, target_space: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::Travel).map_err(raise)?;
+        self.api.require(HostApi::Travel).map_err(raise)?;
         shared::wired::portal::travel(&self.api, target_space)
             .await
             .map_err(raise)

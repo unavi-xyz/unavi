@@ -12,7 +12,7 @@ use hsd::{
 use iroh_docs::NamespaceId;
 use tokio::sync::Mutex;
 use unavi_policy::{
-    permissions::ApiName,
+    permissions::HostApi,
     quota::Quota,
 };
 use unavi_space::view::SpaceView;
@@ -71,7 +71,7 @@ impl Api {
     /// Read per call rather than captured at instantiation. A snapshot taken
     /// when the script started would miss a document whose author resolves
     /// later, and would hold a grant the user has since withdrawn.
-    pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
+    pub fn require(&self, name: HostApi) -> Result<(), ScriptError> {
         Ok(self.view.permissions(self.doc_id).require(name)?)
     }
 

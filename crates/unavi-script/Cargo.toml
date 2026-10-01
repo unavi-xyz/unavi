@@ -40,7 +40,6 @@ unavi-physics.path         = "../unavi-physics"
 unavi-policy.path          = "../unavi-policy"
 unavi-portal.path          = "../unavi-portal"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
-unavi-registry.path        = "../unavi-registry"
 unavi-space.path           = "../unavi-space"
 unavi-store.path           = "../unavi-store"
 web-time.workspace         = true

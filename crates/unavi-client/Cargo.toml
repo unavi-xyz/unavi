@@ -50,6 +50,7 @@ tracing                 = { features = ["max_level_debug", "release_max_level_wa
 unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"
 unavi-avatar.path       = "../unavi-avatar"
+unavi-config.path       = "../unavi-config"
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-grab.path         = "../unavi-grab"
 unavi-identity.path     = "../unavi-identity"
@@ -58,9 +59,8 @@ unavi-local.path        = "../unavi-local"
 unavi-physics.path      = "../unavi-physics"
 unavi-policy.path       = "../unavi-policy"
 unavi-portal.path       = "../unavi-portal"
-unavi-registry.path     = "../unavi-registry"
+unavi-registry          = { features = ["client"], path = "../unavi-registry" }
 unavi-script.path       = "../unavi-script"
-unavi-secrets.path      = "../unavi-secrets"
 unavi-space.path        = "../unavi-space"
 unavi-store.path        = "../unavi-store"
 winit                   = { default-features = false, version = "0.30.13" }

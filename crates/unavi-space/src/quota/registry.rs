@@ -4,14 +4,16 @@ use bevy_hsd::document::{
     HsdDocId,
 };
 use unavi_policy::{
-    registry::Policy,
-    space::{
-        Space,
-        SpaceOwner,
-    },
+    Policy,
+    ledger::PeerKey,
 };
 
 use crate::{
+    identity::LocalIdentity,
+    membership::{
+        Space,
+        SpaceOwner,
+    },
     peer::Peer,
     quota::reassign_document_in_space,
     state::replicas::Replicas,
@@ -53,8 +55,20 @@ pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>, pol
     }
 }
 
-pub fn forget_peer_quota(trigger: On<Remove, Peer>, peers: Query<&Peer>, policy: Res<Policy>) {
-    if let Ok(peer) = peers.get(trigger.entity) {
-        policy.forget_peer(peer.0.id);
+/// Forgets a departed peer's quota, under its endpoint and under the DID it
+/// proved, if that binding is still known.
+pub fn forget_peer_quota(
+    trigger: On<Remove, Peer>,
+    peers: Query<&Peer>,
+    policy: Res<Policy>,
+    identity: Option<Res<LocalIdentity>>,
+) {
+    let Ok(peer) = peers.get(trigger.entity) else {
+        return;
+    };
+    let id = peer.0.id;
+    policy.forget_peer(&PeerKey::Endpoint(id));
+    if let Some(did) = identity.and_then(|identity| identity.bindings.did_of(id)) {
+        policy.forget_peer(&PeerKey::Did(did));
     }
 }

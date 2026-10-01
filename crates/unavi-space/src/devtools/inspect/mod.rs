@@ -221,7 +221,10 @@ pub fn handle_trust(
         return;
     };
     let result = match button.trust {
-        Some(Trust::Blocked) => crate::trust::eject(&view, &link, button.peer),
+        Some(Trust::Blocked) => {
+            crate::trust::eject(&view, &link, button.peer);
+            Ok(())
+        }
         Some(_) => crate::trust::trust_peer(&view, button.peer),
         None => crate::trust::unblock(&view, button.peer),
     };

@@ -185,8 +185,8 @@ impl PeerLink {
         self.0.view.identity().bindings.unbind(peer);
     }
 
-    /// Whether the DID `peer` proved over `wired/auth` is blocked. An endpoint
-    /// that proved none is a guest, so this refuses nobody by default.
+    /// Whether `peer` is blocked, by the DID it proved over `wired/auth` or by
+    /// endpoint for this session.
     #[must_use]
     pub fn is_blocked(&self, peer: EndpointId) -> bool {
         self.0.view.trust_of(peer) == Trust::Blocked
@@ -234,7 +234,7 @@ pub fn register_protocol(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     identity: Option<Res<LocalIdentity>>,
-    policy: Res<unavi_policy::registry::Policy>,
+    policy: Res<unavi_policy::Policy>,
     replicas: Res<Replicas>,
     trust: Res<TrustTable>,
     async_world: Res<AsyncWorld>,

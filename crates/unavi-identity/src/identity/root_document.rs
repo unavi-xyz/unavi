@@ -9,6 +9,14 @@ use unavi_store::{
     Store,
 };
 
+use crate::{
+    authorship::{
+        self,
+        AuthorshipError,
+    },
+    identity::Identity,
+};
+
 /// The name this device records its root document id under.
 ///
 /// Recorded rather than derived from the identity key. A namespace id computed
@@ -16,7 +24,10 @@ use unavi_store::{
 /// document is that others can read it.
 const NAME: &str = "root-doc";
 
-/// Opens this device's root document, minting one on first use.
-pub async fn open(store: &Store) -> unavi_store::Result<Document> {
-    store.named(NAME).await
+/// Opens this device's root document, minting one on first use, and records
+/// `identity` as its author.
+pub async fn open(store: &Store, identity: &Identity) -> Result<Document, AuthorshipError> {
+    let doc = store.named(NAME).await?;
+    authorship::claim(store, &doc, identity).await?;
+    Ok(doc)
 }

@@ -31,7 +31,14 @@ use iroh_docs::{
     Capability,
     CapabilityKind,
     NamespaceId,
-    api::Doc,
+    NamespaceSecret,
+    api::{
+        Doc,
+        protocol::{
+            AddrInfoOptions,
+            ShareMode,
+        },
+    },
     protocol::Docs,
 };
 use iroh_gossip::net::Gossip;
@@ -240,6 +247,34 @@ impl Store {
         }
 
         Err(Error::StillHeld(ns))
+    }
+
+    /// The write key of `ns`, or `None` unless this store holds it writable.
+    ///
+    /// Signing with it is how a writer proves write access to someone who holds
+    /// only the namespace id. Enrols `ns` in the sync set, as
+    /// [`Document::serve`] does: iroh-docs exports the key only by sharing.
+    pub async fn write_key(&self, ns: NamespaceId) -> Result<Option<NamespaceSecret>> {
+        let writable = self
+            .list()
+            .await?
+            .into_iter()
+            .any(|(held, kind)| held == ns && matches!(kind, CapabilityKind::Write));
+        if !writable {
+            return Ok(None);
+        }
+        let Some(doc) = self.held(ns).await? else {
+            return Ok(None);
+        };
+        doc.refuse_downloads().await?;
+        let ticket = doc
+            .doc()
+            .share(ShareMode::Write, AddrInfoOptions::Id)
+            .await?;
+        Ok(match ticket.capability {
+            Capability::Write(secret) => Some(secret),
+            Capability::Read(_) => None,
+        })
     }
 
     /// Every namespace this store holds, with the capability it holds under.

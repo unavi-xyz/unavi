@@ -8,13 +8,14 @@ use std::sync::Arc;
 
 use hsd::id::DocId;
 use iroh::EndpointId;
-use unavi_identity::auth::bindings::Bindings;
+use unavi_identity::auth::Bindings;
 use unavi_policy::{
+    Policy,
+    ledger::PeerKey,
     quota::{
         Quota,
         limits::Limits,
     },
-    registry::Policy,
     trust::{
         Trust,
         TrustTable,
@@ -37,9 +38,11 @@ pub struct Viewer<'a> {
     pub trust:    &'a TrustTable,
 }
 
+/// How far `peer` is trusted. Before the local identity is ready nobody can
+/// be judged, so everyone is anonymous.
 pub(crate) fn trust_of(viewer: Option<Viewer>, peer: EndpointId) -> Trust {
     let Some(viewer) = viewer else {
-        return Trust::Guest;
+        return Trust::Anonymous;
     };
     if viewer.me == peer {
         return Trust::Myself;
@@ -117,9 +120,12 @@ fn space_document_owner(
 
 /// A peer's budget, scaled by how far they are trusted, so a griefer hits a
 /// ceiling before anything visible happens and a friend never notices the
-/// system exists.
+/// system exists. Keyed by the peer's DID once it proved one.
 fn peer_quota(policy: &Policy, viewer: Option<Viewer>, peer: EndpointId) -> Arc<Quota> {
-    policy.peer_quota(peer, || Limits::for_trust(trust_of(viewer, peer)))
+    let key = viewer.map_or(PeerKey::Endpoint(peer), |viewer| {
+        PeerKey::of(peer, viewer.bindings)
+    });
+    policy.peer_quota(&key, || Limits::for_trust(trust_of(viewer, peer)))
 }
 
 #[cfg(test)]

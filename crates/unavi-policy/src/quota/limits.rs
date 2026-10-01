@@ -1,3 +1,5 @@
+//! The caps each scope gets: node, space, peer and document.
+
 use std::collections::HashMap;
 
 use crate::{
@@ -194,6 +196,7 @@ impl Limits {
             // A zero-capacity bucket is refused on sight rather than waited
             // on.
             Trust::Blocked => 0.0,
+            Trust::Anonymous => 0.05,
             Trust::Guest => 0.25,
             Trust::Trusted | Trust::Myself => return limits,
         };
@@ -231,11 +234,10 @@ mod tests {
 
         for _ in 0..32 * BLOBS_PER_MESH {
             assert_eq!(
-                doc.reserve_inner(Flow::BlobUpload, 1.0, now),
+                doc.try_take_at(Flow::BlobUpload, 1.0, now),
                 Reservation::Ready,
                 "building init geometry must not exhaust the blob-upload quota"
             );
-            doc.commit_inner(Flow::BlobUpload, 1.0, now);
         }
     }
 
@@ -275,7 +277,7 @@ mod tests {
         let quota = Quota::new(Limits::for_trust(Trust::Blocked), None);
 
         assert_eq!(
-            quota.reserve(Flow::CreatePrim, 1.0),
+            quota.try_take(Flow::CreatePrim, 1),
             Reservation::Never,
             "a zero bucket never fills, so waiting on it would be a lie"
         );
@@ -291,7 +293,8 @@ mod tests {
                 .expect("peer limits cap prims")
         };
 
-        assert!(prims(Trust::Blocked) < prims(Trust::Guest));
+        assert!(prims(Trust::Blocked) < prims(Trust::Anonymous));
+        assert!(prims(Trust::Anonymous) < prims(Trust::Guest));
         assert!(prims(Trust::Guest) < prims(Trust::Trusted));
         assert_eq!(prims(Trust::Trusted), prims(Trust::Myself));
     }
@@ -300,7 +303,7 @@ mod tests {
     fn a_guest_still_gets_a_workable_budget() {
         let quota = Quota::new(Limits::for_trust(Trust::Guest), None);
         assert_eq!(
-            quota.reserve(Flow::CreatePrim, 100.0),
+            quota.try_take(Flow::CreatePrim, 100),
             Reservation::Ready,
             "a first-time visitor's prop must build without waiting"
         );

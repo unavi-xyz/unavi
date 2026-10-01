@@ -1,3 +1,6 @@
+//! The two keys a device keeps: the user's identity key and its own endpoint
+//! key.
+
 use iroh::SecretKey;
 use unavi_local::DeviceStorage;
 use xdid::method::key::{
@@ -6,7 +9,7 @@ use xdid::method::key::{
 };
 use zeroize::Zeroizing;
 
-pub struct Keys {
+pub struct NodeKeys {
     pub identity: P256KeyPair,
     pub endpoint: SecretKey,
 }
@@ -14,11 +17,14 @@ pub struct Keys {
 const IDENTITY_ITEM: &str = "key.pem";
 const ENDPOINT_ITEM: &str = "endpoint.key";
 
-pub fn load(storage: &DeviceStorage) -> anyhow::Result<Keys> {
-    Ok(Keys {
-        identity: identity_key(storage)?,
-        endpoint: endpoint_key(storage)?,
-    })
+impl NodeKeys {
+    /// Reads both keys from `storage`, minting any that is absent.
+    pub fn load(storage: &DeviceStorage) -> anyhow::Result<Self> {
+        Ok(Self {
+            identity: identity_key(storage)?,
+            endpoint: endpoint_key(storage)?,
+        })
+    }
 }
 
 /// A stored key that cannot be read is an error. Replacing it would discard
@@ -33,11 +39,12 @@ fn identity_key(storage: &DeviceStorage) -> anyhow::Result<P256KeyPair> {
     Ok(pair)
 }
 
-/// A stored key that is missing, short, or unreadable is replaced with a fresh
-/// one. Losing it costs a new `EndpointId` and author id, nothing more.
+/// A stored key that is missing or the wrong length is replaced with a fresh
+/// one. Losing it costs a new `EndpointId` and author id, nothing more. A read
+/// that fails is an error, since it may be transient and the key still good.
 fn endpoint_key(storage: &DeviceStorage) -> anyhow::Result<SecretKey> {
-    match storage.read_bytes(ENDPOINT_ITEM) {
-        Ok(Some(bytes)) if bytes.len() == 32 => {
+    match storage.read_bytes(ENDPOINT_ITEM)? {
+        Some(bytes) if bytes.len() == 32 => {
             let mut key = [0u8; 32];
             key.copy_from_slice(&bytes);
             Ok(SecretKey::from_bytes(&key))
@@ -67,8 +74,8 @@ mod tests {
     fn keys_survive_a_reload() {
         let (_dir, storage) = path_storage();
 
-        let created = load(&storage).expect("create keys");
-        let reloaded = load(&storage).expect("load keys");
+        let created = NodeKeys::load(&storage).expect("create keys");
+        let reloaded = NodeKeys::load(&storage).expect("load keys");
 
         assert_eq!(
             created.identity.public().to_did(),
@@ -81,8 +88,8 @@ mod tests {
     fn in_memory_keys_are_stable_within_a_process() {
         let storage = DeviceStorage::memory();
 
-        let first = load(&storage).expect("first load");
-        let second = load(&storage).expect("second load");
+        let first = NodeKeys::load(&storage).expect("first load");
+        let second = NodeKeys::load(&storage).expect("second load");
 
         assert_eq!(
             first.identity.public().to_did(),
@@ -97,7 +104,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let (dir, storage) = path_storage();
-        load(&storage).expect("create keys");
+        NodeKeys::load(&storage).expect("create keys");
 
         for file in [IDENTITY_ITEM, ENDPOINT_ITEM] {
             let meta = std::fs::metadata(dir.path().join(file)).expect("metadata");
@@ -125,7 +132,7 @@ mod tests {
         std::fs::write(dir.path().join(IDENTITY_ITEM), b"not a pem").expect("write");
 
         assert!(
-            load(&storage).is_err(),
+            NodeKeys::load(&storage).is_err(),
             "an identity is irreplaceable, so an unreadable key must fail the load"
         );
         assert_eq!(

@@ -8,11 +8,9 @@ use bevy_async::task;
 use bevy_iroh::endpoint::IrohEndpoint;
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
-use unavi_policy::space::Space;
-use unavi_registry::{
-    entry::Presence,
-    follow::registry_clients,
-};
+use unavi_registry::claim::Presence;
+
+use crate::membership::Space;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(2);
 
@@ -52,17 +50,17 @@ pub fn publish_presence(
         return;
     };
 
-    // Registries load asynchronously at startup, so spaces usually precede
-    // them. The interval is stamped only when an announcement actually goes
-    // out; stamping earlier would defer the first real publish by a full TTL.
-    let registries = registry_clients();
-    if registries.is_empty() {
-        return;
-    }
-
     let Some(local) = identity else {
         return;
     };
+
+    // Registries load asynchronously at startup, so spaces usually precede
+    // them. The interval is stamped only when an announcement actually goes
+    // out; stamping earlier would defer the first real publish by a full TTL.
+    let registries = local.followed.clients();
+    if registries.is_empty() {
+        return;
+    }
     let did = local.identity.did().clone();
     let endpoint_id = endpoint.0.id();
 

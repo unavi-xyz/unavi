@@ -27,16 +27,13 @@ const MAX_SLEEP: Duration = Duration::from_millis(250);
 /// something else acting, so waiting on one is a deadlock, not backpressure,
 /// and those keep erroring.
 ///
-/// Nothing is taken until the reservation says `Ready`, so dropping this
-/// future leaves every bucket untouched.
-pub async fn acquire(quota: &Quota, flow: Flow, n: f64) -> Result<(), QuotaError> {
+/// Each attempt takes all or nothing, so dropping this future leaves every
+/// bucket untouched.
+pub async fn acquire(quota: &Quota, flow: Flow, n: u32) -> Result<(), QuotaError> {
     let mut waited = Duration::ZERO;
     loop {
-        match quota.reserve(flow, n) {
-            Reservation::Ready => {
-                quota.commit(flow, n);
-                return Ok(());
-            }
+        match quota.try_take(flow, n) {
+            Reservation::Ready => return Ok(()),
             // Fails fast rather than after the ceiling elapses: an ask larger
             // than a bucket's whole capacity is unsatisfiable at any time.
             Reservation::Never => return Err(QuotaError::Flow(flow)),

@@ -74,7 +74,7 @@ pub async fn emit(
         payload.len() <= MAX_EVENT_PAYLOAD_BYTES,
         "event payload too large"
     );
-    crate::quota::acquire(&api.quota, Flow::Emit, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::Emit, 1).await?;
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 

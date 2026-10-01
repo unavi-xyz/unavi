@@ -159,7 +159,7 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
-    crate::quota::acquire(&api.quota, Flow::CreatePrim, 1.0).await?;
+    crate::quota::acquire(&api.quota, Flow::CreatePrim, 1).await?;
     let quota = document_quota(
         api.view.policy(),
         api.view.replicas(),

@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -151,7 +151,7 @@ impl HostListFuture for Runtime {
 
 impl bindings::wired::storage::api::Host for Runtime {
     async fn get_storage(&mut self) -> wasmtime::Result<Result<Resource<Storage>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Storage) {
+        if let Err(err) = self.api.require(HostApi::Storage) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::storage::get_storage(&self.api)

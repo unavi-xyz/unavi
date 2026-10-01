@@ -9,23 +9,27 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+client = ["dep:irpc-iroh", "dep:parking_lot"]
+server = ["dep:irpc-iroh", "dep:parking_lot", "dep:tokio"]
+
 [dependencies]
-anyhow.workspace      = true
-iroh.workspace        = true
-irpc.workspace        = true
-irpc-iroh.workspace   = true
-n0-future.workspace   = true
-parking_lot.workspace = true
-postcard.workspace    = true
-scc.workspace         = true
-serde.workspace       = true
-smol_str.workspace    = true
-thiserror.workspace   = true
-time.workspace        = true
-tracing.workspace     = true
-unavi-identity.path   = "../unavi-identity"
-unavi-store.path      = "../unavi-store"
-xdid.workspace        = true
+anyhow.workspace    = true
+iroh.workspace      = true
+irpc.workspace      = true
+irpc-iroh           = { optional = true, workspace = true }
+n0-future.workspace = true
+parking_lot         = { optional = true, workspace = true }
+postcard.workspace  = true
+serde.workspace     = true
+smol_str.workspace  = true
+thiserror.workspace = true
+time.workspace      = true
+tokio               = { features = ["sync"], optional = true, workspace = true }
+tracing.workspace   = true
+unavi-identity.path = "../unavi-identity"
+unavi-store.path    = "../unavi-store"
+xdid.workspace      = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-docs.workspace = true

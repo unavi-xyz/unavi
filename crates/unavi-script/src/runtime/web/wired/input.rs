@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy::math::Vec3;
 use bevy_async::task;
 use unavi_input::pointer::PointerKind;
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -163,7 +163,7 @@ impl Runtime {
         &self,
         target: &PrimHandle,
     ) -> Result<InputListenerHandle, JsValue> {
-        self.api.require(ApiName::Input).map_err(raise)?;
+        self.api.require(HostApi::Input).map_err(raise)?;
         let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
             .await
             .map_err(raise)?;
@@ -174,7 +174,7 @@ impl Runtime {
     pub async fn wired_input_register_global_input_listener(
         &self,
     ) -> Result<InputListenerHandle, JsValue> {
-        self.api.require(ApiName::InputContext).map_err(raise)?;
+        self.api.require(HostApi::InputContext).map_err(raise)?;
         let rep = shared::wired::input::register_global_input_listener(&self.api)
             .await
             .map_err(raise)?;
@@ -183,7 +183,7 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredInputPointers")]
     pub fn wired_input_pointers(&self) -> Result<js_sys::Array, JsValue> {
-        self.api.require(ApiName::InputContext).map_err(raise)?;
+        self.api.require(HostApi::InputContext).map_err(raise)?;
         Ok(shared::wired::input::pointers(&self.api)
             .into_iter()
             .map(pointer)

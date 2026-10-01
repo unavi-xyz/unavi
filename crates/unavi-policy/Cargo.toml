@@ -11,11 +11,9 @@ workspace = true
 
 [dependencies]
 anyhow.workspace      = true
-bevy                  = { default-features = true, workspace = true }
-bevy-hsd.path         = "../bevy-hsd"
+bevy                  = { default-features = false, workspace = true }
 hsd.path              = "../hsd"
 iroh.workspace        = true
-iroh-docs.workspace   = true
 parking_lot.workspace = true
 ron.workspace         = true
 serde                 = { features = ["derive"], workspace = true }

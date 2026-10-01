@@ -16,32 +16,38 @@ use bevy_iroh::{
         SyncTargets,
     },
 };
-use iroh::{
-    Endpoint,
-    EndpointAddr,
-};
+use iroh::Endpoint;
 use n0_future::task::AbortOnDropHandle;
 use unavi_identity::{
-    auth,
+    auth::{
+        self,
+        Bindings,
+    },
     identity::{
         Identity,
         NodeIdentity,
-        root,
+        root_document,
     },
+    resolver::Resolver,
 };
-use unavi_registry::follow;
-use unavi_space::identity::RootDocument;
+use unavi_registry::client::{
+    Followed,
+    Target,
+    resolve_batch,
+};
+use unavi_space::identity::{
+    LocalIdentity,
+    RootDocument,
+};
 use unavi_store::{
     Store,
     StoreBuilder,
 };
-use xdid::resolver::DidResolver;
 
 use crate::identity::{
     Auth,
     KeyStorage,
     LocalNode,
-    Resolve,
     SyncConfig,
 };
 
@@ -103,13 +109,38 @@ pub fn serve_auth(
     });
 }
 
+/// What following registries needs, carried into the load task.
+#[derive(Clone)]
+struct Follower {
+    endpoint: Endpoint,
+    bindings: Arc<Bindings>,
+    identity: Arc<Identity>,
+    resolver: Arc<Resolver>,
+    followed: Followed,
+}
+
+impl Follower {
+    async fn sync(&self, store: &Store, targets: &[Target]) {
+        self.followed
+            .sync(
+                store,
+                &self.endpoint,
+                &self.bindings,
+                targets,
+                &self.identity,
+                &self.resolver,
+            )
+            .await;
+    }
+}
+
 pub fn load_store(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     node: Res<LocalNode>,
+    local: Res<LocalIdentity>,
     storage: Res<KeyStorage>,
     sync: Res<SyncConfig>,
-    resolve: Res<Resolve>,
     async_world: Res<AsyncWorld>,
 ) {
     let entity = trigger.entity;
@@ -120,9 +151,15 @@ pub fn load_store(
         .expect("endpoint");
 
     let node = Arc::clone(&node.0);
+    let follower = Follower {
+        endpoint,
+        bindings: Arc::clone(&local.bindings),
+        identity: Arc::clone(node.user()),
+        resolver: Arc::clone(&local.resolver),
+        followed: local.followed.clone(),
+    };
     let storage = storage.0.clone();
     let sync = sync.clone();
-    let resolver = Arc::clone(&resolve.0);
     let async_world = async_world.clone();
 
     task::spawn(async move {
@@ -132,12 +169,11 @@ pub fn load_store(
         // this hands to the endpoint entity.
         while let Err(err) = load(
             &async_world,
-            endpoint.clone(),
-            Arc::clone(&node),
+            &follower,
+            &node,
             entity,
             storage.clone(),
             sync.clone(),
-            Arc::clone(&resolver),
         )
         .await
         {
@@ -150,14 +186,13 @@ pub fn load_store(
 
 async fn load(
     async_world: &AsyncWorld,
-    endpoint: Endpoint,
-    node: Arc<NodeIdentity>,
+    follower: &Follower,
+    node: &NodeIdentity,
     entity: Entity,
     storage: unavi_local::DeviceStorage,
     sync: SyncConfig,
-    resolver: Arc<DidResolver>,
 ) -> anyhow::Result<()> {
-    let builder = StoreBuilder::new(endpoint.clone(), node.author())
+    let builder = StoreBuilder::new(follower.endpoint.clone(), node.author())
         .sweep_interval(Duration::from_mins(15))
         .doc_budget(DOC_BUDGET)
         .storage(storage.clone());
@@ -166,24 +201,19 @@ async fn load(
 
     let SyncConfig { targets } = sync;
 
-    let identity = Arc::clone(node.user());
-    let (sync_targets, unresolved) = follow::resolve_batch(targets, &resolver).await;
-    follow::sync(
-        &store,
-        &endpoint,
-        &sync_targets,
-        Arc::clone(&identity),
-        Arc::clone(&resolver),
-    )
-    .await;
+    let (targets, unresolved) = resolve_batch(targets, &follower.resolver).await;
+    follower.sync(&store, &targets).await;
 
-    let root = root::open(&store).await?.id();
+    let root = root_document::open(&store, node.user()).await?.id();
+    let sync_targets = targets
+        .iter()
+        .map(|target| target.addr.clone())
+        .collect::<Vec<_>>();
 
     let installed = async_world
         .commands()
         .push({
             let store = store.clone();
-            let sync_targets = sync_targets.clone();
             move |world: &mut World| {
                 if let Ok(entity) = world.get_entity_mut(entity) {
                     let accepting = store.clone();
@@ -205,11 +235,9 @@ async fn load(
         task::spawn(retry(
             async_world.clone(),
             store.clone(),
-            endpoint,
-            sync_targets,
+            follower.clone(),
+            targets,
             unresolved,
-            identity,
-            resolver,
         ));
     }
 
@@ -221,11 +249,9 @@ async fn load(
 async fn retry(
     async_world: AsyncWorld,
     store: Store,
-    endpoint: Endpoint,
-    mut targets: Vec<EndpointAddr>,
+    follower: Follower,
+    mut targets: Vec<Target>,
     mut unresolved: Vec<String>,
-    identity: Arc<Identity>,
-    resolver: Arc<DidResolver>,
 ) {
     let mut delay = RETRY_DELAY;
 
@@ -233,24 +259,20 @@ async fn retry(
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (addrs, pending) = follow::resolve_batch(unresolved, &resolver).await;
+        let (resolved, pending) = resolve_batch(unresolved, &follower.resolver).await;
         unresolved = pending;
 
-        if addrs.is_empty() {
+        if resolved.is_empty() {
             continue;
         }
-        targets.extend(addrs);
+        targets.extend(resolved);
 
-        follow::sync(
-            &store,
-            &endpoint,
-            &targets,
-            Arc::clone(&identity),
-            Arc::clone(&resolver),
-        )
-        .await;
+        follower.sync(&store, &targets).await;
 
-        let published = targets.clone();
+        let published = targets
+            .iter()
+            .map(|target| target.addr.clone())
+            .collect::<Vec<_>>();
         let sent = async_world
             .commands()
             .push(move |world: &mut World| {

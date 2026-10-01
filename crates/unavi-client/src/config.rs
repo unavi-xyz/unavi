@@ -1,12 +1,25 @@
+//! Build-time configuration, from `secretspec.toml` under the profile
+//! `SECRETSPEC_PROFILE` names when the client is compiled.
+
+use bevy::log::error;
+
 use crate::identity::SyncConfig;
 
-unavi_secrets::declare!("secretspec.toml");
+unavi_config::config!("secretspec.toml");
 
+/// The registries to follow. A config that fails to load follows none, and
+/// the client runs peer to peer.
 pub fn sync_config() -> SyncConfig {
-    let secrets = Secrets::load();
+    let config = match Config::load() {
+        Ok(config) => config,
+        Err(err) => {
+            error!(%err, "no registry to follow");
+            return SyncConfig::default();
+        }
+    };
 
     SyncConfig {
-        targets: secrets
+        targets: config
             .unavi_sync_targets
             .split(',')
             .map(str::trim)

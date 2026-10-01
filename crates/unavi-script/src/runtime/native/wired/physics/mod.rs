@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::runtime::{
@@ -42,7 +42,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         dir: bindings::wired::math::types::Vec3,
         max_dist: f32,
     ) -> wasmtime::Result<Result<Option<RayHit>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Physics) {
+        if let Err(err) = self.api.require(HostApi::Physics) {
             return Ok(Err(err.into()));
         }
         let result = shared::wired::physics::raycast(
@@ -59,7 +59,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         &mut self,
         prim: Resource<PrimRes>,
     ) -> wasmtime::Result<Result<bindings::wired::math::types::Vec3, Error>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => shared::wired::physics::get_linear_velocity(&self.api, prim.rep()).await,
             Err(err) => Err(err),
         };
@@ -71,7 +71,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         prim: Resource<PrimRes>,
         v: bindings::wired::math::types::Vec3,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => {
                 shared::wired::physics::set_linear_velocity(&self.api, prim.rep(), [v.x, v.y, v.z])
                     .await
@@ -86,7 +86,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         prim: Resource<PrimRes>,
         force: bindings::wired::math::types::Vec3,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => {
                 shared::wired::physics::apply_force(
                     &self.api,
@@ -105,7 +105,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         prim: Resource<PrimRes>,
         v: bindings::wired::math::types::Vec3,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => {
                 shared::wired::physics::set_angular_velocity(&self.api, prim.rep(), [v.x, v.y, v.z])
                     .await
@@ -119,7 +119,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         &mut self,
         doc: Vec<u8>,
     ) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => shared::wired::physics::take_hold(&self.api, doc),
             Err(err) => Err(err),
         };
@@ -130,7 +130,7 @@ impl bindings::wired::physics::api::Host for Runtime {
         &mut self,
         doc: Vec<u8>,
     ) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
-        let result = match self.api.require(ApiName::Physics) {
+        let result = match self.api.require(HostApi::Physics) {
             Ok(()) => shared::wired::physics::release_hold(&self.api, doc),
             Err(err) => Err(err),
         };

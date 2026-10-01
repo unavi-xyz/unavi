@@ -23,10 +23,10 @@ use hsd::state::HsdState;
 use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
-use unavi_policy::space::Space;
 use unavi_store::Document;
 
 use crate::{
+    membership::Space,
     peer::Peer,
     state::{
         entities::{

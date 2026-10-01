@@ -8,9 +8,9 @@ use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
-use unavi_policy::space::Space;
 use unavi_space::{
     anchor::ActiveSpace,
+    membership::Space,
     spawn::pick_spawn,
 };
 

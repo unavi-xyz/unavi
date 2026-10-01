@@ -1,5 +1,3 @@
-use unavi_policy::error::PolicyError;
-
 use self::bindings::wired::error::types::Error;
 use crate::error::ScriptError;
 
@@ -17,8 +15,8 @@ impl From<ScriptError> for Error {
             ScriptError::Other(s) => Self::Other(s),
             ScriptError::QuotaFlow(_) => Self::QuotaFlow,
             ScriptError::QuotaStock(_) => Self::QuotaStock,
-            ScriptError::Policy(PolicyError::Permission(_)) => Self::Permission,
-            ScriptError::Policy(_) => Self::Forbidden,
+            ScriptError::Permission(_) => Self::Permission,
+            ScriptError::NotOwner => Self::Forbidden,
         }
     }
 }

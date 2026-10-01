@@ -28,15 +28,13 @@ use hsd::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use unavi_policy::{
-    space::Space,
-    trust::Trust,
-};
+use unavi_policy::trust::Trust;
 
 use crate::{
     anchor::ActiveSpace,
     connection::PeerLink,
     devtools::inspect::Page,
+    membership::Space,
     state::debug,
     view::SpaceView,
 };

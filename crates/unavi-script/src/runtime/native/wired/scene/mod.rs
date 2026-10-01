@@ -1,4 +1,4 @@
-use unavi_policy::permissions::ApiName;
+use unavi_policy::permissions::HostApi;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -41,7 +41,7 @@ pub mod bindings {
 
 impl bindings::wired::scene::api::Host for Runtime {
     async fn self_prim(&mut self) -> wasmtime::Result<Result<Resource<PrimRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Scene) {
+        if let Err(err) = self.api.require(HostApi::Scene) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::self_prim(&self.api)
@@ -51,7 +51,7 @@ impl bindings::wired::scene::api::Host for Runtime {
     }
 
     async fn self_document(&mut self) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Scene) {
+        if let Err(err) = self.api.require(HostApi::Scene) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::self_document(&self.api)
@@ -64,7 +64,7 @@ impl bindings::wired::scene::api::Host for Runtime {
         &mut self,
         id: Vec<u8>,
     ) -> wasmtime::Result<Result<Option<Resource<DocRes>>, Error>> {
-        if let Err(err) = self.api.require(ApiName::Scene) {
+        if let Err(err) = self.api.require(HostApi::Scene) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::get_document(&self.api, id)
@@ -74,7 +74,7 @@ impl bindings::wired::scene::api::Host for Runtime {
     }
 
     async fn create_document(&mut self) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+        if let Err(err) = self.api.require(HostApi::CreateDocument) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::create_document(&self.api)
@@ -87,7 +87,7 @@ impl bindings::wired::scene::api::Host for Runtime {
         &mut self,
         id: Vec<u8>,
     ) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+        if let Err(err) = self.api.require(HostApi::CreateDocument) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::copy_document(&self.api, id)
@@ -97,7 +97,7 @@ impl bindings::wired::scene::api::Host for Runtime {
     }
 
     async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
-        if let Err(err) = self.api.require(ApiName::Scene) {
+        if let Err(err) = self.api.require(HostApi::Scene) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::remove_document(&self.api, id)

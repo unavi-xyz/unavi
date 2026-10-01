@@ -13,7 +13,7 @@ use serde::{
     Serialize,
 };
 use unavi_identity::auth::bindings::Bindings;
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use xdid::core::did::Did;
 
 /// How far a peer is trusted.
@@ -36,7 +36,7 @@ pub struct TrustTable(Arc<Inner>);
 
 struct Inner {
     overrides: RwLock<HashMap<Did, Trust>>,
-    storage:   LocalStorage,
+    storage:   DeviceStorage,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -47,7 +47,7 @@ struct Stored {
 
 impl TrustTable {
     #[must_use]
-    pub fn new(storage: LocalStorage) -> Self {
+    pub fn new(storage: DeviceStorage) -> Self {
         Self(Arc::new(Inner {
             overrides: RwLock::default(),
             storage,
@@ -56,7 +56,7 @@ impl TrustTable {
 
     /// Reads the table from `storage`. Entries that do not parse as DIDs are
     /// dropped. A file that does not parse is an error.
-    pub fn load(storage: LocalStorage) -> anyhow::Result<Self> {
+    pub fn load(storage: DeviceStorage) -> anyhow::Result<Self> {
         let mut overrides = HashMap::new();
 
         if let Some(text) = storage.read(TABLE_KEY)? {
@@ -138,26 +138,26 @@ mod tests {
 
     /// A fresh table on disk, distinct per test so parallel runs never share a
     /// file.
-    fn storage() -> (PathBuf, LocalStorage) {
+    fn storage() -> (PathBuf, DeviceStorage) {
         let dir = std::env::temp_dir().join(format!(
             "unavi-trust-{}-{}",
             std::process::id(),
             std::thread::current().name().unwrap_or("unnamed")
         ));
         std::fs::create_dir_all(&dir).expect("temp dir");
-        let storage = LocalStorage::Path(dir.clone());
+        let storage = DeviceStorage::at(dir.clone());
         (dir, storage)
     }
 
     #[test]
     fn an_unproven_peer_is_a_guest() {
-        let table = TrustTable::new(LocalStorage::default());
+        let table = TrustTable::new(DeviceStorage::memory());
         assert_eq!(table.of_peer(peer(), &Bindings::default()), Trust::Guest);
     }
 
     #[test]
     fn a_trust_level_survives_the_endpoint_it_was_learned_on() {
-        let table = TrustTable::new(LocalStorage::default());
+        let table = TrustTable::new(DeviceStorage::memory());
         let did = Did::from_str("did:web:example.com").expect("did");
         let bindings = Bindings::default();
         table.set(did.clone(), Trust::Trusted);

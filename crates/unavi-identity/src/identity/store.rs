@@ -1,5 +1,5 @@
 use iroh::SecretKey;
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use xdid::method::key::{
     DidKeyPair,
     p256::P256KeyPair,
@@ -14,7 +14,7 @@ pub struct Keys {
 const IDENTITY_ITEM: &str = "key.pem";
 const ENDPOINT_ITEM: &str = "endpoint.key";
 
-pub fn load(storage: &LocalStorage) -> anyhow::Result<Keys> {
+pub fn load(storage: &DeviceStorage) -> anyhow::Result<Keys> {
     Ok(Keys {
         identity: identity_key(storage)?,
         endpoint: endpoint_key(storage)?,
@@ -23,7 +23,7 @@ pub fn load(storage: &LocalStorage) -> anyhow::Result<Keys> {
 
 /// A stored key that cannot be read is an error. Replacing it would discard
 /// the identity, which nothing can recover.
-fn identity_key(storage: &LocalStorage) -> anyhow::Result<P256KeyPair> {
+fn identity_key(storage: &DeviceStorage) -> anyhow::Result<P256KeyPair> {
     if let Some(pem) = storage.read(IDENTITY_ITEM)? {
         return Ok(P256KeyPair::from_pkcs8_pem(Zeroizing::new(pem).as_str())?);
     }
@@ -35,7 +35,7 @@ fn identity_key(storage: &LocalStorage) -> anyhow::Result<P256KeyPair> {
 
 /// A stored key that is missing, short, or unreadable is replaced with a fresh
 /// one. Losing it costs a new `EndpointId` and author id, nothing more.
-fn endpoint_key(storage: &LocalStorage) -> anyhow::Result<SecretKey> {
+fn endpoint_key(storage: &DeviceStorage) -> anyhow::Result<SecretKey> {
     match storage.read_bytes(ENDPOINT_ITEM) {
         Ok(Some(bytes)) if bytes.len() == 32 => {
             let mut key = [0u8; 32];
@@ -57,9 +57,9 @@ mod tests {
 
     use super::*;
 
-    fn path_storage() -> (tempfile::TempDir, LocalStorage) {
+    fn path_storage() -> (tempfile::TempDir, DeviceStorage) {
         let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let storage = DeviceStorage::at(dir.path().to_path_buf());
         (dir, storage)
     }
 
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn in_memory_keys_are_stable_within_a_process() {
-        let storage = LocalStorage::default();
+        let storage = DeviceStorage::memory();
 
         let first = load(&storage).expect("first load");
         let second = load(&storage).expect("second load");

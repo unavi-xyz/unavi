@@ -8,10 +8,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::package::ImportPackage;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalStore,
-};
+use bevy_iroh::store::DataStore;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
@@ -61,10 +58,7 @@ fn main() {
     .add_observer(on_agent_load)
     .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((
-        LocalBlobs(store.store.blobs().clone()),
-        LocalStore(store.store.clone()),
-    ));
+    app.insert_resource(DataStore(store.store));
 
     app.run();
 }

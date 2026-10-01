@@ -1,5 +1,5 @@
 //! Nothing else in the process closes a replica, so a
-//! [`unavi_store::document::Document`] that never released its handle would
+//! [`unavi_store::Document`] that never released its handle would
 //! make eviction a no-op rather than merely slow.
 
 use std::time::Duration;
@@ -21,7 +21,11 @@ async fn releasing_documents_frees_the_replica(#[future] store: Store) {
     let ns = store.create().await.expect("create").id();
 
     for _ in 0..8 {
-        store.open(ns).await.expect("open");
+        store
+            .held(ns)
+            .await
+            .expect("held")
+            .expect("a created document is held");
     }
 
     store

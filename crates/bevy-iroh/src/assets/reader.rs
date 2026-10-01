@@ -1,3 +1,6 @@
+//! The `iroh://` asset reader, which resolves a path against the manifest and
+//! hands the fetch to the world.
+
 use std::{
     future::Future,
     path::Path,
@@ -11,17 +14,20 @@ use bevy::asset::io::{
     Reader,
     VecReader,
 };
-use blake3::Hash;
 use bytes::Bytes;
+use iroh_blobs::Hash;
 use tokio::sync::oneshot;
 
-use crate::AssetSpec;
+use crate::{
+    assets::AssetSpec,
+    blob::BlobError,
+};
 
 /// One asset fetch, handed from a reader to the world.
 pub struct FetchRequest {
     pub rel_path: &'static str,
     pub hash:     Hash,
-    pub tx:       oneshot::Sender<Result<Bytes, String>>,
+    pub tx:       oneshot::Sender<Result<Bytes, BlobError>>,
 }
 
 /// Serves manifest assets from the iroh blob store.
@@ -46,13 +52,11 @@ impl IrohAssetReader {
             .and_then(|path| self.manifest.iter().find(|asset| asset.rel_path == path))
             .ok_or_else(not_found)?;
 
-        let hash = Hash::from_hex(asset.hash).map_err(io_error)?;
-
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(FetchRequest {
                 rel_path: asset.rel_path,
-                hash,
+                hash: asset.hash,
                 tx,
             })
             .await
@@ -69,7 +73,7 @@ fn io_error(err: impl ToString) -> AssetReaderError {
 impl AssetReader for IrohAssetReader {
     async fn read<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
         let bytes = self.fetch(path).await?;
-        Ok(VecReader::new(bytes.to_vec()))
+        Ok(VecReader::new(Vec::from(bytes)))
     }
 
     /// Content-addressed assets carry no meta, so the loader falls back to its
@@ -106,10 +110,11 @@ mod tests {
     };
 
     use super::*;
+    use crate::assets::hex_hash;
 
     const MANIFEST: &[AssetSpec] = &[AssetSpec {
         rel_path: "model/default.vrm",
-        hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
+        hash:     hex_hash("a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281"),
         size:     4_452_486,
     }];
 
@@ -151,7 +156,10 @@ mod tests {
 
         let (fetched, ()) = block_on(zip(reader.fetch(Path::new("model/default.vrm")), async {
             let request = rx.recv().await.expect("dispatched fetch");
-            request.tx.send(Err("no provider".to_string())).ok();
+            request
+                .tx
+                .send(Err(BlobError::Exhausted { attempts: 1 }))
+                .ok();
         }));
 
         assert!(matches!(

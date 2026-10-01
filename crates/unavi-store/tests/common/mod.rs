@@ -12,10 +12,10 @@ use iroh::{
 };
 use iroh_docs::Author;
 use rstest::fixture;
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use unavi_store::{
     Store,
-    builder::StoreBuilder,
+    StoreBuilder,
 };
 
 #[fixture]
@@ -26,14 +26,14 @@ pub async fn store() -> Store {
 /// A store sweeping on `interval`, for tests that assert what garbage
 /// collection reclaims.
 pub async fn store_with_gc(interval: Duration) -> Store {
-    build(move |builder| builder.gc_timer(interval)).await
+    build(move |builder| builder.sweep_interval(interval)).await
 }
 
 /// A store whose recorded namespace ids land in `dir`, so a test can assert
 /// what a restart would reopen.
 pub async fn store_at(dir: &Path) -> Store {
     let dir = dir.to_path_buf();
-    build(move |builder| builder.storage(LocalStorage::Path(dir))).await
+    build(move |builder| builder.storage(DeviceStorage::at(dir))).await
 }
 
 async fn build(configure: impl FnOnce(StoreBuilder) -> StoreBuilder) -> Store {

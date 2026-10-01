@@ -19,10 +19,10 @@ use unavi_identity::identity::{
     Identity,
     NodeIdentity,
 };
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use unavi_store::{
     Store,
-    builder::StoreBuilder,
+    StoreBuilder,
 };
 
 /// The app's data directory, created on first use.
@@ -54,9 +54,9 @@ fn build(persistent: bool) -> TestStore {
         // The persistent store's documents were authored under the client's
         // identity, so an example reading them back has to load the same key.
         let storage = if persistent {
-            LocalStorage::Path(DIRS.data_local_dir().to_path_buf())
+            DeviceStorage::at(DIRS.data_local_dir().to_path_buf())
         } else {
-            LocalStorage::default()
+            DeviceStorage::memory()
         };
         let node = NodeIdentity::load(&storage).expect("identity");
 
@@ -97,8 +97,7 @@ fn build(persistent: bool) -> TestStore {
 /// proxy — waiting on a provider the harness does not have.
 async fn warn_missing_manifest_assets(blobs: &Blobs) {
     for asset in MANIFEST {
-        let hash = blake3::Hash::from_hex(asset.hash).expect("manifest hash");
-        if blobs.has(hash).await.unwrap_or(false) {
+        if blobs.has(asset.hash).await.unwrap_or(false) {
             continue;
         }
         println!(

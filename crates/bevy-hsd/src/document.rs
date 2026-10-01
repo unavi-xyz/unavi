@@ -10,7 +10,7 @@ use hsd::{
     state::HsdState,
 };
 use iroh::EndpointAddr;
-use unavi_store::document::Document;
+use unavi_store::Document;
 
 use crate::prim::{
     PrimIndex,

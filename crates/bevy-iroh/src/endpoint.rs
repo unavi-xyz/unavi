@@ -1,3 +1,5 @@
+//! Binding this node's iroh endpoint, retried until it succeeds.
+
 use std::{
     sync::Arc,
     time::Duration,
@@ -19,10 +21,11 @@ use tracing::{
     info,
 };
 
-use crate::router::RouterBuilderFns;
+use crate::router::RouterProtocols;
 
+/// This node's bound endpoint.
 #[derive(Component)]
-#[require(RouterBuilderFns)]
+#[require(RouterProtocols)]
 pub struct IrohEndpoint(pub Endpoint);
 
 /// Applied to the endpoint builder before it binds, once per attempt.
@@ -31,6 +34,7 @@ pub struct IrohEndpoint(pub Endpoint);
 /// connection hooks above all — arrives through here.
 pub type Configure = Arc<dyn Fn(Builder) -> Builder + Send + Sync>;
 
+/// Binds an endpoint, spawning it as an [`IrohEndpoint`] entity once bound.
 #[derive(Event, Clone)]
 pub struct LoadEndpoint {
     pub configure:  Option<Configure>,
@@ -47,16 +51,18 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
     task::spawn(async move {
         let mut delay_secs = 4;
 
-        loop {
+        // Gives up once the loading entity is gone, since nothing would
+        // receive the endpoint.
+        while !tx.is_closed() {
             match init_endpoint(&opts).await {
-                Ok(val) => {
-                    tx.send(val).await.expect("send endpoint");
-                    break;
+                Ok(endpoint) => {
+                    tx.send(endpoint).await.ok();
+                    return;
                 }
                 Err(err) => {
                     error!(?err, "Failed to init endpoint");
                     n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-                    delay_secs = delay_secs.wrapping_mul(2).min(300);
+                    delay_secs = delay_secs.saturating_mul(2).min(300);
                 }
             }
         }

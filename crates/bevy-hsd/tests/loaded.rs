@@ -1,11 +1,10 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bevy_async::AsyncPlugin;
 use bevy_hsd::{
     document::HsdDocId,
     loaded::HsdLoaded,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use bytemuck::cast_slice;
 use hsd::{
     attributes::{
@@ -138,8 +137,7 @@ fn test_loaded_after_collider_built(mut ctx: TestContext) {
 #[rstest]
 fn test_loaded_despite_a_reference_past_the_depth_cap(mut ctx: TestContext) {
     let backing = Backing::new();
-    ctx.app.add_plugins(AsyncPlugin);
-    ctx.app.world_mut().spawn(LocalStore(backing.store()));
+    ctx.app.insert_resource(DataStore(backing.store()));
     ctx.app
         .world_mut()
         .entity_mut(ctx.doc)

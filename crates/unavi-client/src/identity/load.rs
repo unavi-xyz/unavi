@@ -10,14 +10,9 @@ use bevy_async::{
 };
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    router::{
-        RouterBuilderFn,
-        RouterBuilderFnTarget,
-    },
+    router,
     store::{
-        LocalBlobs,
-        LocalDownloader,
-        LocalStore,
+        DataStore,
         SyncTargets,
     },
 };
@@ -38,14 +33,14 @@ use unavi_registry::follow;
 use unavi_space::identity::RootDocument;
 use unavi_store::{
     Store,
-    builder::StoreBuilder,
+    StoreBuilder,
 };
 use xdid::resolver::DidResolver;
 
 use crate::identity::{
     Auth,
+    KeyStorage,
     LocalNode,
-    LocalStorage,
     Resolve,
     SyncConfig,
 };
@@ -99,14 +94,9 @@ pub fn serve_auth(
             .push(move |world: &mut World| {
                 if let Ok(mut entity) = world.get_entity_mut(entity) {
                     entity.insert(AuthTask(task));
+                    router::accept(|builder| builder.accept(auth::ALPN, protocol)).apply(entity);
                 }
             })
-            .spawn((
-                RouterBuilderFnTarget(entity),
-                RouterBuilderFn(Some(Box::new(|builder| {
-                    builder.accept(auth::ALPN, protocol)
-                }))),
-            ))
             .send()
             .await
             .ok();
@@ -117,7 +107,7 @@ pub fn load_store(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     node: Res<LocalNode>,
-    storage: Res<LocalStorage>,
+    storage: Res<KeyStorage>,
     sync: Res<SyncConfig>,
     resolve: Res<Resolve>,
     async_world: Res<AsyncWorld>,
@@ -153,7 +143,7 @@ pub fn load_store(
         {
             error!(?err, "Failed to load data store");
             n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-            delay_secs = delay_secs.wrapping_mul(2);
+            delay_secs = delay_secs.saturating_mul(2).min(MAX_RETRY_DELAY.as_secs());
         }
     });
 }
@@ -163,12 +153,12 @@ async fn load(
     endpoint: Endpoint,
     node: Arc<NodeIdentity>,
     entity: Entity,
-    storage: unavi_local::LocalStorage,
+    storage: unavi_local::DeviceStorage,
     sync: SyncConfig,
     resolver: Arc<DidResolver>,
 ) -> anyhow::Result<()> {
     let builder = StoreBuilder::new(endpoint.clone(), node.author())
-        .gc_timer(Duration::from_mins(15))
+        .sweep_interval(Duration::from_mins(15))
         .doc_budget(DOC_BUDGET)
         .storage(storage.clone());
 
@@ -189,29 +179,27 @@ async fn load(
 
     let root = root::open(&store).await?.id();
 
-    let Some(store_entity) = async_world
+    let installed = async_world
         .commands()
-        .spawn((
-            RouterBuilderFnTarget(entity),
-            RouterBuilderFn(Some(Box::new({
-                let store = store.clone();
-                move |builder| store.accept(builder)
-            }))),
-        ))
-        .push(move |world: &mut World| {
-            world.insert_resource(RootDocument(root));
+        .push({
+            let store = store.clone();
+            let sync_targets = sync_targets.clone();
+            move |world: &mut World| {
+                if let Ok(entity) = world.get_entity_mut(entity) {
+                    let accepting = store.clone();
+                    router::accept(move |builder| accepting.accept(builder)).apply(entity);
+                }
+                world.insert_resource(RootDocument(root));
+                world.insert_resource(SyncTargets(sync_targets));
+                world.insert_resource(DataStore(store));
+            }
         })
-        .send_spawn((
-            LocalBlobs(store.blobs().clone()),
-            LocalDownloader(store.blob_store().downloader(&endpoint)),
-            LocalStore(store.clone()),
-            SyncTargets(sync_targets.clone()),
-        ))
-        .await
-    else {
+        .send()
+        .await;
+    if installed.is_err() {
         warn!("the world is gone; dropping the data store");
         return Ok(());
-    };
+    }
 
     if !unresolved.is_empty() {
         task::spawn(retry(
@@ -220,7 +208,6 @@ async fn load(
             endpoint,
             sync_targets,
             unresolved,
-            store_entity,
             identity,
             resolver,
         ));
@@ -237,7 +224,6 @@ async fn retry(
     endpoint: Endpoint,
     mut targets: Vec<EndpointAddr>,
     mut unresolved: Vec<String>,
-    store_entity: Entity,
     identity: Arc<Identity>,
     resolver: Arc<DidResolver>,
 ) {
@@ -268,9 +254,7 @@ async fn retry(
         let sent = async_world
             .commands()
             .push(move |world: &mut World| {
-                if let Some(mut existing) = world.get_mut::<SyncTargets>(store_entity) {
-                    existing.0 = published;
-                }
+                world.insert_resource(SyncTargets(published));
             })
             .send()
             .await;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use iroh::SecretKey;
 use iroh_docs::Author;
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use xdid::{
     core::did::Did,
     method::key::{
@@ -66,7 +66,7 @@ impl NodeIdentity {
         }
     }
 
-    pub fn load(storage: &LocalStorage) -> anyhow::Result<Self> {
+    pub fn load(storage: &DeviceStorage) -> anyhow::Result<Self> {
         let keys = store::load(storage)?;
         Ok(Self::new(keys.identity, keys.endpoint))
     }

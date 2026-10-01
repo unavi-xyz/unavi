@@ -18,13 +18,13 @@ use bevy_hsd::{
         FeedReady,
     },
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::state::HsdState;
 use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
-use unavi_store::document::Document;
+use unavi_store::Document;
 
 use crate::{
     peer::Peer,
@@ -89,12 +89,12 @@ pub fn fetch_tracked_docs(
         (Without<Hsd>, Without<PendingPinnedDoc>, With<ChildOf>),
     >,
     peers: Query<&Peer>,
-    stores: Query<&LocalStore>,
+    store: Option<Res<DataStore>>,
     replicas: Res<Replicas>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
-    let Ok(store) = stores.single() else {
+    let Some(store) = store else {
         return;
     };
     // A doc with no local identity yet has nothing to sync into; retried next
@@ -129,12 +129,9 @@ pub fn fetch_tracked_docs(
 
         task::spawn(async move {
             let fetch = async {
-                let doc = store.open(ns).await?;
-                // Subscribed before the sync starts, so it sees every entry the
-                // sync brings.
-                let feed = DocFeed::spawn(doc.clone(), FeedReady::RemoteSync);
-                doc.start_sync(sync_from).await?;
-                anyhow::Ok((doc, feed))
+                let (doc, events) = store.join(ns, sync_from).await?;
+                let feed = DocFeed::joined(doc.clone(), events, FeedReady::RemoteSync);
+                Ok::<_, unavi_store::Error>((doc, feed))
             };
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}

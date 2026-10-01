@@ -8,22 +8,26 @@ use async_channel::Sender;
 use bevy::log::warn;
 use bytes::Bytes;
 use hsd::{
-    bounds::MAX_ENTRY_BYTES,
     key,
     state::entry::Entry,
 };
 use iroh_blobs::Hash;
-use iroh_docs::{
-    engine::LiveEvent,
-    store::Query,
-};
+use iroh_docs::engine::LiveEvent;
 use n0_future::StreamExt;
-use unavi_store::document::Document;
+use unavi_store::{
+    Document,
+    Events,
+    MAX_ENTRY_BYTES,
+    Tombstones,
+};
 
 use crate::feed::{
     Delta,
     FeedReady,
 };
+
+// A value hsd lets a writer produce must be one the store fetches.
+const _: () = assert!(hsd::bounds::MAX_ENTRY_BYTES as u64 <= MAX_ENTRY_BYTES);
 
 /// Reads each key's winner out of a document's store and sends it on.
 pub(super) struct Reader {
@@ -45,10 +49,17 @@ impl Reader {
         }
     }
 
-    /// Subscribes before reading the snapshot, so a key may arrive twice but
-    /// never not at all.
-    pub(super) async fn run(mut self, ready: FeedReady) -> anyhow::Result<()> {
-        let mut events = self.doc.subscribe().await?;
+    /// Subscribes, unless handed `events` subscribed already, before reading
+    /// the snapshot, so a key may arrive twice but never not at all.
+    pub(super) async fn run(
+        mut self,
+        events: Option<Events>,
+        ready: FeedReady,
+    ) -> anyhow::Result<()> {
+        let mut events = match events {
+            Some(events) => events,
+            None => self.doc.subscribe().await?,
+        };
 
         let holds_prim = self.snapshot().await?;
         let mut waiting = match ready {
@@ -88,10 +99,12 @@ impl Reader {
     async fn snapshot(&mut self) -> anyhow::Result<bool> {
         let mut holds_prim = false;
         for prefix in key::PREFIXES {
-            let query = Query::single_latest_per_key()
-                .key_prefix(prefix)
-                .include_empty();
-            let entries = self.doc.get_many(query).await?.collect::<Vec<_>>().await;
+            let entries = self
+                .doc
+                .entries(prefix, Tombstones::Include)
+                .await?
+                .collect::<Vec<_>>()
+                .await;
             for entry in entries {
                 let entry = entry?;
                 holds_prim |= prefix == key::PRIM_PREFIX && entry.content_len() > 0;
@@ -103,10 +116,7 @@ impl Reader {
 
     /// An inserted entry may not be the key's winner, so the key is re-read.
     async fn reread(&mut self, key: &[u8]) -> anyhow::Result<()> {
-        let query = Query::single_latest_per_key()
-            .key_exact(key)
-            .include_empty();
-        if let Some(entry) = self.doc.get_one(query).await? {
+        if let Some(entry) = self.doc.entry(key, Tombstones::Include).await? {
             return self.forward(&entry).await;
         }
         let Ok(key) = str::from_utf8(key) else {
@@ -116,7 +126,8 @@ impl Reader {
             .await
     }
 
-    /// An entry past [`MAX_ENTRY_BYTES`] is sent empty without fetching it.
+    /// An entry past [`MAX_ENTRY_BYTES`], which the store never fetches, is
+    /// sent empty.
     /// One whose content has not downloaded is parked until it has.
     async fn forward(&mut self, entry: &iroh_docs::Entry) -> anyhow::Result<()> {
         let Ok(key) = String::from_utf8(entry.key().to_vec()) else {
@@ -127,7 +138,7 @@ impl Reader {
         let value = if len == 0 {
             self.unpark(&key);
             Bytes::new()
-        } else if usize::try_from(len).map_or(true, |len| len > MAX_ENTRY_BYTES) {
+        } else if len > MAX_ENTRY_BYTES {
             warn!(%key, len, "entry is over the size cap and reads as empty");
             self.unpark(&key);
             Bytes::new()

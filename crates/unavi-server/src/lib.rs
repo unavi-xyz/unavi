@@ -34,12 +34,12 @@ use unavi_identity::{
     identity::NodeIdentity,
     resolve::new_did_resolver,
 };
-use unavi_local::LocalStorage;
+use unavi_local::DeviceStorage;
 use unavi_registry::{
     Registry,
     config::Config as RegistryConfig,
 };
-use unavi_store::builder::StoreBuilder;
+use unavi_store::StoreBuilder;
 use xdid::{
     core::{
         did::Did,
@@ -71,6 +71,10 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
+
+/// Bytes of documents the server holds before the retention sweep evicts
+/// read-only ones, least recently joined first.
+const DOC_BUDGET: u64 = 16 * 1024 * 1024 * 1024;
 
 pub struct ServerOptions {
     pub in_memory: bool,
@@ -108,7 +112,8 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let endpoint_id = endpoint.id();
     let builder = StoreBuilder::new(endpoint.clone(), node.author())
-        .gc_timer(Duration::from_mins(15))
+        .sweep_interval(Duration::from_mins(15))
+        .doc_budget(DOC_BUDGET)
         .storage(storage.clone());
 
     let store = builder.build().await?;
@@ -157,11 +162,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn key_storage(in_memory: bool) -> LocalStorage {
+fn key_storage(in_memory: bool) -> DeviceStorage {
     if in_memory {
-        LocalStorage::default()
+        DeviceStorage::memory()
     } else {
-        LocalStorage::Path(DIRS.data_local_dir().to_path_buf())
+        DeviceStorage::at(DIRS.data_local_dir().to_path_buf())
     }
 }
 

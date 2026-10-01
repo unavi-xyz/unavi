@@ -14,7 +14,7 @@ use bevy_hsd::{
     },
     reference::ReferenceInstance,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::{
     id::DocId,
     key,
@@ -35,7 +35,7 @@ use unavi_policy::{
     space::Space,
 };
 use unavi_space::anchor::ActiveSpace;
-use unavi_store::document::Document;
+use unavi_store::Document;
 
 use crate::{
     error::ScriptError,
@@ -76,10 +76,8 @@ async fn create_namespace(api: &Api) -> anyhow::Result<Document> {
         .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
-                .query::<&LocalStore>()
-                .single(world)
-                .ok()
-                .map(|s| s.0.clone())
+                .get_resource::<DataStore>()
+                .map(|store| store.0.clone())
             else {
                 return;
             };
@@ -89,7 +87,7 @@ async fn create_namespace(api: &Api) -> anyhow::Result<Document> {
         })
         .send()
         .await?;
-    rx.recv().await?
+    Ok(rx.recv().await??)
 }
 
 /// The namespace backing a document.
@@ -126,19 +124,20 @@ pub(super) async fn write_entries(
         .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
-                .query::<&LocalStore>()
-                .single(world)
-                .ok()
-                .map(|s| s.0.clone())
+                .get_resource::<DataStore>()
+                .map(|store| store.0.clone())
             else {
                 return;
             };
             task::spawn(async move {
                 let res = async {
-                    let doc = store.open(ns).await?;
+                    let doc = store
+                        .held(ns)
+                        .await?
+                        .ok_or(unavi_store::Error::NotHeld(ns))?;
                     for entry in entries {
                         if entry.value.is_empty() {
-                            doc.remove(entry.key).await?;
+                            doc.remove_key(entry.key).await?;
                         } else {
                             doc.set(entry.key, entry.value).await?;
                         }
@@ -342,10 +341,8 @@ async fn remove_replica(api: &Api, ns: NamespaceId) {
         .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
-                .query::<&LocalStore>()
-                .single(world)
-                .ok()
-                .map(|s| s.0.clone())
+                .get_resource::<DataStore>()
+                .map(|store| store.0.clone())
             else {
                 return;
             };
@@ -373,10 +370,8 @@ pub(super) async fn holds_write_key(api: &Api, id: DocId) -> anyhow::Result<bool
         .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
-                .query::<&LocalStore>()
-                .single(world)
-                .ok()
-                .map(|s| s.0.clone())
+                .get_resource::<DataStore>()
+                .map(|store| store.0.clone())
             else {
                 tx.try_send(Ok(false)).ok();
                 return;
@@ -454,12 +449,14 @@ async fn source_entries(api: &Api, id: DocId) -> anyhow::Result<Option<Vec<Entry
 
 async fn read_entries(doc: &Document, id: DocId) -> anyhow::Result<Vec<Entry>> {
     let mut entries = Vec::new();
-    for entry in doc.list(&key::PREFIXES).await? {
-        let key = String::from_utf8(entry.key().to_vec())?;
-        let Some(value) = doc.value(&entry).await? else {
-            anyhow::bail!("{key} has not downloaded, so {id} cannot be copied whole");
-        };
-        entries.push(Entry::new(key, value, entry.timestamp()));
+    for prefix in key::PREFIXES {
+        for entry in doc.list(prefix).await? {
+            let key = String::from_utf8(entry.key().to_vec())?;
+            let Some(value) = doc.value(&entry).await? else {
+                anyhow::bail!("{key} has not downloaded, so {id} cannot be copied whole");
+            };
+            entries.push(Entry::new(key, value, entry.timestamp()));
+        }
     }
     Ok(entries)
 }

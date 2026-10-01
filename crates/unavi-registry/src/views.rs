@@ -4,8 +4,8 @@ use serde::{
     Serialize,
 };
 use unavi_store::{
+    Document,
     Store,
-    document::Document,
 };
 use xdid::resolver::DidResolver;
 
@@ -54,9 +54,7 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
 /// Each view is recorded under its own key, so one lost view is reminted
 /// without disturbing the others.
 async fn open_view(store: &Store, name: &str) -> anyhow::Result<Document> {
-    let view = store
-        .open_named_doc(&format!("registry/views/{name}"))
-        .await?;
+    let view = store.named(&format!("registry/views/{name}")).await?;
     view.serve().await?;
     Ok(view)
 }
@@ -79,7 +77,7 @@ impl Views {
         active: &[ActiveSpace],
         capacity: usize,
     ) -> anyhow::Result<()> {
-        self.active.remove(ACTIVE_PREFIX).await?;
+        self.active.remove_prefix(ACTIVE_PREFIX).await?;
 
         for (rank, space) in active.iter().take(capacity).enumerate() {
             let value = postcard::to_stdvec(&(space.occupants as u32, space.idle_secs))?;
@@ -124,7 +122,7 @@ impl Views {
     }
 
     async fn write_categories(&self, live: &[Submission], config: &Config) -> anyhow::Result<()> {
-        self.categories.remove(String::new()).await?;
+        self.categories.remove_prefix("").await?;
 
         for category in &config.categories {
             let matching = live
@@ -149,7 +147,7 @@ async fn write(
     entries: &[&Submission],
     key: impl Fn(usize, NamespaceId) -> String,
 ) -> anyhow::Result<()> {
-    view.remove(String::new()).await?;
+    view.remove_prefix("").await?;
 
     for (rank, submission) in entries.iter().enumerate() {
         let value = postcard::to_stdvec(submission)?;
@@ -165,10 +163,12 @@ pub async fn read_view(
     ns: NamespaceId,
     prefix: &str,
 ) -> anyhow::Result<Vec<Submission>> {
-    let doc = store.open(ns).await?;
+    let Some(doc) = store.held(ns).await? else {
+        return Ok(Vec::new());
+    };
 
     let mut out = Vec::new();
-    for entry in doc.list(&[prefix]).await? {
+    for entry in doc.list(prefix).await? {
         let Some(bytes) = doc.value(&entry).await? else {
             continue;
         };

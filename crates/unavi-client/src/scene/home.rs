@@ -1,18 +1,16 @@
 use std::str::FromStr;
 
 use bevy::prelude::*;
-use bevy_async::{
-    AsyncWorld,
-    task,
-};
+use bevy_async::task;
 use bevy_hsd::{
     document::HsdNamespace,
     package::ImportPackage,
 };
-use bevy_iroh::doc::DocSet;
+use bevy_iroh::store::DataStore;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
 use unavi_space::identity::RootDocument;
+use unavi_store::Store;
 
 /// A namespace to enter instead of the local home, from `--join`.
 #[derive(Resource, Default)]
@@ -56,7 +54,7 @@ pub fn enter_home(
     trigger: On<Add, HsdNamespace>,
     joining: Query<&HsdNamespace, With<JoiningHome>>,
     root: Option<Res<RootDocument>>,
-    async_world: Res<AsyncWorld>,
+    store: Option<Res<DataStore>>,
     mut commands: Commands,
 ) {
     let Ok(namespace) = joining.get(trigger.entity) else {
@@ -70,8 +68,8 @@ pub fn enter_home(
         .insert(Space(ns))
         .remove::<JoiningHome>();
 
-    if let Some(root) = root {
-        task::spawn(record_home(async_world.clone(), root.0, ns));
+    if let (Some(root), Some(store)) = (root, store) {
+        task::spawn(record_home(store.0.clone(), root.0, ns));
     }
 }
 
@@ -84,7 +82,7 @@ const HOME_VERSION: u32 = 0;
 
 /// Writes down which space is home, so a shell can offer to travel back to it;
 /// without this entry a script has no way to learn it.
-async fn record_home(async_world: AsyncWorld, root: NamespaceId, ns: NamespaceId) {
+async fn record_home(store: Store, root: NamespaceId, ns: NamespaceId) {
     let mut value = match postcard::to_stdvec(&HOME_VERSION) {
         Ok(value) => value,
         Err(err) => {
@@ -94,24 +92,15 @@ async fn record_home(async_world: AsyncWorld, root: NamespaceId, ns: NamespaceId
     };
     value.extend_from_slice(ns.as_bytes());
 
-    let (tx, rx) = async_channel::bounded(1);
-    if async_world
-        .commands()
-        .trigger(DocSet {
-            ns: root,
-            key: HOME_KEY.to_string(),
-            value: value.into(),
-            tx,
-        })
-        .send()
-        .await
-        .is_err()
-    {
-        return;
-    }
-    if rx.recv().await == Ok(true) {
-        info!(%ns, "Recorded home space");
-    } else {
-        warn!("could not record the home space");
+    let recorded = async {
+        let doc = store
+            .held(root)
+            .await?
+            .ok_or(unavi_store::Error::NotHeld(root))?;
+        doc.set(HOME_KEY, value).await
+    };
+    match recorded.await {
+        Ok(_) => info!(%ns, "Recorded home space"),
+        Err(err) => warn!(?err, "could not record the home space"),
     }
 }

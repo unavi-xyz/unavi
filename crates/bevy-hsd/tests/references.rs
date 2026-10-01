@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use bevy::prelude::*;
-use bevy_async::AsyncPlugin;
 use bevy_hsd::{
     document::HsdDocId,
     package::{
@@ -10,7 +9,7 @@ use bevy_hsd::{
     },
     reference::ReferenceInstance,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::{
     attributes::reference::ReferenceAttr,
     format::package::Package,
@@ -25,8 +24,7 @@ mod common;
 
 fn with_store(ctx: &mut TestContext) -> Backing {
     let backing = Backing::new();
-    ctx.app.add_plugins(AsyncPlugin);
-    ctx.app.world_mut().spawn(LocalStore(backing.store()));
+    ctx.app.insert_resource(DataStore(backing.store()));
     backing
 }
 

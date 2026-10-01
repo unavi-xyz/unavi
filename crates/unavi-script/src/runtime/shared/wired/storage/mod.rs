@@ -1,20 +1,34 @@
+//! `wired:storage`: reads of this node's root document and the view docs of
+//! the registries it follows. No other namespace is readable, and a read never
+//! imports one.
+
+use std::pin::pin;
+
 use anyhow::bail;
 use async_channel::{
     Receiver,
     TryRecvError,
 };
-use bevy_iroh::doc::{
-    DocGet,
-    DocList,
-};
+use bevy::prelude::*;
+use bevy_async::task;
+use bevy_iroh::store::DataStore;
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
+use n0_future::StreamExt;
 use unavi_registry::follow::registries;
+use unavi_store::{
+    Document,
+    MAX_ENTRY_BYTES,
+    Tombstones,
+};
 
 use crate::runtime::shared::{
     Api,
     slot_map::SlotMap,
 };
+
+/// Most entries one `list` returns.
+const MAX_LIST_ENTRIES: usize = 256;
 
 pub struct StorageRes;
 
@@ -51,32 +65,104 @@ pub async fn get_storage(api: &Api) -> anyhow::Result<u32> {
     Ok(storage.storage_slots.insert(StorageRes, &api.quota)?)
 }
 
-pub async fn get(api: &Api, _rep: u32, ns: Vec<u8>, key: String) -> anyhow::Result<u32> {
-    let ns = namespace(&ns)?;
+/// The root document and followed registry views, which is all the shell
+/// reads. The script's own documents are `wired:scene`'s.
+fn readable(api: &Api, ns: NamespaceId) -> bool {
+    api.root_doc == Some(ns) || registries().contains(&ns)
+}
+
+/// The store's document for `ns`, if `ns` is readable and held.
+async fn held(api: &Api, ns: NamespaceId) -> anyhow::Result<Option<Document>> {
+    if !readable(api, ns) {
+        return Ok(None);
+    }
+
     let (tx, rx) = async_channel::bounded(1);
     api.async_world
         .commands()
-        .trigger(DocGet { ns, key, tx })
+        .push(move |world: &mut World| {
+            let Some(store) = world
+                .get_resource::<DataStore>()
+                .map(|store| store.0.clone())
+            else {
+                return;
+            };
+            task::spawn(async move {
+                match store.held(ns).await {
+                    Ok(doc) => {
+                        tx.send(doc).await.ok();
+                    }
+                    Err(err) => debug!(%ns, ?err, "storage read failed"),
+                }
+            });
+        })
         .send()
         .await?;
+
+    Ok(rx.recv().await.ok().flatten())
+}
+
+/// An unreadable namespace, or one not held, resolves as a failed future.
+pub async fn get(api: &Api, _rep: u32, ns: Vec<u8>, key: String) -> anyhow::Result<u32> {
+    let ns = namespace(&ns)?;
+    let (tx, rx) = async_channel::bounded(1);
+    if let Some(doc) = held(api, ns).await? {
+        task::spawn(async move {
+            match doc.get(key).await {
+                Ok(value) => {
+                    tx.send(value).await.ok();
+                }
+                Err(err) => debug!(%ns, ?err, "storage get failed"),
+            }
+        });
+    }
     let mut storage = api.wired_storage.lock().await;
     Ok(storage
         .get_futures
         .insert(GetFutureRes { rx }, &api.quota)?)
 }
 
+/// At most [`MAX_LIST_ENTRIES`], in key order. Entries whose content has not
+/// downloaded are left out.
 pub async fn list(api: &Api, _rep: u32, ns: Vec<u8>, prefix: String) -> anyhow::Result<u32> {
     let ns = namespace(&ns)?;
     let (tx, rx) = async_channel::bounded(1);
-    api.async_world
-        .commands()
-        .trigger(DocList { ns, prefix, tx })
-        .send()
-        .await?;
+    if let Some(doc) = held(api, ns).await? {
+        task::spawn(async move {
+            match list_entries(&doc, &prefix).await {
+                Ok(entries) => {
+                    tx.send(entries).await.ok();
+                }
+                Err(err) => debug!(%ns, ?err, "storage list failed"),
+            }
+        });
+    }
     let mut storage = api.wired_storage.lock().await;
     Ok(storage
         .list_futures
         .insert(ListFutureRes { rx }, &api.quota)?)
+}
+
+async fn list_entries(doc: &Document, prefix: &str) -> unavi_store::Result<Vec<(String, Bytes)>> {
+    let mut entries = pin!(doc.entries(prefix, Tombstones::Exclude).await?);
+    let mut out = Vec::new();
+    while out.len() < MAX_LIST_ENTRIES
+        && let Some(entry) = entries.next().await
+    {
+        let entry = entry?;
+        // No key this workspace writes is anything but UTF-8, so one that does
+        // not decode names nothing a caller could have asked for.
+        let Ok(key) = String::from_utf8(entry.key().to_vec()) else {
+            continue;
+        };
+        if entry.content_len() > MAX_ENTRY_BYTES {
+            continue;
+        }
+        if let Some(value) = doc.value(&entry).await? {
+            out.push((key, value));
+        }
+    }
+    Ok(out)
 }
 
 pub fn root_doc_ns(api: &Api, _rep: u32) -> anyhow::Result<Option<Vec<u8>>> {

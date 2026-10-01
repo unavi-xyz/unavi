@@ -20,7 +20,7 @@ async fn entries_round_trip_through_the_blob_store(#[future] store: Store) {
     ns.set("p/A/xform/", "xform-payload").await.expect("xform");
     ns.set("p/A/name/", "name-payload").await.expect("name");
 
-    let listed = ns.list(&["p/"]).await.expect("list");
+    let listed = ns.list("p/").await.expect("list");
     assert_eq!(listed.len(), 2);
 
     let xform = listed
@@ -42,9 +42,9 @@ async fn an_empty_value_reads_as_absence(#[future] store: Store) {
     let ns = store.create().await.expect("create namespace");
 
     ns.set("p/A/parent/", "\x00").await.expect("set");
-    ns.remove("p/A/parent/").await.expect("remove");
+    ns.remove_key("p/A/parent/").await.expect("remove");
 
-    assert_eq!(ns.list(&["p/"]).await.expect("list"), []);
+    assert_eq!(ns.list("p/").await.expect("list"), []);
 }
 
 /// A prefix sweep deletes this store's entries rather than marking them, so
@@ -60,10 +60,10 @@ async fn a_prefix_sweep_then_a_tombstone_leaves_the_tombstone(#[future] store: S
 
     ns.set("p/A/parent/", "\x00").await.expect("parent");
     ns.set("p/A/name/", "doomed").await.expect("name");
-    ns.remove("p/A/").await.expect("sweep");
-    ns.remove("p/A/parent/").await.expect("tombstone");
+    ns.remove_prefix("p/A/").await.expect("sweep");
+    ns.remove_key("p/A/parent/").await.expect("tombstone");
 
-    assert_eq!(ns.list(&["p/"]).await.expect("list"), []);
+    assert_eq!(ns.list("p/").await.expect("list"), []);
 }
 
 /// The same bytes written under two keys are stored once, so a value shared by
@@ -82,11 +82,31 @@ async fn identical_values_share_one_blob(#[future] store: Store) {
             .expect("set");
     }
 
-    let listed = ns.list(&["h/"]).await.expect("list");
+    let listed = ns.list("h/").await.expect("list");
     assert_eq!(listed.len(), 2);
     assert_eq!(
         listed[0].content_hash(),
         listed[1].content_hash(),
         "one copy of the bytes, referenced twice"
+    );
+}
+
+/// Removing a key leaves the longer keys it prefixes.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn removing_a_key_keeps_longer_keys(#[future] store: Store) {
+    let ns = store.create().await.expect("create namespace");
+
+    ns.set("model/x", "dropped").await.expect("short");
+    ns.set("model/x.vrm", "kept").await.expect("long");
+    ns.remove_key("model/x").await.expect("remove");
+
+    assert_eq!(ns.get("model/x").await.expect("get"), None);
+    assert_eq!(
+        ns.get("model/x.vrm").await.expect("get"),
+        Some(Bytes::from_static(b"kept"))
     );
 }

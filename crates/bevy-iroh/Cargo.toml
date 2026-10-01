@@ -14,11 +14,9 @@ anyhow.workspace        = true
 async-channel.workspace = true
 bevy.workspace          = true
 bevy-async.path         = "../bevy-async"
-blake3.workspace        = true
 bytes.workspace         = true
 iroh.workspace          = true
 iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
-iroh-docs.workspace     = true
 n0-future.workspace     = true
 thiserror.workspace     = true
 tokio.workspace         = true
@@ -26,4 +24,4 @@ tracing.workspace       = true
 unavi-store.path        = "../unavi-store"
 
 [dev-dependencies]
-async-channel.workspace = true
+iroh-docs.workspace = true

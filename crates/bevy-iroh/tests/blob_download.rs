@@ -13,17 +13,15 @@ use bevy::{
 use bevy_async::task;
 use bevy_iroh::{
     IrohPlugin,
-    blob::request::{
+    blob::{
         BlobRequest,
         BlobResponse,
     },
     store::{
-        LocalBlobs,
-        LocalDownloader,
+        DataStore,
         SyncTargets,
     },
 };
-use blake3::Hash;
 use bytes::Bytes;
 use iroh::{
     Endpoint,
@@ -33,12 +31,15 @@ use iroh::{
     endpoint::presets::N0DisableRelay,
     protocol::Router,
 };
-use iroh_blobs::api::{
-    blobs::Blobs,
-    downloader::Downloader,
+use iroh_blobs::{
+    Hash,
+    api::blobs::Blobs,
 };
 use iroh_docs::Author;
-use unavi_store::builder::StoreBuilder;
+use unavi_store::{
+    Store,
+    StoreBuilder,
+};
 
 const CONTENT: &[u8] = b"content only the provider holds";
 /// Bounds the wait for the blob to land in the client's local store; a real
@@ -49,10 +50,9 @@ const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30);
 const RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct Fixture {
-    blobs:    Blobs,
+    store:    Store,
     hash:     Hash,
     provider: EndpointAddr,
-    download: Downloader,
     _routers: Vec<Router>,
 }
 
@@ -103,10 +103,9 @@ fn fixture() -> Fixture {
         let provider = host_endpoint.addr();
 
         tx.send(Fixture {
-            blobs: store.blobs().clone(),
-            hash: hash.into(),
+            store,
+            hash,
             provider,
-            download: store.blob_store().downloader(&endpoint),
             _routers: vec![host_router, router],
         })
         .await
@@ -154,16 +153,13 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
 
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, IrohPlugin));
-    app.world_mut().spawn((
-        LocalBlobs(fixture.blobs.clone()),
-        LocalDownloader(fixture.download.clone()),
-        SyncTargets(vec![fixture.provider.clone()]),
-    ));
+    app.insert_resource(DataStore(fixture.store.clone()))
+        .insert_resource(SyncTargets(vec![fixture.provider.clone()]));
 
     let entity = app.world_mut().spawn(BlobRequest(fixture.hash)).id();
     app.update();
 
-    wait_for_download(&fixture.blobs, fixture.hash);
+    wait_for_download(fixture.store.blobs(), fixture.hash);
 
     let start = Instant::now();
     while start.elapsed() < RESPONSE_TIMEOUT {

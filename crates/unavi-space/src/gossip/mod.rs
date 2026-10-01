@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_async::task;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    store::LocalStore,
+    store::DataStore,
 };
 use iroh::{
     EndpointAddr,
@@ -102,10 +102,10 @@ pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
 /// its presence broadcasts.
 pub fn adopt_gossip(
     endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohGossip>)>,
-    stores: Query<&LocalStore>,
+    store: Option<Res<DataStore>>,
     mut commands: Commands,
 ) {
-    let Ok(store) = stores.single() else {
+    let Some(store) = store else {
         return;
     };
 

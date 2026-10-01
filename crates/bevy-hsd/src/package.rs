@@ -16,7 +16,7 @@ use bevy_async::{
     AsyncWorld,
     task,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::{
     format::package::{
         self,
@@ -71,11 +71,11 @@ pub struct ImportPackage(pub Handle<PackageAsset>);
 pub(crate) fn import_packages(
     packages: Res<Assets<PackageAsset>>,
     importing: Query<(Entity, &ImportPackage)>,
-    stores: Query<&LocalStore>,
+    store: Option<Res<DataStore>>,
     async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
-    let Ok(store) = stores.single() else {
+    let Some(store) = store else {
         return;
     };
 

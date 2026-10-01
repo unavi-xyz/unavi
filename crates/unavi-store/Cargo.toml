@@ -10,13 +10,16 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace    = true
-bytes.workspace     = true
-iroh.workspace      = true
-iroh-gossip         = { features = ["net"], workspace = true }
-n0-future.workspace = true
-tracing.workspace   = true
-unavi-local.path    = "../unavi-local"
+anyhow.workspace        = true
+async-channel.workspace = true
+bytes.workspace         = true
+iroh.workspace          = true
+iroh-gossip             = { features = ["net"], workspace = true }
+n0-future.workspace     = true
+thiserror.workspace     = true
+tokio                   = { features = ["macros", "sync"], workspace = true }
+tracing.workspace       = true
+unavi-local.path        = "../unavi-local"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }

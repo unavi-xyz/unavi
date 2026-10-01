@@ -10,7 +10,6 @@ use hsd::{
         name::NameAttr,
         parent::ParentAttr,
     },
-    bounds::MAX_ENTRY_BYTES,
     id::PrimId,
     key,
     property::{
@@ -21,7 +20,10 @@ use hsd::{
     state::entry::Entry,
 };
 use rstest::rstest;
-use unavi_store::document::Document;
+use unavi_store::{
+    Document,
+    MAX_ENTRY_BYTES,
+};
 
 use crate::common::*;
 
@@ -90,7 +92,7 @@ fn an_entry_over_the_size_cap_is_never_projected(mut ctx: TestContext) {
     let doc = attach(&mut ctx, &backing);
     set_entry(&doc, &root(FIRST));
 
-    let oversized = name_value(&"x".repeat(MAX_ENTRY_BYTES));
+    let oversized = name_value(&"x".repeat(usize::try_from(MAX_ENTRY_BYTES).expect("cap")));
     let size = u64::try_from(oversized.len()).expect("size");
     let hash = backing.add_bytes(oversized);
     set_hash(

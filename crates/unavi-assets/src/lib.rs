@@ -5,9 +5,10 @@
 //! fallback font stack.
 
 use bevy::prelude::*;
-use bevy_iroh_assets::{
+use bevy_iroh::assets::{
     AssetSpec,
     IrohAssetsPlugin,
+    hex_hash,
 };
 use bevy_msdf::font::asset::{
     FontBytes,
@@ -17,20 +18,20 @@ use bevy_msdf::font::asset::{
 /// Every asset must be hosted by a reachable unavi-server (or other provider).
 pub const DEFAULT_AVATAR: AssetSpec = AssetSpec {
     rel_path: "model/default.vrm",
-    hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
+    hash:     hex_hash("a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281"),
     size:     4_452_486,
 };
 
 pub const DEFAULT_CHARACTER_ANIMATIONS: AssetSpec = AssetSpec {
     rel_path: "model/animations.glb",
-    hash:     "9fbda809b00ab14e58356721e0c0a92fe88b9234c486a43b9417c4f27555c0c6",
+    hash:     hex_hash("9fbda809b00ab14e58356721e0c0a92fe88b9234c486a43b9417c4f27555c0c6"),
     size:     506_152,
 };
 
 /// Noto Sans Regular, SIL Open Font License 1.1. Latin, Greek and Cyrillic.
 pub const DEFAULT_FONT: AssetSpec = AssetSpec {
     rel_path: "font/noto-sans.ttf",
-    hash:     "3a21ac778bcc91b57dc32576c6baffbcb493b78b4b6ad46b05c3d33bb5da7315",
+    hash:     hex_hash("3a21ac778bcc91b57dc32576c6baffbcb493b78b4b6ad46b05c3d33bb5da7315"),
     size:     621_572,
 };
 
@@ -39,7 +40,7 @@ pub const DEFAULT_FONT: AssetSpec = AssetSpec {
 /// language.
 pub const CJK_FONT: AssetSpec = AssetSpec {
     rel_path: "font/noto-sans-cjk.otf",
-    hash:     "1580ba0d54c84191041a55ec8d442d5a7d3668e5af8c9fee5456c776c30ff16a",
+    hash:     hex_hash("1580ba0d54c84191041a55ec8d442d5a7d3668e5af8c9fee5456c776c30ff16a"),
     size:     16_467_736,
 };
 
@@ -58,7 +59,7 @@ pub const FONT_STACK: &[AssetSpec] = &[DEFAULT_FONT, CJK_FONT];
 /// The path Bevy loads `spec` by, on every platform.
 #[must_use]
 pub fn path(spec: &AssetSpec) -> String {
-    bevy_iroh_assets::asset_path(spec.rel_path)
+    bevy_iroh::assets::asset_path(spec.rel_path)
 }
 
 /// Serves [`MANIFEST`] over the `iroh://` asset source and loads
@@ -87,18 +88,6 @@ fn load_font_stack(mut commands: Commands, assets: Res<AssetServer>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_hash_is_a_blake3_digest() {
-        for asset in MANIFEST {
-            assert_eq!(asset.hash.len(), 64, "{} is not 32 bytes", asset.rel_path);
-            assert!(
-                asset.hash.chars().all(|ch| ch.is_ascii_hexdigit()),
-                "{} is not hex",
-                asset.rel_path
-            );
-        }
-    }
 
     #[test]
     fn a_size_is_recorded() {

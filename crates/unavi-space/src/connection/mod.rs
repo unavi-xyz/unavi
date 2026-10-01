@@ -16,10 +16,7 @@ use bevy_async::{
 };
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    router::{
-        RouterBuilderFn,
-        RouterBuilderFnTarget,
-    },
+    router,
 };
 use hsd::id::{
     DocId,
@@ -264,12 +261,11 @@ pub fn register_protocol(
     commands.insert_resource(view);
     commands.insert_resource(link.clone());
 
-    commands.spawn((
-        RouterBuilderFn(Some(Box::new(move |builder| {
+    commands
+        .entity(trigger.entity)
+        .queue(router::accept(move |builder| {
             builder.accept(ALPN, inbound::SpaceProtocol::new(link))
-        }))),
-        RouterBuilderFnTarget(trigger.entity),
-    ));
+        }));
 }
 
 pub fn connect_to_peer(

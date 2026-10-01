@@ -16,7 +16,7 @@ use bevy_hsd::{
     },
 };
 use bevy_iroh::store::{
-    LocalStore,
+    DataStore,
     SyncTargets,
 };
 use hsd::{
@@ -27,7 +27,7 @@ use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
-use unavi_store::document::Document;
+use unavi_store::Document;
 
 use crate::peer::{
     ActiveSpaces,
@@ -63,7 +63,8 @@ pub struct PendingSpacePeers {
 pub fn spawn_space_scene(
     trigger: On<Add, Space>,
     spaces: Query<(&Space, Option<&HsdNamespace>)>,
-    stores: Query<(&LocalStore, &SyncTargets)>,
+    store: Option<Res<DataStore>>,
+    sync_targets: Option<Res<SyncTargets>>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
@@ -72,7 +73,7 @@ pub fn spawn_space_scene(
         .map(|(space, ns)| (space.0, ns.map(|doc| doc.0.id())))
         .expect("space");
 
-    let Ok((store, sync_targets)) = stores.single() else {
+    let Some(store) = store else {
         warn!("Cannot read space: no local store");
         return;
     };
@@ -84,7 +85,13 @@ pub fn spawn_space_scene(
     if instanced == Some(ns) {
         let store = store.0.clone();
         task::spawn(async move {
-            let served = async { store.open(ns).await?.serve().await };
+            let served = async {
+                let doc = store
+                    .held(ns)
+                    .await?
+                    .ok_or(unavi_store::Error::NotHeld(ns))?;
+                doc.serve().await
+            };
             if let Err(err) = served.await {
                 warn!(%ns, ?err, "Failed to serve local space");
             }
@@ -97,7 +104,7 @@ pub fn spawn_space_scene(
         .entity(trigger.entity)
         .try_insert(PendingSpacePeers {
             ns,
-            sync_targets: sync_targets.0.clone(),
+            sync_targets: sync_targets.map_or_default(|targets| targets.0.clone()),
             waiting_since: time.elapsed(),
         });
 }
@@ -116,11 +123,11 @@ pub fn spawn_space_scene(
 pub fn start_space_fetch(
     time: Res<Time>,
     pending: Query<(Entity, &PendingSpacePeers)>,
-    stores: Query<&LocalStore>,
+    store: Option<Res<DataStore>>,
     active_peers: Query<(&Peer, &ActiveSpaces)>,
     mut commands: Commands,
 ) {
-    let Ok(store) = stores.single() else {
+    let Some(store) = store else {
         return;
     };
 
@@ -147,15 +154,9 @@ pub fn start_space_fetch(
 
         task::spawn(async move {
             let fetch = async {
-                let doc = store.open(ns).await?;
-                // Recorded before the content arrives. A space entered and
-                // never fully read is still one this node chose to keep.
-                store.record_visit(ns).await?;
-                // Subscribed before the sync starts, so it sees every entry the
-                // sync brings.
-                let feed = DocFeed::spawn(doc.clone(), FeedReady::RemoteSync);
-                doc.start_sync(peers).await?;
-                anyhow::Ok((doc, feed))
+                let (doc, events) = store.join(ns, peers).await?;
+                let feed = DocFeed::joined(doc.clone(), events, FeedReady::RemoteSync);
+                Ok::<_, unavi_store::Error>((doc, feed))
             };
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}

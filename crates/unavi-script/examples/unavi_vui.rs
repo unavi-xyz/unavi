@@ -12,10 +12,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::package::ImportPackage;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalStore,
-};
+use bevy_iroh::store::DataStore;
 use unavi_agent::LocalAgent;
 
 use crate::util::create_client_store;
@@ -57,10 +54,7 @@ fn main() {
     .insert_resource(ClearColor(Color::srgb(0.05, 0.06, 0.09)))
     .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((
-        LocalBlobs(store.store.blobs().clone()),
-        LocalStore(store.store.clone()),
-    ));
+    app.insert_resource(DataStore(store.store));
 
     app.run();
 }

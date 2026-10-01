@@ -1,3 +1,6 @@
+//! Evicts read-only documents unvisited past the TTL, then the least recently
+//! visited until held documents fit the budget.
+
 use std::{
     collections::HashMap,
     sync::Weak,
@@ -12,6 +15,7 @@ use iroh_docs::{
 use crate::{
     Store,
     StoreInner,
+    error::Result,
 };
 
 /// Sweeps every `interval` until the store drops. The store is held weakly, so
@@ -36,7 +40,7 @@ struct Candidate {
 }
 
 impl Store {
-    async fn sweep(&self) -> anyhow::Result<()> {
+    async fn sweep(&self) -> Result<()> {
         let ages = self.visits().await?;
         let mut evictable = Vec::new();
 
@@ -45,9 +49,9 @@ impl Store {
                 continue;
             }
 
-            // A document with no visit reads as age zero, so the TTL only
-            // takes documents a visit was recorded for.
-            let age = ages.get(&ns).copied().unwrap_or_default();
+            // Every join records a visit, so a read-only document without one
+            // is left over from an older build or a failed join, and goes.
+            let age = ages.get(&ns).copied().unwrap_or(self.0.doc_ttl);
             if age >= self.0.doc_ttl {
                 self.evict(ns).await;
             } else {
@@ -63,11 +67,7 @@ impl Store {
 
     /// Opens every document to measure it, so the TTL pass runs first and its
     /// evictions never wait behind a handle taken here.
-    async fn trim_to_budget(
-        &self,
-        mut evictable: Vec<Candidate>,
-        budget: u64,
-    ) -> anyhow::Result<()> {
+    async fn trim_to_budget(&self, mut evictable: Vec<Candidate>, budget: u64) -> Result<()> {
         let mut sizes = HashMap::new();
         let mut total = 0;
 
@@ -102,8 +102,11 @@ impl Store {
 
     /// Opens and releases the document, so the eviction pass that follows does
     /// not find every document held by the measurement.
-    async fn measure(&self, ns: NamespaceId) -> anyhow::Result<u64> {
-        self.open(ns).await?.size().await
+    async fn measure(&self, ns: NamespaceId) -> Result<u64> {
+        match self.held(ns).await? {
+            Some(doc) => doc.size().await,
+            None => Ok(0),
+        }
     }
 
     /// A failed remove leaves the document for the next sweep.

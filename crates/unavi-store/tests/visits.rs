@@ -16,21 +16,21 @@ mod common;
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn a_recorded_visit_reads_back_against_its_namespace(#[future] store: Store) {
+async fn a_join_reads_back_as_a_visit(#[future] store: Store) {
     let visited = store.create().await.expect("create").id();
     let ignored = store.create().await.expect("create").id();
 
-    store.record_visit(visited).await.expect("record");
+    let _joined = store.join(visited, Vec::new()).await.expect("join");
 
     let visits = store.visits().await.expect("visits");
 
     let age = visits.get(&visited).expect("the visited namespace");
     assert!(
         *age < Duration::from_secs(60),
-        "a visit just recorded must not read as ancient: {age:?}"
+        "a join just made must not read as ancient: {age:?}"
     );
     assert!(
         !visits.contains_key(&ignored),
-        "a namespace no visit was recorded for must be absent, not aged"
+        "a namespace never joined must be absent, not aged"
     );
 }

@@ -2,8 +2,8 @@ use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
 use unavi_identity::signed_bytes::SignedBytes;
 use unavi_store::{
+    Document,
     Store,
-    document::Document,
 };
 use xdid::resolver::DidResolver;
 
@@ -27,7 +27,7 @@ pub struct Catalog {
 impl Catalog {
     pub async fn create(store: &Store) -> anyhow::Result<Self> {
         Ok(Self {
-            doc: store.open_named_doc(KEY).await?,
+            doc: store.named(KEY).await?,
         })
     }
 
@@ -42,7 +42,7 @@ impl Catalog {
     }
 
     pub async fn remove(&self, ns: NamespaceId) -> anyhow::Result<()> {
-        self.doc.remove(entry_key(ns)).await?;
+        self.doc.remove_key(entry_key(ns)).await?;
         Ok(())
     }
 
@@ -53,7 +53,7 @@ impl Catalog {
         let now = OffsetDateTime::now_utc().unix_timestamp();
         let mut out = Vec::new();
 
-        for entry in self.doc.list(&[ENTRIES_PREFIX]).await? {
+        for entry in self.doc.list(ENTRIES_PREFIX).await? {
             let Some(bytes) = self.doc.value(&entry).await? else {
                 continue;
             };

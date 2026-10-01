@@ -131,22 +131,18 @@ impl RegistryClient {
         Ok(ids)
     }
 
-    /// Imports this registry's view docs read-only and starts syncing them,
-    /// returning their namespaces. Views are the only thing a client syncs.
+    /// Joins this registry's view docs read-only, returning their namespaces.
+    /// Views are the only thing a client syncs.
+    ///
+    /// A view is only a cached copy, so a followed registry is joined on every
+    /// sync, which keeps the retention sweep from taking it.
     pub async fn sync_views(&self, store: &Store) -> anyhow::Result<Vec<NamespaceId>> {
         let ids = self.views().await?;
         let mut synced = Vec::new();
 
         for ns in [ids.recent, ids.featured, ids.categories, ids.active] {
-            store
-                .open(ns)
-                .await?
-                .start_sync(vec![self.host.clone()])
-                .await?;
-            // A view is only a cached copy, so a registry that is still
-            // followed has to keep recording a visit or the retention sweep
-            // eventually takes it.
-            store.record_visit(ns).await?;
+            // Syncing and fetching outlive the handles join returns.
+            let _joined = store.join(ns, vec![self.host.clone()]).await?;
             synced.push(ns);
         }
 

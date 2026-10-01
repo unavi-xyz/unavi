@@ -5,7 +5,7 @@ use bevy_async::{
     AsyncWorld,
     task,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::{
     attributes::reference::ReferenceAttr,
     id::DocId,
@@ -24,6 +24,10 @@ use crate::{
         HsdDocId,
         HsdNamespace,
         SyncPeers,
+    },
+    feed::{
+        DocFeed,
+        FeedReady,
     },
     prim::{
         Prim,
@@ -93,7 +97,7 @@ pub(crate) fn open_references(
         Or<(Changed<Reference>, Without<ReferenceStatus>)>,
     >,
     hosts: Query<(&HsdDocId, Option<&ReferenceInstance>, Option<&SyncPeers>)>,
-    stores: Query<&LocalStore>,
+    store: Option<Res<DataStore>>,
     async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
@@ -104,7 +108,7 @@ pub(crate) fn open_references(
             .remove::<ReferenceStatus>();
     }
 
-    let Ok(store) = stores.single() else {
+    let Some(store) = store else {
         return;
     };
 
@@ -180,8 +184,9 @@ async fn open_reference(
     prim_ent: Entity,
 ) -> anyhow::Result<()> {
     // A target no peer has served opens empty and fills in as it syncs.
-    let doc = store.open(NamespaceId::from(&target.0)).await?;
-    doc.start_sync(peers.0.clone()).await?;
+    let (doc, events) = store
+        .join(NamespaceId::from(&target.0), peers.0.clone())
+        .await?;
 
     async_world
         .commands()
@@ -206,6 +211,7 @@ async fn open_reference(
             world.spawn((
                 Hsd::new(state),
                 HsdDocId(site),
+                DocFeed::joined(doc.clone(), events, FeedReady::Snapshot),
                 HsdNamespace(doc),
                 ReferenceInstance {
                     prim: prim_ent,

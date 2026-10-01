@@ -13,8 +13,8 @@ pub mod presence;
 /// A space's document syncs from its occupants, so its content lives with them
 /// too; a fetch knowing only the configured sync targets asks a server that may
 /// never have seen the space.
-pub fn publish_blob_providers(peers: Query<&Peer>, mut providers: Query<&mut BlobProviders>) {
-    let Ok(mut providers) = providers.single_mut() else {
+pub fn publish_blob_providers(peers: Query<&Peer>, providers: Option<ResMut<BlobProviders>>) {
+    let Some(mut providers) = providers else {
         return;
     };
     let connected = peers.iter().map(|p| p.0.id).collect::<Vec<_>>();

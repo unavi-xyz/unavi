@@ -1,3 +1,6 @@
+//! The endpoint's router, spawned once with every protocol registered before
+//! [`BuildRouter`].
+
 use bevy::prelude::*;
 use bevy_async::task;
 use iroh::protocol::{
@@ -13,70 +16,64 @@ pub struct IrohRouter(pub Router);
 #[derive(Component)]
 pub struct PendingRouter(async_channel::Receiver<Router>);
 
+/// Spawns the router of the targeted endpoint, consuming its
+/// [`RouterProtocols`]. A router never rebuilds.
 #[derive(EntityEvent)]
 pub struct BuildRouter(pub Entity);
 
-/// Stores [`RouterBuilderFn`]s, which will be consumed during the router build
-/// and removed from this component after calling [`BuildRouter`].
+/// Installs a protocol on a router builder.
+pub type Protocol = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
+
+/// Protocols waiting for the endpoint's router to build.
 #[derive(Component, Default)]
-#[relationship_target(relationship = RouterBuilderFnTarget, linked_spawn)]
-pub struct RouterBuilderFns(Vec<Entity>);
+pub struct RouterProtocols(Vec<Protocol>);
 
-#[derive(Component)]
-#[relationship(relationship_target = RouterBuilderFns)]
-pub struct RouterBuilderFnTarget(pub Entity);
-
-#[derive(Component)]
-pub struct RouterBuilderFn(pub Option<BoxedRouterBuilder>);
-
-pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
+/// Queues `protocol` on the endpoint entity this command targets. One queued
+/// after the router built is never installed, and is logged.
+pub fn accept(
+    protocol: impl FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync + 'static,
+) -> impl EntityCommand {
+    move |mut entity: EntityWorldMut| {
+        if entity.contains::<IrohRouter>() || entity.contains::<PendingRouter>() {
+            warn!(entity = %entity.id(), "router already built; a late protocol is dropped");
+            return;
+        }
+        entity
+            .entry::<RouterProtocols>()
+            .or_default()
+            .get_mut()
+            .0
+            .push(Box::new(protocol));
+    }
+}
 
 pub(crate) fn on_build_router(
     trigger: On<BuildRouter>,
     mut commands: Commands,
-    endpoints: Query<&IrohEndpoint>,
-    existing: Query<(), Or<(With<IrohRouter>, With<PendingRouter>)>>,
-    mut builders: Query<&mut RouterBuilderFns>,
-    mut fs: Query<&mut RouterBuilderFn>,
+    mut endpoints: Query<
+        (&IrohEndpoint, &mut RouterProtocols),
+        (Without<IrohRouter>, Without<PendingRouter>),
+    >,
 ) {
     let entity = trigger.event().event_target();
 
-    if existing.get(entity).is_ok() {
-        return;
-    }
-
-    let Ok(endpoint) = endpoints.get(entity).map(|v| v.0.clone()) else {
-        warn!(%entity, "cannot build router, endpoint not found");
+    let Ok((endpoint, mut protocols)) = endpoints.get_mut(entity) else {
         return;
     };
-    let Ok(fns) = builders.get_mut(entity) else {
-        warn!(%entity, "cannot build router, protocols not found");
-        return;
-    };
+    let endpoint = endpoint.0.clone();
+    let protocols = std::mem::take(&mut protocols.0);
 
-    let mut collected = Vec::new();
-
-    for fn_ent in &fns.0 {
-        let mut f = fs.get_mut(*fn_ent).expect("router builder");
-
-        commands.entity(*fn_ent).despawn();
-        if let Some(f) = f.0.take() {
-            collected.push(f);
-        }
-    }
-
-    // A router spawns once and never rebuilds; a handler registered later is
-    // silently absent.
-    info!(handlers = collected.len(), "Building iroh router");
+    info!(protocols = protocols.len(), "Building iroh router");
 
     // `Router::spawn` calls `tokio::spawn` internally, so this must run inside
     // the async runtime.
     let (tx, rx) = async_channel::bounded(1);
     task::spawn(async move {
-        let mut builder = RouterBuilder::new(endpoint);
-        for f in collected {
-            builder = f(builder);
-        }
+        let builder = protocols
+            .into_iter()
+            .fold(RouterBuilder::new(endpoint), |builder, protocol| {
+                protocol(builder)
+            });
         tx.send(builder.spawn()).await.ok();
     });
 

@@ -41,7 +41,7 @@ use hsd::{
     },
 };
 use rstest::rstest;
-use unavi_store::document::Document;
+use unavi_store::Document;
 
 use crate::common::*;
 

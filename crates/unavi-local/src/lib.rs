@@ -1,7 +1,7 @@
-//! Local state that may outlive the process, addressed by string key.
+//! State that outlives the process, addressed by string key.
 //!
 //! A key names the same value on every target. On native that is a file
-//! beneath a root directory, on wasm an item in browser local storage keyed
+//! beneath a root directory, on wasm an item in browser local storage prefixed
 //! by the same root. Keys may nest with `/`.
 
 use std::{
@@ -16,46 +16,59 @@ use std::{
     },
 };
 
+use anyhow::Context;
+
 #[cfg(not(target_family = "wasm"))] mod fs;
 mod mem;
+#[cfg(any(target_family = "wasm", test))] mod text;
 #[cfg(target_family = "wasm")] mod web;
 
-/// The in-memory backing of [`LocalStorage::InMemory`].
+/// The backing of [`DeviceStorage::Memory`].
 type Map = HashMap<String, Vec<u8>>;
 
+/// Where this device keeps its state. Clones share one backing.
 #[derive(Clone, Debug)]
-pub enum LocalStorage {
-    InMemory(Arc<Mutex<Map>>),
-    /// Path to a file on native, or a localStorage key on wasm.
-    Path(PathBuf),
+pub enum DeviceStorage {
+    /// Lost when the last clone drops.
+    Memory(Arc<Mutex<Map>>),
+    /// A directory on native, or a local-storage key prefix on wasm.
+    Dir(PathBuf),
 }
 
-impl Default for LocalStorage {
+impl Default for DeviceStorage {
     fn default() -> Self {
-        Self::InMemory(Arc::default())
+        Self::memory()
     }
 }
 
-impl LocalStorage {
+impl DeviceStorage {
+    /// Storage that lives only as long as the process.
+    #[must_use]
+    pub fn memory() -> Self {
+        Self::Memory(Arc::default())
+    }
+
+    /// Storage rooted at `dir`.
+    #[must_use]
+    pub fn at(dir: impl Into<PathBuf>) -> Self {
+        Self::Dir(dir.into())
+    }
+
     /// The root backing this storage, or `None` when it is only in memory.
     #[must_use]
     pub fn dir(&self) -> Option<&Path> {
         match self {
-            Self::Path(dir) => Some(dir),
-            Self::InMemory(_) => None,
+            Self::Dir(dir) => Some(dir),
+            Self::Memory(_) => None,
         }
     }
 
-    /// The value recorded at `key`.
+    /// The text recorded at `key`. A value that is not UTF-8 is an error, not
+    /// an absence.
     pub fn read(&self, key: &str) -> anyhow::Result<Option<String>> {
-        validate_key(key)?;
-        match self {
-            Self::InMemory(map) => mem::read(map, key),
-            Self::Path(dir) => cfg_select! {
-                target_family = "wasm" => web::read(dir, key),
-                _ => fs::read(dir, key),
-            },
-        }
+        self.read_bytes(key)?
+            .map(|bytes| String::from_utf8(bytes).with_context(|| format!("{key} is not UTF-8")))
+            .transpose()
     }
 
     /// Records `value` at `key`, replacing whatever is there already.
@@ -68,37 +81,41 @@ impl LocalStorage {
     /// A racing writer gets an `Err` rather than silently replacing what the
     /// winner wrote.
     pub fn create(&self, key: &str, value: &str) -> anyhow::Result<()> {
-        validate_key(key)?;
-        match self {
-            Self::InMemory(map) => mem::create(map, key, value.as_bytes()),
-            Self::Path(dir) => cfg_select! {
-                target_family = "wasm" => web::create(dir, key, value),
-                _ => fs::create(dir, key, value.as_bytes()),
-            },
-        }
+        self.create_bytes(key, value.as_bytes())
     }
 
-    /// The raw bytes recorded at `key`. See [`Self::read`] for the shape of
-    /// the result.
+    /// The bytes recorded at `key`.
     pub fn read_bytes(&self, key: &str) -> anyhow::Result<Option<Vec<u8>>> {
         validate_key(key)?;
         match self {
-            Self::InMemory(map) => mem::read_bytes(map, key),
-            Self::Path(dir) => cfg_select! {
+            Self::Memory(map) => mem::read_bytes(map, key),
+            Self::Dir(dir) => cfg_select! {
                 target_family = "wasm" => web::read_bytes(dir, key),
                 _ => fs::read_bytes(dir, key),
             },
         }
     }
 
-    /// Records `bytes` at `key`, replacing whatever is there already.
+    /// Records `value` at `key`, replacing whatever is there already.
     pub fn write_bytes(&self, key: &str, value: &[u8]) -> anyhow::Result<()> {
         validate_key(key)?;
         match self {
-            Self::InMemory(map) => mem::write_bytes(map, key, value),
-            Self::Path(dir) => cfg_select! {
+            Self::Memory(map) => mem::write_bytes(map, key, value),
+            Self::Dir(dir) => cfg_select! {
                 target_family = "wasm" => web::write_bytes(dir, key, value),
                 _ => fs::write_bytes(dir, key, value),
+            },
+        }
+    }
+
+    /// Records `value` at `key` only if no value sits there yet.
+    pub fn create_bytes(&self, key: &str, value: &[u8]) -> anyhow::Result<()> {
+        validate_key(key)?;
+        match self {
+            Self::Memory(map) => mem::create_bytes(map, key, value),
+            Self::Dir(dir) => cfg_select! {
+                target_family = "wasm" => web::create_bytes(dir, key, value),
+                _ => fs::create_bytes(dir, key, value),
             },
         }
     }
@@ -124,15 +141,15 @@ mod tests {
 
     use super::*;
 
-    fn path_storage() -> (tempfile::TempDir, LocalStorage) {
+    fn dir_storage() -> (tempfile::TempDir, DeviceStorage) {
         let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let storage = DeviceStorage::at(dir.path());
         (dir, storage)
     }
 
     #[test]
     fn a_nested_key_creates_its_directories() {
-        let (_dir, storage) = path_storage();
+        let (_dir, storage) = dir_storage();
 
         storage
             .write("registry/views/recent", "value")
@@ -153,8 +170,8 @@ mod tests {
     }
 
     #[test]
-    fn in_memory_keeps_state_within_a_process() {
-        let storage = LocalStorage::default();
+    fn memory_keeps_state_within_a_process() {
+        let storage = DeviceStorage::memory();
 
         storage.write("key", "value").expect("write");
 
@@ -168,7 +185,7 @@ mod tests {
             .create("key", "clobber")
             .expect_err("an in-memory create must refuse an existing key");
 
-        let fresh = LocalStorage::default();
+        let fresh = DeviceStorage::memory();
         assert_eq!(
             fresh.read("key").expect("read"),
             None,
@@ -178,14 +195,14 @@ mod tests {
 
     #[test]
     fn a_missing_value_is_absence_not_an_error() {
-        let (_dir, storage) = path_storage();
+        let (_dir, storage) = dir_storage();
 
         assert_eq!(storage.read("absent").expect("read"), None);
     }
 
     #[test]
     fn an_unreadable_value_is_an_error_not_absence() {
-        let (dir, storage) = path_storage();
+        let (dir, storage) = dir_storage();
         std::fs::write(dir.path().join("broken"), [0xFF, 0xFE]).expect("write");
 
         assert!(
@@ -201,7 +218,7 @@ mod tests {
 
     #[test]
     fn keys_cannot_escape_the_storage_dir() {
-        let (_dir, storage) = path_storage();
+        let (_dir, storage) = dir_storage();
 
         for key in ["", "/absolute", ".", "..", "../x", "a/../b", "a//b"] {
             assert!(storage.read(key).is_err(), "read must refuse {key:?}");
@@ -214,7 +231,7 @@ mod tests {
 
     #[test]
     fn write_replaces_a_value_atomically() {
-        let (dir, storage) = path_storage();
+        let (dir, storage) = dir_storage();
 
         storage.write("key", "first").expect("write");
         storage.write("key", "second").expect("replace");
@@ -237,7 +254,7 @@ mod tests {
 
     #[test]
     fn create_refuses_to_overwrite() {
-        let (_dir, storage) = path_storage();
+        let (_dir, storage) = dir_storage();
 
         storage.write("key", "keep").expect("write");
         storage
@@ -254,14 +271,16 @@ mod tests {
     fn files_are_owner_only() {
         use std::os::unix::fs::PermissionsExt;
 
-        let (dir, storage) = path_storage();
+        let (dir, storage) = dir_storage();
 
-        storage.write("written", "value").expect("write");
+        storage.write("nested/written", "value").expect("write");
         storage.create("created", "value").expect("create");
 
-        for file in ["written", "created"] {
+        for file in ["nested/written", "created"] {
             let meta = std::fs::metadata(dir.path().join(file)).expect("metadata");
             assert_eq!(meta.permissions().mode() & 0o777, 0o600, "{file}");
         }
+        let meta = std::fs::metadata(dir.path().join("nested")).expect("metadata");
+        assert_eq!(meta.permissions().mode() & 0o777, 0o700, "nested dir");
     }
 }

@@ -25,7 +25,7 @@ pub struct InputReadSet;
 pub struct InputPlugin {
     /// Where the config persists. `None` falls back to the defaults every
     /// session.
-    pub storage: Option<unavi_local::LocalStorage>,
+    pub storage: Option<unavi_local::DeviceStorage>,
 }
 
 impl Plugin for InputPlugin {

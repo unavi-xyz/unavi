@@ -20,7 +20,6 @@ use bevy::{
 };
 use bevy_async::task;
 use bevy_hsd::attributes::shader::material::ShaderGraphMaterial;
-use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
 use hsd::{
     attributes::{
@@ -76,9 +75,9 @@ use iroh_docs::{
 };
 use rstest::fixture;
 use unavi_store::{
+    Document,
     Store,
-    builder::StoreBuilder,
-    document::Document,
+    StoreBuilder,
 };
 
 pub struct TestContext {
@@ -112,6 +111,7 @@ impl Default for TestContext {
             MinimalPlugins,
             AssetPlugin::default(),
             TransformPlugin,
+            bevy_async::AsyncPlugin,
             bevy_hsd::HsdPlugin,
         ))
         .init_asset::<Image>()
@@ -146,6 +146,7 @@ impl TestContext {
             MinimalPlugins,
             AssetPlugin::default(),
             TransformPlugin,
+            bevy_async::AsyncPlugin,
             bevy::scene::ScenePlugin,
             unavi_physics::PhysicsPlugin,
             bevy_hsd::HsdPlugin,
@@ -183,6 +184,7 @@ impl TestContext {
             MinimalPlugins,
             AssetPlugin::default(),
             TransformPlugin,
+            bevy_async::AsyncPlugin,
             bevy_iroh::IrohPlugin,
             bevy_hsd::HsdPlugin,
         ))
@@ -194,8 +196,6 @@ impl TestContext {
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
         run_on_test_thread(&mut app);
         register_font(&mut app);
-
-        app.world_mut().spawn(LocalBlobs(blobs.clone()));
 
         let mut ctx = Self {
             app,
@@ -500,8 +500,8 @@ impl Backing {
         block_on(async move { store.create().await.expect("create document") })
     }
 
-    /// A handle to the underlying store, for a test that needs to spawn its
-    /// own `LocalStore`.
+    /// A handle to the underlying store, for a test that inserts it as the
+    /// app's `DataStore`.
     pub fn store(&self) -> Store {
         self.0.clone()
     }
@@ -523,8 +523,12 @@ impl Backing {
     pub fn is_served(&self, ns: NamespaceId) -> bool {
         let store = self.0.clone();
         block_on(async move {
-            let doc = store.open(ns).await.expect("open namespace");
-            doc.status().await.expect("namespace status").sync
+            let doc = store
+                .held(ns)
+                .await
+                .expect("held")
+                .expect("a served namespace is held");
+            doc.is_served().await.expect("namespace status")
         })
     }
 
@@ -552,7 +556,7 @@ pub fn set_entry(doc: &Document, entry: &Entry) {
 pub fn remove_key(doc: &Document, key: String) {
     let doc = doc.clone();
     block_on(async move {
-        doc.remove(key).await.expect("remove key");
+        doc.remove_key(key).await.expect("remove key");
     });
 }
 

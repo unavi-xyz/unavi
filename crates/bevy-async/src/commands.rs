@@ -70,7 +70,10 @@ pub(crate) fn apply(inbox: Res<AsyncInbox>, mut commands: Commands) {
 /// wake its producer, which refills the queue before the loop looks again, so
 /// an unbounded drain is a frame the producers decide the length of.
 pub fn pump(world: &mut World, deadline: Instant) {
-    let Some(rx) = world.get_resource::<AsyncInbox>().map(|inbox| inbox.0.clone()) else {
+    let Some(rx) = world
+        .get_resource::<AsyncInbox>()
+        .map(|inbox| inbox.0.clone())
+    else {
         return;
     };
     while let Ok(mut queue) = rx.try_recv() {

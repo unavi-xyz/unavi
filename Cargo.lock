@@ -933,7 +933,6 @@ dependencies = [
  "async-channel",
  "bevy",
  "bevy-async",
- "blake3",
  "bytes",
  "iroh",
  "iroh-blobs",
@@ -942,22 +941,6 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "unavi-store",
-]
-
-[[package]]
-name = "bevy-iroh-assets"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "async-channel",
- "bevy",
- "bevy-async",
- "bevy-iroh",
- "blake3",
- "bytes",
- "iroh-blobs",
- "tokio",
  "unavi-store",
 ]
 
@@ -11338,7 +11321,7 @@ name = "unavi-assets"
 version = "0.0.16"
 dependencies = [
  "bevy",
- "bevy-iroh-assets",
+ "bevy-iroh",
  "bevy-msdf",
 ]
 
@@ -11688,6 +11671,7 @@ name = "unavi-store"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "blake3",
  "bytes",
  "iroh",
@@ -11697,6 +11681,7 @@ dependencies = [
  "n0-future",
  "rstest",
  "tempfile",
+ "thiserror 2.0.20",
  "tokio",
  "tracing",
  "tracing-test",

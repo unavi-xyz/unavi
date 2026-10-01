@@ -5,12 +5,10 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_async::task;
 use bevy_hsd::{
     HsdPlugin,
     document::Hsd,
 };
-use bevy_iroh::store::LocalBlobs;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
@@ -49,10 +47,6 @@ use hsd::{
     id::PrimId,
     state::HsdState,
 };
-use iroh_blobs::{
-    api::blobs::Blobs,
-    store::mem::MemStore,
-};
 
 const CUBE_SIZE: f32 = 1.0;
 
@@ -85,19 +79,11 @@ fn setup_scene(mut commands: Commands) {
     ));
 }
 
-#[derive(Component)]
-#[expect(dead_code, reason = "held so the store outlives the blobs handle")]
-struct BlobStore(MemStore);
-
 fn load_hsd(mut commands: Commands) {
-    let (store, blobs) = spawn_mem_store();
-    commands.spawn(LocalBlobs(blobs));
-
     let mut state = HsdState::new();
     populate(&mut state);
 
     commands.spawn(Hsd::new(state));
-    commands.spawn(BlobStore(store));
 }
 
 fn populate(state: &mut HsdState) {
@@ -284,15 +270,4 @@ fn write_stream(state: &mut HsdState, prim: PrimId, name: &str, bytes: Vec<u8>) 
     state
         .set_payload(prim, &field, &MeshStream(bytes))
         .expect("stream");
-}
-
-fn spawn_mem_store() -> (MemStore, Blobs) {
-    let (tx, rx) = async_channel::bounded(1);
-    task::spawn(async move {
-        let store = MemStore::default();
-        let blobs = store.blobs().clone();
-        tx.send((store, blobs)).await.expect("send");
-        std::future::pending::<()>().await;
-    });
-    rx.recv_blocking().expect("recv store")
 }

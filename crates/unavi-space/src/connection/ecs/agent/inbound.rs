@@ -16,8 +16,8 @@ use unavi_avatar::{
     },
     bones::AvatarBones,
 };
-use unavi_manifold::EchoBody;
 use unavi_policy::space::Space;
+use unavi_portal::EchoBody;
 use web_time::Instant;
 
 use crate::{

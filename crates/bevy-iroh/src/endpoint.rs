@@ -4,6 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
+use bevy_async::task;
 use iroh::{
     Endpoint,
     SecretKey,
@@ -17,7 +18,6 @@ use tracing::{
     error,
     info,
 };
-use unavi_util::async_task::spawn_async_task;
 
 use crate::router::RouterBuilderFns;
 
@@ -44,7 +44,7 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
     let (tx, rx) = async_channel::bounded(1);
     let opts = trigger.event().clone();
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let mut delay_secs = 4;
 
         loop {

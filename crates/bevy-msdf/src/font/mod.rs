@@ -226,8 +226,7 @@ impl GlyphSource for FontStack {
     fn vertical(&self) -> VerticalMetrics {
         self.fonts
             .first()
-            .map(|font| font.state().atlas.vertical())
-            .unwrap_or_default()
+            .map_or_default(|font| font.state().atlas.vertical())
     }
 
     fn glyph(&self, ch: char) -> Option<Glyph> {

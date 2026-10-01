@@ -32,5 +32,5 @@ unavi-identity.path   = "../unavi-identity"
 unavi-local.path      = "../unavi-local"
 unavi-registry.path   = "../unavi-registry"
 unavi-secrets.path    = "../unavi-secrets"
-wds.path              = "../wds"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true

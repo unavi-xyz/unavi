@@ -12,6 +12,10 @@ use bevy::{
     reflect::TypePath,
     tasks::ConditionalSendFuture,
 };
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_iroh::store::LocalStore;
 use hsd::{
     format::package::{
@@ -22,11 +26,7 @@ use hsd::{
     state::HsdState,
 };
 use iroh_docs::NamespaceId;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
-use wds::Store;
+use unavi_store::Store;
 
 use crate::document::{
     Hsd,
@@ -72,6 +72,7 @@ pub(crate) fn import_packages(
     packages: Res<Assets<PackageAsset>>,
     importing: Query<(Entity, &ImportPackage)>,
     stores: Query<&LocalStore>,
+    async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     let Ok(store) = stores.single() else {
@@ -85,9 +86,10 @@ pub(crate) fn import_packages(
 
         let store = store.0.clone();
         let package = asset.0.clone();
+        let async_world = async_world.clone();
 
-        spawn_async_task(async move {
-            if let Err(err) = import_package(store, package, entity).await {
+        task::spawn(async move {
+            if let Err(err) = import_package(&async_world, store, package, entity).await {
                 error!(?err, "failed to import hsd package");
             }
         });
@@ -99,9 +101,14 @@ pub(crate) fn import_packages(
 // On failure, removes every namespace `try_import_package` minted.
 // n0_future futures stay !Send on wasm and gain `Send` elsewhere.
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
-async fn import_package(store: Store, package: Package, entity: Entity) -> anyhow::Result<()> {
+async fn import_package(
+    async_world: &AsyncWorld,
+    store: Store,
+    package: Package,
+    entity: Entity,
+) -> anyhow::Result<()> {
     let mut minted = Vec::new();
-    let result = try_import_package(&store, package, entity, &mut minted).await;
+    let result = try_import_package(async_world, &store, package, entity, &mut minted).await;
 
     if result.is_err() {
         for ns in minted {
@@ -115,6 +122,7 @@ async fn import_package(store: Store, package: Package, entity: Entity) -> anyho
 }
 
 async fn try_import_package(
+    async_world: &AsyncWorld,
     store: &Store,
     package: Package,
     entity: Entity,
@@ -150,7 +158,8 @@ async fn try_import_package(
         doc.set(key, value).await?;
     }
 
-    AsyncCommands::default()
+    async_world
+        .commands()
         .push(move |world: &mut World| {
             if let Ok(mut entity) = world.get_entity_mut(entity) {
                 entity.insert((

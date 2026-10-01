@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use async_channel::Receiver;
 use bevy::prelude::*;
+use bevy_async::task;
 use bevy_hsd::{
     document::{
         Hsd,
@@ -26,8 +27,7 @@ use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
-use unavi_util::async_task::spawn_async_task;
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::peer::{
     ActiveSpaces,
@@ -83,7 +83,7 @@ pub fn spawn_space_scene(
     // expecting an answer.
     if instanced == Some(ns) {
         let store = store.0.clone();
-        spawn_async_task(async move {
+        task::spawn(async move {
             let served = async { store.open(ns).await?.serve().await };
             if let Err(err) = served.await {
                 warn!(%ns, ?err, "Failed to serve local space");
@@ -145,7 +145,7 @@ pub fn start_space_fetch(
         let (cancel_tx, cancel_rx) = oneshot::channel();
         let sync_peers = peers.clone();
 
-        spawn_async_task(async move {
+        task::spawn(async move {
             let fetch = async {
                 let doc = store.open(ns).await?;
                 // Recorded before the content arrives. A space entered and

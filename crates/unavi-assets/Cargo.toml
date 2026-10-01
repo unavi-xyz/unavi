@@ -8,3 +8,8 @@ version.workspace    = true
 
 [lints]
 workspace = true
+
+[dependencies]
+bevy.workspace        = true
+bevy-iroh-assets.path = "../bevy-iroh-assets"
+bevy-msdf.path        = "../bevy-msdf"

@@ -1,11 +1,13 @@
 //! Where a document sits in the scene. Per-peer and not persisted.
 
 use bevy::prelude::*;
-use unavi_util::hierarchy::descends_from;
 
-use crate::document::{
-    Hsd,
-    Unplaced,
+use crate::{
+    document::{
+        Hsd,
+        Unplaced,
+    },
+    hierarchy::descends_from,
 };
 
 #[derive(Component, Debug, Clone, Copy)]

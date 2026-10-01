@@ -4,7 +4,7 @@
 //! that its keys are agreed on, so a peer handed its id can read a profile or
 //! an avatar out of it without being told the layout.
 
-use wds::{
+use unavi_store::{
     Store,
     document::Document,
 };

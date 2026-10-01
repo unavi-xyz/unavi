@@ -1,6 +1,10 @@
 use std::str::FromStr;
 
 use bevy::prelude::*;
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_hsd::{
     document::HsdNamespace,
     package::ImportPackage,
@@ -9,10 +13,6 @@ use bevy_iroh::doc::DocSet;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
 use unavi_space::identity::RootDocument;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
 
 /// A namespace to enter instead of the local home, from `--join`.
 #[derive(Resource, Default)]
@@ -56,6 +56,7 @@ pub fn enter_home(
     trigger: On<Add, HsdNamespace>,
     joining: Query<&HsdNamespace, With<JoiningHome>>,
     root: Option<Res<RootDocument>>,
+    async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     let Ok(namespace) = joining.get(trigger.entity) else {
@@ -70,7 +71,7 @@ pub fn enter_home(
         .remove::<JoiningHome>();
 
     if let Some(root) = root {
-        spawn_async_task(record_home(root.0, ns));
+        task::spawn(record_home(async_world.clone(), root.0, ns));
     }
 }
 
@@ -83,7 +84,7 @@ const HOME_VERSION: u32 = 0;
 
 /// Writes down which space is home, so a shell can offer to travel back to it;
 /// without this entry a script has no way to learn it.
-async fn record_home(root: NamespaceId, ns: NamespaceId) {
+async fn record_home(async_world: AsyncWorld, root: NamespaceId, ns: NamespaceId) {
     let mut value = match postcard::to_stdvec(&HOME_VERSION) {
         Ok(value) => value,
         Err(err) => {
@@ -94,7 +95,8 @@ async fn record_home(root: NamespaceId, ns: NamespaceId) {
     value.extend_from_slice(ns.as_bytes());
 
     let (tx, rx) = async_channel::bounded(1);
-    if AsyncCommands::default()
+    if async_world
+        .commands()
         .trigger(DocSet {
             ns: root,
             key: HOME_KEY.to_string(),

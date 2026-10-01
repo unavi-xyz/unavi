@@ -7,25 +7,22 @@ use std::sync::{
     LazyLock,
 };
 
+use bevy_async::task;
 use directories::ProjectDirs;
 use iroh::{
     endpoint::presets::N0,
     protocol::Router,
 };
 use iroh_blobs::api::blobs::Blobs;
-use unavi_assets_fetch::MANIFEST;
+use unavi_assets::MANIFEST;
 use unavi_identity::identity::{
     Identity,
     NodeIdentity,
 };
 use unavi_local::LocalStorage;
-use unavi_util::async_task::spawn_async_task;
-use wds::{
+use unavi_store::{
     Store,
-    builder::{
-        Spawned,
-        StoreBuilder,
-    },
+    builder::StoreBuilder,
 };
 
 /// The app's data directory, created on first use.
@@ -53,7 +50,7 @@ pub fn create_client_store() -> TestStore {
 fn build(persistent: bool) -> TestStore {
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         // The persistent store's documents were authored under the client's
         // identity, so an example reading them back has to load the same key.
         let storage = if persistent {
@@ -70,10 +67,10 @@ fn build(persistent: bool) -> TestStore {
             .expect("iroh endpoint");
 
         let builder = StoreBuilder::new(endpoint.clone(), node.author()).storage(storage);
-        let Spawned { store, router } = builder.build().await.expect("data store");
+        let store = builder.build().await.expect("data store");
 
         let rb = Router::builder(endpoint);
-        let rb = router(rb);
+        let rb = store.accept(rb);
         let _router = rb.spawn();
 
         if persistent {

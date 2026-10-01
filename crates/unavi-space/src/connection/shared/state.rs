@@ -15,7 +15,6 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::{
@@ -70,7 +69,9 @@ pub async fn recv_state_stream(
     // connection's exit cannot erase the peer's replicated state.
     let generation = link.next_stream_gen();
     let (ent_tx, ent_rx) = async_channel::bounded(1);
-    if AsyncCommands::default()
+    if link
+        .view()
+        .commands()
         .push(move |world: &mut World| {
             let ent = entities::claim_remote_peer(world, peer, generation);
             let _ = ent_tx.try_send(ent);
@@ -82,8 +83,10 @@ pub async fn recv_state_stream(
         bail!("async command queue closed");
     }
     let peer_ent = ent_rx.recv().await.context("claim remote peer")?;
-    let res = recv_loop(peer_ent, peer, &mut rx).await;
-    let _ = AsyncCommands::default()
+    let res = recv_loop(link, peer_ent, peer, &mut rx).await;
+    let _ = link
+        .view()
+        .commands()
         .push(move |world: &mut World| {
             entities::release_remote_peer(world, peer_ent, generation);
         })
@@ -93,6 +96,7 @@ pub async fn recv_state_stream(
 }
 
 async fn recv_loop(
+    link: &PeerLink,
     peer_ent: bevy::prelude::Entity,
     peer: EndpointId,
     rx: &mut RecvStream,
@@ -110,6 +114,6 @@ async fn recv_loop(
         let mut buf = vec![0; len];
         rx.read_exact(&mut buf).await.context("read msg")?;
         let msg = postcard::from_bytes::<StateMsg>(&buf).context("parse msg")?;
-        entities::apply_remote(peer_ent, peer, msg);
+        entities::apply_remote(link.view(), peer_ent, peer, msg);
     }
 }

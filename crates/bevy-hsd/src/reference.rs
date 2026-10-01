@@ -1,6 +1,10 @@
 //! A prim's `reference` attribute, and the document it opens as a child.
 
 use bevy::prelude::*;
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_iroh::store::LocalStore;
 use hsd::{
     attributes::reference::ReferenceAttr,
@@ -11,11 +15,7 @@ use hsd::{
     },
 };
 use iroh_docs::NamespaceId;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
-use wds::Store;
+use unavi_store::Store;
 
 use crate::{
     attributes::apply_simple,
@@ -94,6 +94,7 @@ pub(crate) fn open_references(
     >,
     hosts: Query<(&HsdDocId, Option<&ReferenceInstance>, Option<&SyncPeers>)>,
     stores: Query<&LocalStore>,
+    async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     for prim_ent in &detached {
@@ -137,10 +138,14 @@ pub(crate) fn open_references(
             .insert(ReferenceStatus::Opened(target));
 
         let store = store.0.clone();
-        spawn_async_task(async move {
-            if let Err(err) = open_reference(store, target, site, depth, peers, prim_ent).await {
+        let async_world = async_world.clone();
+        task::spawn(async move {
+            if let Err(err) =
+                open_reference(&async_world, store, target, site, depth, peers, prim_ent).await
+            {
                 warn!(?err, %target, "failed to open reference");
-                let mark_refused = AsyncCommands::default()
+                let mark_refused = async_world
+                    .commands()
                     .push(move |world: &mut World| {
                         let Ok(mut entity) = world.get_entity_mut(prim_ent) else {
                             return;
@@ -166,6 +171,7 @@ pub(crate) fn open_references(
 // n0_future futures stay !Send on wasm and gain `Send` elsewhere.
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 async fn open_reference(
+    async_world: &AsyncWorld,
     store: Store,
     target: DocId,
     site: DocId,
@@ -177,7 +183,8 @@ async fn open_reference(
     let doc = store.open(NamespaceId::from(&target.0)).await?;
     doc.start_sync(peers.0.clone()).await?;
 
-    AsyncCommands::default()
+    async_world
+        .commands()
         .push(move |world: &mut World| {
             let still_opening = world.get_entity(prim_ent).is_ok_and(|entity| {
                 matches!(

@@ -2,7 +2,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use unavi_assets::default_character_animations_path;
+use unavi_assets::DEFAULT_CHARACTER_ANIMATIONS;
 
 use super::{
     AnimationName,
@@ -11,7 +11,7 @@ use super::{
 
 #[must_use]
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
-    let handle = asset_server.load(default_character_animations_path());
+    let handle = asset_server.load(unavi_assets::path(&DEFAULT_CHARACTER_ANIMATIONS));
 
     let mut indices = HashMap::default();
     indices.insert(AnimationName::Falling, 0);

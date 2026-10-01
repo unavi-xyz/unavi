@@ -38,7 +38,6 @@ use unavi_policy::quota::{
     Stock,
 };
 use unavi_space::quota::document_quota;
-use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
     Api,
@@ -288,9 +287,10 @@ pub fn place_document(world: &mut World, id: DocId, placement: Placement) -> any
     Ok(())
 }
 
-async fn place(id: DocId, placement: Placement) -> anyhow::Result<()> {
+async fn place(api: &Api, id: DocId, placement: Placement) -> anyhow::Result<()> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             tx.try_send(place_document(world, id, placement)).ok();
         })
@@ -317,13 +317,14 @@ pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Res
         None => None,
     };
 
-    place(doc.id, Placement::Target(target)).await
+    place(api, doc.id, Placement::Target(target)).await
 }
 
 pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
 
     place(
+        api,
         doc.id,
         Placement::Offset(Transform {
             translation: Vec3::from_array(value.translation),
@@ -397,7 +398,7 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
 
-    let landing = landing(doc.id).await?;
+    let landing = landing(api, doc.id).await?;
     let entries = doc.with(|state| {
         state.commit(
             match &landing {
@@ -413,7 +414,7 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
     // them is what makes them durable, and the session layer has no store.
     match landing {
         Landing::Document => {
-            write_entries(namespace_of(doc.id).await?, entries).await?;
+            write_entries(api, namespace_of(api, doc.id).await?, entries).await?;
         }
         Landing::Override {
             reference, state, ..
@@ -426,7 +427,7 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
                     referencing.project(entry)?;
                 }
             }
-            write_entries(namespace_of(reference).await?, entries).await?;
+            write_entries(api, namespace_of(api, reference).await?, entries).await?;
         }
         Landing::Session => {}
     }
@@ -440,14 +441,14 @@ pub async fn commit(api: &Api, rep: u32, props: Vec<(String, String)>) -> anyhow
 /// a target prim, so a document can only state an opinion about what it
 /// references directly — a room referencing a couch that references a cushion
 /// has no way to name the cushion's prims.
-async fn landing(doc: DocId) -> anyhow::Result<Landing> {
-    if holds_write_key(doc).await? {
+async fn landing(api: &Api, doc: DocId) -> anyhow::Result<Landing> {
+    if holds_write_key(api, doc).await? {
         return Ok(Landing::Document);
     }
-    let Some((site, reference, state)) = reference_site(doc).await? else {
+    let Some((site, reference, state)) = reference_site(api, doc).await? else {
         return Ok(Landing::Session);
     };
-    if !holds_write_key(reference).await? {
+    if !holds_write_key(api, reference).await? {
         return Ok(Landing::Session);
     }
     Ok(Landing::Override {
@@ -463,10 +464,12 @@ async fn landing(doc: DocId) -> anyhow::Result<Landing> {
 /// so that prim answers both which key an override takes and whose document
 /// it belongs in.
 async fn reference_site(
+    api: &Api,
     doc: DocId,
 ) -> anyhow::Result<Option<(PrimId, DocId, Arc<Mutex<HsdState>>)>> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             tx.try_send(reference_site_in(world, doc)).ok();
         })

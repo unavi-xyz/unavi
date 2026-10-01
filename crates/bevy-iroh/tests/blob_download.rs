@@ -10,6 +10,7 @@ use bevy::{
     prelude::*,
     tasks::futures_lite::StreamExt,
 };
+use bevy_async::task;
 use bevy_iroh::{
     IrohPlugin,
     blob::request::{
@@ -37,8 +38,7 @@ use iroh_blobs::api::{
     downloader::Downloader,
 };
 use iroh_docs::Author;
-use unavi_util::async_task::spawn_async_task;
-use wds::builder::StoreBuilder;
+use unavi_store::builder::StoreBuilder;
 
 const CONTENT: &[u8] = b"content only the provider holds";
 /// Bounds the wait for the blob to land in the client's local store; a real
@@ -62,7 +62,7 @@ struct Fixture {
 fn fixture() -> Fixture {
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let host_key = SecretKey::generate();
         let host_author = Author::from_bytes(&host_key.to_bytes());
         let host_endpoint = Endpoint::builder(N0DisableRelay)
@@ -74,10 +74,9 @@ fn fixture() -> Fixture {
             .build()
             .await
             .expect("host store");
-        let host_router = (host.router)(Router::builder(host_endpoint.clone())).spawn();
+        let host_router = host.accept(Router::builder(host_endpoint.clone())).spawn();
 
         let hash = host
-            .store
             .blobs()
             .add_bytes(Bytes::from_static(CONTENT))
             .await
@@ -99,15 +98,15 @@ fn fixture() -> Fixture {
             .build()
             .await
             .expect("client store");
-        let router = (store.router)(Router::builder(endpoint.clone())).spawn();
+        let router = store.accept(Router::builder(endpoint.clone())).spawn();
 
         let provider = host_endpoint.addr();
 
         tx.send(Fixture {
-            blobs: store.store.blobs().clone(),
+            blobs: store.blobs().clone(),
             hash: hash.into(),
             provider,
-            download: store.store.blob_store().downloader(&endpoint),
+            download: store.blob_store().downloader(&endpoint),
             _routers: vec![host_router, router],
         })
         .await
@@ -129,7 +128,7 @@ fn wait_for_download(blobs: &Blobs, hash: Hash) {
     let blobs = blobs.clone();
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let arrived = n0_future::time::timeout(DOWNLOAD_TIMEOUT, async {
             let mut stream = blobs.observe(hash).stream().await.expect("observe");
             while let Some(field) = stream.next().await {

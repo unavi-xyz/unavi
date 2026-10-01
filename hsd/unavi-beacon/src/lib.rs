@@ -50,7 +50,7 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 // Larger corners leave only a thin gap between them; the recessed core cube
 // shows through that negative space as a 2D cross on each face.
 const CORNER: f32 = SIZE * 0.44;
-const CORNER_OFFSET: f32 = SIZE * 0.5 - CORNER * 0.5;
+const CORNER_OFFSET: f32 = (SIZE - CORNER) * 0.5;
 const CORE_SIZE: f32 = SIZE * 0.84;
 const CORE_NAME: &str = "core";
 

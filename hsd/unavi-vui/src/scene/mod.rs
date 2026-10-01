@@ -199,8 +199,7 @@ impl Vui {
     pub fn drain(&mut self, surface: SurfaceId) -> Vec<Event> {
         self.events
             .get_mut(surface.0)
-            .map(std::mem::take)
-            .unwrap_or_default()
+            .map_or_default(std::mem::take)
     }
 
     fn report(&mut self, surface: usize, events: impl IntoIterator<Item = Event>) {

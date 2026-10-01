@@ -5,6 +5,10 @@
 //! are gathered here and the rules are asked there.
 
 use bevy::prelude::Resource;
+use bevy_async::{
+    AsyncCommands,
+    AsyncWorld,
+};
 use hsd::id::DocId;
 use iroh::EndpointId;
 use unavi_policy::{
@@ -29,11 +33,12 @@ use crate::{
 /// be.
 #[derive(Resource, Clone)]
 pub struct SpaceView {
-    policy:   Policy,
-    replicas: Replicas,
-    identity: LocalIdentity,
-    me:       EndpointId,
-    trust:    TrustTable,
+    policy:      Policy,
+    replicas:    Replicas,
+    identity:    LocalIdentity,
+    me:          EndpointId,
+    trust:       TrustTable,
+    async_world: AsyncWorld,
 }
 
 impl SpaceView {
@@ -44,6 +49,7 @@ impl SpaceView {
         identity: LocalIdentity,
         me: EndpointId,
         trust: TrustTable,
+        async_world: AsyncWorld,
     ) -> Self {
         Self {
             policy,
@@ -51,7 +57,14 @@ impl SpaceView {
             identity,
             me,
             trust,
+            async_world,
         }
+    }
+
+    /// A command builder that sends to the world this view belongs to.
+    #[must_use]
+    pub fn commands(&self) -> AsyncCommands {
+        self.async_world.commands()
     }
 
     /// The space `doc` belongs to.

@@ -167,9 +167,9 @@ pub const fn shade(lightness: f32) -> Color {
 #[must_use]
 pub const fn lift(color: Color, amount: f32) -> Color {
     Color {
-        r: color.r + (1.0 - color.r) * amount,
-        g: color.g + (1.0 - color.g) * amount,
-        b: color.b + (1.0 - color.b) * amount,
+        r: (1.0 - color.r).mul_add(amount, color.r),
+        g: (1.0 - color.g).mul_add(amount, color.g),
+        b: (1.0 - color.b).mul_add(amount, color.b),
         a: color.a,
     }
 }
@@ -178,9 +178,9 @@ pub const fn lift(color: Color, amount: f32) -> Color {
 #[must_use]
 pub const fn blend(color: Color, toward: Color, amount: f32) -> Color {
     Color {
-        r: color.r + (toward.r - color.r) * amount,
-        g: color.g + (toward.g - color.g) * amount,
-        b: color.b + (toward.b - color.b) * amount,
+        r: (toward.r - color.r).mul_add(amount, color.r),
+        g: (toward.g - color.g).mul_add(amount, color.g),
+        b: (toward.b - color.b).mul_add(amount, color.b),
         a: color.a,
     }
 }

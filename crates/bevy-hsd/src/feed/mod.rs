@@ -9,13 +9,13 @@ use async_channel::{
     TryRecvError,
 };
 use bevy::prelude::*;
+use bevy_async::task;
 use hsd::{
     attributes::reference::LayerKey,
     state::entry::Entry,
 };
 use n0_future::FutureExt;
-use unavi_util::async_task::spawn_async_task;
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::{
     document::{
@@ -77,7 +77,7 @@ impl DocFeed {
                 Ok(()) | Err(_) => {}
             }
         };
-        spawn_async_task(read.or(stop));
+        task::spawn(read.or(stop));
 
         Self {
             rx,

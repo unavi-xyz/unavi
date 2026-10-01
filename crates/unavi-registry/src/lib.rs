@@ -11,7 +11,7 @@ use std::{
 
 use tracing::warn;
 use unavi_identity::auth::bindings::Bindings;
-use wds::Store;
+use unavi_store::Store;
 use xdid::resolver::DidResolver;
 
 use crate::{

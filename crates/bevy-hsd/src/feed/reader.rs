@@ -18,7 +18,7 @@ use iroh_docs::{
     store::Query,
 };
 use n0_future::StreamExt;
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::feed::{
     Delta,

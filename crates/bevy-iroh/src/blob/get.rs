@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     tasks::futures_lite::StreamExt,
 };
+use bevy_async::task;
 use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
@@ -17,7 +18,6 @@ use iroh_blobs::{
 };
 use thiserror::Error;
 use tokio::sync::oneshot;
-use unavi_util::async_task::spawn_async_task;
 
 use crate::store::{
     BlobProviders,
@@ -113,7 +113,7 @@ pub(crate) fn on_get_blob(
     let cancel = event.cancel.take();
     let tx = event.tx.clone();
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         if let Err(err) = inner(hash, cancel, tx, blobs, downloader, providers).await {
             error!(?err, "Failed to get blob");
         }

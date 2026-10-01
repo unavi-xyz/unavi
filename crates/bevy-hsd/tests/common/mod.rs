@@ -18,6 +18,7 @@ use bevy::{
     prelude::*,
     transform::TransformPlugin,
 };
+use bevy_async::task;
 use bevy_hsd::attributes::shader::material::ShaderGraphMaterial;
 use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
@@ -74,8 +75,7 @@ use iroh_docs::{
     NamespaceId,
 };
 use rstest::fixture;
-use unavi_util::async_task::spawn_async_task;
-use wds::{
+use unavi_store::{
     Store,
     builder::StoreBuilder,
     document::Document,
@@ -362,7 +362,7 @@ pub fn ctx_blobs() -> TestContext {
 
 fn setup_blobs() -> Blobs {
     let (tx, rx) = async_channel::bounded(1);
-    spawn_async_task(async move {
+    task::spawn(async move {
         let store = MemStore::default();
         let blobs = store.blobs().clone();
         tx.send(blobs).await.expect("send");
@@ -469,7 +469,7 @@ pub fn displaced_world(nodes: Vec<Node>, world_position_offset: Option<Port>) ->
 /// Runs `future` on the task runtime the app's own tasks use.
 fn block_on<T: Send + 'static>(future: impl Future<Output = T> + Send + 'static) -> T {
     let (tx, rx) = async_channel::bounded(1);
-    spawn_async_task(async move {
+    task::spawn(async move {
         tx.send(future.await).await.expect("send result");
     });
     rx.recv_blocking().expect("task result")
@@ -492,7 +492,6 @@ impl Backing {
                 .build()
                 .await
                 .expect("build store")
-                .store
         }))
     }
 

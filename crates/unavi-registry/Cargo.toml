@@ -24,7 +24,7 @@ thiserror.workspace   = true
 time.workspace        = true
 tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
-wds.path              = "../wds"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]

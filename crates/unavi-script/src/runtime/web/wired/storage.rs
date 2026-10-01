@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use bevy_async::task;
 use unavi_policy::permissions::ApiName;
-use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -34,7 +34,7 @@ impl Drop for StorageHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::storage::storage_drop(&api, rep).await;
             });
         }
@@ -58,7 +58,7 @@ impl Drop for GetFutureHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::storage::get_future_drop(&api, rep).await;
             });
         }
@@ -82,7 +82,7 @@ impl Drop for ListFutureHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::storage::list_future_drop(&api, rep).await;
             });
         }

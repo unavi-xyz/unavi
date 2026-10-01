@@ -65,7 +65,7 @@ pub(super) fn update(
     mut text: Query<&mut Text, With<NetworkText>>,
 ) {
     let now = time.elapsed_secs();
-    let snap = link.map(|l| l.net_stats()).unwrap_or_default();
+    let snap = link.map_or_default(|l| l.net_stats());
 
     let mut next = HashMap::new();
     let mut lines = Vec::new();

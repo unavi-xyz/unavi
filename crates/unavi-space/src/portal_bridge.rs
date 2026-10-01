@@ -5,7 +5,7 @@ use bevy_hsd::{
     prim::PrimOf,
 };
 use hsd::id::DocId;
-use unavi_manifold::{
+use unavi_portal::{
     GluedTo,
     Seam,
     SeamHome,

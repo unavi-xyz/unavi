@@ -10,7 +10,6 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_policy::quota::Flow;
-use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     error::ScriptError,
@@ -70,7 +69,8 @@ pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError>
     let target = space_id(&target_space)?;
     let hash = NamespaceId::from(&target);
 
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut bevy::prelude::World| {
             unavi_space::travel::request_travel(world, hash);
         })

@@ -12,6 +12,7 @@ use bevy_hsd::{
         HsdNamespace,
         Unplaced,
     },
+    hierarchy::ancestors,
     prim::PrimOf,
 };
 use hsd::id::DocId;
@@ -29,13 +30,9 @@ use unavi_input::{
 use unavi_policy::space::Space;
 use unavi_space::{
     anchor::ActiveSpace,
-    state::{
-        entities,
-        replicas::Replicas,
-    },
+    state::replicas::Replicas,
     view::SpaceView,
 };
-use unavi_util::hierarchy::ancestors;
 
 pub struct GrabPlugin;
 
@@ -381,6 +378,7 @@ fn on_release(
     hsd_children: Query<&PrimOf>,
     docs: Docs,
     held: Query<(Entity, &Grabbed)>,
+    view: Option<Res<SpaceView>>,
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
@@ -390,8 +388,10 @@ fn on_release(
         // Whatever this pointer carries, not whatever it happens to be over —
         // a held object can be dragged clear of its own collider.
         for (entity, _) in held.iter().filter(|(_, g)| g.pointer == release.pointer) {
-            if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
-                entities::release_hold(DocId(*doc_hash.as_bytes()));
+            if let Some(view) = &view
+                && let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs)
+            {
+                view.release_hold(DocId(*doc_hash.as_bytes()));
             }
             commands
                 .entity(entity)

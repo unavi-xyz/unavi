@@ -285,7 +285,7 @@ fn resolve_stack(
 /// Every font any live text could draw with, deduplicated. Fonts nothing draws
 /// are included: they still hold pins to release and pages to upload.
 fn fonts(texts: &Query<&MsdfText>, default: Option<&DefaultFontStack>) -> Vec<Arc<MsdfFont>> {
-    let mut fonts = default.map(|default| default.0.clone()).unwrap_or_default();
+    let mut fonts = default.map_or_default(|default| default.0.clone());
     for text in texts {
         let Some(font) = &text.font else { continue };
         if !fonts.iter().any(|other| Arc::ptr_eq(other, font)) {
@@ -306,7 +306,7 @@ fn wanted(
         let Some(stack) = resolve_stack(text, default) else {
             continue;
         };
-        let stack = FontStack::new(stack.clone());
+        let stack = FontStack::new(stack);
         let mut seen = HashSet::new();
         for ch in text.value.chars() {
             if !seen.insert(ch) {
@@ -342,8 +342,7 @@ pub(crate) fn sync_fonts(
         let chars = wanted
             .iter()
             .find(|(other, _)| Arc::ptr_eq(other, &font))
-            .map(|(_, chars)| chars.as_slice())
-            .unwrap_or_default();
+            .map_or_default(|(_, chars)| chars.as_slice());
         font.sync(chars);
 
         let mut state = font.state();

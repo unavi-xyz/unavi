@@ -54,8 +54,7 @@ fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<S
 fn drain(surface: SurfaceId) -> Vec<Event> {
     VUI.with_borrow_mut(|vui| {
         vui.as_mut()
-            .map(|vui| vui.drain(surface))
-            .unwrap_or_default()
+            .map_or_default(|vui| vui.drain(surface))
             .into_iter()
             .map(convert::event)
             .collect()

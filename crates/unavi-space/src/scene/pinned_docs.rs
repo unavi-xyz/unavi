@@ -5,6 +5,7 @@ use async_channel::{
     TryRecvError,
 };
 use bevy::prelude::*;
+use bevy_async::task;
 use bevy_hsd::{
     document::{
         Hsd,
@@ -23,8 +24,7 @@ use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
-use unavi_util::async_task::spawn_async_task;
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::{
     peer::Peer,
@@ -127,7 +127,7 @@ pub fn fetch_tracked_docs(
         let (cancel_tx, cancel_rx) = oneshot::channel();
         let peers = sync_from.clone();
 
-        spawn_async_task(async move {
+        task::spawn(async move {
             let fetch = async {
                 let doc = store.open(ns).await?;
                 // Subscribed before the sync starts, so it sees every entry the

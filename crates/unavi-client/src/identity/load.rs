@@ -4,6 +4,10 @@ use std::{
 };
 
 use bevy::prelude::*;
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_iroh::{
     endpoint::IrohEndpoint,
     router::{
@@ -32,16 +36,9 @@ use unavi_identity::{
 };
 use unavi_registry::follow;
 use unavi_space::identity::RootDocument;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
-use wds::{
+use unavi_store::{
     Store,
-    builder::{
-        Spawned,
-        StoreBuilder,
-    },
+    builder::StoreBuilder,
 };
 use xdid::resolver::DidResolver;
 
@@ -79,23 +76,26 @@ pub fn serve_auth(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     auth: Res<Auth>,
+    async_world: Res<AsyncWorld>,
 ) {
     let entity = trigger.entity;
     let Ok(endpoint) = endpoints.get(entity).map(|e| e.0.clone()) else {
         return;
     };
     let auth = Arc::clone(&auth.0);
+    let async_world = async_world.clone();
 
     // `EndpointAuth::serve` spawns a background task with `tokio::spawn`,
     // which needs to run inside the tokio runtime, not on this observer's
     // calling thread.
-    spawn_async_task(async move {
+    task::spawn(async move {
         let Some((protocol, task)) = auth.serve(endpoint) else {
             warn!("a second endpoint cannot serve the same identity handshake");
             return;
         };
 
-        AsyncCommands::default()
+        async_world
+            .commands()
             .push(move |world: &mut World| {
                 if let Ok(mut entity) = world.get_entity_mut(entity) {
                     entity.insert(AuthTask(task));
@@ -120,6 +120,7 @@ pub fn load_store(
     storage: Res<LocalStorage>,
     sync: Res<SyncConfig>,
     resolve: Res<Resolve>,
+    async_world: Res<AsyncWorld>,
 ) {
     let entity = trigger.entity;
 
@@ -132,13 +133,15 @@ pub fn load_store(
     let storage = storage.0.clone();
     let sync = sync.clone();
     let resolver = Arc::clone(&resolve.0);
+    let async_world = async_world.clone();
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let mut delay_secs = 4;
 
         // The store shuts down with the last handle to it, which is the one
         // this hands to the endpoint entity.
         while let Err(err) = load(
+            &async_world,
             endpoint.clone(),
             Arc::clone(&node),
             entity,
@@ -156,6 +159,7 @@ pub fn load_store(
 }
 
 async fn load(
+    async_world: &AsyncWorld,
     endpoint: Endpoint,
     node: Arc<NodeIdentity>,
     entity: Entity,
@@ -168,7 +172,7 @@ async fn load(
         .doc_budget(DOC_BUDGET)
         .storage(storage.clone());
 
-    let Spawned { store, router } = builder.build().await?;
+    let store = builder.build().await?;
 
     let SyncConfig { targets } = sync;
 
@@ -185,8 +189,15 @@ async fn load(
 
     let root = root::open(&store).await?.id();
 
-    let store_entity = AsyncCommands::default()
-        .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(router))))
+    let Some(store_entity) = async_world
+        .commands()
+        .spawn((
+            RouterBuilderFnTarget(entity),
+            RouterBuilderFn(Some(Box::new({
+                let store = store.clone();
+                move |builder| store.accept(builder)
+            }))),
+        ))
         .push(move |world: &mut World| {
             world.insert_resource(RootDocument(root));
         })
@@ -196,10 +207,15 @@ async fn load(
             LocalStore(store.clone()),
             SyncTargets(sync_targets.clone()),
         ))
-        .await;
+        .await
+    else {
+        warn!("the world is gone; dropping the data store");
+        return Ok(());
+    };
 
     if !unresolved.is_empty() {
-        spawn_async_task(retry(
+        task::spawn(retry(
+            async_world.clone(),
             store.clone(),
             endpoint,
             sync_targets,
@@ -216,6 +232,7 @@ async fn load(
 /// Keeps resolving the registries that were unreachable at startup, so a server
 /// brought up after the client is still followed without a restart.
 async fn retry(
+    async_world: AsyncWorld,
     store: Store,
     endpoint: Endpoint,
     mut targets: Vec<EndpointAddr>,
@@ -248,7 +265,8 @@ async fn retry(
         .await;
 
         let published = targets.clone();
-        let sent = AsyncCommands::default()
+        let sent = async_world
+            .commands()
             .push(move |world: &mut World| {
                 if let Some(mut existing) = world.get_mut::<SyncTargets>(store_entity) {
                     existing.0 = published;

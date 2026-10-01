@@ -30,11 +30,7 @@ pub struct InputPlugin {
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        let config = self
-            .storage
-            .as_ref()
-            .map(config::file::load)
-            .unwrap_or_default();
+        let config = self.storage.as_ref().map_or_default(config::file::load);
 
         app.insert_resource(config)
             .init_resource::<action::ActionState>()

@@ -3,7 +3,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use wds::{
+use unavi_store::{
     Store,
     document::Document,
 };

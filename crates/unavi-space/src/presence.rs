@@ -4,6 +4,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
+use bevy_async::task;
 use bevy_iroh::endpoint::IrohEndpoint;
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
@@ -12,7 +13,6 @@ use unavi_registry::{
     entry::Presence,
     follow::registry_clients,
 };
-use unavi_util::async_task::spawn_async_task;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(2);
 
@@ -79,7 +79,7 @@ pub fn publish_presence(
         for registry in &registries {
             let registry = registry.clone();
             let presence = presence.clone();
-            spawn_async_task(async move {
+            task::spawn(async move {
                 if let Err(err) = registry.announce(&presence).await {
                     warn!(?err, "Failed to announce presence");
                 }

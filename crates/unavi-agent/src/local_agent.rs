@@ -28,9 +28,9 @@ use unavi_input::pointer::{
     PointerKind,
     backend::PointerFilter,
 };
-use unavi_manifold::{
-    ManifoldBody,
-    ManifoldViewer,
+use unavi_portal::{
+    PortalBody,
+    PortalViewer,
     visuals::SEAM_RENDER_LAYER,
 };
 
@@ -96,7 +96,7 @@ pub fn spawn_local_agent(
             )),
             LockedAxes::ROTATION_LOCKED,
             Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
-            ManifoldBody,
+            PortalBody,
         ))
         .id();
 
@@ -191,7 +191,7 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
         RenderLayers::from_layers(&[0, SEAM_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
-        ManifoldViewer,
+        PortalViewer,
     ));
 
     camera

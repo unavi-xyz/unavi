@@ -85,13 +85,12 @@ impl HsdState {
         let names = self
             .layer(LayerId::Document)
             .get(prim)
-            .map(|opinions| {
+            .map_or_default(|opinions| {
                 opinions
                     .properties()
                     .map(|(name, _)| name.clone())
                     .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
+            });
         for name in names {
             self.layer_mut(LayerId::Document).take_property(prim, &name);
             self.settle_property(prim, &name);

@@ -7,7 +7,7 @@ use bevy::{
     post_process::bloom::Bloom,
     prelude::*,
 };
-use unavi_manifold::DevelopCamera;
+use unavi_portal::DevelopCamera;
 
 mod sky;
 

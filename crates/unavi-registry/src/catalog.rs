@@ -1,7 +1,7 @@
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
 use unavi_identity::signed_bytes::SignedBytes;
-use wds::{
+use unavi_store::{
     Store,
     document::Document,
 };

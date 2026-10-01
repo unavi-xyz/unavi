@@ -39,10 +39,7 @@ use unavi_registry::{
     Registry,
     config::Config as RegistryConfig,
 };
-use wds::builder::{
-    Spawned,
-    StoreBuilder,
-};
+use unavi_store::builder::StoreBuilder;
 use xdid::{
     core::{
         did::Did,
@@ -114,7 +111,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .gc_timer(Duration::from_mins(15))
         .storage(storage.clone());
 
-    let Spawned { store, router } = builder.build().await?;
+    let store = builder.build().await?;
 
     if let Err(err) = files::init_files_dir() {
         warn!(?err, "failed to init files dir");
@@ -125,7 +122,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     }
 
     let mut rb = iroh::protocol::Router::builder(endpoint);
-    rb = router(rb).accept(auth::ALPN, auth_protocol);
+    rb = store.accept(rb).accept(auth::ALPN, auth_protocol);
 
     let _registry = if opts.registry {
         let config = RegistryConfig::default();

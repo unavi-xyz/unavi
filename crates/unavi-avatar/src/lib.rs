@@ -3,7 +3,7 @@ use bevy_vrm::{
     VrmInstance,
     VrmPlugins,
 };
-use unavi_assets::default_avatar_path;
+use unavi_assets::DEFAULT_AVATAR;
 
 pub mod animation;
 pub mod bones;
@@ -50,7 +50,7 @@ fn on_avatar_added(
     let vrm_path = vrm_paths
         .get(event.entity)
         .ok()
-        .map_or_else(default_avatar_path, |p| p.0.clone());
+        .map_or_else(|| unavi_assets::path(&DEFAULT_AVATAR), |p| p.0.clone());
     let vrm_handle = asset_server.load(vrm_path);
     commands
         .entity(event.entity)

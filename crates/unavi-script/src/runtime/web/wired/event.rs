@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use bevy_async::task;
 use unavi_policy::permissions::ApiName;
-use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
     JsValue,
     prelude::*,
@@ -94,7 +94,7 @@ impl Drop for EventHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::event::event_drop(&api, rep).await;
             });
         }
@@ -155,7 +155,7 @@ impl Drop for EventReceptorHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::event::receptor_drop(&api, rep).await;
             });
         }

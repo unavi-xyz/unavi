@@ -7,7 +7,7 @@ use iroh_blobs::api::{
     blobs::Blobs,
     downloader::Downloader,
 };
-use wds::Store;
+use unavi_store::Store;
 
 /// This node's data plane: documents, blobs, the author it writes under, and
 /// its root document.

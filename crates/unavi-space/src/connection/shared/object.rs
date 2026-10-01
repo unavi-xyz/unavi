@@ -30,7 +30,6 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use unavi_util::async_commands::AsyncCommands;
 use web_time::Instant;
 
 use crate::connection::{
@@ -95,10 +94,11 @@ struct DocStream {
     prims:      HashMap<PrimId, SendState>,
 }
 
-pub async fn send_object_stream(_link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
+pub async fn send_object_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (obj_tx, obj_rx) = async_channel::bounded::<Vec<OutgoingObject>>(1);
 
-    AsyncCommands::default()
+    link.view()
+        .commands()
         .spawn((PeerStream(connection.remote_id()), ObjectSender(obj_tx)))
         .send()
         .await?;

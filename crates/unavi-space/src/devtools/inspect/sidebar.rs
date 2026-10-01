@@ -85,9 +85,8 @@ fn rows(
         }
     }
 
-    let mut peer_ids = link
-        .map(|l| l.net_stats().iter().map(|s| s.peer).collect::<Vec<_>>())
-        .unwrap_or_default();
+    let mut peer_ids =
+        link.map_or_default(|l| l.net_stats().iter().map(|s| s.peer).collect::<Vec<_>>());
     peer_ids.extend(snap.peers.iter().map(|p| p.peer));
     peer_ids.sort_unstable();
     peer_ids.dedup();

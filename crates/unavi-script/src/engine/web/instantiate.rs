@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_hsd::{
     document::{
         Hsd,
@@ -17,7 +21,6 @@ use unavi_space::{
     identity::RootDocument,
     view::SpaceView,
 };
-use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     Script,
@@ -62,6 +65,7 @@ pub fn instantiate_scripts(
     pointers: Res<Pointers>,
     transforms: Res<TransformSnapshots>,
     event_bus: Res<EventBus>,
+    async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     let Some(view) = view else {
@@ -103,6 +107,7 @@ pub fn instantiate_scripts(
                 pointers: pointers.clone(),
                 transforms: transforms.clone(),
                 event_bus: event_bus.clone(),
+                async_world: (*async_world).clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
@@ -113,7 +118,7 @@ pub fn instantiate_scripts(
 
         let cell: ScriptCell = Arc::new(std::sync::Mutex::new(None));
 
-        spawn_async_task({
+        task::spawn({
             let cell = Arc::clone(&cell);
             async move {
                 let instance = ScriptInstance::instantiate(&bytes, &name, runtime).await;

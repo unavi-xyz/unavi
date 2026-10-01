@@ -14,6 +14,7 @@ pub mod anchor;
 pub mod attributes;
 pub mod document;
 pub mod feed;
+pub mod hierarchy;
 pub mod loaded;
 pub mod package;
 pub mod prim;

@@ -6,6 +6,11 @@ pub mod endpoint;
 pub mod router;
 pub mod store;
 
+/// Receives results from async iroh work. Runs in `PreUpdate`, so a result is
+/// visible to the frame's `Update` systems.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
+pub struct IrohSystems;
+
 pub struct IrohPlugin;
 
 impl Plugin for IrohPlugin {
@@ -19,13 +24,14 @@ impl Plugin for IrohPlugin {
             .add_observer(doc::on_doc_get)
             .add_observer(doc::on_doc_list)
             .add_systems(
-                FixedUpdate,
+                PreUpdate,
                 (
                     endpoint::receive_endpoint,
                     router::receive_router,
                     blob::deps::mark_blob_deps_loaded,
                     blob::request::recv_blob_responses,
-                ),
+                )
+                    .in_set(IrohSystems),
             );
     }
 }

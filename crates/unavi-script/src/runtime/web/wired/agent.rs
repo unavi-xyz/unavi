@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use bevy_async::task;
 use bevy_vrm::BoneName;
 use unavi_policy::permissions::ApiName;
-use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -34,7 +34,7 @@ impl Drop for AgentHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::agent::on_drop(&api, rep).await;
             });
         }

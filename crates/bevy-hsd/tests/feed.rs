@@ -21,7 +21,7 @@ use hsd::{
     state::entry::Entry,
 };
 use rstest::rstest;
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::common::*;
 

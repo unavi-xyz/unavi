@@ -1,9 +1,9 @@
 use bevy::prelude::*;
+use bevy_async::task;
 use iroh::protocol::{
     Router,
     RouterBuilder,
 };
-use unavi_util::async_task::spawn_async_task;
 
 use crate::endpoint::IrohEndpoint;
 
@@ -72,7 +72,7 @@ pub(crate) fn on_build_router(
     // `Router::spawn` calls `tokio::spawn` internally, so this must run inside
     // the async runtime.
     let (tx, rx) = async_channel::bounded(1);
-    spawn_async_task(async move {
+    task::spawn(async move {
         let mut builder = RouterBuilder::new(endpoint);
         for f in collected {
             builder = f(builder);

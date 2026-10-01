@@ -4,6 +4,7 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
+use bevy_async::task;
 use bevy_hsd::{
     document::{
         Hsd,
@@ -34,11 +35,7 @@ use unavi_policy::{
     space::Space,
 };
 use unavi_space::anchor::ActiveSpace;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
-use wds::document::Document;
+use unavi_store::document::Document;
 
 use crate::{
     error::ScriptError,
@@ -73,9 +70,10 @@ fn doc_id(bytes: &[u8]) -> anyhow::Result<DocId> {
 /// Mints a namespace so a document has a stable id from birth. Portal
 /// receptors and session opinions are keyed by that id, so it must never be
 /// remapped later — the cost is a `drop_doc` obligation on despawn.
-async fn create_namespace() -> anyhow::Result<Document> {
+async fn create_namespace(api: &Api) -> anyhow::Result<Document> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
                 .query::<&LocalStore>()
@@ -85,7 +83,7 @@ async fn create_namespace() -> anyhow::Result<Document> {
             else {
                 return;
             };
-            spawn_async_task(async move {
+            task::spawn(async move {
                 tx.try_send(store.create().await).ok();
             });
         })
@@ -98,9 +96,10 @@ async fn create_namespace() -> anyhow::Result<Document> {
 ///
 /// A reference site is keyed by a derived id but backed by the target's
 /// namespace, so it answers with the target's.
-pub(super) async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
+pub(super) async fn namespace_of(api: &Api, id: DocId) -> anyhow::Result<NamespaceId> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let ns = world
                 .query::<(&HsdDocId, &HsdNamespace)>()
@@ -117,9 +116,14 @@ pub(super) async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
 }
 
 /// Writes `entries` into the namespace `ns`. An empty value deletes its key.
-pub(super) async fn write_entries(ns: NamespaceId, entries: Vec<Entry>) -> anyhow::Result<()> {
+pub(super) async fn write_entries(
+    api: &Api,
+    ns: NamespaceId,
+    entries: Vec<Entry>,
+) -> anyhow::Result<()> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
                 .query::<&LocalStore>()
@@ -129,7 +133,7 @@ pub(super) async fn write_entries(ns: NamespaceId, entries: Vec<Entry>) -> anyho
             else {
                 return;
             };
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let res = async {
                     let doc = store.open(ns).await?;
                     for entry in entries {
@@ -170,7 +174,7 @@ async fn spawn_child_doc(
     // through, and `is_self_owner` false forever.
     let space = child_space(
         api.view.policy().registered_space(api.doc_id),
-        active_space().await,
+        active_space(api).await,
     );
     api.view.policy().update(id, |record| {
         record.host = Some(api.doc_id);
@@ -187,7 +191,8 @@ async fn spawn_child_doc(
         warn!(?err, %id, "failed to serve a script-minted document");
     }
 
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .spawn((
             Hsd(state),
             Unplaced,
@@ -216,9 +221,10 @@ fn child_space(host_space: Option<DocId>, active: Option<DocId>) -> Option<DocId
 /// The space the local agent currently stands in, if the world has one. Read
 /// off the world rather than the script's view, since the active space is
 /// per-peer runtime state and not document state.
-async fn active_space() -> Option<DocId> {
+async fn active_space(api: &Api) -> Option<DocId> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let space = world
                 .get_resource::<ActiveSpace>()
@@ -278,7 +284,8 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     }
 
     let (tx, rx) = async_channel::bounded::<Option<Arc<Mutex<HsdState>>>>(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let state = world
                 .query::<(&HsdDocId, &Hsd)>()
@@ -311,7 +318,8 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     };
     drop(scene);
 
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let mut query = world.query::<(Entity, &HsdDocId)>();
             if let Some((entity, _)) = query.iter(world).find(|(_, v)| v.0 == doc.id) {
@@ -323,13 +331,15 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
     // Minting a namespace obligates removing the replica;
     // otherwise scratch documents leak redb state.
-    remove_replica(NamespaceId::from(&id.0)).await;
+    remove_replica(api, NamespaceId::from(&id.0)).await;
 
     Ok(())
 }
 
-async fn remove_replica(ns: NamespaceId) {
-    let _ = AsyncCommands::default()
+async fn remove_replica(api: &Api, ns: NamespaceId) {
+    let _ = api
+        .async_world
+        .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
                 .query::<&LocalStore>()
@@ -339,7 +349,7 @@ async fn remove_replica(ns: NamespaceId) {
             else {
                 return;
             };
-            spawn_async_task(async move {
+            task::spawn(async move {
                 if let Err(err) = store.remove(ns).await {
                     debug!(%ns, ?err, "failed to remove document replica");
                 }
@@ -356,10 +366,11 @@ async fn remove_replica(ns: NamespaceId) {
 /// `false`, and a commit against it looks for an override or falls back to the
 /// session layer. The capability half is `Require(Commit)`, checked before the
 /// call is reached.
-pub(super) async fn holds_write_key(id: DocId) -> anyhow::Result<bool> {
-    let ns = namespace_of(id).await?;
+pub(super) async fn holds_write_key(api: &Api, id: DocId) -> anyhow::Result<bool> {
+    let ns = namespace_of(api, id).await?;
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let Some(store) = world
                 .query::<&LocalStore>()
@@ -370,7 +381,7 @@ pub(super) async fn holds_write_key(id: DocId) -> anyhow::Result<bool> {
                 tx.try_send(Ok(false)).ok();
                 return;
             };
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let res = async {
                     Ok(store.list().await?.into_iter().any(|(held, capability)| {
                         held == ns && matches!(capability, CapabilityKind::Write)
@@ -401,7 +412,7 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
 /// to be computing this frame is not what "copy this template" means.
 pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
     let id = doc_id(&id).map_err(|err| ScriptError::other(err.to_string()))?;
-    let entries = source_entries(id)
+    let entries = source_entries(api, id)
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?
         .ok_or_else(|| ScriptError::other(format!("no document {id} to copy")))?;
@@ -411,9 +422,10 @@ pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
 /// What the store behind `id` holds, looked up by document id and then by the
 /// reference sites that add it to the scene, since a reference in the scene
 /// is keyed by its site rather than by the document it stands for.
-async fn source_entries(id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
+async fn source_entries(api: &Api, id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let by_id = world
                 .query::<(&HsdDocId, &HsdNamespace)>()
@@ -431,7 +443,7 @@ async fn source_entries(id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
                 tx.try_send(Ok(None)).ok();
                 return;
             };
-            spawn_async_task(async move {
+            task::spawn(async move {
                 tx.try_send(read_entries(&doc, id).await.map(Some)).ok();
             });
         })
@@ -464,11 +476,11 @@ async fn mint_document(api: &Api, entries: Vec<Entry>) -> Result<u32, ScriptErro
             .map_err(|err| ScriptError::other(err.to_string()))?;
     }
 
-    let doc = create_namespace()
+    let doc = create_namespace(api)
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
     let ns = doc.id();
-    write_entries(ns, entries)
+    write_entries(api, ns, entries)
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
     let state = Arc::new(Mutex::new(state));

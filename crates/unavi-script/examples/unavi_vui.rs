@@ -33,7 +33,7 @@ fn main() {
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before
     // `AssetPlugin` builds the sources it knows about.
-    app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
+    app.add_plugins(unavi_assets::AssetsPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -47,7 +47,7 @@ fn main() {
         unavi_physics::PhysicsPlugin,
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        unavi_util::UtilPlugin,
+        bevy_async::AsyncPlugin,
         unavi_input::InputPlugin { storage: None },
         unavi_grab::GrabPlugin,
         unavi_agent::AgentPlugin,

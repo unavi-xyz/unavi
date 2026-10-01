@@ -830,6 +830,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-async"
+version = "0.0.16"
+dependencies = [
+ "async-channel",
+ "bevy",
+ "n0-future",
+ "tokio",
+ "web-time",
+]
+
+[[package]]
 name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
@@ -837,6 +848,7 @@ dependencies = [
  "async-channel",
  "avian3d",
  "bevy",
+ "bevy-async",
  "bevy-iroh",
  "bevy-msdf",
  "bevy_panorbit_camera",
@@ -859,8 +871,7 @@ dependencies = [
  "tracing",
  "tracing-test",
  "unavi-physics",
- "unavi-util",
- "wds",
+ "unavi-store",
 ]
 
 [[package]]
@@ -921,6 +932,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "bevy",
+ "bevy-async",
  "blake3",
  "bytes",
  "iroh",
@@ -930,8 +942,7 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "unavi-util",
- "wds",
+ "unavi-store",
 ]
 
 [[package]]
@@ -941,13 +952,13 @@ dependencies = [
  "anyhow",
  "async-channel",
  "bevy",
+ "bevy-async",
  "bevy-iroh",
  "blake3",
  "bytes",
  "iroh-blobs",
  "tokio",
- "unavi-util",
- "wds",
+ "unavi-store",
 ]
 
 [[package]]
@@ -11317,23 +11328,18 @@ dependencies = [
  "bevy_xr_utils",
  "unavi-avatar",
  "unavi-input",
- "unavi-manifold",
  "unavi-physics",
+ "unavi-portal",
  "xdid",
 ]
 
 [[package]]
 name = "unavi-assets"
 version = "0.0.16"
-
-[[package]]
-name = "unavi-assets-fetch"
-version = "0.0.16"
 dependencies = [
  "bevy",
  "bevy-iroh-assets",
  "bevy-msdf",
- "unavi-assets",
 ]
 
 [[package]]
@@ -11356,6 +11362,7 @@ dependencies = [
  "async-channel",
  "avian3d",
  "bevy",
+ "bevy-async",
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
@@ -11375,23 +11382,21 @@ dependencies = [
  "postcard",
  "tracing",
  "unavi-agent",
- "unavi-assets-fetch",
+ "unavi-assets",
  "unavi-avatar",
  "unavi-devtools",
  "unavi-grab",
  "unavi-identity",
  "unavi-input",
  "unavi-local",
- "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
+ "unavi-portal",
  "unavi-registry",
  "unavi-script",
  "unavi-secrets",
  "unavi-space",
- "unavi-util",
- "unavi-wasm-compat",
- "wds",
+ "unavi-store",
  "web-sys",
  "winit",
  "xdid",
@@ -11418,7 +11423,6 @@ dependencies = [
  "unavi-physics",
  "unavi-policy",
  "unavi-space",
- "unavi-util",
 ]
 
 [[package]]
@@ -11442,7 +11446,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-local",
- "wds",
+ "unavi-store",
  "xdid",
  "zeroize",
 ]
@@ -11472,19 +11476,6 @@ dependencies = [
  "hex",
  "tempfile",
  "web-sys",
-]
-
-[[package]]
-name = "unavi-manifold"
-version = "0.0.16"
-dependencies = [
- "avian3d",
- "bevy",
- "bevy-hsd",
- "bevy_panorbit_camera",
- "bevy_vrm",
- "hsd",
- "unavi-physics",
 ]
 
 [[package]]
@@ -11520,6 +11511,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-portal"
+version = "0.0.16"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy-hsd",
+ "bevy_panorbit_camera",
+ "bevy_vrm",
+ "hsd",
+ "unavi-physics",
+]
+
+[[package]]
 name = "unavi-portal-protocol"
 version = "0.0.16"
 dependencies = [
@@ -11545,7 +11549,7 @@ dependencies = [
  "time",
  "tracing",
  "unavi-identity",
- "wds",
+ "unavi-store",
  "xdid",
 ]
 
@@ -11557,6 +11561,7 @@ dependencies = [
  "async-channel",
  "avian3d",
  "bevy",
+ "bevy-async",
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
@@ -11578,24 +11583,23 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-agent",
- "unavi-assets-fetch",
+ "unavi-assets",
  "unavi-avatar",
  "unavi-grab",
  "unavi-identity",
  "unavi-input",
  "unavi-local",
- "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
+ "unavi-portal",
  "unavi-portal-protocol",
  "unavi-registry",
  "unavi-space",
- "unavi-util",
+ "unavi-store",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
- "wds",
  "web-time",
  "xdid",
 ]
@@ -11635,7 +11639,7 @@ dependencies = [
  "unavi-local",
  "unavi-registry",
  "unavi-secrets",
- "wds",
+ "unavi-store",
  "xdid",
 ]
 
@@ -11647,6 +11651,7 @@ dependencies = [
  "async-channel",
  "avian3d",
  "bevy",
+ "bevy-async",
  "bevy-hsd",
  "bevy-iroh",
  "blake3",
@@ -11670,32 +11675,32 @@ dependencies = [
  "unavi-devtools",
  "unavi-identity",
  "unavi-local",
- "unavi-manifold",
  "unavi-policy",
+ "unavi-portal",
  "unavi-registry",
- "unavi-util",
- "wds",
+ "unavi-store",
  "web-time",
  "xdid",
 ]
 
 [[package]]
-name = "unavi-util"
+name = "unavi-store"
 version = "0.0.16"
 dependencies = [
- "async-channel",
- "bevy",
+ "anyhow",
+ "blake3",
+ "bytes",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "iroh-gossip",
  "n0-future",
- "unavi-wasm-compat",
- "web-time",
-]
-
-[[package]]
-name = "unavi-wasm-compat"
-version = "0.0.16"
-dependencies = [
- "n0-future",
+ "rstest",
+ "tempfile",
  "tokio",
+ "tracing",
+ "tracing-test",
+ "unavi-local",
 ]
 
 [[package]]
@@ -12493,26 +12498,6 @@ dependencies = [
  "log",
  "once_cell",
  "pkg-config",
-]
-
-[[package]]
-name = "wds"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "bytes",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "iroh-gossip",
- "n0-future",
- "rstest",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-test",
- "unavi-local",
 ]
 
 [[package]]

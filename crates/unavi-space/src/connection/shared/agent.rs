@@ -24,7 +24,6 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use unavi_util::async_commands::AsyncCommands;
 use web_time::Instant;
 
 use crate::connection::{
@@ -67,7 +66,7 @@ enum AgentMsg {
 
 const IFRAME_FREQ: Duration = Duration::from_secs(5);
 
-pub async fn send_agent_stream(_link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
+pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::Agent.write(&mut tx).await?;
 
@@ -75,7 +74,8 @@ pub async fn send_agent_stream(_link: &PeerLink, connection: &Connection) -> any
 
     let (pose_tx, pose_rx) = async_channel::bounded::<OutgoingPose>(1);
 
-    AsyncCommands::default()
+    link.view()
+        .commands()
         .spawn((PeerStream(connection.remote_id()), AgentSender(pose_tx)))
         .send()
         .await?;

@@ -10,7 +10,6 @@ use bevy_iroh::doc::{
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
 use unavi_registry::follow::registries;
-use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
     Api,
@@ -55,7 +54,8 @@ pub async fn get_storage(api: &Api) -> anyhow::Result<u32> {
 pub async fn get(api: &Api, _rep: u32, ns: Vec<u8>, key: String) -> anyhow::Result<u32> {
     let ns = namespace(&ns)?;
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .trigger(DocGet { ns, key, tx })
         .send()
         .await?;
@@ -68,7 +68,8 @@ pub async fn get(api: &Api, _rep: u32, ns: Vec<u8>, key: String) -> anyhow::Resu
 pub async fn list(api: &Api, _rep: u32, ns: Vec<u8>, prefix: String) -> anyhow::Result<u32> {
     let ns = namespace(&ns)?;
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .trigger(DocList { ns, prefix, tx })
         .send()
         .await?;

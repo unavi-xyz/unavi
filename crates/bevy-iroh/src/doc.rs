@@ -1,9 +1,9 @@
 use async_channel::Sender;
 use bevy::prelude::*;
+use bevy_async::task;
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
-use unavi_util::async_task::spawn_async_task;
-use wds::Store;
+use unavi_store::Store;
 
 use crate::store::LocalStore;
 
@@ -27,7 +27,7 @@ pub(crate) fn on_doc_set(trigger: On<DocSet>, stores: Query<&LocalStore>) {
         event.value.clone(),
         event.tx.clone(),
     );
-    spawn_async_task(async move {
+    task::spawn(async move {
         let wrote = async { store.open(ns).await?.set(key, value).await };
         tx.send(wrote.await.is_ok()).await.ok();
     });
@@ -47,7 +47,7 @@ pub(crate) fn on_doc_get(trigger: On<DocGet>, stores: Query<&LocalStore>) {
     };
     let event = trigger.event();
     let (ns, key, tx) = (event.ns, event.key.clone(), event.tx.clone());
-    spawn_async_task(async move {
+    task::spawn(async move {
         tx.send(get(&store, ns, &key).await).await.ok();
     });
 }
@@ -70,7 +70,7 @@ pub(crate) fn on_doc_list(trigger: On<DocList>, stores: Query<&LocalStore>) {
     };
     let event = trigger.event();
     let (ns, prefix, tx) = (event.ns, event.prefix.clone(), event.tx.clone());
-    spawn_async_task(async move {
+    task::spawn(async move {
         tx.send(list(&store, ns, &prefix).await).await.ok();
     });
 }

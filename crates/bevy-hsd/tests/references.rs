@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use bevy::prelude::*;
+use bevy_async::AsyncPlugin;
 use bevy_hsd::{
     document::HsdDocId,
     package::{
@@ -17,7 +18,6 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use rstest::rstest;
-use unavi_util::UtilPlugin;
 
 use crate::common::*;
 
@@ -25,7 +25,7 @@ mod common;
 
 fn with_store(ctx: &mut TestContext) -> Backing {
     let backing = Backing::new();
-    ctx.app.add_plugins(UtilPlugin);
+    ctx.app.add_plugins(AsyncPlugin);
     ctx.app.world_mut().spawn(LocalStore(backing.store()));
     backing
 }

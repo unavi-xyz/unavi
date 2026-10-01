@@ -1,0 +1,21 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "bevy-async"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel.workspace = true
+bevy.workspace          = true
+web-time.workspace      = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+n0-future.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { features = ["rt", "rt-multi-thread", "time"], workspace = true }

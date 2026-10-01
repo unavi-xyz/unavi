@@ -1,7 +1,5 @@
 // #![windows_subsystem = "windows"]
 
-use std::time::Duration;
-
 use bevy::prelude::*;
 use clap::Parser;
 use tracing::Level;
@@ -52,9 +50,6 @@ fn main() {
         xr: args.xr,
     })
     .run();
-
-    // Give time for other threads to finish.
-    unavi_wasm_compat::sleep_thread(Duration::from_millis(200));
 
     info!("Graceful exit");
 }

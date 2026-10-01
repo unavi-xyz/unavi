@@ -13,6 +13,7 @@ workspace = true
 anyhow.workspace        = true
 async-channel.workspace = true
 bevy.workspace          = true
+bevy-async.path         = "../bevy-async"
 blake3.workspace        = true
 bytes.workspace         = true
 iroh.workspace          = true
@@ -22,8 +23,7 @@ n0-future.workspace     = true
 thiserror.workspace     = true
 tokio.workspace         = true
 tracing.workspace       = true
-unavi-util.path         = "../unavi-util"
-wds.path                = "../wds"
+unavi-store.path        = "../unavi-store"
 
 [dev-dependencies]
 async-channel.workspace = true

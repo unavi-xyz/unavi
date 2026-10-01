@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use unavi_manifold::transition::CrossedSeam;
+use unavi_portal::transition::CrossedSeam;
 
 use crate::{
     AgentRig,
@@ -9,8 +9,8 @@ use crate::{
     },
 };
 
-/// Reorients the local agent's look and input intent across a chart
-/// transition; physical momentum is carried by `unavi_portal`'s
+/// Reorients the local agent's look and input intent across a portal
+/// crossing; physical momentum is carried by `unavi_portal`'s
 /// `carry_momentum`.
 pub fn handle_agent_teleport(
     event: On<CrossedSeam>,

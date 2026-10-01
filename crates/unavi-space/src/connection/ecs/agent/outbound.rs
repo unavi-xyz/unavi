@@ -103,8 +103,7 @@ pub fn send_agent_pose(
     let bones = if xr.is_some_and(|xr| xr.0) {
         avatars
             .get(avatar.0)
-            .map(|bones| gather_bones(bones, &locals))
-            .unwrap_or_default()
+            .map_or_default(|bones| gather_bones(bones, &locals))
     } else {
         HashMap::default()
     };

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_async::task;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
     store::LocalStore,
@@ -19,7 +20,6 @@ use tokio::sync::{
 };
 use unavi_identity::signed_bytes::Signable;
 use unavi_policy::space::Space;
-use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     gossip::thread::{
@@ -90,7 +90,7 @@ pub struct GossipSender(async_channel::Sender<thread::GossipCommand>);
 pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
     let (tx, rx) = async_channel::bounded(32);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         thread::handle_gossip_thread(rx).await;
     });
 
@@ -155,7 +155,7 @@ pub fn join_space_topics(
 
         let sender = sender.0.clone();
 
-        unavi_util::async_task::spawn_async_task(async move {
+        bevy_async::task::spawn(async move {
             if let Err(err) = sender
                 .send(GossipCommand::JoinSpace {
                     ctx,

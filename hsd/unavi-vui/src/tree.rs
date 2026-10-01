@@ -464,8 +464,8 @@ mod tests {
 
     fn holding(label: &str, children: Vec<Mote>) -> Mote {
         let group = mote(Kind::Group, label);
-        for child in &children {
-            assert!(group.add_child(child));
+        for child in children {
+            assert!(group.add_child(&child));
         }
         group
     }

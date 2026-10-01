@@ -406,7 +406,6 @@ impl HsdState {
     fn parent_stamp(&self, prim: PrimId) -> Stamp {
         self.resolved
             .get(&prim)
-            .map(PrimState::parent_stamp)
-            .unwrap_or_default()
+            .map_or_default(PrimState::parent_stamp)
     }
 }

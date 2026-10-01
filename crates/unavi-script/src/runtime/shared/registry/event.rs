@@ -111,8 +111,7 @@ impl EventBus {
         let claimed = Arc::new(AtomicBool::new(false));
         let time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or_default();
+            .map_or_default(|d| d.as_secs());
 
         let receptors = self.0.receptors.read();
         for entry in receptors.values() {

@@ -161,8 +161,7 @@ fn peer_model(
         .peers
         .iter()
         .find(|p| p.peer == id)
-        .map(|p| p.docs.as_slice())
-        .unwrap_or_default();
+        .map_or_default(|p| p.docs.as_slice());
     let is_self = view.me() == id;
     PeerModel {
         id,

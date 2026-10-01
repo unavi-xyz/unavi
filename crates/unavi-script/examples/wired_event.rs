@@ -40,7 +40,7 @@ fn main() {
         bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        unavi_util::UtilPlugin,
+        bevy_async::AsyncPlugin,
         unavi_script::ScriptPlugin,
     ))
     .add_systems(Startup, init_scene);

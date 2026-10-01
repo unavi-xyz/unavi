@@ -7,7 +7,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use unavi_util::async_task::spawn_async_task;
+use bevy_async::task;
 
 use super::instantiate::ScriptGuest;
 use crate::{
@@ -44,7 +44,7 @@ pub fn fixed_update_scripts(
         let updating = Arc::clone(&updating.0);
         let guest = Arc::clone(&guest.0);
 
-        spawn_async_task(async move {
+        task::spawn(async move {
             guest.fixed_update().await;
             updating.store(false, Ordering::SeqCst);
         });

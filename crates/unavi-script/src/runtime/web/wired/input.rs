@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use bevy::math::Vec3;
+use bevy_async::task;
 use unavi_input::pointer::PointerKind;
 use unavi_policy::permissions::ApiName;
-use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -42,7 +42,7 @@ impl Drop for InputListenerHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::input::listener::drop(&api, rep).await;
             });
         }

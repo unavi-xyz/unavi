@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_async::AsyncWorld;
 use hsd::{
     id::{
         DocId,
@@ -45,6 +46,8 @@ pub struct Api {
     pub prim:          PrimId,
     pub view:          SpaceView,
     pub quota:         Arc<Quota>,
+    /// Where this script's host calls queue their world access.
+    pub async_world:   AsyncWorld,
     /// This node's root document, or `None` when it runs without a store.
     ///
     /// Captured at instantiation rather than read per call: the id is minted

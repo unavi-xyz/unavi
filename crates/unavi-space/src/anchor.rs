@@ -3,23 +3,25 @@ use bevy::{
     platform::collections::HashSet,
     prelude::*,
 };
-use bevy_hsd::document::{
-    Hsd,
-    Unplaced,
+use bevy_hsd::{
+    document::{
+        Hsd,
+        Unplaced,
+    },
+    hierarchy::ancestors,
 };
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
-use unavi_manifold::{
-    PrevTranslation,
-    transition::CrossedSeam,
-};
 use unavi_policy::space::{
     Space,
     SpaceOwner,
 };
-use unavi_util::hierarchy::ancestors;
+use unavi_portal::{
+    PrevTranslation,
+    transition::CrossedSeam,
+};
 
 #[derive(Component, Default)]
 pub struct DocTraveler;
@@ -250,7 +252,7 @@ pub fn promote_first_space(
 mod tests {
     use bevy::transform::TransformPlugin;
     use iroh_docs::NamespaceId;
-    use unavi_manifold::transition::apply_seam_crossings;
+    use unavi_portal::transition::apply_seam_crossings;
 
     use super::*;
 

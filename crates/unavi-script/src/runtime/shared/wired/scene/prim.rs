@@ -800,13 +800,12 @@ pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, Pr
     let prim = get_prim(api, rep).await?;
     Ok(prim
         .read_attr::<GraphOverridesAttr>()?
-        .map(|attr| {
+        .map_or_default(|attr| {
             attr.overrides
                 .into_iter()
                 .map(|(index, value)| (index, graph_value_to_prim(value)))
                 .collect()
-        })
-        .unwrap_or_default())
+        }))
 }
 
 /// Clearing every override removes the attribute rather than writing an empty

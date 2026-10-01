@@ -5,6 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
+use bevy_async::task;
 use bevy_hsd::{
     HsdPlugin,
     document::Hsd,
@@ -52,7 +53,6 @@ use iroh_blobs::{
     api::blobs::Blobs,
     store::mem::MemStore,
 };
-use unavi_util::async_task::spawn_async_task;
 
 const CUBE_SIZE: f32 = 1.0;
 
@@ -288,7 +288,7 @@ fn write_stream(state: &mut HsdState, prim: PrimId, name: &str, bytes: Vec<u8>) 
 
 fn spawn_mem_store() -> (MemStore, Blobs) {
     let (tx, rx) = async_channel::bounded(1);
-    spawn_async_task(async move {
+    task::spawn(async move {
         let store = MemStore::default();
         let blobs = store.blobs().clone();
         tx.send((store, blobs)).await.expect("send");

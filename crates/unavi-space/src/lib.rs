@@ -5,11 +5,11 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
-use unavi_manifold::{
+use unavi_policy::trust::TrustTable;
+use unavi_portal::{
     echo::maintain_seam_echoes,
     transition::apply_seam_crossings,
 };
-use unavi_policy::trust::TrustTable;
 
 pub mod anchor;
 mod connection;
@@ -122,7 +122,7 @@ impl Plugin for SpacePlugin {
             )
             .add_systems(
                 Update,
-                portal_bridge::sync_seam_home.before(unavi_manifold::resolver::resolve_seams),
+                portal_bridge::sync_seam_home.before(unavi_portal::resolver::resolve_seams),
             )
             .add_systems(
                 Update,

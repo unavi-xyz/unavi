@@ -176,8 +176,8 @@ async fn sweep(store: &BlobStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
 }
 
 /// Prints the hosted hashes in the manifest shape the client consumes, so an
-/// operator can paste them into `unavi-assets` and verify what the server
-/// actually serves.
+/// operator can paste them into the `unavi-assets` manifest and verify what the
+/// server actually serves.
 pub fn log_manifest(hosted: &[HostedFile]) {
     if hosted.is_empty() {
         warn!("no files hosted; drop files into {}", files_dir().display());

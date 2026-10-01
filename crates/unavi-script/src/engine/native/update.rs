@@ -10,8 +10,8 @@ use bevy::{
     ecs::system::SystemState,
     prelude::*,
 };
+use bevy_async::task;
 use tracing::Instrument;
-use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
 use crate::{
@@ -73,7 +73,7 @@ pub fn update_scripts(
             let outstanding = Arc::clone(&outstanding);
             outstanding.fetch_add(1, Ordering::AcqRel);
 
-            spawn_async_task(
+            task::spawn(
                 async move {
                     let mut store = store.lock().await;
                     store.set_epoch_deadline(1);

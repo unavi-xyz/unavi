@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bevy_async::task;
 use hsd::attributes::{
     image::{
         AddressMode,
@@ -11,7 +12,6 @@ use hsd::attributes::{
         PortalDestination,
     },
 };
-use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
     JsValue,
     prelude::*,
@@ -84,7 +84,7 @@ impl Drop for PrimHandle {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
-            spawn_async_task(async move {
+            task::spawn(async move {
                 let _ = shared::wired::scene::prim::on_drop(&api, rep).await;
             });
         }

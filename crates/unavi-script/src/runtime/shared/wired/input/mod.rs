@@ -1,5 +1,3 @@
-use unavi_util::async_commands::AsyncCommands;
-
 use crate::runtime::shared::{
     Api,
     slot_map::SlotMap,
@@ -37,7 +35,9 @@ pub async fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result
 
     let queue = InputQueue::default();
 
-    AsyncCommands::default()
+    backend
+        .async_world
+        .commands()
         .spawn(InputListener {
             target_doc,
             target_prim,
@@ -59,7 +59,9 @@ pub async fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result
 pub async fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32> {
     let queue = InputQueue::default();
 
-    AsyncCommands::default()
+    backend
+        .async_world
+        .commands()
         .spawn(GlobalInputListener {
             queue: queue.clone(),
         })

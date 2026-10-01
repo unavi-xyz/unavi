@@ -26,7 +26,7 @@ thiserror.workspace   = true
 tokio                 = { features = ["io-util", "sync"], workspace = true }
 tracing.workspace     = true
 unavi-local.path      = "../unavi-local"
-wds.path              = "../wds"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true
 zeroize.workspace     = true
 

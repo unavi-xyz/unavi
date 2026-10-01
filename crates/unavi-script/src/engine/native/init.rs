@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_async::task;
 use tracing::Instrument;
-use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
 use crate::engine::{
@@ -30,7 +30,7 @@ pub fn init_scripts(
 
         let (tx, rx) = tokio::sync::oneshot::channel();
 
-        spawn_async_task(
+        task::spawn(
             async move {
                 let mut store = store.lock().await;
                 store.set_epoch_deadline(1);

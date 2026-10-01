@@ -10,6 +10,10 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_iroh::{
     endpoint::IrohEndpoint,
     router::{
@@ -33,7 +37,6 @@ use unavi_policy::trust::{
     Trust,
     TrustTable,
 };
-use unavi_util::async_task::spawn_async_task;
 use web_time::Instant;
 
 use crate::{
@@ -237,6 +240,7 @@ pub fn register_protocol(
     policy: Res<unavi_policy::registry::Policy>,
     replicas: Res<Replicas>,
     trust: Res<TrustTable>,
+    async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     let Ok(endpoint) = endpoints.get(trigger.entity) else {
@@ -254,6 +258,7 @@ pub fn register_protocol(
         identity.clone(),
         me,
         trust.clone(),
+        async_world.clone(),
     );
     let link = PeerLink::new(view.clone());
     commands.insert_resource(view);
@@ -288,7 +293,7 @@ pub fn connect_to_peer(
         .expect("peer");
 
     let link = link.clone();
-    spawn_async_task(async move {
+    task::spawn(async move {
         outbound::try_open_connection(link, endpoint, peer).await;
     });
 }

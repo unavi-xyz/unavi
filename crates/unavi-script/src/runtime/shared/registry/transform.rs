@@ -105,8 +105,7 @@ impl TransformSnapshots {
         for id in chain {
             let t = nodes
                 .get(&AbsoluteNodeId { doc, node: id })
-                .map(|s| s.local)
-                .unwrap_or_default();
+                .map_or_default(|s| s.local);
             local = t.compute_affine() * local;
         }
         drop(nodes);

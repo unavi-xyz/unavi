@@ -1,7 +1,9 @@
 use bevy::prelude::*;
-use bevy_hsd::attributes::spawn::SpawnPoint;
+use bevy_hsd::{
+    attributes::spawn::SpawnPoint,
+    hierarchy::descends_from,
+};
 use rand::Rng;
-use unavi_util::hierarchy::descends_from;
 
 /// A world position to spawn at inside `space`, which only sits at the origin
 /// while it is the active one.

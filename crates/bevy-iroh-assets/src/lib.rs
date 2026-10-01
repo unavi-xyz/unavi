@@ -15,6 +15,7 @@ use bevy::{
     asset::io::AssetSourceBuilder,
     prelude::*,
 };
+use bevy_async::task;
 use bevy_iroh::{
     blob::request::{
         BlobRequest,
@@ -28,8 +29,7 @@ use bevy_iroh::{
 use bytes::Bytes;
 use iroh_blobs::Hash;
 use tokio::sync::oneshot;
-use unavi_util::async_task::spawn_async_task;
-use wds::Store;
+use unavi_store::Store;
 
 use crate::reader::{
     FetchRequest,
@@ -40,6 +40,12 @@ pub mod reader;
 
 /// The asset source manifest assets load from.
 const SOURCE: &str = "iroh";
+
+/// The path Bevy loads the manifest asset at `rel_path` by, on every platform.
+#[must_use]
+pub fn asset_path(rel_path: &str) -> String {
+    format!("{SOURCE}://{rel_path}")
+}
 
 /// The document holding this build's manifest.
 ///
@@ -137,7 +143,7 @@ fn hold_manifest(stores: Query<&LocalStore, Added<LocalStore>>, manifest: Res<Ma
 
     let store = store.0.clone();
     let manifest = manifest.0;
-    spawn_async_task(async move {
+    task::spawn(async move {
         if let Err(err) = reconcile(&store, manifest).await {
             error!(?err, "failed to hold manifest assets");
         }

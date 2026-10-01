@@ -67,7 +67,7 @@ impl Plugin for UnaviPlugin {
 
         // Registers the `iroh://` asset source, which must exist before
         // `AssetPlugin` builds the sources it knows about.
-        app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
+        app.add_plugins(unavi_assets::AssetsPlugin);
 
         cfg_select! {
             target_family = "wasm" => {
@@ -114,12 +114,12 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin {
                 storage: Some(config_storage),
             },
-            unavi_manifold::ManifoldPlugin,
+            unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
             unavi_space::SpacePlugin {
                 storage: Some(storage),
             },
-            unavi_util::UtilPlugin,
+            bevy_async::AsyncPlugin,
         ))
         .add_plugins((
             camera::CameraPlugin,

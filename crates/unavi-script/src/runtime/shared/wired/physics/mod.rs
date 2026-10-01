@@ -12,6 +12,7 @@ use bevy::{
 };
 use bevy_hsd::{
     document::HsdDocId,
+    hierarchy::ancestors,
     prim::{
         Prim as HsdPrim,
         PrimIndex,
@@ -23,10 +24,6 @@ use hsd::id::{
     PrimId,
 };
 use unavi_physics::finite;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    hierarchy::ancestors,
-};
 
 use crate::{
     error::ScriptError,
@@ -74,7 +71,7 @@ fn resolve_doc(
 }
 
 pub async fn raycast(
-    _api: &Api,
+    api: &Api,
     origin: [f32; 3],
     dir: [f32; 3],
     max_dist: f32,
@@ -84,7 +81,8 @@ pub async fn raycast(
     let max_dist = checked_distance("raycast distance", max_dist)?;
 
     let (tx, rx) = async_channel::bounded::<Option<RayHit>>(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let hit = world
                 .run_system_once(
@@ -163,7 +161,8 @@ async fn set_velocity(
     )?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             tx.try_send(apply_velocity(world, doc, prim_id, vel, angular))
                 .ok();
@@ -220,7 +219,8 @@ pub async fn set_angular_velocity(
 pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], ScriptError> {
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     let (tx, rx) = async_channel::bounded::<[f32; 3]>(1);
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let v = entity_for(world, doc, prim_id)
                 .and_then(|entity| world.get::<LinearVelocity>(entity))
@@ -240,7 +240,8 @@ pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], S
 pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
     let value = checked_vec3("force", v)?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
-    AsyncCommands::default()
+    api.async_world
+        .commands()
         .push(move |world: &mut World| {
             let Some(entity) = entity_for(world, doc, prim_id) else {
                 return;
@@ -273,10 +274,10 @@ pub fn take_hold(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     Ok(())
 }
 
-pub fn release_hold(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
+pub fn release_hold(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    unavi_space::state::entities::release_hold(DocId(bytes));
+    api.view.release_hold(DocId(bytes));
     Ok(())
 }
 

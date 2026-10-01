@@ -30,7 +30,6 @@ use unavi_policy::{
     registry::Policy,
     space::Space,
 };
-use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     quota::Viewer,
@@ -485,7 +484,8 @@ fn doc_state(world: &mut World, doc: DocId) -> Option<Arc<Mutex<HsdState>>> {
 pub fn revert_session(view: &SpaceView, peer: EndpointId) -> usize {
     let restored = view.replicas().revert_writes(peer);
     let touched = restored.len();
-    let _ = AsyncCommands::default()
+    let _ = view
+        .commands()
         .push(move |world: &mut World| {
             for one in restored {
                 restore_session(world, one);
@@ -508,9 +508,7 @@ fn restore_session(world: &mut World, restored: Restored) {
     // rather than written over: an older write is refused, and rightly.
     state.clear_session(restored.key.prim, &restored.key.name);
     if let Standing::Prior { value, at } = restored.standing {
-        let bytes = value
-            .map(|bytes| Value::Attribute(bytes.into()).encode())
-            .unwrap_or_default();
+        let bytes = value.map_or_default(|bytes| Value::Attribute(bytes.into()).encode());
         if let Err(err) = state.apply_session(&Entry::new(
             key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
             bytes,
@@ -545,8 +543,7 @@ fn compose_session(world: &mut World, doc: DocId, writes: &[(SessionWrite, PropN
         let value = write
             .value
             .as_ref()
-            .map(|bytes| Value::Attribute(bytes.clone().into()).encode())
-            .unwrap_or_default();
+            .map_or_default(|bytes| Value::Attribute(bytes.clone().into()).encode());
         if let Err(err) = state.apply_session(&Entry::new(
             key::Key::prop(write.prim, name).to_string(),
             value,
@@ -562,7 +559,7 @@ impl SpaceView {
     pub async fn self_pin(&self, space: DocId, doc: DocId) -> bool {
         let me = self.me();
         let at = clock::current_micros();
-        AsyncCommands::default()
+        self.commands()
             .send_with(move |world: &mut World| {
                 let peer_ent = local_peer_entity(world);
                 spawn_pin(world, peer_ent, me, doc, space, at, true)
@@ -574,7 +571,8 @@ impl SpaceView {
     pub fn take_hold(&self, space: DocId, doc: DocId) {
         let me = self.me();
         let at = clock::current_micros();
-        let _ = AsyncCommands::default()
+        let _ = self
+            .commands()
             .push(move |world: &mut World| {
                 let peer_ent = local_peer_entity(world);
                 spawn_hold(world, peer_ent, me, doc, space, at, true);
@@ -587,6 +585,18 @@ impl SpaceView {
     ///
     /// A write with no value blocks its key: the property is gone for this
     /// session rather than holding a value.
+    /// Drops this peer's hold on `doc`.
+    pub fn release_hold(&self, doc: DocId) {
+        let _ = self
+            .commands()
+            .push(move |world: &mut World| {
+                if let Some(peer_ent) = entity_by::<LocalPeer, _>(world, |_| true) {
+                    clear_hold(world, peer_ent, doc);
+                }
+            })
+            .try_send();
+    }
+
     pub async fn set_session(
         &self,
         space: DocId,
@@ -595,7 +605,7 @@ impl SpaceView {
     ) -> Result<(), SessionError> {
         let me = self.me();
         let at = clock::current_micros();
-        AsyncCommands::default()
+        self.commands()
             .send_with(move |world: &mut World| {
                 set_session(world, me, doc, space, writes, at, true)
             })
@@ -604,20 +614,11 @@ impl SpaceView {
     }
 }
 
-pub fn release_hold(doc: DocId) {
-    let _ = AsyncCommands::default()
-        .push(move |world: &mut World| {
-            if let Some(peer_ent) = entity_by::<LocalPeer, _>(world, |_| true) {
-                clear_hold(world, peer_ent, doc);
-            }
-        })
-        .try_send();
-}
-
 /// Applies a remote peer's delta under `peer_ent`. Called per message from the
-/// network recv task; runs in the ECS via [`AsyncCommands`].
-pub fn apply_remote(peer_ent: Entity, peer: EndpointId, msg: StateMsg) {
-    if AsyncCommands::default()
+/// network recv task; runs in the ECS via [`bevy_async::AsyncCommands`].
+pub fn apply_remote(view: &SpaceView, peer_ent: Entity, peer: EndpointId, msg: StateMsg) {
+    if view
+        .commands()
         .push(move |world: &mut World| apply_in_world(world, peer_ent, peer, msg))
         .try_send()
         .is_err()
@@ -631,8 +632,7 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
         StateMsg::Snapshot(snaps) => {
             let existing = world
                 .get::<PeerStates>(peer_ent)
-                .map(|s| s.iter().collect::<Vec<_>>())
-                .unwrap_or_default();
+                .map_or_default(|s| s.iter().collect::<Vec<_>>());
             for e in existing {
                 world.despawn(e);
             }

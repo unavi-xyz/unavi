@@ -14,7 +14,7 @@ use unavi_identity::{
         SignedBytes,
     },
 };
-use wds::Store;
+use unavi_store::Store;
 use xdid::resolver::DidResolver;
 
 use crate::{

@@ -4,7 +4,7 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use unavi_util::async_task::spawn_async_task;
+use bevy_async::task;
 
 use super::instantiate::ScriptGuest;
 use crate::{
@@ -22,7 +22,7 @@ pub fn update_scripts(to_update: Query<(&FixedUpdating, &ScriptGuest), With<Init
         let updating = Arc::clone(&updating.0);
         let guest = Arc::clone(&guest.0);
 
-        spawn_async_task(async move {
+        task::spawn(async move {
             guest.update().await;
             updating.store(false, Ordering::SeqCst);
         });

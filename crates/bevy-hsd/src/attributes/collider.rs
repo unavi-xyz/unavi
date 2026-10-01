@@ -18,11 +18,13 @@ use unavi_physics::{
     },
     shape,
 };
-use unavi_util::hierarchy::global_transform;
 
-use crate::attributes::{
-    buffer::cast_buffer,
-    update_data,
+use crate::{
+    attributes::{
+        buffer::cast_buffer,
+        update_data,
+    },
+    hierarchy::global_transform,
 };
 
 /// Assembled from the `collider/kind`, `collider/vertices` and

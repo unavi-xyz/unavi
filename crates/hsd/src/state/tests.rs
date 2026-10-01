@@ -125,17 +125,15 @@ fn document(state: &HsdState) -> BTreeMap<String, Vec<u8>> {
             let (name, value) = match opinion {
                 OpinionKey::Parent => (
                     ParentAttr::NAME,
-                    opinions
-                        .parent()
-                        .map(|(opinion, _)| ParentAttr::to_wire(opinion.value().copied()))
-                        .unwrap_or_default(),
+                    opinions.parent().map_or_default(|(opinion, _)| {
+                        ParentAttr::to_wire(opinion.value().copied())
+                    }),
                 ),
                 OpinionKey::Property(name) => {
                     let value = opinions
                         .property(&name)
                         .and_then(Opinion::value)
-                        .map(Value::encode)
-                        .unwrap_or_default();
+                        .map_or_default(Value::encode);
                     (name, value)
                 }
             };

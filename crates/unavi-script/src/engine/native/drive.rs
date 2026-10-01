@@ -13,7 +13,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use unavi_util::async_commands::pump_async_commands;
+use bevy_async::commands::pump;
 
 const BUDGET_MAX: Duration = Duration::from_millis(5);
 const BUDGET_MIN: Duration = Duration::from_millis(1);
@@ -25,7 +25,7 @@ const FRAME_MAX: Duration = Duration::from_millis(33);
 /// remaining budget is consumed.
 pub fn script_budget(time: &Time<Real>) -> Duration {
     let target = time.delta().clamp(FRAME_MIN, FRAME_MAX);
-    let elapsed = time.last_update().map(|t| t.elapsed()).unwrap_or_default();
+    let elapsed = time.last_update().map_or_default(|t| t.elapsed());
     budget(target, elapsed)
 }
 
@@ -45,13 +45,13 @@ pub fn wait_for_scripts(world: &mut World, outstanding: &Arc<AtomicUsize>, budge
     }
     let deadline = Instant::now() + budget;
     while outstanding.load(Ordering::Acquire) > 0 {
-        pump_async_commands(world, deadline);
+        pump(world, deadline);
         if outstanding.load(Ordering::Acquire) == 0 || Instant::now() >= deadline {
             break;
         }
         std::thread::yield_now();
     }
-    pump_async_commands(world, deadline);
+    pump(world, deadline);
 }
 
 #[cfg(test)]

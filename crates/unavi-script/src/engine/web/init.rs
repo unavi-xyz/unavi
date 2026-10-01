@@ -4,7 +4,7 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use unavi_util::async_task::spawn_async_task;
+use bevy_async::task;
 
 use super::instantiate::ScriptGuest;
 use crate::engine::InitializedScript;
@@ -23,7 +23,7 @@ pub fn init_scripts(
         let guest = Arc::clone(&guest.0);
         let done = Arc::clone(&cell);
 
-        spawn_async_task(async move {
+        task::spawn(async move {
             guest.init().await;
             *done.lock().expect("mutex poisoned") = Some(());
         });

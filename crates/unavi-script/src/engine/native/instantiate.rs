@@ -23,8 +23,8 @@ use tracing::{
 };
 use unavi_policy::quota::Quota;
 use unavi_space::{
+    authority::SpaceView,
     identity::RootDocument,
-    view::SpaceView,
 };
 use wasmtime::{
     Store,
@@ -104,7 +104,6 @@ pub fn instantiate_scripts(
     let Some(view) = view else {
         return;
     };
-    let viewer = view.viewer();
     let root_doc = root.map(|root| root.0);
 
     for (entity, script, engine_ent, name, prim, doc_ent) in to_instantiate {
@@ -136,12 +135,7 @@ pub fn instantiate_scripts(
         let quota = if exempt {
             Quota::unlimited()
         } else {
-            unavi_space::quota::document_quota(
-                view.policy(),
-                view.replicas(),
-                Some(viewer),
-                doc_id.0,
-            )
+            view.document_quota(doc_id.0)
         };
 
         let state = Runtime {

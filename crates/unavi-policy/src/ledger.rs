@@ -57,6 +57,8 @@ enum Principal {
     Document(DocId),
     Peer(PeerKey),
     Space(DocId),
+    /// Documents with neither an author nor a space.
+    Unattributed,
 }
 
 /// Every document's record and quota, keyed by document id. One value per
@@ -180,6 +182,15 @@ impl Policy {
         docs.get(&doc)
             .and_then(|record| record.space)
             .or_else(|| docs.get(&root).and_then(|record| record.space))
+    }
+
+    /// The budget shared by every document with neither a known author nor a
+    /// space, sized for an anonymous peer.
+    #[must_use]
+    pub fn unattributed_quota(&self) -> Arc<Quota> {
+        self.quota(Principal::Unattributed, || {
+            Limits::for_trust(crate::trust::Trust::Anonymous)
+        })
     }
 
     #[must_use]

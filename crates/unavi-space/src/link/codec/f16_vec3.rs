@@ -1,0 +1,128 @@
+//! Half-precision vectors, for deltas against a keyframe.
+
+use bevy::math::Vec3;
+use half::f16;
+use postcard::experimental::max_size::MaxSize;
+use serde::{
+    Deserialize,
+    Serialize,
+};
+
+use super::f32_vec3::F32Vec3;
+
+/// Delta position with f16 precision (6 bytes).
+/// Range: ±65504, Precision: ~0.1% relative.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]
+pub struct F16Vec3 {
+    pub x: f16,
+    pub y: f16,
+    pub z: f16,
+}
+
+impl MaxSize for F16Vec3 {
+    const POSTCARD_MAX_SIZE: usize = 6;
+}
+
+impl F16Vec3 {
+    #[must_use]
+    pub fn from_delta(current: F32Vec3, baseline: F32Vec3) -> Self {
+        Self {
+            x: f16::from_f32(current.x - baseline.x),
+            y: f16::from_f32(current.y - baseline.y),
+            z: f16::from_f32(current.z - baseline.z),
+        }
+    }
+
+    #[must_use]
+    pub fn apply_to(self, baseline: F32Vec3) -> F32Vec3 {
+        F32Vec3 {
+            x: baseline.x + self.x.to_f32(),
+            y: baseline.y + self.y.to_f32(),
+            z: baseline.z + self.z.to_f32(),
+        }
+    }
+}
+
+impl From<Vec3> for F16Vec3 {
+    fn from(v: Vec3) -> Self {
+        Self {
+            x: f16::from_f32(v.x),
+            y: f16::from_f32(v.y),
+            z: f16::from_f32(v.z),
+        }
+    }
+}
+
+impl From<F16Vec3> for Vec3 {
+    fn from(v: F16Vec3) -> Self {
+        Self::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn error(a: F32Vec3, b: F32Vec3) -> f32 {
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let dz = a.z - b.z;
+        dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt()
+    }
+
+    /// f16 has relative precision, so the acceptable roundtrip error grows
+    /// with delta magnitude; walk small/medium/large deltas against the error
+    /// bound each should stay under.
+    #[test]
+    fn delta_roundtrip_error_scales_with_magnitude() {
+        let baseline = F32Vec3 {
+            x: 10.0,
+            y: 5.0,
+            z: 3.0,
+        };
+        let cases = [
+            (
+                F32Vec3 {
+                    x: 10.1,
+                    y: 5.2,
+                    z: 3.05,
+                },
+                0.001,
+            ),
+            (
+                F32Vec3 {
+                    x: 11.0,
+                    y: 4.5,
+                    z: 3.25,
+                },
+                0.01,
+            ),
+            (
+                F32Vec3 {
+                    x: 110.0,
+                    y: -45.0,
+                    z: 78.0,
+                },
+                0.2,
+            ),
+        ];
+
+        for (current, max_error) in cases {
+            let pos = F16Vec3::from_delta(current, baseline);
+            let restored = pos.apply_to(baseline);
+            let err = error(current, restored);
+            assert!(
+                err < max_error,
+                "delta {current:?}: error {err} >= {max_error}"
+            );
+        }
+    }
+
+    #[test]
+    fn absolute_roundtrip() {
+        let original = Vec3::new(0.12, -0.03, 0.45);
+        let packed = F16Vec3::from(original);
+        let restored = Vec3::from(packed);
+        assert!((original - restored).length() < 0.001);
+    }
+}

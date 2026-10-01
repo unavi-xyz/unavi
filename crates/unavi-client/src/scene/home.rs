@@ -36,7 +36,7 @@ pub fn join_startup_space(
     match NamespaceId::from_str(raw) {
         Ok(ns) => {
             info!(%ns, "Joining space");
-            commands.spawn(Space(ns));
+            commands.spawn(Space(ns.into()));
         }
         Err(err) => {
             error!(?err, raw, "Invalid --join namespace, falling back to home");
@@ -67,7 +67,7 @@ pub fn enter_home(
 
     commands
         .entity(trigger.entity)
-        .insert(Space(ns))
+        .insert(Space(ns.into()))
         .remove::<JoiningHome>();
 
     if let (Some(root), Some(store)) = (root, store) {

@@ -41,7 +41,7 @@ fn app() -> App {
     // would fight real gravity on a falling body.
     .insert_resource(Gravity(Vec3::ZERO))
     .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP))
-    .init_resource::<unavi_space::state::replicas::Replicas>();
+    .init_resource::<unavi_space::replication::Replicas>();
     app.finish();
     app.cleanup();
     app

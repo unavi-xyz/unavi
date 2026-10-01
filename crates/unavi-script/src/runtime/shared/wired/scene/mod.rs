@@ -10,6 +10,7 @@ use bevy_hsd::{
         Hsd,
         HsdDocId,
         HsdNamespace,
+        Minted,
         Unplaced,
     },
     reference::ReferenceInstance,
@@ -32,8 +33,11 @@ use unavi_policy::quota::{
     Stock,
 };
 use unavi_space::{
-    anchor::ActiveSpace,
-    membership::Space,
+    grid::ActiveSpace,
+    membership::{
+        Space,
+        SpaceId,
+    },
 };
 use unavi_store::Document;
 
@@ -197,6 +201,7 @@ async fn spawn_child_doc(
             Unplaced,
             HsdDocId(id),
             HsdNamespace(doc),
+            Minted,
             QuotaLeases(vec![doc_lease]),
         ))
         .send()
@@ -205,8 +210,10 @@ async fn spawn_child_doc(
 
     // A script's child is only self-owned once it is pinned into a space; the
     // space layer resolves its documents through the pin, not the host chain.
-    if let Some(space) = space {
-        api.view.self_pin(space, id).await;
+    if let Some(space) = space
+        && let Err(err) = api.view.local().pin(SpaceId::of_doc(space), id).await
+    {
+        warn!(?err, %id, "failed to pin a script-minted document");
     }
     Ok(())
 }

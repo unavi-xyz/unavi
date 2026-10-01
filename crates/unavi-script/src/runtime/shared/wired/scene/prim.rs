@@ -88,7 +88,7 @@ use hsd::{
 };
 use unavi_physics::finite;
 use unavi_policy::quota::Flow;
-use unavi_space::state::message::SessionWrite;
+use unavi_space::replication::message::SessionWrite;
 
 use crate::{
     error::ScriptError,
@@ -488,6 +488,7 @@ pub async fn set_session(
 
     Ok(api
         .view
+        .local()
         .set_session(space, prim.doc_id, writes)
         .await
         .map_err(Into::into))
@@ -1146,6 +1147,7 @@ pub async fn set_session_destination(
 
     Ok(api
         .view
+        .local()
         .set_session(
             space,
             prim.doc_id,

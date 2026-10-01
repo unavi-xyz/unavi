@@ -13,17 +13,19 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::loaded::HsdLoaded;
-use iroh_docs::NamespaceId;
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
 use unavi_space::{
-    anchor::{
+    grid::{
         ActiveSpace,
         SPACE_CELL_SIZE,
     },
-    membership::Space,
+    membership::{
+        Space,
+        SpaceId,
+    },
 };
 
 use crate::scene::{
@@ -127,7 +129,7 @@ pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) 
 pub struct LimboArrival {
     /// Namespace being travelled to. `None` takes whichever space loads first,
     /// which is how the startup entry into home arrives.
-    pub target: Option<NamespaceId>,
+    pub target: Option<SpaceId>,
     timeout:    Duration,
     ready:      Option<Arrival>,
 }
@@ -240,8 +242,9 @@ pub fn enter_space(
 #[cfg(test)]
 mod tests {
     use bevy::state::app::StatesPlugin;
+    use iroh_docs::NamespaceId;
     use unavi_space::{
-        anchor::ActiveSpace,
+        grid::ActiveSpace,
         travel::PendingTravel,
     };
 
@@ -300,11 +303,11 @@ mod tests {
     }
 
     fn travel_to(app: &mut App, target: NamespaceId) {
-        app.world_mut().resource_mut::<PendingTravel>().0 = Some(target);
+        app.world_mut().resource_mut::<PendingTravel>().0 = Some(target.into());
     }
 
     fn enter(app: &mut App, ns: NamespaceId) -> Entity {
-        let space = app.world_mut().spawn((Space(ns), HsdLoaded)).id();
+        let space = app.world_mut().spawn((Space(ns.into()), HsdLoaded)).id();
         app.world_mut().resource_mut::<ActiveSpace>().0 = Some(space);
         app.update();
         advance(app, SPACE_LOAD_DELAY);
@@ -320,7 +323,10 @@ mod tests {
         let start = enter(&mut app, namespace(1));
 
         let target_ns = namespace(2);
-        let target = app.world_mut().spawn((Space(target_ns), HsdLoaded)).id();
+        let target = app
+            .world_mut()
+            .spawn((Space(target_ns.into()), HsdLoaded))
+            .id();
 
         travel_to(&mut app, target_ns);
         app.update();
@@ -341,9 +347,12 @@ mod tests {
         let mut app = setup();
         enter(&mut app, namespace(1));
 
-        let bystander = app.world_mut().spawn((Space(namespace(3)), HsdLoaded)).id();
+        let bystander = app
+            .world_mut()
+            .spawn((Space(namespace(3).into()), HsdLoaded))
+            .id();
         let target_ns = namespace(2);
-        let target = app.world_mut().spawn(Space(target_ns)).id();
+        let target = app.world_mut().spawn(Space(target_ns.into())).id();
 
         travel_to(&mut app, target_ns);
         app.update();
@@ -388,7 +397,7 @@ mod tests {
             .world_mut()
             .query::<(Entity, &Space)>()
             .iter(app.world())
-            .find_map(|(entity, space)| (space.0 == ns).then_some(entity))
+            .find_map(|(entity, space)| (space.0 == ns.into()).then_some(entity))
             .expect("space read back fresh");
 
         app.world_mut().entity_mut(reloaded).insert(HsdLoaded);
@@ -406,7 +415,10 @@ mod tests {
         enter(&mut app, namespace(1));
 
         let target_ns = namespace(2);
-        let target = app.world_mut().spawn((Space(target_ns), HsdLoaded)).id();
+        let target = app
+            .world_mut()
+            .spawn((Space(target_ns.into()), HsdLoaded))
+            .id();
 
         travel_to(&mut app, target_ns);
         app.update();

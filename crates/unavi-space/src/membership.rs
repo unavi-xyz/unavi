@@ -16,7 +16,17 @@ use bevy_hsd::{
 };
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use unavi_policy::Policy;
+
+use crate::index::{
+    self,
+    Index,
+    Indexed,
+};
 
 /// Keeps space membership and document hosts recorded in [`Policy`].
 pub struct MembershipPlugin;
@@ -24,6 +34,7 @@ pub struct MembershipPlugin;
 impl Plugin for MembershipPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Policy>()
+            .init_resource::<Index<Space>>()
             .add_observer(register_document)
             .add_observer(forget_document)
             .add_observer(register_space)
@@ -34,16 +45,77 @@ impl Plugin for MembershipPlugin {
     }
 }
 
-/// A loaded space, rooted at its own document.
-#[derive(Component)]
-#[require(Transform, Visibility)]
-pub struct Space(pub NamespaceId);
+/// A space's id: the namespace of its own document.
+///
+/// Distinct from [`DocId`] and [`NamespaceId`] so a document id is never
+/// passed where a space is meant.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, Serialize, Deserialize)]
+pub struct SpaceId(pub [u8; 32]);
 
-impl Space {
+impl SpaceId {
+    /// The space whose own document is `doc`.
+    #[must_use]
+    pub const fn of_doc(doc: DocId) -> Self {
+        Self(doc.0)
+    }
+
+    #[must_use]
+    pub fn namespace(self) -> NamespaceId {
+        NamespaceId::from(&self.0)
+    }
+
     /// The space's own document.
     #[must_use]
-    pub fn doc_id(&self) -> DocId {
-        DocId(*self.0.as_bytes())
+    pub const fn doc(self) -> DocId {
+        DocId(self.0)
+    }
+}
+
+impl From<NamespaceId> for SpaceId {
+    fn from(ns: NamespaceId) -> Self {
+        Self(*ns.as_bytes())
+    }
+}
+
+impl std::fmt::Display for SpaceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.namespace().fmt(f)
+    }
+}
+
+/// A loaded space, rooted at its own document.
+#[derive(Component)]
+#[component(
+    immutable,
+    on_insert = index::insert::<Self>,
+    on_discard = index::discard::<Self>
+)]
+#[require(Transform, Visibility)]
+pub struct Space(pub SpaceId);
+
+impl Space {
+    #[must_use]
+    pub const fn id(&self) -> SpaceId {
+        self.0
+    }
+
+    #[must_use]
+    pub fn namespace(&self) -> NamespaceId {
+        self.0.namespace()
+    }
+
+    /// The space's own document.
+    #[must_use]
+    pub const fn doc_id(&self) -> DocId {
+        self.0.doc()
+    }
+}
+
+impl Indexed for Space {
+    type Key = SpaceId;
+
+    fn key(&self) -> SpaceId {
+        self.0
     }
 }
 
@@ -81,7 +153,7 @@ pub fn parent_docs_under_space(
         ),
     >,
     prims: Query<&PrimOf>,
-    spaces: Query<(Entity, &HsdDocId), With<Space>>,
+    spaces: Res<Index<Space>>,
     is_space: Query<(), With<Space>>,
     owners: Query<&SpaceOwner>,
     policy: Res<Policy>,
@@ -105,10 +177,7 @@ pub fn parent_docs_under_space(
         let Some(space_id) = policy.get(doc_record.0).space else {
             continue;
         };
-        let Some(space_entity) = spaces
-            .iter()
-            .find_map(|(e, r)| (r.0 == space_id).then_some(e))
-        else {
+        let Some(space_entity) = spaces.get(SpaceId::of_doc(space_id)) else {
             continue;
         };
         commands
@@ -229,7 +298,7 @@ mod tests {
         app.update();
         assert!(app.world().get::<SpaceOwner>(child).is_none());
 
-        app.world_mut().entity_mut(host).insert(Space(ns));
+        app.world_mut().entity_mut(host).insert(Space(ns.into()));
         app.update();
 
         assert_eq!(
@@ -248,7 +317,7 @@ mod tests {
         let ns = NamespaceId::from(blake3::hash(b"granted").as_bytes());
         let id = DocId(*ns.as_bytes());
         app.world_mut()
-            .spawn((Hsd::new(HsdState::new()), HsdDocId(id), Space(ns)));
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(id), Space(ns.into())));
         app.update();
 
         assert_eq!(policy.get(id).space, Some(id));
@@ -263,7 +332,7 @@ mod tests {
             .world_mut()
             .spawn((Hsd::new(HsdState::new()), HsdDocId(DocId(*ns.as_bytes()))))
             .id();
-        app.world_mut().entity_mut(space).insert(Space(ns));
+        app.world_mut().entity_mut(space).insert(Space(ns.into()));
 
         let doc = app.world_mut().spawn(SpaceOwner(space)).id();
 

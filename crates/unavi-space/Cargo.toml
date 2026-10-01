@@ -9,9 +9,6 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-devtools = ["dep:unavi-devtools"]
-
 [dependencies]
 anyhow.workspace        = true
 async-channel.workspace = true
@@ -38,7 +35,6 @@ tokio.workspace         = true
 tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-avatar.path       = "../unavi-avatar"
-unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-identity.path     = "../unavi-identity"
 unavi-local.path        = "../unavi-local"
 unavi-policy.path       = "../unavi-policy"

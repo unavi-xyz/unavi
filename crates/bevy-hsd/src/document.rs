@@ -52,6 +52,11 @@ pub struct HsdDocId(pub DocId);
 #[derive(Component, Debug, Clone)]
 pub struct HsdNamespace(pub Document);
 
+/// A namespace-backed document this node minted, and so authors. Set only by
+/// the code that created the namespace, alongside its [`HsdDocId`].
+#[derive(Component, Debug, Clone, Copy)]
+pub struct Minted;
+
 /// Endpoints a document syncs from, inherited by every reference it opens.
 /// Absent on a locally created document.
 #[derive(Component, Debug, Clone, Default)]

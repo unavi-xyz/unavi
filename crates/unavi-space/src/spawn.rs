@@ -1,3 +1,5 @@
+//! Choosing where in a space the local agent appears.
+
 use bevy::prelude::*;
 use bevy_hsd::{
     attributes::spawn::SpawnPoint,

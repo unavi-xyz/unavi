@@ -32,6 +32,7 @@ use crate::document::{
     Hsd,
     HsdDocId,
     HsdNamespace,
+    Minted,
 };
 
 /// A compiled `.hsdz` package.
@@ -166,6 +167,7 @@ async fn try_import_package(
                     Hsd::new(HsdState::new()),
                     HsdDocId(DocId(*namespace.as_bytes())),
                     HsdNamespace(doc),
+                    Minted,
                 ));
             }
         })

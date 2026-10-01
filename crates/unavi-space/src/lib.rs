@@ -1,3 +1,10 @@
+//! Multiplayer for spaces: finding peers, the `wired/space/1` link, and the
+//! pin/hold/session state replicated over it.
+//!
+//! Who may state what is decided by authorship: a document's author is the
+//! DID holding its namespace write key, and only it pins the document, holds
+//! it by default, and writes its session state.
+
 use std::time::Duration;
 
 use bevy::{
@@ -11,24 +18,22 @@ use unavi_portal::{
     transition::apply_seam_crossings,
 };
 
-pub mod anchor;
-mod connection;
-#[cfg(feature = "devtools")] mod devtools;
-mod gossip;
+pub mod authority;
+pub mod avatar_sync;
+pub mod discovery;
+pub mod grid;
 pub mod identity;
-pub mod inbox;
+pub mod index;
+pub mod link;
 pub mod membership;
-pub mod peer;
-mod portal;
-mod portal_bridge;
-mod presence;
-pub mod quota;
+pub mod moderation;
+pub mod object_sync;
+pub mod pinned;
+pub mod portal;
+pub mod replication;
 mod scene;
 pub mod spawn;
-pub mod state;
 pub mod travel;
-pub mod trust;
-pub mod view;
 
 pub struct SpacePlugin {
     /// Where the trust table persists. `None` leaves blocks effective for the
@@ -36,13 +41,10 @@ pub struct SpacePlugin {
     pub storage: Option<unavi_local::DeviceStorage>,
 }
 
-const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
+const SEND_INTERVAL_UPDATE: Duration = Duration::from_secs(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(feature = "devtools")]
-        app.add_plugins(devtools::SpaceDevToolsPlugin);
-
         if !app.is_plugin_added::<membership::MembershipPlugin>() {
             app.add_plugins(membership::MembershipPlugin);
         }
@@ -57,34 +59,35 @@ impl Plugin for SpacePlugin {
         });
         app.insert_resource(trust);
 
-        app.init_resource::<anchor::SpaceGridAllocator>()
-            .init_resource::<anchor::ActiveSpace>()
+        replication::guards::init_indexes(app.world_mut());
+        app.init_resource::<index::Index<discovery::Peer>>()
+            .init_resource::<index::Index<avatar_sync::RemoteAgent>>()
+            .init_resource::<grid::SpaceGrid>()
+            .init_resource::<grid::ActiveSpace>()
             .init_resource::<travel::PendingTravel>()
-            .init_resource::<state::replicas::Replicas>()
-            .init_resource::<peer::presence::PresenceInbox>()
-            .init_resource::<gossip::ActiveSpaceSignal>()
-            .add_observer(anchor::assign_anchor)
-            .add_observer(quota::registry::reassign_doc_quota)
-            .add_observer(quota::registry::forget_space_quota)
-            .add_observer(quota::registry::forget_peer_quota)
-            .add_observer(anchor::reparent_doc_traveler)
-            .add_observer(anchor::promote_first_space)
-            .add_observer(anchor::release_anchor)
-            .add_observer(connection::connect_to_peer)
-            .add_observer(connection::disconnect_peer)
-            .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
-            .add_observer(connection::register_protocol)
-            .add_observer(gossip::leave_space_topic)
-            .add_observer(gossip::spawn_gossip)
+            .init_resource::<replication::Replicas>()
+            .init_resource::<discovery::HeardPresence>()
+            .init_resource::<discovery::PeerPresence>()
+            .init_resource::<discovery::gossip::ActiveSpaceSignal>()
+            .add_observer(index::index_document)
+            .add_observer(index::unindex_document)
+            .add_observer(grid::assign_anchor)
+            .add_observer(grid::promote_first_space)
+            .add_observer(grid::release_anchor)
+            .add_observer(authority::reassign_doc_quota)
+            .add_observer(authority::forget_peer_quota)
+            .add_observer(authority::record_minted)
+            .add_observer(authority::forget_minted)
+            .add_observer(link::register_protocol)
+            .add_observer(link::disconnect_peer)
+            .add_observer(discovery::gossip::leave_space_topic)
             .add_observer(portal::spawn_portal_space)
-            .add_observer(portal_bridge::sync_portal_config)
-            .add_observer(portal_bridge::clear_portal_config)
             .add_observer(scene::despawn_space_scene)
-            .add_observer(scene::pinned_docs::adopt_tracked_docs)
             .add_observer(scene::spawn_space_scene)
+            .add_observer(pinned::adopt_pinned_docs)
             .add_systems(
                 PostUpdate,
-                (anchor::recenter_active_space, anchor::apply_anchor_offsets)
+                (grid::recenter_active_space, grid::apply_anchor_offsets)
                     .chain()
                     .after(apply_seam_crossings)
                     .before(maintain_seam_echoes)
@@ -92,45 +95,45 @@ impl Plugin for SpacePlugin {
             )
             .add_systems(
                 PostUpdate,
-                connection::ecs::agent::inbound::apply_remote_bones
+                avatar_sync::receive::apply_remote_bones
                     .after(AnimationSystems)
                     .before(TransformSystems::Propagate),
             )
             .add_systems(
                 FixedUpdate,
                 (
-                    presence::publish_presence,
-                    connection::ecs::agent::outbound::send_agent_pose,
-                    connection::ecs::object::send_object_poses,
-                    connection::ecs::object::reconcile_object_holds,
+                    (discovery::track_peers, link::dial::dial_peers).chain(),
+                    discovery::publish_blob_providers,
+                    discovery::registry::announce_presence,
+                    discovery::gossip::adopt_gossip,
+                    discovery::gossip::join_space_topics,
+                    avatar_sync::send::send_agent_pose,
+                    avatar_sync::send::set_agent_intervals.run_if(on_timer(SEND_INTERVAL_UPDATE)),
+                    object_sync::systems::send_object_poses,
+                    object_sync::systems::reconcile_object_holds,
                     (
-                        connection::ecs::object::apply_remote_objects,
-                        connection::ecs::object::advance_object_interp,
+                        object_sync::systems::apply_remote_objects,
+                        object_sync::systems::advance_object_interp,
                     )
                         .chain(),
-                    gossip::adopt_gossip,
-                    gossip::join_space_topics,
-                    connection::ecs::agent::outbound::set_agent_tickrates
-                        .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
-                    peer::presence::manage_peers,
-                    peer::publish_blob_providers,
+                    portal::enter_peeked_space,
                     scene::start_space_fetch,
-                    scene::instantiate_pending_scenes,
-                    scene::pinned_docs::fetch_tracked_docs,
-                    scene::pinned_docs::instantiate_tracked_docs,
-                    scene::pinned_docs::prune_tracked_docs,
+                    scene::instance_pending_scenes,
+                    pinned::fetch_pinned_docs,
+                    pinned::instance_pinned_docs,
+                    pinned::prune_pinned_docs,
                 ),
             )
             .add_systems(
                 Update,
-                portal_bridge::sync_seam_home.before(unavi_portal::resolver::resolve_seams),
+                portal::sync_seam_home.before(unavi_portal::resolver::resolve_seams),
             )
             .add_systems(
                 Update,
                 (
-                    gossip::publish_active_space,
-                    connection::ecs::agent::inbound::apply_remote_poses,
-                    connection::ecs::agent::inbound::advance_remote_lerp,
+                    discovery::gossip::publish_active_space,
+                    avatar_sync::receive::apply_remote_poses,
+                    avatar_sync::receive::advance_remote_lerp,
                 )
                     .chain(),
             );

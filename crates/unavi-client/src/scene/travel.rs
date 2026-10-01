@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use unavi_space::{
-    anchor::ActiveSpace,
+    grid::ActiveSpace,
     membership::Space,
     travel::PendingTravel,
 };

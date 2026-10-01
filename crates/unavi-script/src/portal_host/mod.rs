@@ -17,7 +17,7 @@ use unavi_portal_protocol::{
     INTENT_CHANNEL,
     LinkIntent,
 };
-use unavi_space::view::SpaceView;
+use unavi_space::authority::SpaceView;
 
 use crate::{
     engine::InitializedScript,
@@ -91,7 +91,7 @@ pub fn emit_link_intents(
             let dest = cfg.0.destination?;
             let (_, doc) = docs.get(child.0).ok()?;
             Some(LinkedPortal {
-                home:   view.space_of(doc.0)?,
+                home:   view.space_of(doc.0)?.doc(),
                 target: DocId(dest.space),
                 link:   dest.link?,
             })
@@ -107,7 +107,7 @@ pub fn emit_link_intents(
         .filter_map(|(_, doc)| {
             Some(IntentReceiver {
                 doc:   doc.0,
-                space: view.space_of(doc.0)?,
+                space: view.space_of(doc.0)?.doc(),
             })
         })
         .collect::<Vec<_>>();

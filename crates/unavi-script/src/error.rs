@@ -9,7 +9,7 @@ use unavi_policy::{
         Stock,
     },
 };
-use unavi_space::state::cell::SessionError;
+use unavi_space::replication::cell::SessionError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
 ///
@@ -56,7 +56,7 @@ impl From<SessionError> for ScriptError {
         match err {
             SessionError::QuotaExceeded => Self::QuotaStock(Stock::SessionMemory),
             SessionError::NotOwner => Self::NotOwner,
-            SessionError::BadName | SessionError::Other => Self::Other(err.to_string()),
+            SessionError::BadName | SessionError::Unavailable => Self::Other(err.to_string()),
         }
     }
 }

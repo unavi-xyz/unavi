@@ -9,7 +9,7 @@ use unavi_agent::{
     LocalAgentEntities,
 };
 use unavi_space::{
-    anchor::ActiveSpace,
+    grid::ActiveSpace,
     membership::Space,
     spawn::pick_spawn,
 };

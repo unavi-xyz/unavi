@@ -9,7 +9,7 @@ pub fn self_peer(api: &Api) -> Option<Vec<u8>> {
 
 #[must_use]
 pub fn self_did(api: &Api) -> Option<String> {
-    Some(api.view.did())
+    Some(api.view.did().to_string())
 }
 
 #[must_use]
@@ -22,9 +22,5 @@ pub fn doc_owner(api: &Api, doc_id: Vec<u8>) -> Option<Vec<u8>> {
 
 #[must_use]
 pub fn is_self_owner(api: &Api) -> bool {
-    let me = api.view.me();
-    let Some(space) = api.view.space_of(api.doc_id) else {
-        return false;
-    };
-    api.view.replicas().is_owner(space, api.doc_id, me)
+    api.view.is_mine(api.doc_id)
 }

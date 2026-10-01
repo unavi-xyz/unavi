@@ -28,10 +28,13 @@ use unavi_input::{
     },
 };
 use unavi_space::{
-    anchor::ActiveSpace,
-    membership::Space,
-    state::replicas::Replicas,
-    view::SpaceView,
+    authority::SpaceView,
+    grid::ActiveSpace,
+    membership::{
+        Space,
+        SpaceId,
+    },
+    replication::Replicas,
 };
 
 pub struct GrabPlugin;
@@ -327,7 +330,7 @@ fn take_doc_hold(
 
     let space_hash = resolve_space(doc_entity, spaces, parents).or_else(|| {
         let active = active_space_entity?;
-        spaces.get(active).ok().map(|s| s.0)
+        spaces.get(active).ok().map(Space::id)
     });
 
     let Some(space_hash) = space_hash else {
@@ -338,7 +341,7 @@ fn take_doc_hold(
         return;
     };
 
-    let (space, doc) = (DocId(*space_hash.as_bytes()), DocId(*doc_hash.as_bytes()));
+    let (space, doc) = (space_hash, DocId(*doc_hash.as_bytes()));
 
     // Only take hold of a doc already tracked in state. An untracked
     // doc is established by the publish path; claiming here would create
@@ -349,7 +352,7 @@ fn take_doc_hold(
     }
 
     info!(doc = %doc_hash, space = %space_hash, "grab: taking hold of the object");
-    view.take_hold(space, doc);
+    view.local().take_hold(space, doc);
 }
 
 fn resolve_doc(
@@ -369,8 +372,8 @@ fn resolve_space(
     doc_entity: Entity,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
-) -> Option<NamespaceId> {
-    ancestors(doc_entity, parents).find_map(|at| spaces.get(at).ok().map(|space| space.0))
+) -> Option<SpaceId> {
+    ancestors(doc_entity, parents).find_map(|at| spaces.get(at).ok().map(Space::id))
 }
 
 fn on_release(
@@ -391,7 +394,7 @@ fn on_release(
             if let Some(view) = &view
                 && let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs)
             {
-                view.release_hold(DocId(*doc_hash.as_bytes()));
+                view.local().release_hold(DocId(*doc_hash.as_bytes()), None);
             }
             commands
                 .entity(entity)

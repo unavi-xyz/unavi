@@ -15,7 +15,7 @@ use unavi_policy::{
     permissions::HostApi,
     quota::Quota,
 };
-use unavi_space::view::SpaceView;
+use unavi_space::authority::SpaceView;
 
 use crate::{
     error::ScriptError,

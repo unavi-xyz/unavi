@@ -11322,6 +11322,7 @@ dependencies = [
  "unavi-registry",
  "unavi-script",
  "unavi-space",
+ "unavi-space-devtools",
  "unavi-store",
  "web-sys",
  "winit",
@@ -11597,7 +11598,6 @@ dependencies = [
  "tracing",
  "unavi-agent",
  "unavi-avatar",
- "unavi-devtools",
  "unavi-identity",
  "unavi-local",
  "unavi-policy",
@@ -11606,6 +11606,21 @@ dependencies = [
  "unavi-store",
  "web-time",
  "xdid",
+]
+
+[[package]]
+name = "unavi-space-devtools"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "bevy-hsd",
+ "blake3",
+ "hsd",
+ "iroh",
+ "iroh-docs",
+ "unavi-devtools",
+ "unavi-policy",
+ "unavi-space",
 ]
 
 [[package]]

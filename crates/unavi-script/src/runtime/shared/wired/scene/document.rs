@@ -37,7 +37,6 @@ use unavi_policy::quota::{
     QuotaError,
     Stock,
 };
-use unavi_space::quota::document_quota;
 
 use crate::runtime::shared::{
     Api,
@@ -160,12 +159,7 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
     crate::quota::acquire(&api.quota, Flow::CreatePrim, 1).await?;
-    let quota = document_quota(
-        api.view.policy(),
-        api.view.replicas(),
-        Some(api.view.viewer()),
-        doc.id,
-    );
+    let quota = api.view.document_quota(doc.id);
     quota.charge(Stock::Prims, 1)?;
 
     let id = doc.with(|state| state.create_prim(None))?;
@@ -237,13 +231,9 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     let removed = before.saturating_sub(state.prims().count()) as u64;
     drop(state);
 
-    document_quota(
-        api.view.policy(),
-        api.view.replicas(),
-        Some(api.view.viewer()),
-        prim.doc_id,
-    )
-    .release(Stock::Prims, removed);
+    api.view
+        .document_quota(prim.doc_id)
+        .release(Stock::Prims, removed);
     Ok(())
 }
 

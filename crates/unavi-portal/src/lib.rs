@@ -31,6 +31,7 @@ use crate::{
 };
 
 pub mod clip;
+pub mod config;
 pub mod develop;
 pub mod echo;
 pub mod horizon;
@@ -112,7 +113,9 @@ impl Plugin for PortalPlugin {
                 material::update_seam_params.after(TransformSystems::Propagate),
             ),
         )
-        .add_observer(transition::carry_momentum);
+        .add_observer(transition::carry_momentum)
+        .add_observer(config::sync_portal_config)
+        .add_observer(config::clear_portal_config);
     }
 }
 

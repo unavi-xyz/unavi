@@ -72,7 +72,7 @@ pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError>
     api.async_world
         .commands()
         .push(move |world: &mut bevy::prelude::World| {
-            unavi_space::travel::request_travel(world, hash);
+            unavi_space::travel::request_travel(world, hash.into());
         })
         .send()
         .await

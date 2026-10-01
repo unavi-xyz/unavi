@@ -25,7 +25,7 @@ pub fn compile(input: &Path) -> anyhow::Result<Package> {
 
 /// The package is bytes on disk before it is state, so the test goes through
 /// the encoding rather than around it.
-pub fn realize(package: &Package) -> HsdState {
+pub fn load_state(package: &Package) -> HsdState {
     let bytes = package.encode().expect("encode");
     let package = Package::decode(&bytes).expect("decode");
 

@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdNamespace,
-    load::LoadHsd,
+    document::HsdNamespace,
+    package::ImportPackage,
 };
 use bevy_iroh::doc::DocSet;
 use iroh_docs::NamespaceId;
@@ -47,7 +47,7 @@ pub fn join_startup_space(
 
 pub fn join_home(asset_server: &AssetServer, commands: &mut Commands) {
     let handle = asset_server.load("hsd/unavi_default_home.hsdz");
-    commands.spawn((LoadHsd { handle }, JoiningHome));
+    commands.spawn((ImportPackage(handle), JoiningHome));
 }
 
 /// Enters a `join_home` entity as [`Space`] once its namespace resolves, and

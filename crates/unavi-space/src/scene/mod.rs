@@ -3,13 +3,15 @@ use std::time::Duration;
 use async_channel::Receiver;
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdDocId,
-    HsdNamespace,
-    HsdSyncPeers,
+    document::{
+        Hsd,
+        HsdDocId,
+        HsdNamespace,
+        SyncPeers,
+    },
     feed::{
         DocFeed,
-        Ready,
+        FeedReady,
     },
 };
 use bevy_iroh::store::{
@@ -75,10 +77,10 @@ pub fn spawn_space_scene(
         return;
     };
 
-    // A locally built space is already realized on this entity; reading it back
-    // would duplicate every prim and re-run every script. It still has to be
-    // served: presence is announced for it, so peers arrive expecting an
-    // answer.
+    // A locally built space is already in the scene on this entity; reading
+    // it back would duplicate every prim and re-run every script. It still
+    // has to be served: presence is announced for it, so peers arrive
+    // expecting an answer.
     if instanced == Some(ns) {
         let store = store.0.clone();
         spawn_async_task(async move {
@@ -151,7 +153,7 @@ pub fn start_space_fetch(
                 store.record_visit(ns).await?;
                 // Subscribed before the sync starts, so it sees every entry the
                 // sync brings.
-                let feed = DocFeed::spawn(doc.clone(), Ready::RemoteSync);
+                let feed = DocFeed::spawn(doc.clone(), FeedReady::RemoteSync);
                 doc.start_sync(peers).await?;
                 anyhow::Ok((doc, feed))
             };
@@ -195,7 +197,7 @@ pub fn instantiate_pending_scenes(
                 Hsd::new(HsdState::new()),
                 HsdDocId(DocId(*space.0.as_bytes())),
                 HsdNamespace(doc),
-                HsdSyncPeers(pending.peers.clone()),
+                SyncPeers(pending.peers.clone()),
                 feed,
             ))
             .try_remove::<PendingScene>();

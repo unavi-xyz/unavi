@@ -6,12 +6,12 @@ use crate::{
     },
 };
 
-/// A change to the realized scene. `Realized` is followed by one `Property`
+/// A change to the scene. `Added` is followed by one `Property`
 /// event per property the prim already holds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SceneEvent {
     /// `parent` is `None` for a root.
-    Realized {
+    Added {
         prim:   PrimId,
         parent: Option<PrimId>,
     },
@@ -19,7 +19,7 @@ pub enum SceneEvent {
         prim:   PrimId,
         parent: Option<PrimId>,
     },
-    Unrealized {
+    Removed {
         prim: PrimId,
     },
     Property {

@@ -13,7 +13,7 @@ use crate::{
     state::{
         HsdState,
         MAX_PRIM_DEPTH,
-        MAX_REALIZED_PRIMS,
+        MAX_SCENE_PRIMS,
         entry::{
             Stamp,
             now_micros,
@@ -32,7 +32,7 @@ enum Placement {
     Root,
     Child(PrimId),
     Held,
-    /// Held only because [`MAX_REALIZED_PRIMS`] is full.
+    /// Held only because [`MAX_SCENE_PRIMS`] is full.
     Capped,
 }
 
@@ -211,7 +211,7 @@ impl HsdState {
         let value = resolved.cloned();
         view.set_property(name, value.clone());
 
-        if self.realized.contains_key(&prim) {
+        if self.in_scene.contains_key(&prim) {
             self.events.push(SceneEvent::Property {
                 prim,
                 name: name.clone(),
@@ -228,12 +228,12 @@ impl HsdState {
         }
     }
 
-    /// Recomputes realization for `root` and its subtree, then re-admits
-    /// [`Self::capped`] prims until [`MAX_REALIZED_PRIMS`] is reached again or
+    /// Recomputes scene membership for `root` and its subtree, then re-admits
+    /// [`Self::capped`] prims until [`MAX_SCENE_PRIMS`] is reached again or
     /// none of them can be placed.
     pub(super) fn refresh(&mut self, root: PrimId) {
         self.refresh_walk(root);
-        while self.realized.len() < MAX_REALIZED_PRIMS {
+        while self.in_scene.len() < MAX_SCENE_PRIMS {
             let Some(&prim) = self.capped.iter().next() else {
                 break;
             };
@@ -241,11 +241,11 @@ impl HsdState {
         }
     }
 
-    /// Descends through every prim that is or was realized, since a move
+    /// Descends through every prim that is or was in the scene, since a move
     /// changes the depth and cycle membership of everything beneath it.
     ///
     /// A cycle through `root` is placed from its breaker down, so every
-    /// member is realized after its parent.
+    /// member enters the scene after its parent.
     fn refresh_walk(&mut self, root: PrimId) {
         let mut seen = HashSet::new();
         let mut walk = Walk::default();
@@ -270,8 +270,8 @@ impl HsdState {
                 continue;
             }
             let placement = self.placement(prim, &mut walk);
-            let was_realized = self.place(prim, placement);
-            if (was_realized || !matches!(placement, Placement::Held | Placement::Capped))
+            let was_in_scene = self.place(prim, placement);
+            if (was_in_scene || !matches!(placement, Placement::Held | Placement::Capped))
                 && let Some(children) = self.children.get(&prim)
             {
                 stack.extend(children.iter().copied());
@@ -279,7 +279,7 @@ impl HsdState {
         }
     }
 
-    /// Answers whether the prim was realized before.
+    /// Answers whether the prim was in the scene before.
     fn place(&mut self, prim: PrimId, placement: Placement) -> bool {
         let parent = match placement {
             Placement::Capped => {
@@ -288,19 +288,19 @@ impl HsdState {
             }
             Placement::Held => {
                 self.capped.remove(&prim);
-                let was_realized = self.realized.remove(&prim).is_some();
-                if was_realized {
-                    self.events.push(SceneEvent::Unrealized { prim });
+                let was_in_scene = self.in_scene.remove(&prim).is_some();
+                if was_in_scene {
+                    self.events.push(SceneEvent::Removed { prim });
                 }
-                return was_realized;
+                return was_in_scene;
             }
             Placement::Root => None,
             Placement::Child(parent) => Some(parent),
         };
         self.capped.remove(&prim);
-        match self.realized.insert(prim, parent) {
+        match self.in_scene.insert(prim, parent) {
             None => {
-                self.events.push(SceneEvent::Realized { prim, parent });
+                self.events.push(SceneEvent::Added { prim, parent });
                 self.emit_contents(prim);
                 false
             }
@@ -313,7 +313,7 @@ impl HsdState {
         }
     }
 
-    /// Emits every property a newly realized prim already holds.
+    /// Emits every property a prim newly added to the scene already holds.
     pub(super) fn emit_contents(&mut self, prim: PrimId) {
         let Some(state) = self.resolved.get(&prim) else {
             return;
@@ -330,8 +330,8 @@ impl HsdState {
     }
 
     /// A parent cycle breaks at its greatest-stamped member, which becomes a
-    /// root. A prim whose chain reaches a root realizes only under a realized
-    /// parent.
+    /// root. A prim whose chain reaches a root enters the scene only under a
+    /// parent that is in the scene.
     fn placement(&self, prim: PrimId, walk: &mut Walk) -> Placement {
         let Some(state) = self.resolved.get(&prim) else {
             return Placement::Held;
@@ -339,7 +339,7 @@ impl HsdState {
         if self.is_refused() {
             return Placement::Held;
         }
-        if self.realized.len() >= MAX_REALIZED_PRIMS && !self.realized.contains_key(&prim) {
+        if self.in_scene.len() >= MAX_SCENE_PRIMS && !self.in_scene.contains_key(&prim) {
             return Placement::Capped;
         }
         let parent = match state.parent {
@@ -362,7 +362,7 @@ impl HsdState {
             walk.depths.insert(prim, 0);
             return Placement::Root;
         }
-        if depth >= MAX_PRIM_DEPTH || !self.realized.contains_key(&parent) {
+        if depth >= MAX_PRIM_DEPTH || !self.in_scene.contains_key(&parent) {
             return Placement::Held;
         }
         walk.depths.insert(prim, depth);

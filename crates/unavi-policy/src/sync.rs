@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
+    document::HsdDocId,
+    prim::PrimOf,
 };
 use hsd::id::DocId;
 
@@ -11,7 +11,7 @@ use crate::registry::Policy;
 pub fn register_document(
     trigger: On<Insert, HsdDocId>,
     docs: Query<(&HsdDocId, Option<&ChildOf>)>,
-    prims: Query<&HsdChild>,
+    prims: Query<&PrimOf>,
     ids: Query<&HsdDocId>,
     policy: Res<Policy>,
 ) {
@@ -30,7 +30,7 @@ pub fn register_document(
 /// The document that composed this one in, for a reference site.
 fn host_of(
     parent: Option<&ChildOf>,
-    prims: &Query<&HsdChild>,
+    prims: &Query<&PrimOf>,
     ids: &Query<&HsdDocId>,
 ) -> Option<DocId> {
     let prim = parent.map(ChildOf::parent)?;
@@ -48,8 +48,8 @@ pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>, po
 #[cfg(test)]
 mod tests {
     use bevy_hsd::{
-        Hsd,
-        Prim,
+        document::Hsd,
+        prim::Prim,
     };
     use hsd::{
         id::PrimId,
@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn a_realized_reference_records_the_host_that_composed_it() {
+    fn a_scene_reference_records_the_host_that_composed_it() {
         let (mut app, policy) = app();
         let host_id = DocId([23; 32]);
 
@@ -79,7 +79,7 @@ mod tests {
             .spawn((Hsd::new(HsdState::new()), HsdDocId(host_id)))
             .id();
         let prim_id = PrimId::new();
-        let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
+        let prim = app.world_mut().spawn((Prim(prim_id), PrimOf(host))).id();
 
         let site_id = DocId::site(host_id, prim_id);
         app.world_mut()

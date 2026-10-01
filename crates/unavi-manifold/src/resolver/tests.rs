@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::{
+        Hsd,
+        HsdDocId,
+    },
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use hsd::{
     attributes::portal::LinkId,
@@ -101,7 +105,7 @@ fn spawn_seam(
 ) -> Entity {
     let mut seam = app.world_mut().spawn((
         Prim(PrimId([prim; 16])),
-        HsdChild(doc),
+        PrimOf(doc),
         SeamHome(home),
         SeamTargetDoc(target),
     ));

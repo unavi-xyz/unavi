@@ -1,50 +1,51 @@
 use bevy::prelude::*;
 
 use crate::{
-    Hsd,
-    HsdChildren,
-    attributes::{
-        Pending,
-        collider::HsdCollider,
-        image::HsdImage,
-        reference::HsdRef,
+    document::{
+        Hsd,
+        Unplaced,
     },
-    load::RefRefused,
+    prim::Prims,
+    reference::{
+        Reference,
+        ReferenceInstances,
+        ReferenceStatus,
+    },
 };
 
 #[derive(Component)]
 pub struct HsdLoaded;
 
-/// Set after the first event batch has been drained, so readiness is only
-/// evaluated once every prim and its pending-asset markers exist.
+/// The document's first event batch has been drained.
 #[derive(Component)]
-pub(crate) struct HsdSnapshotDrained;
+pub(crate) struct SnapshotDrained;
 
 pub(crate) fn evaluate_hsd_loaded(
-    docs: Query<(Entity, &HsdChildren), (With<Hsd>, With<HsdSnapshotDrained>, Without<HsdLoaded>)>,
+    docs: Query<
+        (Entity, &Prims),
+        (
+            With<Hsd>,
+            Without<Unplaced>,
+            With<SnapshotDrained>,
+            Without<HsdLoaded>,
+        ),
+    >,
     prims: Query<(
-        Option<&Pending<Mesh3d>>,
-        Option<&Pending<HsdImage>>,
-        Option<&Pending<HsdCollider>>,
-        Option<&HsdRef>,
-        Option<&RefRefused>,
-        Option<&Children>,
+        Option<&Reference>,
+        Option<&ReferenceStatus>,
+        Option<&ReferenceInstances>,
     )>,
     loaded_docs: Query<(), (With<Hsd>, With<HsdLoaded>)>,
     mut commands: Commands,
 ) {
     for (doc, children) in &docs {
         let ready = children.iter().all(|prim| {
-            let Ok((mesh, image, collider, reference, refused, prim_children)) = prims.get(prim)
-            else {
+            let Ok((reference, status, instances)) = prims.get(prim) else {
                 return true;
             };
-            // A refused reference never resolves, so it must not block the
-            // rest of the document from ever loading.
-            let reference_ready = reference.is_none()
-                || refused.is_some()
-                || prim_children.is_some_and(|c| c.iter().any(|e| loaded_docs.contains(e)));
-            mesh.is_none() && image.is_none() && collider.is_none() && reference_ready
+            reference.is_none()
+                || matches!(status, Some(ReferenceStatus::Refused(_)))
+                || instances.is_some_and(|i| i.iter().any(|e| loaded_docs.contains(e)))
         });
 
         if ready {

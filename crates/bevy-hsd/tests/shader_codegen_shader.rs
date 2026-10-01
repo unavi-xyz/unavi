@@ -61,8 +61,8 @@ fn expand_ifdefs(source: &str, defined: bool) -> String {
 }
 
 /// The helper functions a generated body calls, spliced in from the shipped
-/// templates rather than restated here: a copy in the harness would let the
-/// real ones drift out from under the tests that are supposed to cover them.
+/// templates rather than restated here. A copy in the harness would let the
+/// real ones drift out from under the tests meant to cover them.
 const HELPERS: &str = concat!(
     include_str!("../src/attributes/shader/codegen/templates/noise.wgsl"),
     include_str!("../src/attributes/shader/codegen/templates/context.wgsl"),
@@ -70,7 +70,7 @@ const HELPERS: &str = concat!(
 
 /// Wraps a generated surface body in a bare WGSL module with no Bevy
 /// preprocessor syntax, so plain `naga` can parse it and malformed WGSL fails
-/// `cargo test`. Parses both branches of every `#ifdef`: `VertexOutput.uv` /
+/// `cargo test`. Parses both branches of every `#ifdef`. `VertexOutput.uv` /
 /// `.color` do not exist without their shader defs, and an HSD prim supplies
 /// mesh attributes individually.
 fn assert_surface_valid(body: &str, out_expr: &str) {
@@ -96,7 +96,7 @@ fn assert_displacement_valid(body: &str) {
             .replace("//#HELPERS", HELPERS)
             .replace("//#BODY", &expand_ifdefs(body, defined));
         // The generated body reads `vertex.position`/`vertex.normal` fields,
-        // but the placeholder is a bare `vec3<f32>`; rewrite those accesses so
+        // but the placeholder is a bare `vec3<f32>`. Rewrite those accesses so
         // the harness stays a single flat local instead of a full `Vertex`
         // redeclaration.
         let module = module
@@ -146,7 +146,7 @@ fn lit_output_with_every_terminal_generates_valid_wgsl() {
     assert!(body.contains("out_ior = 1.33"), "{body}");
 }
 
-/// Every surface node kind in one graph: a bad emission shows up as a naga
+/// Every surface node kind in one graph. A bad emission shows up as a naga
 /// parse failure.
 #[test]
 fn every_surface_node_kind_generates_valid_wgsl() {
@@ -205,8 +205,9 @@ fn every_surface_node_kind_generates_valid_wgsl() {
     assert_surface_valid(&body, "out_color");
 }
 
-/// Refraction, in the shape a surface actually uses it: offset the screen
-/// position by the surface's own curvature, then read what was drawn there.
+/// Refraction, in the shape a surface actually uses it. The nodes offset the
+/// screen position by the surface's own curvature, then read what was drawn
+/// there.
 #[test]
 fn a_graph_can_bend_what_is_drawn_behind_it() {
     let graph = graph_with_output(
@@ -234,9 +235,9 @@ fn a_graph_can_bend_what_is_drawn_behind_it() {
     assert_surface_valid(&body, "out_color");
 }
 
-/// `WorldNormal` used to emit `pbr_input.world_normal`, which only the lit
-/// template defines — so every unlit graph reading a normal compiled fine in
-/// tests and failed on the device. Both templates now bind it under one name.
+/// An unlit graph reading a normal must not reference `pbr_input`, which only
+/// the lit template defines. Both templates bind `WorldNormal` under one
+/// shared name.
 #[test]
 fn an_unlit_graph_may_read_the_world_normal() {
     let graph = graph_with_output(
@@ -263,8 +264,8 @@ fn an_unlit_graph_may_read_the_world_normal() {
     assert_surface_valid(&body, "out_color");
 }
 
-/// The lit path's own default for an unconnected normal terminal is subject to
-/// the same rule, since the harness no longer declares `pbr_input` either.
+/// A lit body's own default for an unconnected normal terminal must not name
+/// `pbr_input` either, since the harness does not declare it.
 #[test]
 fn a_lit_body_names_no_lit_only_identifier() {
     let graph = graph_with_output(
@@ -495,10 +496,9 @@ fn vertex_shader_splices_the_displacement_body() {
     assert!(source.contains("mesh_position_local_to_world"));
 }
 
-/// The physgun beam's rope sag: a parabola in local `y` driving a constant
-/// world-down offset. A local-space offset could not express it — the beam
-/// prim is stretched and rotated between two points, so no local vector
-/// stays world-down.
+/// A parabola in local `y` drives a constant world-down offset. A
+/// local-space offset could not express this, since the prim is stretched
+/// and rotated between two points, so no local vector stays world-down.
 #[test]
 fn a_world_space_sag_body_generates_valid_wgsl() {
     let graph = displaced_world(
@@ -538,8 +538,8 @@ fn a_world_space_sag_body_generates_valid_wgsl() {
     assert_displacement_valid(&body);
 }
 
-/// World and local offsets compose: the beam sags in world space while
-/// wavering in its own local space.
+/// World and local displacement offsets apply at different stages, so their
+/// order in the generated shader matters.
 #[test]
 fn vertex_shader_applies_the_world_offset_after_the_mesh_transform() {
     let graph = ShaderGraph {

@@ -1,15 +1,11 @@
-use std::mem::size_of;
-
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bytemuck::pod_collect_to_vec;
 use hsd::{
     attributes::collider::{
         ColliderIndices,
         ColliderKind,
         ColliderVertices,
     },
-    bounds::MAX_MESH_STREAM_BYTES,
     property::{
         Payload,
         name::PropName,
@@ -22,15 +18,15 @@ use unavi_physics::{
     },
     shape,
 };
+use unavi_util::hierarchy::global_transform;
 
 use crate::attributes::{
-    ParseError,
-    Pending,
-    util::compute_global_transform,
+    buffer::cast_buffer,
+    update_data,
 };
 
-/// Assembled from `collider/kind`, `collider/vertices` and `collider/indices`,
-/// each its own field so a change to one never re-decodes the others.
+/// Assembled from the `collider/kind`, `collider/vertices` and
+/// `collider/indices` fields.
 #[derive(Component, Debug, Clone, Default)]
 pub(crate) struct ColliderData {
     pub kind:     Option<ColliderKind>,
@@ -38,61 +34,31 @@ pub(crate) struct ColliderData {
     pub indices:  Option<ColliderIndices>,
 }
 
-#[derive(Component)]
-pub struct HsdCollider;
-
-/// `kind` gates the whole collider: without it nothing can be built, so its
-/// removal tears down the collider entirely rather than leaving a half-built
-/// one.
+/// Removing `kind` tears down the whole collider.
 pub(crate) fn apply(
     commands: &mut Commands,
     prim: Entity,
     name: &PropName,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     match name.field() {
         Some("kind") => match payload.map(ColliderKind::decode).transpose()? {
             Some(kind) => {
-                commands
-                    .entity(prim)
-                    .entry::<ColliderData>()
-                    .or_default()
-                    .and_modify(move |mut data| data.kind = Some(kind));
-                commands
-                    .entity(prim)
-                    .insert((HsdCollider, Pending::<HsdCollider>::default()));
+                update_data::<ColliderData>(commands, prim, move |data| data.kind = Some(kind));
             }
             None => {
-                commands.entity(prim).remove::<(
-                    ColliderData,
-                    HsdCollider,
-                    Collider,
-                    DisabledCollider,
-                    Pending<HsdCollider>,
-                )>();
+                commands
+                    .entity(prim)
+                    .remove::<(ColliderData, Collider, DisabledCollider)>();
             }
         },
         Some("vertices") => {
             let vertices = payload.map(ColliderVertices::decode).transpose()?;
-            commands
-                .entity(prim)
-                .entry::<ColliderData>()
-                .or_default()
-                .and_modify(move |mut data| data.vertices = vertices);
-            commands
-                .entity(prim)
-                .insert(Pending::<HsdCollider>::default());
+            update_data::<ColliderData>(commands, prim, move |data| data.vertices = vertices);
         }
         Some("indices") => {
             let indices = payload.map(ColliderIndices::decode).transpose()?;
-            commands
-                .entity(prim)
-                .entry::<ColliderData>()
-                .or_default()
-                .and_modify(move |mut data| data.indices = indices);
-            commands
-                .entity(prim)
-                .insert(Pending::<HsdCollider>::default());
+            update_data::<ColliderData>(commands, prim, move |data| data.indices = indices);
         }
         _ => {}
     }
@@ -106,14 +72,12 @@ pub(crate) fn rebuild_collider(
     mut commands: Commands,
 ) {
     for (prim, data) in &changed {
-        commands
-            .entity(prim)
-            .remove::<(Collider, Pending<HsdCollider>)>();
+        commands.entity(prim).remove::<Collider>();
 
         let Some(kind) = data.kind else {
             continue;
         };
-        let seed = compute_global_transform(prim, &locals, &parents);
+        let seed = global_transform(prim, &locals, &parents);
 
         let collider = match kind {
             ColliderKind::Sphere(r) => shape::sphere(r as f32),
@@ -173,29 +137,17 @@ fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
     }
 }
 
-/// Collider buffers arrive over document sync; hull and trimesh construction
-/// are superlinear in point count, so input is bounded and length-checked
-/// before use.
+/// Bounded, since hull and trimesh construction are superlinear in point
+/// count.
 fn cast_to_vec3(name: &str, bytes: &[u8]) -> Option<Vec<Vec3>> {
-    let raw: Vec<[f32; 3]> = checked(name, bytes)?;
+    let raw: Vec<[f32; 3]> = cast_buffer(bytes)
+        .inspect_err(|err| warn!(%name, %err, "collider buffer rejected"))
+        .ok()?;
     Some(raw.into_iter().map(Vec3::from_array).collect())
 }
 
 fn cast_to_indices(name: &str, bytes: &[u8]) -> Option<Vec<[u32; 3]>> {
-    checked(name, bytes)
-}
-
-fn checked<T: bytemuck::Pod>(name: &str, bytes: &[u8]) -> Option<Vec<T>> {
-    if bytes.len() > MAX_MESH_STREAM_BYTES {
-        warn!(
-            "{name}: buffer is {} bytes, over the cap of {MAX_MESH_STREAM_BYTES}",
-            bytes.len()
-        );
-        return None;
-    }
-    if !bytes.len().is_multiple_of(size_of::<T>()) {
-        warn!("{name}: buffer is not a whole number of elements");
-        return None;
-    }
-    Some(pod_collect_to_vec(bytes))
+    cast_buffer(bytes)
+        .inspect_err(|err| warn!(%name, %err, "collider buffer rejected"))
+        .ok()
 }

@@ -1,5 +1,3 @@
-use std::mem::size_of;
-
 use bevy::{
     asset::RenderAssetUsages,
     mesh::{
@@ -11,10 +9,6 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bytemuck::{
-    Pod,
-    pod_collect_to_vec,
-};
 use hsd::{
     attributes::mesh::{
         self,
@@ -22,7 +16,6 @@ use hsd::{
         MeshStream,
         Topology,
     },
-    bounds::MAX_MESH_STREAM_BYTES,
     property::{
         Payload,
         name::PropName,
@@ -32,12 +25,15 @@ use smol_str::SmolStr;
 use thiserror::Error;
 
 use crate::attributes::{
-    ParseError,
-    Pending,
+    buffer::{
+        BufferError,
+        cast_buffer,
+    },
+    update_data,
 };
 
-/// Assembled from `mesh/topology`, `mesh/indices` and `mesh/stream:<NAME>`,
-/// each its own field so one stream update never decodes the others.
+/// Assembled from the `mesh/topology`, `mesh/indices` and
+/// `mesh/stream:<NAME>` fields.
 #[derive(Component, Debug, Clone, Default)]
 pub struct MeshData {
     pub topology: Option<Topology>,
@@ -45,66 +41,45 @@ pub struct MeshData {
     pub streams:  HashMap<SmolStr, MeshStream>,
 }
 
-/// `topology` gates the whole mesh: without it there is nothing to build, so
-/// its removal tears down the mesh entirely.
+/// Removing `topology` tears down the whole mesh.
 pub fn apply(
     commands: &mut Commands,
     prim: Entity,
     name: &PropName,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     if let Some(stream) = mesh::stream_of(name) {
         let value = payload.map(MeshStream::decode).transpose()?;
         let stream = SmolStr::new(stream);
-        commands
-            .entity(prim)
-            .entry::<MeshData>()
-            .or_default()
-            .and_modify(move |mut data| match value {
-                Some(value) => {
-                    data.streams.insert(stream, value);
-                }
-                None => {
-                    data.streams.remove(&stream);
-                }
-            });
-        commands.entity(prim).insert(Pending::<Mesh3d>::default());
+        update_data::<MeshData>(commands, prim, move |data| match value {
+            Some(value) => {
+                data.streams.insert(stream, value);
+            }
+            None => {
+                data.streams.remove(&stream);
+            }
+        });
         return Ok(());
     }
 
     match name.field() {
         Some("topology") => match payload.map(Topology::decode).transpose()? {
             Some(topology) => {
-                commands
-                    .entity(prim)
-                    .entry::<MeshData>()
-                    .or_default()
-                    .and_modify(move |mut data| data.topology = Some(topology));
-                commands.entity(prim).insert(Pending::<Mesh3d>::default());
+                update_data::<MeshData>(commands, prim, move |data| data.topology = Some(topology));
             }
             None => {
-                commands
-                    .entity(prim)
-                    .remove::<(MeshData, Mesh3d, Pending<Mesh3d>)>();
+                commands.entity(prim).remove::<(MeshData, Mesh3d)>();
             }
         },
         Some("indices") => {
             let indices = payload.map(MeshIndices::decode).transpose()?;
-            commands
-                .entity(prim)
-                .entry::<MeshData>()
-                .or_default()
-                .and_modify(move |mut data| data.indices = indices);
-            commands.entity(prim).insert(Pending::<Mesh3d>::default());
+            update_data::<MeshData>(commands, prim, move |data| data.indices = indices);
         }
         _ => {}
     }
     Ok(())
 }
 
-/// Rebuilds whenever any field changes. Bevy's vertex-buffer assembly needs
-/// every stream and the index buffer together, so there is no cheaper partial
-/// rebuild once more than the topology has changed.
 pub fn rebuild_mesh(
     changed: Query<(Entity, &MeshData), Changed<MeshData>>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
@@ -123,24 +98,16 @@ pub fn rebuild_mesh(
                 commands.entity(prim).remove::<Mesh3d>();
             }
         }
-        commands.entity(prim).remove::<Pending<Mesh3d>>();
     }
 }
 
-/// Why a document's mesh buffers were refused.
-///
-/// Buffers arrive over document sync from a peer, so none of the GPU's
-/// invariants can be assumed: an index past the vertex count is an
-/// out-of-bounds read at draw time, and attributes of differing lengths fail
-/// Bevy's vertex-buffer assembly.
+/// Why peer-written mesh buffers were refused before reaching the GPU.
 #[derive(Debug, Error)]
 enum MeshRejected {
     #[error("no POSITION attribute")]
     NoPosition,
-    #[error("buffer is not a whole number of elements")]
-    Cast,
-    #[error("{name} buffer is {len} bytes, over the cap of {MAX_MESH_STREAM_BYTES}")]
-    TooLarge { name: String, len: usize },
+    #[error("{name}: {source}")]
+    Buffer { name: String, source: BufferError },
     #[error("{name} has {len} vertices, but POSITION has {expected}")]
     LengthMismatch {
         name:     String,
@@ -161,7 +128,12 @@ fn build_mesh(data: &MeshData) -> Result<Mesh, MeshRejected> {
         .streams
         .get("POSITION")
         .ok_or(MeshRejected::NoPosition)?;
-    let vertices = checked::<[f32; 3]>("POSITION", &positions.0)?.len();
+    let vertices = cast_buffer::<[f32; 3]>(&positions.0)
+        .map_err(|source| MeshRejected::Buffer {
+            name: "POSITION".to_owned(),
+            source,
+        })?
+        .len();
 
     for (name, stream) in &data.streams {
         let Some((attr, kind)) = mesh_attr_id(name) else {
@@ -171,13 +143,28 @@ fn build_mesh(data: &MeshData) -> Result<Mesh, MeshRejected> {
 
         let values = match kind {
             VertexKind::Float32x2 => {
-                VertexAttributeValues::Float32x2(checked::<[f32; 2]>(name, bytes)?)
+                VertexAttributeValues::Float32x2(cast_buffer(bytes).map_err(|source| {
+                    MeshRejected::Buffer {
+                        name: name.to_string(),
+                        source,
+                    }
+                })?)
             }
             VertexKind::Float32x3 => {
-                VertexAttributeValues::Float32x3(checked::<[f32; 3]>(name, bytes)?)
+                VertexAttributeValues::Float32x3(cast_buffer(bytes).map_err(|source| {
+                    MeshRejected::Buffer {
+                        name: name.to_string(),
+                        source,
+                    }
+                })?)
             }
             VertexKind::Float32x4 => {
-                VertexAttributeValues::Float32x4(checked::<[f32; 4]>(name, bytes)?)
+                VertexAttributeValues::Float32x4(cast_buffer(bytes).map_err(|source| {
+                    MeshRejected::Buffer {
+                        name: name.to_string(),
+                        source,
+                    }
+                })?)
             }
         };
 
@@ -192,7 +179,10 @@ fn build_mesh(data: &MeshData) -> Result<Mesh, MeshRejected> {
     }
 
     if let Some(indices) = &data.indices {
-        let indices = checked::<u32>("indices", &indices.0)?;
+        let indices = cast_buffer::<u32>(&indices.0).map_err(|source| MeshRejected::Buffer {
+            name: "indices".to_owned(),
+            source,
+        })?;
         if let Some(&index) = indices
             .iter()
             .find(|&&i| usize::try_from(i).unwrap_or(usize::MAX) >= vertices)
@@ -203,19 +193,6 @@ fn build_mesh(data: &MeshData) -> Result<Mesh, MeshRejected> {
     }
 
     Ok(mesh)
-}
-
-fn checked<T: Pod>(name: &str, bytes: &[u8]) -> Result<Vec<T>, MeshRejected> {
-    if bytes.len() > MAX_MESH_STREAM_BYTES {
-        return Err(MeshRejected::TooLarge {
-            name: name.to_owned(),
-            len:  bytes.len(),
-        });
-    }
-    if !bytes.len().is_multiple_of(size_of::<T>()) {
-        return Err(MeshRejected::Cast);
-    }
-    Ok(pod_collect_to_vec(bytes))
 }
 
 const fn topology_to_primitive(t: Topology) -> PrimitiveTopology {

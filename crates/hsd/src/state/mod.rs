@@ -1,5 +1,5 @@
 //! A document composed through its layer stack into the view its prims
-//! realize from, with the [`SceneEvent`]s describing each change.
+//! enter the scene from, with the [`SceneEvent`]s describing each change.
 
 use std::collections::{
     BTreeSet,
@@ -54,13 +54,13 @@ pub enum StateError {
     Postcard(#[from] postcard::Error),
 }
 
-/// Deepest parent chain a prim may realize under.
+/// Deepest parent chain a prim may have and still be in the scene.
 /// Deeper prims are still held in state.
 pub const MAX_PRIM_DEPTH: usize = 512;
 
-/// Most prims one document may realize at once. Prims past the cap are held
-/// until room frees up.
-pub const MAX_REALIZED_PRIMS: usize = 100_000;
+/// Most prims one document may have in the scene at once. Prims past the cap
+/// are held until room frees up.
+pub const MAX_SCENE_PRIMS: usize = 100_000;
 
 /// The layer a [`HsdState::commit`] promotes opinions into.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,9 +85,9 @@ pub struct HsdState {
     resolved:   HashMap<PrimId, PrimState>,
     /// Keyed by resolved parent, including parents that do not exist yet.
     children:   HashMap<PrimId, BTreeSet<PrimId>>,
-    /// Realized prims and their parent, `None` for a root.
-    realized:   HashMap<PrimId, Option<PrimId>>,
-    /// Prims held only because [`MAX_REALIZED_PRIMS`] was full when last
+    /// Prims in the scene and their parent, `None` for a root.
+    in_scene:   HashMap<PrimId, Option<PrimId>>,
+    /// Prims held only because [`MAX_SCENE_PRIMS`] was full when last
     /// placed. [`HsdState::refresh`] re-admits them as room frees.
     capped:     BTreeSet<PrimId>,
     events:     Vec<SceneEvent>,
@@ -111,7 +111,7 @@ impl HsdState {
             references: HashMap::new(),
             resolved:   HashMap::new(),
             children:   HashMap::new(),
-            realized:   HashMap::new(),
+            in_scene:   HashMap::new(),
             capped:     BTreeSet::new(),
             events:     Vec::new(),
             ticks:      0,
@@ -125,31 +125,31 @@ impl HsdState {
     }
 
     /// Whether some layer states a live parent for the prim. An existing prim
-    /// may still be held rather than realized.
+    /// may still be held rather than in the scene.
     #[must_use]
     pub fn exists(&self, prim: PrimId) -> bool {
         self.resolved.get(&prim).is_some_and(|s| s.parent.is_some())
     }
 
     #[must_use]
-    pub fn is_realized(&self, prim: PrimId) -> bool {
-        self.realized.contains_key(&prim)
+    pub fn is_in_scene(&self, prim: PrimId) -> bool {
+        self.in_scene.contains_key(&prim)
     }
 
-    /// `None` for a root or a prim that is not realized.
+    /// `None` for a root or a prim that is not in the scene.
     #[must_use]
     pub fn parent(&self, prim: PrimId) -> Option<PrimId> {
-        self.realized.get(&prim).copied().flatten()
+        self.in_scene.get(&prim).copied().flatten()
     }
 
     pub fn prims(&self) -> impl Iterator<Item = PrimId> {
-        self.realized.keys().copied()
+        self.in_scene.keys().copied()
     }
 
     #[must_use]
     pub fn roots(&self) -> Vec<PrimId> {
         let mut out = self
-            .realized
+            .in_scene
             .iter()
             .filter_map(|(prim, parent)| parent.is_none().then_some(*prim))
             .collect::<Vec<_>>();
@@ -165,7 +165,7 @@ impl HsdState {
             .into_iter()
             .flatten()
             .copied()
-            .filter(|child| self.realized.get(child) == Some(&Some(prim)))
+            .filter(|child| self.in_scene.get(child) == Some(&Some(prim)))
             .collect::<Vec<_>>();
         out.sort_unstable();
         out
@@ -217,7 +217,7 @@ impl HsdState {
         complete
     }
 
-    /// Replaces pending events with a description of the realized scene,
+    /// Replaces pending events with a description of the scene,
     /// parents before children. The description drains even while a boundary
     /// is open.
     pub fn resync(&mut self) {
@@ -226,7 +226,7 @@ impl HsdState {
         let mut stack = self.roots();
         stack.reverse();
         while let Some(prim) = stack.pop() {
-            self.events.push(SceneEvent::Realized {
+            self.events.push(SceneEvent::Added {
                 prim,
                 parent: self.parent(prim),
             });

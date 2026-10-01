@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use bevy::prelude::*;
 use hsd::attributes::material::ColorVec;
 
@@ -13,6 +15,15 @@ pub fn from_color_vec(vec: Option<&ColorVec>, fallback: Color) -> Color {
     } else {
         fallback
     }
+}
+
+/// `value` held to `range`, or `fallback` when absent or non-finite.
+pub fn clamped(value: Option<f64>, fallback: f32, range: RangeInclusive<f32>) -> f32 {
+    value
+        .map(|value| value as f32)
+        .filter(|value| value.is_finite())
+        .unwrap_or(fallback)
+        .clamp(*range.start(), *range.end())
 }
 
 #[cfg(test)]
@@ -36,5 +47,19 @@ mod tests {
     #[test]
     fn no_vector_falls_back() {
         assert_eq!(from_color_vec(None, Color::BLACK), Color::BLACK);
+    }
+
+    #[test]
+    fn a_non_finite_value_falls_back() {
+        for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!((clamped(Some(value), 1.0, 0.0..=10.0) - 1.0).abs() < 1.0e-9);
+        }
+    }
+
+    #[test]
+    fn an_absurd_value_is_held_to_the_range() {
+        assert!((clamped(Some(1.0e30), 1.0, 0.0..=10.0) - 10.0).abs() < 1.0e-6);
+        assert!(clamped(Some(-4.0), 1.0, 0.0..=10.0).abs() < 1.0e-9);
+        assert!((clamped(None, 1.0, 0.0..=10.0) - 1.0).abs() < 1.0e-9);
     }
 }

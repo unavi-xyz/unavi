@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
+    document::{
+        Hsd,
+        HsdDocId,
+        Unplaced,
+    },
+    prim::PrimOf,
 };
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
@@ -46,9 +49,14 @@ pub fn register_space(trigger: On<Add, Space>, spaces: Query<&Space>, policy: Re
 pub fn parent_docs_under_space(
     docs: Query<
         (Entity, &HsdDocId, Option<&ChildOf>),
-        (With<Hsd>, Without<Space>, Without<SpaceOwner>),
+        (
+            With<Hsd>,
+            Without<Unplaced>,
+            Without<Space>,
+            Without<SpaceOwner>,
+        ),
     >,
-    prims: Query<&HsdChild>,
+    prims: Query<&PrimOf>,
     spaces: Query<(Entity, &HsdDocId), With<Space>>,
     is_space: Query<(), With<Space>>,
     owners: Query<&SpaceOwner>,
@@ -118,7 +126,7 @@ pub fn forget_space(trigger: On<Remove, Space>, spaces: Query<&Space>, policy: R
 
 #[cfg(test)]
 mod tests {
-    use bevy_hsd::Prim;
+    use bevy_hsd::prim::Prim;
     use hsd::{
         id::PrimId,
         state::HsdState,
@@ -146,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn realized_reference_adopted_after_host_becomes_a_space() {
+    fn scene_reference_adopted_after_host_becomes_a_space() {
         let (mut app, policy) = app();
 
         let ns = NamespaceId::from(blake3::hash(b"host-doc").as_bytes());
@@ -157,7 +165,7 @@ mod tests {
             .id();
 
         let prim_id = PrimId::new();
-        let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
+        let prim = app.world_mut().spawn((Prim(prim_id), PrimOf(host))).id();
 
         let site_id = DocId::site(host_id, prim_id);
         let child = app

@@ -1,6 +1,6 @@
-use bevy_hsd::{
-    HsdPrimIndex,
+use bevy_hsd::prim::{
     HsdRelationships,
+    PrimIndex,
 };
 use hsd::attributes::material;
 use rstest::rstest;
@@ -25,11 +25,11 @@ fn test_relationship_storage(mut ctx: TestContext) {
     let world = ctx.app.world_mut();
 
     let index = world
-        .query::<&HsdPrimIndex>()
+        .query::<&PrimIndex>()
         .single(world)
         .expect("prim index");
-    let source_ent = *index.0.get(&source).expect("source in index");
-    let target_ent = *index.0.get(&target).expect("target in index");
+    let source_ent = index.get(source).expect("source in index");
+    let target_ent = index.get(target).expect("target in index");
     assert_ne!(source_ent, target_ent);
 
     let rels = world

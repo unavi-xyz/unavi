@@ -20,9 +20,11 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::HsdDocId,
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use hsd::id::{
     DocId,
@@ -88,7 +90,7 @@ pub struct Pressing(HashMap<(PointerKind, Button), Vec<(DocId, PrimId)>>);
 pub struct PrimDelivery<'w, 's> {
     pointers:  Query<'w, 's, (&'static PointerAnchor, &'static GlobalTransform)>,
     listeners: Query<'w, 's, &'static InputListener>,
-    prims:     Query<'w, 's, (&'static Prim, &'static HsdChild)>,
+    prims:     Query<'w, 's, (&'static Prim, &'static PrimOf)>,
     docs:      Query<'w, 's, &'static HsdDocId>,
 }
 

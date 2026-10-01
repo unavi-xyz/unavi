@@ -95,7 +95,13 @@ pub fn ensure_seam_mesh(
 pub fn update_seam_state(
     mut seams: Query<(&mut SeamState, Option<&GluedTo>), With<Seam>>,
     incoming: Query<(), With<crate::GluedFrom>>,
-    doc_roots: Query<(), With<bevy_hsd::Hsd>>,
+    doc_roots: Query<
+        (),
+        (
+            With<bevy_hsd::document::Hsd>,
+            Without<bevy_hsd::document::Unplaced>,
+        ),
+    >,
 ) {
     for (mut state, dest) in &mut seams {
         let next = match dest {

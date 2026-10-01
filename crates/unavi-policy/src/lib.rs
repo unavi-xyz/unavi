@@ -21,7 +21,7 @@
 //! authorship is replicated state, resolved by the caller.
 
 use bevy::prelude::*;
-use bevy_hsd::HsdCommitSet;
+use bevy_hsd::HsdSystems;
 
 pub mod error;
 pub mod permissions;
@@ -42,6 +42,6 @@ impl Plugin for PolicyPlugin {
             .add_observer(space::register_membership)
             .add_observer(space::forget_membership)
             .add_observer(space::forget_space)
-            .add_systems(Update, space::parent_docs_under_space.before(HsdCommitSet));
+            .add_systems(Update, space::parent_docs_under_space.before(HsdSystems));
     }
 }

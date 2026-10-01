@@ -6,13 +6,15 @@ use async_channel::{
 };
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdDocId,
-    HsdNamespace,
-    HsdSyncPeers,
+    document::{
+        Hsd,
+        HsdDocId,
+        HsdNamespace,
+        SyncPeers,
+    },
     feed::{
         DocFeed,
-        Ready,
+        FeedReady,
     },
 };
 use bevy_iroh::store::LocalStore;
@@ -130,7 +132,7 @@ pub fn fetch_tracked_docs(
                 let doc = store.open(ns).await?;
                 // Subscribed before the sync starts, so it sees every entry the
                 // sync brings.
-                let feed = DocFeed::spawn(doc.clone(), Ready::RemoteSync);
+                let feed = DocFeed::spawn(doc.clone(), FeedReady::RemoteSync);
                 doc.start_sync(sync_from).await?;
                 anyhow::Ok((doc, feed))
             };
@@ -172,7 +174,7 @@ pub fn instantiate_tracked_docs(
                         Hsd::new(HsdState::new()),
                         HsdDocId(doc.doc),
                         HsdNamespace(namespace),
-                        HsdSyncPeers(pending.peers.clone()),
+                        SyncPeers(pending.peers.clone()),
                         feed,
                     ))
                     .try_remove::<PendingPinnedDoc>();

@@ -1,5 +1,4 @@
-// Compiled into every integration-test binary in this crate, each of which
-// only uses a subset of these helpers.
+// Shared across integration-test binaries; each uses only a subset.
 #![expect(dead_code)]
 
 use std::{
@@ -19,7 +18,7 @@ use bevy::{
     prelude::*,
     transform::TransformPlugin,
 };
-use bevy_hsd::attributes::shader::ShaderGraphMaterial;
+use bevy_hsd::attributes::shader::material::ShaderGraphMaterial;
 use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
 use hsd::{
@@ -99,7 +98,7 @@ fn run_on_test_thread(app: &mut App) {
     });
 }
 
-/// The client fetches its faces over iroh; a test app has no network, so text
+/// The client fetches its faces over iroh. A test app has no network, so text
 /// would lay out against an empty chain and draw nothing.
 fn register_font(app: &mut App) {
     app.world_mut()
@@ -138,7 +137,7 @@ impl Default for TestContext {
 
 impl TestContext {
     /// Same as `default()` with physics enabled. Needed by any test that
-    /// exercises colliders or rigid bodies: avian's `On<Add, Collider>`
+    /// exercises colliders or rigid bodies. Avian's `On<Add, Collider>`
     /// observer reads `Position`/`Rotation` and panics on the placeholder MAX
     /// values if a `Collider` is inserted without seeding them.
     pub fn with_physics() -> Self {
@@ -214,7 +213,7 @@ impl TestContext {
         self.doc = self
             .app
             .world_mut()
-            .spawn(bevy_hsd::Hsd(Arc::clone(&self.state)))
+            .spawn(bevy_hsd::document::Hsd(Arc::clone(&self.state)))
             .id();
     }
 
@@ -225,7 +224,7 @@ impl TestContext {
         let entity = self
             .app
             .world_mut()
-            .spawn(bevy_hsd::Hsd(Arc::clone(&state)))
+            .spawn(bevy_hsd::document::Hsd(Arc::clone(&state)))
             .id();
         TestDocument { entity, state }
     }
@@ -246,17 +245,15 @@ impl TestContext {
         self.with_state(|state| state.create_prim(Some(parent)))
     }
 
-    /// The entity realizing `prim`, which the diff spawns on the tick after
-    /// the write.
+    /// The entity standing for `prim` in the scene, which the diff spawns on
+    /// the tick after the write.
     pub fn prim_entity(&self, doc: Entity, prim: PrimId) -> Entity {
-        *self
-            .app
+        self.app
             .world()
-            .get::<bevy_hsd::HsdPrimIndex>(doc)
+            .get::<bevy_hsd::prim::PrimIndex>(doc)
             .expect("document has a prim index")
-            .0
-            .get(&prim)
-            .expect("prim is realized")
+            .get(prim)
+            .expect("prim is in the scene")
     }
 
     pub fn set_attr<A: Property>(&self, prim: PrimId, value: &A) {
@@ -292,8 +289,6 @@ impl TestContext {
         self.set_attr(prim, &ColliderIndices(bytes));
     }
 
-    /// Sets a prim's `shader/graph` attribute from its encoded payload, which
-    /// is the shape the graph tests build.
     pub fn set_shader_graph(&self, prim: PrimId, bytes: Vec<u8>) {
         let graph = ShaderGraph::decode(&bytes).expect("decode graph");
         self.set_attr(prim, &graph);
@@ -311,7 +306,8 @@ impl TestContext {
         self.with_state(|state| state.remove_property(prim, name));
     }
 
-    /// Tick the app until `cond` returns true; panics within the timeout.
+    /// Tick the app until `cond` returns true. Panics if the timeout elapses
+    /// first.
     pub fn tick_until<F: FnMut(&mut World) -> bool>(&mut self, mut cond: F) {
         for _ in 0..200 {
             self.app.update();
@@ -370,7 +366,7 @@ fn setup_blobs() -> Blobs {
         let store = MemStore::default();
         let blobs = store.blobs().clone();
         tx.send(blobs).await.expect("send");
-        // Keep MemStore alive: its background task drives blob queries.
+        // Keep MemStore alive. Its background task drives blob queries.
         let _store = store;
         std::future::pending::<()>().await;
     });
@@ -511,7 +507,6 @@ impl Backing {
         self.0.clone()
     }
 
-    /// Every namespace the store holds.
     pub fn namespaces(&self) -> Vec<NamespaceId> {
         let store = self.0.clone();
         block_on(async move {
@@ -555,7 +550,6 @@ pub fn set_entry(doc: &Document, entry: &Entry) {
     });
 }
 
-/// Deletes `key`, as a commit of a blocked opinion does.
 pub fn remove_key(doc: &Document, key: String) {
     let doc = doc.clone();
     block_on(async move {

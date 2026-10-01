@@ -5,10 +5,15 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::{
+        Hsd,
+        HsdDocId,
+        Unplaced,
+    },
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use hsd::{
     attributes::portal::LinkId,
@@ -74,10 +79,10 @@ pub fn resolve_seams(
         Option<&SeamLink>,
         Option<&SeamHome>,
         Option<&Prim>,
-        Option<&HsdChild>,
+        Option<&PrimOf>,
         Option<&GluedTo>,
     )>,
-    docs: Query<(Entity, &HsdDocId), With<Hsd>>,
+    docs: Query<(Entity, &HsdDocId), (With<Hsd>, Without<Unplaced>)>,
     mut commands: Commands,
 ) {
     let roots: HashMap<DocId, Entity> = docs.iter().map(|(e, id)| (id.0, e)).collect();

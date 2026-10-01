@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_hsd::HsdPrimIndex;
+use bevy_hsd::prim::PrimIndex;
 use hsd::attributes::{
     name::NameAttr,
     xform::XformAttr,
@@ -43,14 +43,14 @@ fn test_root_without_xform_keeps_child_transforms(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let index = world
-        .query::<&HsdPrimIndex>()
+        .query::<&PrimIndex>()
         .iter(world)
-        .find(|i| !i.0.is_empty())
+        .find(|i| i.iter().next().is_some())
         .expect("index");
-    let root_ent = *index.0.get(&root).expect("root indexed");
+    let root_ent = index.get(root).expect("root indexed");
     let ents = children
         .iter()
-        .map(|(child, expected)| (*index.0.get(child).expect("child indexed"), *expected))
+        .map(|(child, expected)| (index.get(*child).expect("child indexed"), *expected))
         .collect::<Vec<_>>();
 
     assert!(

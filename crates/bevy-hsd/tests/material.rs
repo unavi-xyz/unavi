@@ -6,15 +6,22 @@ use bevy::{
 };
 use bevy_hsd::attributes::{
     image::HsdImage,
-    material::HsdMaterial,
+    material::pbr::HsdMaterial,
 };
-use hsd::attributes::{
-    image::ImageSampler,
-    material::{
-        self,
-        ColorVec,
-        MaterialAttr,
+use hsd::{
+    attributes::{
+        image::ImageSampler,
+        material::{
+            self,
+            ColorVec,
+            MaterialAttr,
+        },
+        parent::ParentAttr,
     },
+    id::PrimId,
+    key,
+    property::Property,
+    state::entry::Entry,
 };
 use image::{
     ImageFormat,
@@ -75,8 +82,7 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     assert!(q.iter(world).next().is_none());
 }
 
-/// A texture slot is a relationship, not a field of the material payload:
-/// one property namespace, one home for a cross-prim reference.
+/// A texture slot is a relationship, not a field of the material payload.
 #[traced_test]
 #[rstest]
 fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
@@ -144,8 +150,8 @@ fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
     assert_eq!(mat.base_color_texture.as_ref(), Some(&image_handle));
 }
 
-/// `material/binding` is USD's precedent: a prim uses another prim's material
-/// rather than defining its own.
+/// `material/binding` follows USD's precedent. A prim uses another prim's
+/// material rather than defining its own.
 #[traced_test]
 #[rstest]
 fn test_material_binding(mut ctx: TestContext) {
@@ -165,8 +171,99 @@ fn test_material_binding(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut q = world.query::<&HsdMaterial>();
+    let mut q = world.query::<&MeshMaterial3d<StandardMaterial>>();
     let handles: Vec<Handle<StandardMaterial>> = q.iter(world).map(|m| m.0.clone()).collect();
     assert_eq!(handles.len(), 2);
     assert_eq!(handles[0], handles[1], "B should share A's material handle");
+
+    let mut owners = world.query::<&HsdMaterial>();
+    assert_eq!(
+        owners.iter(world).count(),
+        1,
+        "only the owning prim carries HsdMaterial"
+    );
+}
+
+const LATE_IMAGE: PrimId = PrimId([42; 16]);
+
+fn root_entry(prim: PrimId) -> Entry {
+    Entry::new(
+        key::Key::prop(prim, &ParentAttr::NAME).to_string(),
+        ParentAttr::to_wire(Some(ParentAttr::Root)),
+        1,
+    )
+}
+
+/// A texture relationship may name a prim before that prim exists in the
+/// scene at all. The reverse index is keyed by id, so the material still
+/// resolves the texture once the image prim appears and gets its data, in a
+/// later frame.
+#[traced_test]
+#[rstest]
+fn test_material_texture_ref_set_before_the_image_prim_exists(
+    #[from(ctx_blobs)] mut ctx: TestContext,
+) {
+    let material_prim = ctx.create_prim();
+    ctx.set_attr(material_prim, &MaterialAttr::default());
+    ctx.set_relationship(material_prim, &material::BASE_COLOR_TEXTURE, LATE_IMAGE);
+
+    // The material builds while its texture relationship names a prim that
+    // does not exist in the scene yet.
+    ctx.app.update();
+
+    // The image prim appears, in a later frame, and gets its data.
+    ctx.state
+        .lock()
+        .expect("lock state")
+        .project(&root_entry(LATE_IMAGE))
+        .expect("project root");
+    ctx.app.update();
+
+    let mut rgba = RgbaImage::new(2, 2);
+    for (i, px) in rgba.pixels_mut().enumerate() {
+        let v = (i * 60) as u8;
+        *px = image::Rgba([v, v, v, 255]);
+    }
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(rgba)
+        .write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
+        .expect("encode png");
+    ctx.set_image_data(LATE_IMAGE, png);
+
+    let mut image_handle: Option<Handle<Image>> = None;
+    let mut material_handle: Option<Handle<StandardMaterial>> = None;
+    ctx.tick_until(|world| {
+        let img = world
+            .query::<&HsdImage>()
+            .iter(world)
+            .map(|i| i.0.clone())
+            .find(|h| *h != Handle::<Image>::default());
+        let Some(img) = img else {
+            return false;
+        };
+
+        let mats: Vec<Handle<StandardMaterial>> = world
+            .query::<&HsdMaterial>()
+            .iter(world)
+            .map(|m| m.0.clone())
+            .collect();
+        let assets = world.resource::<Assets<StandardMaterial>>();
+        for handle in mats {
+            let Some(sm) = assets.get(&handle) else {
+                continue;
+            };
+            if sm.base_color_texture.as_ref() == Some(&img) {
+                image_handle = Some(img);
+                material_handle = Some(handle);
+                return true;
+            }
+        }
+        false
+    });
+
+    let image_handle = image_handle.expect("image handle");
+    let material_handle = material_handle.expect("material handle");
+    let assets = ctx.app.world().resource::<Assets<StandardMaterial>>();
+    let mat = assets.get(&material_handle).expect("standard material");
+    assert_eq!(mat.base_color_texture.as_ref(), Some(&image_handle));
 }

@@ -8,22 +8,18 @@ use hsd::{
     property::Payload,
 };
 use unavi_physics::finite;
-
-use crate::attributes::{
-    ParseError,
-    util::compute_global_transform,
-};
+use unavi_util::hierarchy::global_transform;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct XformData(pub XformAttr);
 
-/// Removal resets the transform rather than removing it: `Prim` requires
-/// `Transform`, and a removed one breaks propagation to every child.
+/// Removal resets `Transform` rather than removing it, since `Prim` requires
+/// it.
 pub fn apply(
     commands: &mut Commands,
     prim: Entity,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     match payload {
         Some(payload) => {
             commands
@@ -40,9 +36,8 @@ pub fn apply(
     Ok(())
 }
 
-/// A guest writes these floats directly, and they land in avian's `Position`
-/// and `Rotation` for anything with a body. A zero scale is left alone: it is
-/// how a prim is hidden, and it never reaches the solver.
+/// `None` on any non-finite component. A zero scale is valid and hides the
+/// prim.
 fn checked(attr: &XformAttr) -> Option<Transform> {
     Some(Transform {
         translation: finite::vec3(attr.translation)?,
@@ -78,7 +73,7 @@ pub fn apply_xform(
             continue;
         }
 
-        let global = compute_global_transform(entity, &transforms.as_readonly(), &parents);
+        let global = global_transform(entity, &transforms.as_readonly(), &parents);
         if let Some(mut p) = position {
             p.0 = global.translation;
         }

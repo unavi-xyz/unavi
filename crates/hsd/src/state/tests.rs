@@ -146,7 +146,7 @@ fn document(state: &HsdState) -> BTreeMap<String, Vec<u8>> {
 }
 
 #[test]
-fn realizes_a_root_and_its_child() {
+fn a_root_and_its_child_enter_the_scene() {
     let mut state = HsdState::new();
     project(
         &mut state,
@@ -192,12 +192,12 @@ fn an_orphan_is_held_not_reparented_to_the_root() {
     project(&mut state, &[child_entry(prim(2), prim(1), 2)]);
 
     assert!(state.exists(prim(2)));
-    assert!(!state.is_realized(prim(2)));
+    assert!(!state.is_in_scene(prim(2)));
     assert_eq!(state.roots().len(), 0);
 }
 
 #[test]
-fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
+fn an_orphan_enters_the_scene_with_its_properties_when_its_parent_arrives() {
     let mut state = HsdState::new();
     project(
         &mut state,
@@ -211,7 +211,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
     project(&mut state, &[root_entry(prim(1), 1)]);
     let events = state.drain_events();
 
-    assert!(events.contains(&SceneEvent::Realized {
+    assert!(events.contains(&SceneEvent::Added {
         prim:   prim(2),
         parent: Some(prim(1)),
     }));
@@ -222,7 +222,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
 }
 
 #[test]
-fn a_property_on_an_unrealized_prim_emits_nothing() {
+fn a_property_on_a_prim_not_in_the_scene_emits_nothing() {
     let mut state = HsdState::new();
     project(
         &mut state,
@@ -255,21 +255,21 @@ fn a_cycle_breaks_at_its_greatest_stamp_regardless_of_order() {
 }
 
 /// Folds a stream of scene events into the hierarchy a consumer builds,
-/// failing if any prim is placed under a parent not yet realized.
+/// failing if any prim is placed under a parent not yet in the scene.
 fn replay(events: &[SceneEvent]) -> BTreeMap<PrimId, Option<PrimId>> {
     let mut scene = BTreeMap::new();
     for event in events {
         match event {
-            SceneEvent::Realized { prim, parent } | SceneEvent::Reparented { prim, parent } => {
+            SceneEvent::Added { prim, parent } | SceneEvent::Reparented { prim, parent } => {
                 if let Some(parent) = parent {
                     assert!(
                         scene.contains_key(parent),
-                        "{prim} placed under {parent} before {parent} was realized"
+                        "{prim} placed under {parent} before {parent} was in the scene"
                     );
                 }
                 scene.insert(*prim, *parent);
             }
-            SceneEvent::Unrealized { prim } => {
+            SceneEvent::Removed { prim } => {
                 scene.remove(prim);
             }
             SceneEvent::Property { .. } => {}
@@ -279,7 +279,7 @@ fn replay(events: &[SceneEvent]) -> BTreeMap<PrimId, Option<PrimId>> {
 }
 
 #[test]
-fn a_cycle_realizes_each_member_after_its_parent_in_any_order() {
+fn a_cycle_adds_each_member_after_its_parent_in_any_order() {
     let entries = [
         child_entry(prim(1), prim(3), 10),
         child_entry(prim(2), prim(1), 20),
@@ -310,7 +310,7 @@ fn a_cycle_realizes_each_member_after_its_parent_in_any_order() {
 }
 
 #[test]
-fn a_prim_hanging_off_a_cycle_is_realized_under_its_own_parent() {
+fn a_prim_hanging_off_a_cycle_is_in_the_scene_under_its_own_parent() {
     let mut state = HsdState::new();
     project(
         &mut state,
@@ -369,11 +369,11 @@ fn a_cross_author_tombstone_removes_a_prim_written_by_someone_else() {
     project(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
 
     assert!(!state.exists(prim(2)));
-    assert!(!state.is_realized(prim(2)));
+    assert!(!state.is_in_scene(prim(2)));
     assert_eq!(state.children(prim(1)), Vec::new());
     assert_eq!(
         state.drain_events(),
-        vec![SceneEvent::Unrealized { prim: prim(2) }]
+        vec![SceneEvent::Removed { prim: prim(2) }]
     );
 }
 
@@ -390,11 +390,11 @@ fn deleting_a_prim_holds_its_descendants_rather_than_dropping_them() {
     );
 
     project(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
-    assert!(!state.is_realized(prim(3)));
+    assert!(!state.is_in_scene(prim(3)));
     assert!(state.exists(prim(3)));
 
     project(&mut state, &[child_entry(prim(2), prim(1), 20)]);
-    assert!(state.is_realized(prim(3)));
+    assert!(state.is_in_scene(prim(3)));
 }
 
 #[test]
@@ -457,7 +457,7 @@ fn a_winner_that_fails_to_decode_clears_what_the_key_held() {
 }
 
 #[test]
-fn a_document_newer_than_this_build_realizes_nothing_until_it_is_readable() {
+fn a_document_newer_than_this_build_adds_nothing_to_the_scene_until_it_is_readable() {
     let mut state = HsdState::new();
     project(
         &mut state,
@@ -576,7 +576,7 @@ fn script_created_prims_are_absent_from_the_document_layer() {
         .set_attribute(scratch, &NameAttr("transient".into()))
         .expect("attribute");
 
-    assert!(state.is_realized(scratch));
+    assert!(state.is_in_scene(scratch));
     let entries = document(&state);
     assert!(entries.contains_key(&parent_key(prim(1))));
     assert!(!entries.contains_key(&parent_key(scratch)));
@@ -724,7 +724,7 @@ fn a_commit_survives_its_store_echo_without_an_event() {
 }
 
 #[test]
-fn nesting_past_the_depth_cap_is_not_realized() {
+fn nesting_past_the_depth_cap_is_not_in_the_scene() {
     let mut state = HsdState::new();
 
     let deep = MAX_PRIM_DEPTH + 8;
@@ -743,13 +743,13 @@ fn nesting_past_the_depth_cap_is_not_realized() {
             .expect("child");
     }
 
-    assert!(state.is_realized(ids[0]), "the root realizes");
+    assert!(state.is_in_scene(ids[0]), "the root is in the scene");
     assert!(
-        state.is_realized(ids[MAX_PRIM_DEPTH - 1]),
-        "prims within the cap realize"
+        state.is_in_scene(ids[MAX_PRIM_DEPTH - 1]),
+        "prims within the cap are in the scene"
     );
     assert!(
-        !state.is_realized(ids[deep - 1]),
+        !state.is_in_scene(ids[deep - 1]),
         "prims past the cap are held"
     );
 }
@@ -781,19 +781,19 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
             child_entry(prim(3), prim(2), 1),
         ],
     );
-    assert!(state.is_realized(prim(3)));
+    assert!(state.is_in_scene(prim(3)));
 
     project(&mut state, &[child_entry(prim(1), deepest, 10_000)]);
 
-    assert!(state.is_realized(prim(2)), "the last prim within the cap");
-    assert!(!state.is_realized(prim(3)), "one past the cap");
+    assert!(state.is_in_scene(prim(2)), "the last prim within the cap");
+    assert!(!state.is_in_scene(prim(3)), "one past the cap");
 }
 
 #[test]
-fn a_prim_past_the_realized_cap_is_admitted_once_room_frees() {
+fn a_prim_past_the_scene_cap_is_admitted_once_room_frees() {
     let mut state = HsdState::new();
 
-    let ids = (0..MAX_REALIZED_PRIMS)
+    let ids = (0..MAX_SCENE_PRIMS)
         .map(|i| {
             let mut bytes = [0u8; 32];
             bytes[..8].copy_from_slice(&(i as u64).to_be_bytes());
@@ -803,22 +803,22 @@ fn a_prim_past_the_realized_cap_is_admitted_once_room_frees() {
     for (i, &id) in ids.iter().enumerate() {
         state.project(&root_entry(id, i as u64)).expect("root");
     }
-    assert_eq!(state.roots().len(), MAX_REALIZED_PRIMS, "the cap is full");
+    assert_eq!(state.roots().len(), MAX_SCENE_PRIMS, "the cap is full");
 
     let held = prim(200);
     state.project(&root_entry(held, 1_000)).expect("root");
-    assert!(!state.is_realized(held), "one past the cap is held");
+    assert!(!state.is_in_scene(held), "one past the cap is held");
     state.drain_events();
 
     state.remove_prim(ids[0]);
 
-    assert!(state.is_realized(held), "removing a root frees its slot");
+    assert!(state.is_in_scene(held), "removing a root frees its slot");
     assert!(
-        state.drain_events().contains(&SceneEvent::Realized {
+        state.drain_events().contains(&SceneEvent::Added {
             prim:   held,
             parent: None,
         }),
-        "the newly realized prim is announced like any other"
+        "the newly added prim is announced like any other"
     );
 }
 
@@ -836,7 +836,7 @@ fn an_open_tick_withholds_its_own_writes() {
 
     state.close_tick();
     assert!(
-        state.drain_events().contains(&SceneEvent::Realized {
+        state.drain_events().contains(&SceneEvent::Added {
             prim:   prim(1),
             parent: None,
         }),
@@ -852,12 +852,12 @@ fn writes_made_before_a_tick_opened_still_drain() {
     project(&mut state, &[root_entry(prim(2), 2)]);
 
     let events = state.drain_events();
-    assert!(events.contains(&SceneEvent::Realized {
+    assert!(events.contains(&SceneEvent::Added {
         prim:   prim(1),
         parent: None,
     }));
     assert!(
-        !events.contains(&SceneEvent::Realized {
+        !events.contains(&SceneEvent::Added {
             prim:   prim(2),
             parent: None,
         }),
@@ -881,7 +881,7 @@ fn a_prim_and_its_properties_leave_together() {
     state.close_tick();
 
     let events = state.drain_events();
-    assert!(events.contains(&SceneEvent::Realized {
+    assert!(events.contains(&SceneEvent::Added {
         prim:   prim(1),
         parent: None,
     }));
@@ -931,7 +931,7 @@ fn a_consumer_attaching_mid_tick_gets_the_scene_as_it_stands() {
     state.open_tick();
     state.resync();
     assert!(
-        state.drain_events().contains(&SceneEvent::Realized {
+        state.drain_events().contains(&SceneEvent::Added {
             prim:   prim(1),
             parent: None,
         }),
@@ -1152,7 +1152,7 @@ fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
     );
 
     assert!(state.exists(prim(9)));
-    assert!(state.is_realized(prim(9)));
+    assert!(state.is_in_scene(prim(9)));
     assert_eq!(state.children(prim(1)), vec![prim(9)]);
 
     state.write_parent(LayerId::Runtime, prim(9), Some(ParentAttr::Root), None);
@@ -1277,7 +1277,7 @@ fn committing_a_script_created_prim_writes_it_to_the_store() {
         ],
         "committing the parent is what makes a spawned prim durable"
     );
-    assert!(state.is_realized(scratch));
+    assert!(state.is_in_scene(scratch));
     assert_eq!(state.children(prim(1)), vec![scratch]);
 }
 
@@ -1355,7 +1355,7 @@ fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
         ],
         "a removed prim leaves no properties behind in the store"
     );
-    assert!(!state.is_realized(prim(2)));
+    assert!(!state.is_in_scene(prim(2)));
     assert!(!document(&state).contains_key(&parent_key(prim(2))));
 }
 
@@ -1396,8 +1396,8 @@ fn referenced() -> HsdState {
     state
 }
 
-/// What a referencing document says about `site`'s target, as the realizer
-/// reads it back out to install.
+/// What a referencing document says about `site`'s target, as it is read
+/// back out to install.
 fn stated(site: PrimId, entries: &[Entry]) -> Layer {
     let mut referencing = HsdState::new();
     project(&mut referencing, entries);
@@ -1514,7 +1514,7 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     ));
 
     assert!(
-        !state.is_realized(prim(2)),
+        !state.is_in_scene(prim(2)),
         "a referencing document hides a prim it did not author by blocking \
              its parent"
     );

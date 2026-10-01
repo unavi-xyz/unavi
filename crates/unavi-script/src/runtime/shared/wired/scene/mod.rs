@@ -5,11 +5,13 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdDocId,
-    HsdHeld,
-    HsdNamespace,
-    HsdSource,
+    document::{
+        Hsd,
+        HsdDocId,
+        HsdNamespace,
+        Unplaced,
+    },
+    reference::ReferenceInstance,
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
@@ -187,7 +189,8 @@ async fn spawn_child_doc(
 
     AsyncCommands::default()
         .spawn((
-            HsdHeld(state),
+            Hsd(state),
+            Unplaced,
             HsdDocId(id),
             HsdNamespace(doc),
             QuotaLeases(vec![doc_lease]),
@@ -278,14 +281,10 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let state = world
-                .query::<(&HsdDocId, AnyOf<(&Hsd, &HsdHeld)>)>()
+                .query::<(&HsdDocId, &Hsd)>()
                 .iter(world)
                 .find(|(rid, _)| rid.0 == id)
-                .and_then(|(_, (live, held))| match (live, held) {
-                    (Some(live), _) => Some(Arc::clone(&live.0)),
-                    (None, Some(held)) => Some(Arc::clone(&held.0)),
-                    (None, None) => None,
-                });
+                .map(|(_, doc)| Arc::clone(&doc.0));
             tx.try_send(state).ok();
         })
         .send()
@@ -394,8 +393,9 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
 ///
 /// A copy, not a reference: the two diverge from here, and the copy's scripts
 /// see the copy's prims. That is what a template is for, and what a reference
-/// deliberately is not — a reference realizes the target as a child document,
-/// so a script inside it would look for its siblings in the wrong place.
+/// deliberately is not — a reference adds the target to the scene as a child
+/// document, so a script inside it would look for its siblings in the wrong
+/// place.
 ///
 /// Only what the store holds travels. A copy of what someone's script happened
 /// to be computing this frame is not what "copy this template" means.
@@ -409,8 +409,8 @@ pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
 }
 
 /// What the store behind `id` holds, looked up by document id and then by the
-/// reference sites realizing it, since a realized reference is keyed by its
-/// site rather than by the document it stands for.
+/// reference sites that add it to the scene, since a reference in the scene
+/// is keyed by its site rather than by the document it stands for.
 async fn source_entries(id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
@@ -422,9 +422,9 @@ async fn source_entries(id: DocId) -> anyhow::Result<Option<Vec<Entry>>> {
                 .map(|(_, namespace)| namespace.0.clone());
             let doc = by_id.or_else(|| {
                 world
-                    .query::<(&HsdSource, &HsdNamespace)>()
+                    .query::<(&ReferenceInstance, &HsdNamespace)>()
                     .iter(world)
-                    .find(|(source, _)| source.0 == id)
+                    .find(|(instance, _)| instance.target == id)
                     .map(|(_, namespace)| namespace.0.clone())
             });
             let Some(doc) = doc else {

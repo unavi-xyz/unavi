@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_hsd::{
+use bevy_hsd::document::{
     Hsd,
     HsdDocId,
 };

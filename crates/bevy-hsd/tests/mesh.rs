@@ -174,7 +174,7 @@ fn test_mismatched_attribute_lengths_are_rejected(mut ctx: TestContext) {
     );
 }
 
-/// The control for the two rejection tests: the same shape, with indices in
+/// The control for the two rejection tests. The same shape, with indices in
 /// range, does build an asset.
 #[traced_test]
 #[rstest]

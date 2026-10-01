@@ -2,10 +2,14 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::{
+        Hsd,
+        HsdDocId,
+    },
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use smol_str::SmolStr;
 use tokio::sync::Mutex;
@@ -81,14 +85,7 @@ pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     engines: Query<&WasmtimeEngine>,
     to_instantiate: Query<
-        (
-            Entity,
-            &Script,
-            &ScriptEngine,
-            NameOrEntity,
-            &Prim,
-            &HsdChild,
-        ),
+        (Entity, &Script, &ScriptEngine, NameOrEntity, &Prim, &PrimOf),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,

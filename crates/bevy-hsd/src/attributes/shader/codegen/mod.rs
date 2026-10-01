@@ -1,10 +1,10 @@
 //! Compiles a validated [`ShaderGraph`] to WGSL, client-side, at load time.
 //!
-//! Only the graph travels over the network; every peer that loads it
+//! Only the graph travels over the network. Every peer that loads it
 //! generates its own source text from the same validated data. A graph
-//! compiles to up to two stages — a fragment body from `SurfaceGraph` (in a
-//! `Lit` or `Unlit` shape) and, if present, a vertex body from
-//! `DisplacementGraph`.
+//! compiles to up to two stages: a fragment body from `SurfaceGraph`, in a
+//! `Lit` or `Unlit` shape, and a vertex body from `DisplacementGraph` if
+//! present.
 
 pub mod body;
 
@@ -27,14 +27,14 @@ use hsd::attributes::shader::{
     validate::Validated,
 };
 
-/// Payload-noise helpers the generated body calls into; defined once per
+/// Payload-noise helpers the generated body calls into. Defined once per
 /// shader rather than inlined per `Noise` node.
 const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wgsl");
 
 /// Instance, object and UV helpers, on the same terms as [`NOISE_FUNCTIONS`].
-/// Emitted whether or not a graph calls them: naga strips a function nothing
-/// reaches, and a conditional preamble would key the shader cache on
-/// something other than the graph's own hash.
+/// Emitted whether or not a graph calls them. Naga strips a function nothing
+/// reaches, and a conditional preamble would key the shader cache on more
+/// than the graph's own hash.
 const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wgsl");
 
 fn texture_bindings() -> Result<String, fmt::Error> {
@@ -67,10 +67,11 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 /// The full fragment shader.
 ///
 /// Bevy's own `PbrInput` construction and lighting wrap the generated body
-/// for `Lit`; `Unlit` skips both and writes `out_color` straight to the
-/// fragment output. Not naga-testable standalone: the `#import`s are Bevy's
-/// shader-preprocessor syntax, so the integration tests wrap the bodies in a
-/// bare harness.
+/// for `Lit`. `Unlit` skips both and writes `out_color` straight to the
+/// fragment output.
+///
+/// Not naga-testable standalone. The `#import`s are Bevy's shader-preprocessor
+/// syntax, so the integration tests wrap the bodies in a bare harness.
 pub fn generate_fragment_shader(
     graph: &ShaderGraph,
     validated: &Validated,
@@ -101,7 +102,7 @@ pub fn generate_fragment_shader(
 /// The full vertex shader, generated only when a graph has a
 /// `DisplacementGraph`.
 ///
-/// Targets the static-mesh path only; skinning and morph targets are out of
+/// Targets the static-mesh path only. Skinning and morph targets are out of
 /// scope.
 ///
 /// `None` for a graph with no displacement network, where the mesh pipeline's

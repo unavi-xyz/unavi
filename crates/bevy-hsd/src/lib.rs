@@ -1,43 +1,29 @@
+//! Projects an [`hsd`] document into the ECS as prims, and applies the
+//! attributes each prim carries.
+
 // Bevy's `AsBindGroup` needs a higher limit.
 #![recursion_limit = "256"]
 
-use std::{
-    collections::BTreeMap,
-    sync::{
-        Arc,
-        Mutex,
-    },
-};
-
 use bevy::{
     asset::embedded_asset,
-    platform::collections::HashMap,
     prelude::*,
     transform::TransformSystems,
 };
-use hsd::{
-    id::{
-        DocId,
-        PrimId,
-    },
-    property::name::PropName,
-    state::HsdState,
-};
-use iroh::EndpointAddr;
-use wds::document::Document;
 
 pub mod anchor;
 pub mod attributes;
-mod drain;
+pub mod document;
 pub mod feed;
-pub mod load;
 pub mod loaded;
+pub mod package;
+pub mod prim;
+pub mod reference;
+mod scene_events;
 
-/// Drains pending scene events and applies them to the world. Systems that
-/// write to a document and want their changes reflected the same frame should
-/// run before this set.
+/// Applies document changes to the world. A write made before this set is
+/// visible the same frame.
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct HsdCommitSet;
+pub struct HsdSystems;
 
 pub struct HsdPlugin;
 
@@ -46,120 +32,51 @@ impl Plugin for HsdPlugin {
         embedded_asset!(app, "attributes/shader/fallback.wgsl");
 
         app.add_plugins((
-            MaterialPlugin::<attributes::shader::ShaderGraphMaterial>::default(),
+            MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
         ))
-            .init_asset::<load::HsdAsset>()
-            .init_resource::<attributes::shader::ShaderGraphCache>()
-            .register_asset_loader(load::HsdLoader)
-            .add_observer(drain::resync_on_spawn)
+            .init_asset::<package::PackageAsset>()
+            .init_resource::<attributes::shader::cache::ShaderGraphCache>()
+            .register_asset_loader(package::PackageLoader)
+            .add_observer(scene_events::resync_on_add)
+            .add_observer(scene_events::resync_on_place)
             .add_observer(feed::feed_namespace)
-            .add_observer(attributes::shader::evict_document_shaders)
+            .add_observer(attributes::shader::cache::evict_document_shaders)
             .add_systems(
                 Update,
                 (
                     (
                         feed::apply_doc_deltas,
-                        drain::discard_held_events,
-                        drain::drain_scene_events,
+                        scene_events::discard_unplaced_events,
+                        scene_events::drain_scene_events,
                         attributes::xform::apply_xform,
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
                         attributes::image::apply_sampler,
                         attributes::collider::rebuild_collider,
-                        attributes::material_source::resolve_material_source,
-                        attributes::material::rebuild_material,
-                        attributes::material::propagate_image_to_material,
-                        attributes::material::propagate_material_to_dependents,
+                        attributes::material::source::resolve_material_source,
+                        attributes::material::pbr::rebuild_material,
+                        attributes::material::pbr::propagate_image_to_material,
+                        attributes::material::pbr::propagate_material_to_dependents,
                     )
                         .chain(),
                     (
-                        attributes::shader::rebuild_shader_material,
-                        attributes::shader::apply_graph_overrides,
-                        load::instance_hsd,
-                        load::realize_refs,
+                        attributes::shader::systems::rebuild_shader_material,
+                        attributes::shader::systems::apply_graph_overrides,
+                        package::import_packages,
+                        reference::open_references,
                     )
                         .chain(),
                 )
                     .chain()
-                    .in_set(HsdCommitSet),
+                    .in_set(HsdSystems),
             )
-            .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
-            // `apply_xform` seeds a body's physics position from the document's
-            // transform, so the anchor must place the document first.
-            .add_systems(Update, anchor::apply_anchors.before(HsdCommitSet))
+            .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdSystems))
+            // `apply_xform` seeds physics positions from the anchored transform.
+            .add_systems(Update, anchor::apply_anchors.before(HsdSystems))
             .add_systems(
                 PostUpdate,
                 loaded::evaluate_hsd_loaded.before(TransformSystems::Propagate),
             );
     }
 }
-
-/// A live HSD document.
-#[derive(Component, Clone)]
-#[require(HsdChildren, Transform, Visibility)]
-pub struct Hsd(pub Arc<Mutex<HsdState>>);
-
-impl Hsd {
-    #[must_use]
-    pub fn new(state: HsdState) -> Self {
-        Self(Arc::new(Mutex::new(state)))
-    }
-}
-
-/// A document that is not in the scene.
-///
-/// A script writes to it exactly as to a live one; nothing of it is drawn,
-/// simulated or reachable by position. [`anchor::place`] inserts it whole, so
-/// a just-built document appears where it was put rather than arriving at the
-/// origin and moving.
-#[derive(Component, Clone)]
-pub struct HsdHeld(pub Arc<Mutex<HsdState>>);
-
-/// A namespace-backed document's id is its namespace; a reference site
-/// derives one.
-#[derive(Component, Debug, Clone, Copy)]
-pub struct HsdDocId(pub DocId);
-
-/// The document a realized reference stands for.
-///
-/// Its [`HsdDocId`] is the reference *site*, since two prims may name one
-/// document; this is what says which document that is.
-#[derive(Component, Debug, Clone, Copy)]
-pub struct HsdSource(pub DocId);
-
-/// Present only on namespace-backed documents, which can be written to storage
-/// and shared.
-///
-/// Holds the document open rather than naming it, so retention cannot evict
-/// one the scene is still drawing.
-#[derive(Component, Debug, Clone)]
-pub struct HsdNamespace(pub Document);
-
-/// Endpoints a document syncs from, inherited by every reference it realizes.
-///
-/// Absent on a document this client created, whose references are served
-/// rather than fetched.
-#[derive(Component, Debug, Clone, Default)]
-pub struct HsdSyncPeers(pub Vec<EndpointAddr>);
-
-#[derive(Component, Default)]
-#[relationship_target(relationship=HsdChild, linked_spawn)]
-pub struct HsdChildren(Vec<Entity>);
-
-#[derive(Component)]
-#[relationship(relationship_target=HsdChildren)]
-pub struct HsdChild(pub Entity);
-
-#[derive(Component)]
-#[require(Visibility, Transform)]
-pub struct Prim(pub PrimId);
-
-#[derive(Component, Default, Debug)]
-pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
-
-/// A prim's relationship properties: the cross-prim references, which in this
-/// format share one group with attributes and are distinguished by a tag
-/// byte rather than by name.
-#[derive(Component, Default, Debug)]
-pub struct HsdRelationships(pub BTreeMap<PropName, PrimId>);

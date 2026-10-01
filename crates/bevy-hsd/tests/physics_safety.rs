@@ -9,7 +9,7 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use bevy_hsd::Hsd;
+use bevy_hsd::document::Hsd;
 use hsd::{
     attributes::{
         collider::ColliderKind,
@@ -48,7 +48,7 @@ fn write_full_prim(
     prim
 }
 
-/// One batch writes collider + rigid body + zero-scale xform — must not
+/// Writing collider + rigid body + zero-scale xform in one batch must not
 /// panic on avian's placeholder `Position` / `Rotation`.
 #[traced_test]
 #[rstest]
@@ -90,7 +90,7 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
     );
 }
 
-/// Collider with no rigid body — placeholder hazard still applies.
+/// A collider with no rigid body still risks avian's placeholder hazard.
 #[traced_test]
 #[rstest]
 fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
@@ -109,7 +109,7 @@ fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
     );
 }
 
-/// Collider with no xform attr — seed must cope with a default `Transform`.
+/// A collider with no xform attr must seed physics with a default `Transform`.
 #[traced_test]
 #[rstest]
 fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
@@ -131,7 +131,7 @@ fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
 }
 
 /// A non-zero translation in the script's xform must survive avian's
-/// `init_physics_transform` write-back; otherwise prims land at the origin.
+/// `init_physics_transform` write-back. Otherwise prims land at the origin.
 #[traced_test]
 #[rstest]
 fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics: TestContext) {
@@ -212,7 +212,7 @@ fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
     );
 }
 
-/// A child prim with collider + rigid body whose parent is translated:
+/// A child prim with collider + rigid body whose parent is translated.
 /// `Position` is global in avian, so it must be (parent + local), not local.
 #[traced_test]
 #[rstest]
@@ -273,9 +273,9 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
 }
 
 /// A child with no xform of its own under a zero-scale parent must end up
-/// parked, not with NaN `Transform`: `init_physics_transform`'s `reparented_to`
-/// on a degenerate parent would otherwise leave the mesh invisible once the
-/// parent scales back up.
+/// parked, not with NaN `Transform`. `init_physics_transform`'s
+/// `reparented_to` on a degenerate parent would otherwise leave the mesh
+/// invisible once the parent scales back up.
 #[traced_test]
 #[rstest]
 fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: TestContext) {

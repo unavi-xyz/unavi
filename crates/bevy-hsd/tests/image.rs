@@ -125,7 +125,7 @@ fn test_image_blob_load(#[from(ctx_blobs)] mut ctx: TestContext) {
     assert_eq!(sampler.mag_filter, bevy::image::ImageFilterMode::Nearest);
 }
 
-/// The dimension cap has to reach the decoder: a header declaring more pixels
+/// The dimension cap has to reach the decoder. A header declaring more pixels
 /// than the cap admits must be refused before it is allocated, not after.
 #[traced_test]
 #[rstest]

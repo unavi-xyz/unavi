@@ -14,10 +14,12 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
-    HsdPrimIndex,
-    Prim,
+    document::HsdDocId,
+    prim::{
+        Prim,
+        PrimIndex,
+        PrimOf,
+    },
 };
 use hsd::id::{
     DocId,
@@ -63,7 +65,7 @@ pub fn send_object_poses(
     roots: Query<&HsdDocId>,
     prims: Query<(
         &Prim,
-        &HsdChild,
+        &PrimOf,
         &RigidBody,
         &GlobalTransform,
         Option<&LinearVelocity>,
@@ -167,7 +169,7 @@ const MAX_EXTRAPOLATION: Duration = Duration::from_millis(300);
 const SMOOTH_RATE: f32 = 16.0;
 
 pub fn apply_remote_objects(
-    roots: Query<(&HsdDocId, &HsdPrimIndex)>,
+    roots: Query<(&HsdDocId, &PrimIndex)>,
     spaces: Query<(Entity, &Space)>,
     mut interps: Query<&mut ObjectInterp>,
     view: Option<Res<SpaceView>>,
@@ -189,7 +191,7 @@ pub fn apply_remote_objects(
         let Some(prim_entity) = roots
             .iter()
             .find(|(record, _)| record.0 == doc)
-            .and_then(|(_, index)| index.0.get(&prim).copied())
+            .and_then(|(_, index)| index.get(prim))
         else {
             continue;
         };
@@ -261,7 +263,7 @@ pub struct ReplicaObject;
 /// so only the accepted controller drives a prim.
 pub fn reconcile_object_holds(
     roots: Query<&HsdDocId>,
-    prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
+    prims: Query<(Entity, &PrimOf, &RigidBody, Has<ReplicaObject>), With<Prim>>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {

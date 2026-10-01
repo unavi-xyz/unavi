@@ -30,8 +30,8 @@ pub(super) const fn wgsl_type(kind: ValueKind) -> &'static str {
     }
 }
 
-/// `{:?}` rather than `{}`: `f32`'s `Debug` always prints a decimal point
-/// (`2.0`, not `2`), which a bare integer is not in WGSL.
+/// Uses `{:?}` rather than `{}`. `f32`'s `Debug` always prints a decimal
+/// point (`2.0`, not `2`), and WGSL float literals require one.
 fn literal(out: &mut String, value: GraphValue) -> Result {
     match value {
         GraphValue::Float(v) => write!(out, "{v:?}"),
@@ -41,7 +41,7 @@ fn literal(out: &mut String, value: GraphValue) -> Result {
     }
 }
 
-/// A public input is stored as a full `vec4` slot; a reference swizzles down
+/// A public input is stored as a full `vec4` slot. A reference swizzles down
 /// to the components its declared kind uses.
 pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Port) -> Result {
     match port {
@@ -64,8 +64,8 @@ pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Po
 }
 
 /// The kind a port carries, for nodes whose generated expression depends on
-/// it. Total: only a validated graph reaches codegen, and validation already
-/// rejected every out-of-range reference.
+/// it. Every port resolves because only a validated graph reaches codegen,
+/// and validation already rejected any out-of-range reference.
 fn port_kind(public_inputs: &[GraphValue], kinds: &[ValueKind], port: Port) -> ValueKind {
     match port {
         Port::Const(value) => value.kind(),
@@ -83,9 +83,9 @@ fn zero_literal(out: &mut String, kind: ValueKind) {
     }
 }
 
-/// The per-node WGSL expression: one exhaustive match dispatching each
-/// variant to the family that owns it, so adding a node makes the compiler
-/// name this file.
+/// The per-node WGSL expression. One exhaustive match dispatches each variant
+/// to the family that owns it, so adding a node makes the compiler name this
+/// file.
 pub(super) fn node_expr(
     out: &mut String,
     public_inputs: &[GraphValue],

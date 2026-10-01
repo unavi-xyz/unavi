@@ -11,7 +11,7 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_hsd::load::LoadHsd;
+use bevy_hsd::package::ImportPackage;
 use bevy_iroh::store::{
     LocalBlobs,
     LocalStore,
@@ -99,7 +99,7 @@ fn init_scene(
     // does not have to wait for the avatar to finish loading.
     let handle = asset_server.load(SCRIPT_PATH);
     commands.spawn((
-        LoadHsd { handle },
+        ImportPackage(handle),
         // Scene writes are refused for a document in no space; a standalone
         // harness needs the shell's own permissions.
     ));

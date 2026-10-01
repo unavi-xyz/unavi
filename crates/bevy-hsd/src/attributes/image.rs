@@ -26,38 +26,29 @@ use hsd::{
 };
 use image::GenericImageView;
 
-use crate::attributes::{
-    ParseError,
-    Pending,
-};
-
 const MAX_TEXTURE_DIMS: u32 = 8192;
-/// Ceiling on what one decode may allocate, sized to hold the largest texture
-/// the dimension cap admits.
+/// RGBA8 at the dimension cap.
 const MAX_DECODE_BYTES: u64 = 4 * (MAX_TEXTURE_DIMS as u64) * (MAX_TEXTURE_DIMS as u64);
 
-/// The `image/sampler` field. Kept separately from the encoded bytes so a
-/// sampler-only edit never re-decodes them.
+/// The `image/sampler` field.
 #[derive(Component, Debug, Clone, Default)]
 pub(crate) struct HsdImageSampler(pub hsd_image::ImageSampler);
 
-/// The `image/data` field's encoded bytes, present only until the next
-/// decode attempt consumes them.
+/// The `image/data` field, removed by the next decode.
 #[derive(Component, Debug, Clone)]
 pub(crate) struct ImageBytes(pub Vec<u8>);
 
-/// A prim's decoded image, present only once a decode has succeeded.
+/// A prim's successfully decoded image.
 #[derive(Component)]
 pub struct HsdImage(pub Handle<Image>);
 
-/// `data` gates the whole image: without it there is nothing to decode, so
-/// its removal tears down the image entirely.
+/// Removing `data` tears down the whole image.
 pub(crate) fn apply(
     commands: &mut Commands,
     prim: Entity,
     name: &PropName,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     match name.field() {
         Some("sampler") => {
             let sampler = payload
@@ -68,14 +59,10 @@ pub(crate) fn apply(
         }
         Some("data") => match payload.map(hsd_image::ImageData::decode).transpose()? {
             Some(data) => {
-                commands
-                    .entity(prim)
-                    .insert((ImageBytes(data.0), Pending::<HsdImage>::default()));
+                commands.entity(prim).insert(ImageBytes(data.0));
             }
             None => {
-                commands
-                    .entity(prim)
-                    .remove::<(ImageBytes, HsdImage, Pending<HsdImage>)>();
+                commands.entity(prim).remove::<(ImageBytes, HsdImage)>();
             }
         },
         _ => {}
@@ -83,9 +70,6 @@ pub(crate) fn apply(
     Ok(())
 }
 
-/// Decodes on every change to the encoded bytes, never on a sampler-only
-/// change. The bytes are dropped afterwards, win or lose: only the decoded
-/// asset is needed past this point.
 pub(crate) fn rebuild_image(
     changed: Query<(Entity, &ImageBytes, Option<&HsdImageSampler>), Changed<ImageBytes>>,
     mut image_assets: ResMut<Assets<Image>>,
@@ -103,14 +87,11 @@ pub(crate) fn rebuild_image(
                 commands.entity(prim).remove::<HsdImage>();
             }
         }
-        commands
-            .entity(prim)
-            .remove::<(ImageBytes, Pending<HsdImage>)>();
+        commands.entity(prim).remove::<ImageBytes>();
     }
 }
 
-/// A sampler or `srgb` edit on an image already built mutates its asset in
-/// place rather than re-decoding.
+/// Sampler edits mutate the built asset in place.
 pub(crate) fn apply_sampler(
     changed: Query<(&HsdImage, &HsdImageSampler), Changed<HsdImageSampler>>,
     mut image_assets: ResMut<Assets<Image>>,
@@ -124,11 +105,8 @@ pub(crate) fn apply_sampler(
     }
 }
 
-/// Decodes with the dimensions bounded up front.
-///
-/// A decompression bomb declares its dimensions in a few header bytes; the
-/// limit must reach the decoder, since checking `dimensions()` after a plain
-/// load checks an allocation that already happened.
+/// The limits go to the decoder itself, since a decompression bomb allocates
+/// before `dimensions()` could be checked.
 fn decode(bytes: &[u8]) -> Result<image::DynamicImage, image::ImageError> {
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(MAX_TEXTURE_DIMS);

@@ -8,9 +8,15 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::{
+        Hsd,
+        HsdDocId,
+        Unplaced,
+    },
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use hsd::id::{
     DocId,
@@ -132,7 +138,7 @@ pub struct RegisterTransforms(pub AbsoluteNodeId);
 
 pub fn register_nodes(
     trigger: On<Add, Prim>,
-    prims: Query<(&Prim, &HsdChild)>,
+    prims: Query<(&Prim, &PrimOf)>,
     docs: Query<&HsdDocId>,
     mut commands: Commands,
 ) {
@@ -157,7 +163,7 @@ pub fn snapshot_transforms(
         &RegisterTransforms,
         &GlobalTransform,
         &Transform,
-        Option<&HsdChild>,
+        Option<&PrimOf>,
     )>,
     docs: Query<&GlobalTransform>,
     registry: Res<TransformSnapshots>,
@@ -193,7 +199,7 @@ pub fn deregister_transforms(
 }
 
 pub fn snapshot_doc_roots(
-    docs: Query<(&HsdDocId, &GlobalTransform), With<bevy_hsd::Hsd>>,
+    docs: Query<(&HsdDocId, &GlobalTransform), (With<Hsd>, Without<Unplaced>)>,
     registry: Res<TransformSnapshots>,
 ) {
     if docs.is_empty() {
@@ -203,7 +209,7 @@ pub fn snapshot_doc_roots(
 }
 
 pub fn deregister_doc_root(
-    trigger: On<Remove, bevy_hsd::Hsd>,
+    trigger: On<Remove, Hsd>,
     docs: Query<&HsdDocId>,
     registry: Res<TransformSnapshots>,
 ) {

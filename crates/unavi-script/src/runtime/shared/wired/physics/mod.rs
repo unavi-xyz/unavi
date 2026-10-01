@@ -11,10 +11,12 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
-    HsdPrimIndex,
-    Prim as HsdPrim,
+    document::HsdDocId,
+    prim::{
+        Prim as HsdPrim,
+        PrimIndex,
+        PrimOf,
+    },
 };
 use hsd::id::{
     DocId,
@@ -57,7 +59,7 @@ pub struct RayHit {
 
 fn resolve_doc(
     entity: Entity,
-    children: &Query<&HsdChild>,
+    children: &Query<&PrimOf>,
     docs: &Query<&HsdDocId>,
     parents: &Query<&ChildOf>,
 ) -> Option<DocId> {
@@ -88,7 +90,7 @@ pub async fn raycast(
                 .run_system_once(
                     move |spatial: SpatialQuery,
                           prims: Query<&HsdPrim>,
-                          children: Query<&HsdChild>,
+                          children: Query<&PrimOf>,
                           docs: Query<&HsdDocId>,
                           parents: Query<&ChildOf>|
                           -> Option<RayHit> {
@@ -136,10 +138,10 @@ async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(DocId, PrimId), ScriptE
 }
 
 fn entity_for(world: &mut World, doc: DocId, prim: PrimId) -> Option<Entity> {
-    let mut query = world.query::<(&HsdDocId, &HsdPrimIndex)>();
+    let mut query = world.query::<(&HsdDocId, &PrimIndex)>();
     for (rec, index) in query.iter(world) {
         if rec.0 == doc {
-            return index.0.get(&prim).copied();
+            return index.get(prim);
         }
     }
     None
@@ -174,9 +176,9 @@ async fn set_velocity(
         .map_err(|err| ScriptError::other(err.to_string()))?
 }
 
-/// A body only carries velocity once it is realized, which a document placed
-/// this tick is not; reported rather than dropped, so a caller can try again
-/// instead of quietly landing a thrown thing on the spot.
+/// A body only carries velocity once it is in the scene, which a document
+/// placed this tick is not; reported rather than dropped, so a caller can try
+/// again instead of quietly landing a thrown thing on the spot.
 fn apply_velocity(
     world: &mut World,
     doc: DocId,

@@ -33,7 +33,7 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
         }
         Node::SceneColor { uv } => {
             // The view-wide texture holding what was drawn before this
-            // surface. Bound unconditionally by `mesh_view_bindings`; filled
+            // surface. Bound unconditionally by `mesh_view_bindings`. Filled
             // only for materials in the transmissive phase, which
             // `ShaderGraphMaterial` requests when a graph contains this node.
             out.push_str(

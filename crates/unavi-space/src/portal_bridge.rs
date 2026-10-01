@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
     attributes::portal::PortalConfig,
+    document::HsdDocId,
+    prim::PrimOf,
 };
 use hsd::id::DocId;
 use unavi_manifold::{
@@ -49,7 +49,7 @@ pub fn sync_portal_config(
 /// Keeps each linked seam's [`SeamHome`] on the space its document is in,
 /// which is unknown until the document registers.
 pub fn sync_seam_home(
-    seams: Query<(Entity, &HsdChild, Option<&SeamHome>), With<SeamLink>>,
+    seams: Query<(Entity, &PrimOf, Option<&SeamHome>), With<SeamLink>>,
     docs: Query<&HsdDocId>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,

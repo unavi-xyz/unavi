@@ -1,57 +1,46 @@
-//! Decides which backend renders a prim, so exactly one does.
-//!
-//! The format's `material/binding` names another prim, not a backend, and this
-//! crate has two backends for it. Without a single decision point a prim can
-//! carry both material components and render twice.
-
 use bevy::{
     ecs::system::SystemParam,
     pbr::MeshMaterial3d,
+    platform::collections::HashSet,
     prelude::*,
 };
 use hsd::attributes::material;
 
 use crate::{
-    HsdRelationships,
     attributes::{
         material::{
-            HsdMaterial,
             MaterialData,
+            pbr::HsdMaterial,
         },
-        relations::PrimRelations,
         shader::{
-            HsdMaterialGraphSlot,
-            HsdShaderGraphMaterial,
-            ShaderGraphMaterial,
+            ShaderGraphData,
+            material::ShaderGraphMaterial,
         },
+    },
+    prim::{
+        HsdRelationships,
+        PrimRelations,
     },
 };
 
-/// Which backend renders a prim, and whose definition it uses.
-///
-/// The inner entity is the prim the definition comes from — itself, or the
-/// target of its `material/binding`. A bound prim follows whatever its target
-/// resolved to, so a graph and a PBR material are interchangeable.
+/// Which material backend renders a prim. The entity holds the definition,
+/// either the prim itself or its `material/binding` target.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaterialSource {
-    /// Renders the source prim's compiled graph, parameterized by this prim's
-    /// own overrides; a graph binding shares a program, not a finished look.
+    /// The source's graph, with this prim's own overrides.
     Graph(Entity),
-    /// Shares the source prim's built `StandardMaterial` outright;
-    /// `MaterialAttr` has no per-instance parameters.
+    /// The source's `StandardMaterial`, shared as is.
     Pbr(Entity),
 }
 
 #[derive(SystemParam)]
 pub struct SourceCtx<'w, 's> {
     relations: PrimRelations<'w, 's>,
-    graphs:    Query<'w, 's, (), With<HsdMaterialGraphSlot>>,
+    graphs:    Query<'w, 's, (), With<ShaderGraphData>>,
     materials: Query<'w, 's, (), With<MaterialData>>,
 }
 
 impl SourceCtx<'_, '_> {
-    /// The prim a `material/binding` names, if it resolves within the same
-    /// document.
     fn binding_target(&self, prim: Entity) -> Option<Entity> {
         let target = self.relations.target(prim, &material::BINDING)?;
         (target != prim).then_some(target)
@@ -67,7 +56,7 @@ impl SourceCtx<'_, '_> {
         }
     }
 
-    /// A prim's own definition wins over anything it binds to; a graph wins
+    /// A prim's own definition wins over anything it binds to. A graph wins
     /// over an inline `MaterialAttr` on the same prim.
     fn resolve(&self, prim: Entity) -> Option<MaterialSource> {
         self.own_source(prim)
@@ -79,36 +68,27 @@ pub fn resolve_material_source(
     changed: Query<
         Entity,
         Or<(
-            Changed<HsdMaterialGraphSlot>,
+            Changed<ShaderGraphData>,
             Changed<MaterialData>,
             Changed<HsdRelationships>,
         )>,
     >,
-    mut removed_graph: RemovedComponents<HsdMaterialGraphSlot>,
+    mut removed_graph: RemovedComponents<ShaderGraphData>,
     mut removed_material: RemovedComponents<MaterialData>,
-    binders: Query<Entity, With<HsdRelationships>>,
     existing: Query<&MaterialSource>,
     ctx: SourceCtx,
     mut commands: Commands,
 ) {
-    let mut dirty = changed.iter().collect::<Vec<_>>();
+    let mut dirty: HashSet<Entity> = changed.iter().collect();
     dirty.extend(removed_graph.read());
     dirty.extend(removed_material.read());
     if dirty.is_empty() {
         return;
     }
 
-    // A prim bound to a changed one re-resolves too: its material is whatever
-    // its target just became.
-    let sources = dirty.clone();
-    for ent in &binders {
-        if !sources.contains(&ent)
-            && ctx
-                .binding_target(ent)
-                .is_some_and(|target| sources.contains(&target))
-        {
-            dirty.push(ent);
-        }
+    let seeds: Vec<Entity> = dirty.iter().copied().collect();
+    for prim in seeds {
+        dirty.extend(ctx.relations.sources(prim));
     }
 
     for prim in dirty {
@@ -127,13 +107,12 @@ pub fn resolve_material_source(
             Some(source @ MaterialSource::Pbr(_)) => {
                 entity
                     .insert(source)
-                    .remove::<(HsdShaderGraphMaterial, MeshMaterial3d<ShaderGraphMaterial>)>();
+                    .remove::<MeshMaterial3d<ShaderGraphMaterial>>();
             }
             None => {
                 entity.remove::<MaterialSource>().remove::<(
                     HsdMaterial,
                     MeshMaterial3d<StandardMaterial>,
-                    HsdShaderGraphMaterial,
                     MeshMaterial3d<ShaderGraphMaterial>,
                 )>();
             }

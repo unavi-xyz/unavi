@@ -2,8 +2,8 @@
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdNamespace,
-    HsdPrimIndex,
+    document::HsdNamespace,
+    prim::PrimIndex,
 };
 use hsd::{
     attributes::{
@@ -50,10 +50,10 @@ fn name(prim: PrimId, value: &str) -> Entry {
     )
 }
 
-fn is_realized(world: &World, doc: Entity, prim: PrimId) -> bool {
+fn is_in_scene(world: &World, doc: Entity, prim: PrimId) -> bool {
     world
-        .get::<HsdPrimIndex>(doc)
-        .is_some_and(|index| index.0.contains_key(&prim))
+        .get::<PrimIndex>(doc)
+        .is_some_and(|index| index.get(prim).is_some())
 }
 
 fn attach(ctx: &mut TestContext, backing: &Backing) -> Document {
@@ -71,15 +71,15 @@ fn an_entry_written_after_the_document_loaded_reaches_the_world(mut ctx: TestCon
     let doc = attach(&mut ctx, &backing);
     set_entry(&doc, &root(FIRST));
     let host = ctx.doc;
-    ctx.tick_until(|world| is_realized(world, host, FIRST));
+    ctx.tick_until(|world| is_in_scene(world, host, FIRST));
 
     set_entry(&doc, &name(FIRST, "arrived later"));
 
     ctx.tick_until(|world| {
         world
-            .get::<HsdPrimIndex>(host)
-            .and_then(|index| index.0.get(&FIRST))
-            .and_then(|prim| world.get::<Name>(*prim))
+            .get::<PrimIndex>(host)
+            .and_then(|index| index.get(FIRST))
+            .and_then(|prim| world.get::<Name>(prim))
             .is_some_and(|name| name.as_str() == "arrived later")
     });
 }
@@ -102,7 +102,7 @@ fn an_entry_over_the_size_cap_is_never_projected(mut ctx: TestContext) {
     set_entry(&doc, &root(SECOND));
 
     let host = ctx.doc;
-    ctx.tick_until(|world| is_realized(world, host, SECOND));
+    ctx.tick_until(|world| is_in_scene(world, host, SECOND));
     assert!(
         ctx.state
             .lock()

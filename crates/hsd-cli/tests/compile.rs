@@ -10,8 +10,8 @@ use std::{
 
 use common::{
     compile,
+    load_state,
     prim_named,
-    realize,
 };
 use hsd::{
     attributes::{
@@ -54,14 +54,14 @@ fn write_source(case: &str, hsda: &str) -> PathBuf {
 }
 
 #[test]
-fn a_compiled_source_tree_realizes_as_authored() {
-    let state = realize(&compile(&write_source("tree", SOURCE)).expect("compile"));
+fn a_compiled_source_tree_loads_as_authored() {
+    let state = load_state(&compile(&write_source("tree", SOURCE)).expect("compile"));
 
     let root = prim_named(&state, "root");
     let cube = prim_named(&state, "cube");
     let tex = prim_named(&state, "tex");
 
-    assert!(state.is_realized(root));
+    assert!(state.is_in_scene(root));
     assert_eq!(state.parent(root), None);
     assert_eq!(state.parent(cube), Some(root));
     assert_eq!(state.children(root), vec![cube, tex]);
@@ -69,7 +69,7 @@ fn a_compiled_source_tree_realizes_as_authored() {
 
 #[test]
 fn a_texture_field_compiles_to_a_relationship() {
-    let state = realize(&compile(&write_source("texture", SOURCE)).expect("compile"));
+    let state = load_state(&compile(&write_source("texture", SOURCE)).expect("compile"));
 
     assert_eq!(
         state.relationship(prim_named(&state, "cube"), &material::BASE_COLOR_TEXTURE),
@@ -79,7 +79,7 @@ fn a_texture_field_compiles_to_a_relationship() {
 
 #[test]
 fn an_image_file_compiles_into_the_image_attribute() {
-    let state = realize(&compile(&write_source("image", SOURCE)).expect("compile"));
+    let state = load_state(&compile(&write_source("image", SOURCE)).expect("compile"));
 
     let image = state
         .attribute::<ImageData>(prim_named(&state, "tex"))
@@ -147,7 +147,7 @@ fn a_referenced_file_is_carried_beside_the_root_rather_than_inside_it() {
          reference buys over an embedded package"
     );
 
-    let state = realize(&package);
+    let state = load_state(&package);
     let left = state
         .attribute::<ReferenceAttr>(prim_named(&state, "left"))
         .expect("left references something")

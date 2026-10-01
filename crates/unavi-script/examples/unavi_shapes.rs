@@ -5,7 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_hsd::load::LoadHsd;
+use bevy_hsd::package::ImportPackage;
 use bevy_iroh::store::{
     LocalBlobs,
     LocalStore,
@@ -65,5 +65,5 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     let handle = asset_server.load(SCRIPT_PATH);
-    commands.spawn((LoadHsd { handle },));
+    commands.spawn((ImportPackage(handle),));
 }

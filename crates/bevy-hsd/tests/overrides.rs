@@ -1,9 +1,9 @@
 //! What a referencing document's store says about the prims of what it
-//! references, carried into a realized reference.
+//! references, carried into a reference in the scene.
 //!
-//! The realize path needs a store holding the target as well, so these stand
-//! the realized reference up by hand, as `load::realize_ref` spawns it: an
-//! `Hsd` child of the site prim.
+//! The scene path needs a store holding the target as well, so these stand
+//! the scene reference up by hand, as `open_reference` spawns it, an `Hsd`
+//! child of the site prim.
 
 use std::sync::{
     Arc,
@@ -12,10 +12,12 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdNamespace,
-    HsdPrimIndex,
-    HsdSource,
+    document::{
+        Hsd,
+        HsdNamespace,
+    },
+    prim::PrimIndex,
+    reference::ReferenceInstance,
 };
 use hsd::{
     attributes::{
@@ -85,7 +87,7 @@ fn referenced() -> Arc<Mutex<HsdState>> {
 }
 
 fn prim_of(world: &World, doc: Entity, prim: PrimId) -> Option<Entity> {
-    world.get::<HsdPrimIndex>(doc)?.0.get(&prim).copied()
+    world.get::<PrimIndex>(doc)?.get(prim)
 }
 
 fn name_of(world: &World, doc: Entity, prim: PrimId) -> Option<String> {
@@ -93,9 +95,9 @@ fn name_of(world: &World, doc: Entity, prim: PrimId) -> Option<String> {
     world.get::<Name>(prim).map(|name| name.as_str().to_owned())
 }
 
-/// Backs the context's document with a store holding the site prim, and
-/// realizes a reference under that prim.
-fn realized(ctx: &mut TestContext, backing: &Backing) -> (Document, Entity) {
+/// Backs the context's document with a store holding the site prim, and adds
+/// a reference to the scene under that prim.
+fn scene_reference(ctx: &mut TestContext, backing: &Backing) -> (Document, Entity) {
     let doc = backing.document();
     set_entry(&doc, &root(SITE));
 
@@ -106,11 +108,19 @@ fn realized(ctx: &mut TestContext, backing: &Backing) -> (Document, Entity) {
         .insert(HsdNamespace(doc.clone()));
     ctx.tick_until(|world| prim_of(world, host, SITE).is_some());
 
-    let site = prim_of(ctx.app.world(), host, SITE).expect("site realized");
+    let site = prim_of(ctx.app.world(), host, SITE).expect("site in the scene");
     let child = ctx
         .app
         .world_mut()
-        .spawn((Hsd(referenced()), HsdSource(DocId([9; 32])), ChildOf(site)))
+        .spawn((
+            Hsd(referenced()),
+            ReferenceInstance {
+                prim:   site,
+                target: DocId([9; 32]),
+                depth:  1,
+            },
+            ChildOf(site),
+        ))
         .id();
     ctx.tick_until(|world| name_of(world, child, TARGET).as_deref() == Some("couch"));
     (doc, child)
@@ -119,7 +129,7 @@ fn realized(ctx: &mut TestContext, backing: &Backing) -> (Document, Entity) {
 #[rstest]
 fn an_override_written_to_the_referencing_store_reaches_what_it_speaks_for(mut ctx: TestContext) {
     let backing = Backing::new();
-    let (doc, child) = realized(&mut ctx, &backing);
+    let (doc, child) = scene_reference(&mut ctx, &backing);
 
     set_entry(
         &doc,
@@ -132,7 +142,7 @@ fn an_override_written_to_the_referencing_store_reaches_what_it_speaks_for(mut c
 #[rstest]
 fn a_deleted_override_blocks_what_the_prim_says_about_itself(mut ctx: TestContext) {
     let backing = Backing::new();
-    let (doc, child) = realized(&mut ctx, &backing);
+    let (doc, child) = scene_reference(&mut ctx, &backing);
     set_entry(
         &doc,
         &Entry::new(override_key(), name_property("recoloured").encode(), 2),

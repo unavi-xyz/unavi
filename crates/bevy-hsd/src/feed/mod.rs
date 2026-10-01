@@ -1,6 +1,5 @@
-//! The live path from a document's store into its
-//! [`HsdState`](hsd::state::HsdState). Every durable layer a state composes
-//! is projected from here.
+//! Streams a namespace's entries into its document's
+//! [`HsdState`](hsd::state::HsdState).
 
 use std::collections::BTreeMap;
 
@@ -19,11 +18,12 @@ use unavi_util::async_task::spawn_async_task;
 use wds::document::Document;
 
 use crate::{
-    Hsd,
-    HsdHeld,
-    HsdNamespace,
-    HsdPrimIndex,
-    HsdSource,
+    document::{
+        Hsd,
+        HsdNamespace,
+    },
+    prim::PrimIndex,
+    reference::ReferenceInstances,
 };
 
 mod reader;
@@ -40,7 +40,7 @@ pub(crate) enum Delta {
 
 /// When a feed counts its first read complete.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Ready {
+pub enum FeedReady {
     /// Once the store's current entries are read.
     Snapshot,
     /// Once a sync with a peer has finished and its content has downloaded,
@@ -48,12 +48,11 @@ pub enum Ready {
     RemoteSync,
 }
 
-/// Projects a namespace's winners into the document on this entity for as
-/// long as the component lives.
+/// Projects a namespace into this entity's document. Dropping it stops the
+/// reader.
 #[derive(Component)]
 pub struct DocFeed {
     rx:      Receiver<Delta>,
-    /// Dropping it stops the reader.
     _cancel: Sender<()>,
     synced:  bool,
 }
@@ -62,7 +61,7 @@ impl DocFeed {
     /// Subscribes to `doc` before anything else reads it, so a feed made
     /// ahead of a sync sees every entry that sync brings.
     #[must_use]
-    pub fn spawn(doc: Document, ready: Ready) -> Self {
+    pub fn spawn(doc: Document, ready: FeedReady) -> Self {
         let (tx, rx) = async_channel::bounded(DELTA_CAPACITY);
         let (cancel, cancelled) = async_channel::bounded::<()>(1);
 
@@ -107,8 +106,7 @@ impl DocFeed {
     }
 }
 
-/// Feeds a namespace-backed document the moment it gets its namespace, unless
-/// the same insert brought a feed of its own.
+/// Gives a namespace-backed document a feed unless it already has one.
 pub(crate) fn feed_namespace(
     trigger: On<Add, HsdNamespace>,
     docs: Query<&HsdNamespace, Without<DocFeed>>,
@@ -117,28 +115,24 @@ pub(crate) fn feed_namespace(
     if let Ok(namespace) = docs.get(trigger.entity) {
         commands
             .entity(trigger.entity)
-            .insert(DocFeed::spawn(namespace.0.clone(), Ready::Snapshot));
+            .insert(DocFeed::spawn(namespace.0.clone(), FeedReady::Snapshot));
     }
 }
 
-/// Projects what each feed read since the last frame. An override entry is
-/// also projected into every reference its site realizes.
+/// Override entries are also projected into the reference instances of their
+/// site.
 pub(crate) fn apply_doc_deltas(
-    mut feeds: Query<(&mut DocFeed, AnyOf<(&Hsd, &HsdHeld)>, Option<&HsdPrimIndex>)>,
-    children: Query<&Children>,
-    references: Query<&Hsd, With<HsdSource>>,
+    mut feeds: Query<(&mut DocFeed, &Hsd, &PrimIndex)>,
+    instances: Query<&ReferenceInstances>,
+    references: Query<&Hsd>,
 ) {
-    for (mut feed, (live, held), index) in &mut feeds {
+    for (mut feed, doc, index) in &mut feeds {
         let entries = feed.drain();
         if entries.is_empty() {
             continue;
         }
-        let Some(state) = live.map(|doc| &doc.0).or_else(|| held.map(|doc| &doc.0)) else {
-            continue;
-        };
 
-        let Ok(mut state) = state.lock() else {
-            warn!("scene state poisoned");
+        let Some(mut state) = doc.lock() else {
             continue;
         };
         for entry in entries.values() {
@@ -148,19 +142,16 @@ pub(crate) fn apply_doc_deltas(
         }
         drop(state);
 
-        let Some(index) = index else {
-            continue;
-        };
         for entry in entries.values() {
             let Some((site, _)) = LayerKey::parse_key(&entry.key) else {
                 continue;
             };
-            let Some(site_children) = index.0.get(&site).and_then(|e| children.get(*e).ok()) else {
+            let Some(site_instances) = index.get(site).and_then(|prim| instances.get(prim).ok())
+            else {
                 continue;
             };
-            for reference in references.iter_many(site_children) {
-                let Ok(mut state) = reference.0.lock() else {
-                    warn!("scene state poisoned");
+            for reference in references.iter_many(site_instances.iter()) {
+                let Some(mut state) = reference.lock() else {
                     continue;
                 };
                 if let Err(err) = state.project_override(entry) {

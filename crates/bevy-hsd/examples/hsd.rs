@@ -6,8 +6,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    Hsd,
     HsdPlugin,
+    document::Hsd,
 };
 use bevy_iroh::store::LocalBlobs;
 use bevy_panorbit_camera::{

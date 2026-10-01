@@ -5,9 +5,9 @@ use std::collections::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdChild,
-    HsdDocId,
     attributes::portal::PortalConfig,
+    document::HsdDocId,
+    prim::PrimOf,
 };
 use hsd::{
     attributes::portal::LinkId,
@@ -74,9 +74,9 @@ pub fn derive_intents(
 /// document's scripts are listening. A pair is forgotten once no portal
 /// derives it, so a far half that disappears is asked for again.
 pub fn emit_link_intents(
-    portals: Query<(&PortalConfig, &HsdChild)>,
+    portals: Query<(&PortalConfig, &PrimOf)>,
     docs: Query<(Entity, &HsdDocId)>,
-    ready: Query<&HsdChild, With<InitializedScript>>,
+    ready: Query<&PrimOf, With<InitializedScript>>,
     view: Option<Res<SpaceView>>,
     event_bus: Res<EventBus>,
     mut delivered: Local<HashSet<(LinkIntent, DocId)>>,

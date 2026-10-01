@@ -22,18 +22,16 @@ use wds::document::Document;
 
 use crate::feed::{
     Delta,
-    Ready,
+    FeedReady,
 };
 
 /// Reads each key's winner out of a document's store and sends it on.
 pub(super) struct Reader {
     doc:         Document,
     tx:          Sender<Delta>,
-    /// Keys whose winner's content has not downloaded yet, by that content's
-    /// hash.
+    /// Keys waiting on their content to download, by content hash.
     parked:      HashMap<Hash, HashSet<String>>,
-    /// Each parked key's current hash, so a key re-parked under a new hash is
-    /// dropped from its old one instead of leaking there forever.
+    /// Each parked key's current hash.
     parked_hash: HashMap<String, Hash>,
 }
 
@@ -47,16 +45,15 @@ impl Reader {
         }
     }
 
-    /// Subscribes before reading the snapshot, so no insert lands between
-    /// the two unseen. A key may then arrive twice, which a projection
-    /// absorbs.
-    pub(super) async fn run(mut self, ready: Ready) -> anyhow::Result<()> {
+    /// Subscribes before reading the snapshot, so a key may arrive twice but
+    /// never not at all.
+    pub(super) async fn run(mut self, ready: FeedReady) -> anyhow::Result<()> {
         let mut events = self.doc.subscribe().await?;
 
         let holds_prim = self.snapshot().await?;
         let mut waiting = match ready {
-            Ready::Snapshot => false,
-            Ready::RemoteSync => !holds_prim,
+            FeedReady::Snapshot => false,
+            FeedReady::RemoteSync => !holds_prim,
         };
         if !waiting {
             self.send(Delta::Synced).await?;
@@ -87,7 +84,7 @@ impl Reader {
         Ok(())
     }
 
-    /// Answers whether the store already holds a prim.
+    /// `true` if the store already holds a prim.
     async fn snapshot(&mut self) -> anyhow::Result<bool> {
         let mut holds_prim = false;
         for prefix in key::PREFIXES {
@@ -104,8 +101,7 @@ impl Reader {
         Ok(holds_prim)
     }
 
-    /// The inserted entry is not necessarily the winner, so every insert
-    /// re-reads its key through the store's own order.
+    /// An inserted entry may not be the key's winner, so the key is re-read.
     async fn reread(&mut self, key: &[u8]) -> anyhow::Result<()> {
         let query = Query::single_latest_per_key()
             .key_exact(key)
@@ -149,15 +145,12 @@ impl Reader {
             .await
     }
 
-    /// Parks `key` under `hash`, dropping it from any hash it was parked
-    /// under before.
     fn park(&mut self, key: String, hash: Hash) {
         self.unpark(&key);
         self.parked.entry(hash).or_default().insert(key.clone());
         self.parked_hash.insert(key, hash);
     }
 
-    /// Drops `key` from the hash it is parked under, if any.
     fn unpark(&mut self, key: &str) {
         let Some(hash) = self.parked_hash.remove(key) else {
             return;

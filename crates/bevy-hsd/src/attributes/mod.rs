@@ -1,6 +1,7 @@
-use std::marker::PhantomData;
-
-use bevy::prelude::*;
+use bevy::{
+    ecs::component::Mutable,
+    prelude::*,
+};
 use hsd::{
     attributes,
     property::{
@@ -8,52 +9,31 @@ use hsd::{
         name::PropName,
     },
 };
-use thiserror::Error;
 
+mod buffer;
 pub mod collider;
-mod color;
 mod gravity_scale;
 pub mod image;
 pub mod material;
-pub(crate) mod material_source;
 pub(crate) mod mesh;
 mod name;
 pub mod portal;
-pub(crate) mod reference;
-mod relations;
 mod rigid_body;
 pub mod script;
 pub mod shader;
 pub mod spawn;
 mod text;
-pub(crate) mod util;
+mod values;
 pub(crate) mod xform;
 
-#[derive(Error, Debug)]
-pub enum ParseError {
-    #[error("postcard {0}")]
-    Postcard(#[from] postcard::Error),
-}
-
-/// Marks a prim whose `T` has not been built from its latest data. The rebuild
-/// system removes it after every attempt, including a failed one.
-#[derive(Component)]
-pub(crate) struct Pending<T>(PhantomData<T>);
-
-impl<T> Default for Pending<T> {
-    fn default() -> Self {
-        Self(PhantomData)
-    }
-}
-
-/// Decodes `payload` as `A` and hands it to `build`; inserts the resulting
-/// bundle, or removes `B` on removal or when `build` finds the value invalid.
+/// Inserts what `build` makes of the decoded payload. Removes `B` on removal
+/// or when `build` returns `None`.
 pub(crate) fn apply_simple<A, B>(
     commands: &mut Commands,
     prim: Entity,
     payload: Option<&[u8]>,
     build: impl FnOnce(A) -> Option<B>,
-) -> Result<(), ParseError>
+) -> Result<(), postcard::Error>
 where
     A: Payload,
     B: Bundle,
@@ -73,19 +53,27 @@ where
     Ok(())
 }
 
-/// Decodes the field's payload and applies it to the prim, keyed by group:
-/// every property under one group is one attribute's fields, so one handler
-/// covers the field it is called for.
-///
-/// `None` payload means the field was removed. A group this build has never
-/// heard of has no handler and is skipped — its entries still store, sync and
-/// re-serve untouched.
+/// Mutates `T` on `prim`, defaulting it first if absent.
+pub(crate) fn update_data<T: Component<Mutability = Mutable> + Default>(
+    commands: &mut Commands,
+    prim: Entity,
+    f: impl FnOnce(&mut T) + Send + Sync + 'static,
+) {
+    commands
+        .entity(prim)
+        .entry::<T>()
+        .or_default()
+        .and_modify(move |mut data| f(&mut data));
+}
+
+/// Applies one attribute field to a prim. A `None` payload is a removal.
+/// Unknown groups are skipped.
 pub(crate) fn apply(
     commands: &mut Commands,
     prim: Entity,
     name: &PropName,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     match name.group() {
         attributes::collider::GROUP => collider::apply(commands, prim, name, payload),
         attributes::gravity_scale::GROUP => gravity_scale::apply(commands, prim, payload),
@@ -94,7 +82,7 @@ pub(crate) fn apply(
         attributes::mesh::GROUP => mesh::apply(commands, prim, name, payload),
         attributes::name::GROUP => name::apply(commands, prim, payload),
         attributes::portal::GROUP => portal::apply(commands, prim, payload),
-        attributes::reference::GROUP => reference::apply(commands, prim, payload),
+        attributes::reference::GROUP => crate::reference::apply(commands, prim, payload),
         attributes::rigid_body::GROUP => rigid_body::apply(commands, prim, payload),
         attributes::script::GROUP => script::apply(commands, prim, payload),
         attributes::shader::GROUP => shader::apply(commands, prim, name, payload),

@@ -24,13 +24,11 @@ use unavi_physics::{
     },
 };
 
-use crate::attributes::ParseError;
-
 pub fn apply(
     commands: &mut Commands,
     prim: Entity,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     match payload {
         Some(payload) => build(commands, prim, &RigidBodyAttr::decode(payload)?),
         None => {
@@ -50,8 +48,8 @@ pub fn apply(
     Ok(())
 }
 
-/// Waits for `kind` to be committed; fabricating a default `Dynamic` would let
-/// a static mesh fall for a frame.
+/// Builds nothing until `kind` is set, so a static body never falls for a
+/// frame as a default `Dynamic`.
 fn build(commands: &mut Commands, ent: Entity, attr: &RigidBodyAttr) {
     let Some(kind) = attr.kind else { return };
 
@@ -101,9 +99,7 @@ fn build(commands: &mut Commands, ent: Entity, attr: &RigidBodyAttr) {
     );
 }
 
-/// Inserts `C` from `value` when it is present and valid; removes it
-/// otherwise, so a field cleared or invalidated never leaves a stale
-/// component behind.
+/// Inserts `C` when `value` is present and valid, removes it otherwise.
 fn apply_scalar<C: Component>(
     commands: &mut Commands,
     ent: Entity,

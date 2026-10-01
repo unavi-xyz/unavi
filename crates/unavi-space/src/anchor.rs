@@ -3,7 +3,10 @@ use bevy::{
     platform::collections::HashSet,
     prelude::*,
 };
-use bevy_hsd::Hsd;
+use bevy_hsd::document::{
+    Hsd,
+    Unplaced,
+};
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
@@ -123,7 +126,7 @@ pub fn apply_anchor_offsets(
 
 pub fn reparent_doc_traveler(
     trigger: On<CrossedSeam>,
-    travelers: Query<(), (With<Hsd>, With<DocTraveler>)>,
+    travelers: Query<(), (With<Hsd>, Without<Unplaced>, With<DocTraveler>)>,
     parents: Query<&ChildOf>,
     spaces: Query<(), With<Space>>,
     mut transforms: Query<&mut Transform>,

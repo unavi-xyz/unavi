@@ -2,10 +2,14 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
-    Prim,
+    document::{
+        Hsd,
+        HsdDocId,
+    },
+    prim::{
+        Prim,
+        PrimOf,
+    },
 };
 use tokio::sync::Mutex;
 use unavi_policy::quota::Quota;
@@ -48,7 +52,7 @@ pub struct ScriptGuest(pub Arc<ScriptInstance>);
 pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     to_instantiate: Query<
-        (Entity, &Script, NameOrEntity, &Prim, &HsdChild),
+        (Entity, &Script, NameOrEntity, &Prim, &PrimOf),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,

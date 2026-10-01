@@ -8,8 +8,8 @@ use std::path::{
 use bytes::Bytes;
 use common::{
     compile,
+    load_state,
     prim_named,
-    realize,
 };
 use hsd::{
     attributes::shader::{
@@ -41,7 +41,7 @@ fn glow_fixture() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/glow/asset.hsda")
 }
 
-/// The compiled graph payload straight from the package, since a realized
+/// The compiled graph payload straight from the package, since a loaded
 /// [`HsdState`] and the package agree on where the `shader/graph` attribute
 /// lives.
 fn graph_bytes(package: &Package, prim: PrimId) -> Vec<u8> {
@@ -60,7 +60,7 @@ fn graph_bytes(package: &Package, prim: PrimId) -> Vec<u8> {
 #[test]
 fn a_shader_graph_compiles_to_the_graph_attribute() {
     let package = compile(&glow_fixture()).expect("compile");
-    let state = realize(&package);
+    let state = load_state(&package);
     let prim = prim_named(&state, "default_glow");
 
     let bytes = graph_bytes(&package, prim);
@@ -77,14 +77,14 @@ fn a_shader_graph_compiles_to_the_graph_attribute() {
 /// overrides attribute at all.
 #[test]
 fn a_prim_without_overrides_has_no_overrides_attribute() {
-    let state = realize(&compile(&glow_fixture()).expect("compile"));
+    let state = load_state(&compile(&glow_fixture()).expect("compile"));
     let prim = prim_named(&state, "default_glow");
     assert!(state.attribute::<GraphOverridesAttr>(prim).is_none());
 }
 
 #[test]
 fn overrides_compile_to_the_overrides_attribute() {
-    let state = realize(&compile(&glow_fixture()).expect("compile"));
+    let state = load_state(&compile(&glow_fixture()).expect("compile"));
     let prim = prim_named(&state, "red_glow");
 
     let overrides = state
@@ -104,7 +104,7 @@ fn overrides_compile_to_the_overrides_attribute() {
 #[test]
 fn two_prims_sharing_a_graph_get_byte_identical_graph_entries() {
     let package = compile(&glow_fixture()).expect("compile");
-    let state = realize(&package);
+    let state = load_state(&package);
 
     let a = graph_bytes(&package, prim_named(&state, "default_glow"));
     let b = graph_bytes(&package, prim_named(&state, "red_glow"));
@@ -190,7 +190,7 @@ fn a_displacement_graph_compiles() {
         ),
     )";
     let package = compile(&write_source("displacement", shader)).expect("compile");
-    let state = realize(&package);
+    let state = load_state(&package);
     let prim = prim_named(&state, "p");
     let bytes = graph_bytes(&package, prim);
     let graph = ShaderGraph::decode(&bytes).expect("decode graph");

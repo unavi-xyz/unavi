@@ -4,7 +4,7 @@ fn graph_object_scale(m: mat4x4<f32>) -> vec3<f32> {
 
 // Bevy assigns instance indices while batching, so this is stable only for as
 // long as the batch is. A prim whose entity outlives the effect keeps its
-// value; one that is despawned and respawned may not.
+// value. One that is despawned and respawned may not.
 fn graph_instance_random(index: u32) -> f32 {
     return fract(sin(f32(index) * 12.9898 + 78.233) * 43758.5453123);
 }

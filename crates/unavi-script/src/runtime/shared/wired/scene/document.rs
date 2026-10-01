@@ -5,14 +5,18 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdDocId,
-    HsdPrimIndex,
-    Prim,
     anchor::{
         self,
         DocAnchor,
+    },
+    document::{
+        Hsd,
+        HsdDocId,
+    },
+    prim::{
+        Prim,
+        PrimIndex,
+        PrimOf,
     },
 };
 use hsd::{
@@ -139,7 +143,7 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
     let Ok(id) = prim_id.parse::<PrimId>() else {
         return Ok(None);
     };
-    if !doc.with(|state| state.is_realized(id))? {
+    if !doc.with(|state| state.is_in_scene(id))? {
         return Ok(None);
     }
     let mut scene = api.wired_scene.lock().await;
@@ -340,8 +344,8 @@ fn find_doc(world: &mut World, id: DocId) -> Option<Entity> {
 fn find_prim(world: &mut World, doc: DocId, prim: PrimId) -> Option<Entity> {
     let doc_ent = find_doc(world, doc)?;
     world
-        .get::<HsdPrimIndex>(doc_ent)
-        .and_then(|index| index.0.get(&prim).copied())
+        .get::<PrimIndex>(doc_ent)
+        .and_then(|index| index.get(prim))
 }
 
 /// Where a commit against a document lands, and what it takes to get there.
@@ -453,11 +457,11 @@ async fn landing(doc: DocId) -> anyhow::Result<Landing> {
     })
 }
 
-/// The prim a realized reference hangs from, and the document holding it.
+/// The prim a reference in the scene hangs from, and the document holding it.
 ///
-/// A realized reference is spawned as a child of the prim that names it, so
-/// that prim answers both which key an override takes and whose document it
-/// belongs in.
+/// A reference in the scene is spawned as a child of the prim that names it,
+/// so that prim answers both which key an override takes and whose document
+/// it belongs in.
 async fn reference_site(
     doc: DocId,
 ) -> anyhow::Result<Option<(PrimId, DocId, Arc<Mutex<HsdState>>)>> {
@@ -480,7 +484,7 @@ fn reference_site_in(
         .iter(world)
         .find_map(|(id, parent)| (id.0 == doc).then_some(parent.0))?;
     let site = world.get::<Prim>(prim_ent)?.0;
-    let host = world.get::<HsdChild>(prim_ent)?.0;
+    let host = world.get::<PrimOf>(prim_ent)?.0;
     Some((
         site,
         world.get::<HsdDocId>(host)?.0,
@@ -496,15 +500,15 @@ mod tests {
         DocId([n; 32])
     }
 
-    /// A document, a prim of it, and the reference that prim realizes, spawned
-    /// the way `load::realize_ref` spawns them.
-    fn realized_reference(world: &mut World) -> (PrimId, DocId, DocId) {
+    /// A document, a prim of it, and the reference that prim adds to the
+    /// scene, spawned the way `open_reference` spawns them.
+    fn scene_reference(world: &mut World) -> (PrimId, DocId, DocId) {
         let host = doc(1);
         let host_ent = world
             .spawn((Hsd::new(HsdState::new()), HsdDocId(host)))
             .id();
         let site = PrimId::new();
-        let prim_ent = world.spawn((Prim(site), HsdChild(host_ent))).id();
+        let prim_ent = world.spawn((Prim(site), PrimOf(host_ent))).id();
         let child = DocId::site(host, site);
         world.spawn((
             Hsd::new(HsdState::new()),
@@ -515,9 +519,9 @@ mod tests {
     }
 
     #[test]
-    fn a_realized_reference_answers_the_prim_and_document_holding_it() {
+    fn a_scene_reference_answers_the_prim_and_document_holding_it() {
         let mut world = World::new();
-        let (site, host, child) = realized_reference(&mut world);
+        let (site, host, child) = scene_reference(&mut world);
 
         let (found_site, found_host, _) =
             reference_site_in(&mut world, child).expect("the site is reachable from the child");
@@ -529,7 +533,7 @@ mod tests {
     #[test]
     fn a_document_nothing_references_has_no_site() {
         let mut world = World::new();
-        realized_reference(&mut world);
+        scene_reference(&mut world);
         let anchored = doc(2);
         world.spawn((Hsd::new(HsdState::new()), HsdDocId(anchored)));
 

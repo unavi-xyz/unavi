@@ -7,9 +7,12 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdNamespace,
+    document::{
+        Hsd,
+        HsdNamespace,
+        Unplaced,
+    },
+    prim::PrimOf,
 };
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
@@ -90,14 +93,14 @@ struct Grabbed {
     offset_rot: Quat,
 }
 
-type Docs<'w, 's> = Query<'w, 's, &'static HsdNamespace, With<Hsd>>;
+type Docs<'w, 's> = Query<'w, 's, &'static HsdNamespace, (With<Hsd>, Without<Unplaced>)>;
 
 fn begin_grab(
     entity: Entity,
     pointer: Entity,
     reach: f32,
     transforms: &Query<&GlobalTransform>,
-    hsd_children: &Query<&HsdChild>,
+    hsd_children: &Query<&PrimOf>,
     docs: &Docs,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
@@ -147,7 +150,7 @@ fn on_press(
     mut presses: MessageReader<GripPressed>,
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
-    hsd_children: Query<&HsdChild>,
+    hsd_children: Query<&PrimOf>,
     docs: Docs,
     spaces: Query<&Space>,
     parents: Query<&ChildOf>,
@@ -216,7 +219,7 @@ fn note_promoted_bodies(
 fn start_pending_grabs(
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
-    hsd_children: Query<&HsdChild>,
+    hsd_children: Query<&PrimOf>,
     docs: Docs,
     spaces: Query<&Space>,
     parents: Query<&ChildOf>,
@@ -304,7 +307,7 @@ fn nearest_promoted(
 
 fn take_doc_hold(
     entity: Entity,
-    hsd_children: &Query<&HsdChild>,
+    hsd_children: &Query<&PrimOf>,
     docs: &Docs,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
@@ -354,7 +357,7 @@ fn take_doc_hold(
 
 fn resolve_doc(
     entity: Entity,
-    hsd_children: &Query<&HsdChild>,
+    hsd_children: &Query<&PrimOf>,
     docs: &Docs,
 ) -> Option<(Entity, NamespaceId)> {
     if let Ok(record) = docs.get(entity) {
@@ -375,7 +378,7 @@ fn resolve_space(
 
 fn on_release(
     mut releases: MessageReader<GripReleased>,
-    hsd_children: Query<&HsdChild>,
+    hsd_children: Query<&PrimOf>,
     docs: Docs,
     held: Query<(Entity, &Grabbed)>,
     mut pending: ResMut<PendingGrabs>,

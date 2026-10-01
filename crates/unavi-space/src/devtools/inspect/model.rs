@@ -5,10 +5,14 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    Hsd,
-    HsdChild,
-    HsdNamespace,
-    HsdPrimIndex,
+    document::{
+        Hsd,
+        HsdNamespace,
+    },
+    prim::{
+        PrimIndex,
+        PrimOf,
+    },
 };
 use hsd::{
     attributes::name::NameAttr,
@@ -50,12 +54,12 @@ pub struct InspectData<'w, 's> {
             Entity,
             &'static HsdNamespace,
             Has<Hsd>,
-            Option<&'static HsdPrimIndex>,
+            Option<&'static PrimIndex>,
             Option<&'static ChildOf>,
         ),
     >,
     hsds:   Query<'w, 's, &'static Hsd>,
-    prims:  Query<'w, 's, &'static HsdChild>,
+    prims:  Query<'w, 's, &'static PrimOf>,
     view:   Option<Res<'w, SpaceView>>,
     link:   Option<Res<'w, PeerLink>>,
 }
@@ -301,7 +305,8 @@ impl InspectData<'_, '_> {
                 self.hsds
                     .get(e)
                     .ok()
-                    .and_then(|hsd| hsd.0.lock().ok().map(|state| hsd_tree_text(&state)))
+                    .and_then(Hsd::lock)
+                    .map(|state| hsd_tree_text(&state))
             }),
         }
     }
@@ -317,14 +322,14 @@ impl InspectData<'_, '_> {
                 (
                     e,
                     instanced,
-                    prims.map(|p| p.0.len()),
+                    prims.map(|p| p.iter().count()),
                     parent.map(ChildOf::parent),
                 )
             })
     }
 
     /// Resolves the document containing `entity`: its Bevy parent is a prim,
-    /// whose [`HsdChild`] points at the owning document.
+    /// whose [`PrimOf`] points at the owning document.
     fn parent_doc(&self, entity: Entity) -> Option<NamespaceId> {
         let (.., parent) = self.docs.get(entity).ok()?;
         let prim = parent.map(ChildOf::parent)?;

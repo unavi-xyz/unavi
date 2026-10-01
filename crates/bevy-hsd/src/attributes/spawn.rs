@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use hsd::attributes::spawn::SpawnAttr;
 use unavi_physics::finite;
 
-use crate::attributes::{
-    ParseError,
-    apply_simple,
-};
+use crate::attributes::apply_simple;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SpawnPoint {
@@ -16,11 +13,9 @@ pub(crate) fn apply(
     commands: &mut Commands,
     prim: Entity,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     apply_simple::<SpawnAttr, SpawnPoint>(commands, prim, payload, |attr| {
         let radius = attr.radius as f32;
-        // A non-finite or negative radius spawns at a point rather than
-        // refusing the spawn point outright.
         let radius = if finite::nonneg(radius) {
             radius
         } else {

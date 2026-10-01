@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use hsd::attributes::portal::PortalAttr;
 
-use crate::attributes::{
-    ParseError,
-    apply_simple,
-};
+use crate::attributes::apply_simple;
 
 /// A prim's portal destination and size.
 #[derive(Component, Debug, Clone, Copy)]
@@ -14,7 +11,7 @@ pub(crate) fn apply(
     commands: &mut Commands,
     prim: Entity,
     payload: Option<&[u8]>,
-) -> Result<(), ParseError> {
+) -> Result<(), postcard::Error> {
     apply_simple::<PortalAttr, PortalConfig>(commands, prim, payload, |attr| {
         Some(PortalConfig(attr))
     })

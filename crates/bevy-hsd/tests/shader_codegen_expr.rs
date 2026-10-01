@@ -20,8 +20,8 @@ use hsd::attributes::shader::{
 };
 use rstest::rstest;
 
-/// The RHS of one node's `let n{index}: … = …;` statement in a generated
-/// body — the exact WGSL expression codegen emits for that node.
+/// The WGSL expression codegen emits for the node at `index`, read from its
+/// `let n{index}: … = …;` statement in a generated body.
 fn rhs_of(body: &str, index: usize) -> String {
     let needle = format!("let n{index}:");
     let line = body
@@ -52,8 +52,8 @@ fn displacement_rhs(node: Node) -> String {
     rhs_of(&body, 0)
 }
 
-/// The exact RHS each surface node kind emits, at per-node granularity: a
-/// wrong but well-formed builtin would otherwise pass.
+/// The exact RHS each surface node kind emits, at per-node granularity. A
+/// wrong but well-formed builtin would otherwise pass unnoticed.
 #[rstest]
 #[case(&[Node::Uv], "in.uv")]
 #[case(&[Node::WorldNormal], "graph_world_normal")]
@@ -147,7 +147,7 @@ fn node_emits(#[case] nodes: &[Node], #[case] expected: &str) {
 }
 
 /// A widened color's padded alpha is 1.0, not the 0.0 every other widening
-/// pads with — a zero-padded color would be invisible.
+/// pads with. A zero-padded color would be invisible.
 #[rstest]
 #[case::widened_color_pads_alpha_opaque(
     &[Node::Convert { v: const_v3([0.0, 0.0, 0.0]), to: ValueKind::Color }],

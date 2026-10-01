@@ -101,7 +101,7 @@ impl HsdState {
     }
 
     /// Whether the document states a format newer than this build reads.
-    /// A refused document realizes nothing.
+    /// A refused document adds nothing to the scene.
     #[must_use]
     pub const fn is_refused(&self) -> bool {
         self.meta.version > DOC_VERSION

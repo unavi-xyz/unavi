@@ -1,7 +1,7 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdDocId,
+    document::HsdDocId,
     loaded::HsdLoaded,
 };
 use bevy_iroh::store::LocalStore;
@@ -41,10 +41,10 @@ const VERTS: [[f32; 3]; 4] = [
 const IDXS: [[u32; 3]; 4] = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]];
 
 /// A chain of real documents long enough that its last hop sits past
-/// `bevy_hsd::load::MAX_REF_DEPTH` (8).
+/// `bevy_hsd::reference::MAX_REF_DEPTH` (8).
 const CHAIN_LEN: usize = 8;
 const ROOT_PRIM: PrimId = PrimId([1; 16]);
-/// Never opened: the depth cap refuses this hop before any open is attempted.
+/// Never opened. The depth cap refuses this hop before any open is attempted.
 const DANGLING: DocId = DocId([99; 32]);
 
 fn has<C: Component>(world: &mut World) -> bool {
@@ -84,7 +84,7 @@ fn test_loaded_when_no_blob_work(mut ctx: TestContext) {
     ctx.tick_until(has::<HsdLoaded>);
 }
 
-/// A collider that never builds still settles to `HsdLoaded`: a broken build
+/// A collider that never builds still settles to `HsdLoaded`. A broken build
 /// clears the pending marker on the same attempt that fails it, rather than
 /// blocking readiness forever.
 #[traced_test]
@@ -92,7 +92,7 @@ fn test_loaded_when_no_blob_work(mut ctx: TestContext) {
 fn test_loaded_despite_a_broken_collider(mut ctx: TestContext) {
     let root = ctx.create_prim();
 
-    // Garbage bytes for a trimesh: the collider cannot be built.
+    // Garbage bytes for a trimesh. The collider cannot be built.
     ctx.set_attr(root, &ColliderKind::Trimesh);
     ctx.set_collider_vertices(root, b"not-vertices".to_vec());
     ctx.set_collider_indices(root, b"not-indices".to_vec());
@@ -132,8 +132,8 @@ fn test_loaded_after_collider_built(mut ctx: TestContext) {
     ctx.tick_until(has::<HsdLoaded>);
 }
 
-/// A reference past the depth cap is refused rather than realized; the
-/// refusal must not block the referencing document's own `HsdLoaded`.
+/// A reference past the depth cap is refused rather than added to the scene.
+/// The refusal must not block the referencing document's own `HsdLoaded`.
 #[traced_test]
 #[rstest]
 fn test_loaded_despite_a_reference_past_the_depth_cap(mut ctx: TestContext) {

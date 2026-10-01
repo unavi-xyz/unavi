@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_hsd::HsdCommitSet;
+use bevy_hsd::HsdSystems;
 use wasmtime::Config;
 
 use crate::{
@@ -24,7 +24,7 @@ impl Plugin for NativeEnginePlugin {
                 Update,
                 update::update_scripts
                     .after(ScriptSnapshotSet)
-                    .before(HsdCommitSet),
+                    .before(HsdSystems),
             )
             .add_systems(
                 FixedUpdate,

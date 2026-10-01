@@ -11,11 +11,10 @@ use bevy::{
 use bevy_hsd::attributes::{
     image::HsdImage,
     shader::{
-        HsdMaterialGraphSlot,
-        HsdShaderGraphMaterial,
-        MAX_SHADER_PROGRAMS,
-        ShaderGraphMaterial,
-        ShaderGraphOverridesData,
+        ShaderGraphData,
+        ShaderOverridesData,
+        cache::MAX_SHADER_PROGRAMS,
+        material::ShaderGraphMaterial,
     },
 };
 use hsd::{
@@ -53,9 +52,6 @@ use crate::common::*;
 
 mod common;
 
-/// Unlit rim glow: no lighting pass, so no `PbrInput` at all — the shape a
-/// beam/hologram/sky effect needs, unreachable through a fixed PBR terminal
-/// set.
 fn glow_graph() -> ShaderGraph {
     ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.1, 0.6, 1.0, 1.0])],
@@ -97,8 +93,6 @@ fn distinct_graph(step: usize) -> ShaderGraph {
     graph
 }
 
-/// No `GraphOverridesAttr` set: the graph attribute alone must trigger the
-/// pipeline, since overrides are optional and this is the common case.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_without_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
@@ -109,15 +103,11 @@ fn test_shader_graph_without_overrides(#[from(ctx_blobs)] mut ctx: TestContext) 
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
-        let mut q = world.query::<(
-            &HsdShaderGraphMaterial,
-            &MeshMaterial3d<ShaderGraphMaterial>,
-        )>();
-        let Some((hsd_mat, mesh_mat)) = q.iter(world).next() else {
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
+        let Some(mesh_mat) = q.iter(world).next() else {
             return false;
         };
-        assert_eq!(hsd_mat.0, mesh_mat.0);
-        handle = Some(hsd_mat.0.clone());
+        handle = Some(mesh_mat.0.clone());
         true
     });
 
@@ -125,8 +115,8 @@ fn test_shader_graph_without_overrides(#[from(ctx_blobs)] mut ctx: TestContext) 
     let assets = ctx.app.world().resource::<Assets<ShaderGraphMaterial>>();
     let material = assets.get(&handle).expect("material asset");
 
-    // Public input 0 (the rim tint) keeps the graph's own default: no
-    // overrides attribute was ever set on this prim.
+    // Public input 0, the rim tint, keeps the graph's own default since no
+    // overrides attribute was set on this prim.
     assert_eq!(material.params.inputs[0], Vec4::new(0.1, 0.6, 1.0, 1.0));
     assert_eq!(material.alpha_mode, AlphaMode::Add);
     assert!(material.vertex_shader.is_none(), "no displacement network");
@@ -150,7 +140,7 @@ fn test_shader_graph_with_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         let Some(hsd_mat) = q.iter(world).next() else {
             return false;
         };
@@ -168,8 +158,6 @@ fn test_shader_graph_with_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
     handle.expect("overridden shader graph material");
 }
 
-/// Two prims referencing byte-identical compiled graphs share one generated
-/// `Handle<Shader>`.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_blobs)] mut ctx: TestContext) {
@@ -182,7 +170,7 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_blobs)] mut 
 
     let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
     ctx.tick_until(|world| {
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         handles = q.iter(world).map(|m| m.0.clone()).collect();
         handles.len() == 2
     });
@@ -198,8 +186,8 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_blobs)] mut 
     );
 }
 
-/// A compiled program is a pure function of the graph's bytes, so it is not
-/// the document's to own: keying the cache by document would compile identical
+/// A compiled program is a pure function of the graph's bytes, not something
+/// the document owns. Keying the cache by document would compile identical
 /// WGSL once per document and specialize a second pipeline for it.
 #[traced_test]
 #[rstest]
@@ -215,7 +203,7 @@ fn a_graph_compiles_once_across_documents(#[from(ctx_blobs)] mut ctx: TestContex
 
     let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
     ctx.tick_until(|world| {
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         handles = q.iter(world).map(|m| m.0.clone()).collect();
         handles.len() == 2
     });
@@ -238,7 +226,11 @@ fn the_program_cap_is_charged_per_document(#[from(ctx_blobs)] mut ctx: TestConte
         ctx.set_shader_graph(prim, distinct_graph(step).encode().expect("encode graph"));
     }
     ctx.tick_until(|world| {
-        world.query::<&HsdShaderGraphMaterial>().iter(world).count() == MAX_SHADER_PROGRAMS
+        world
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
+            .iter(world)
+            .count()
+            == MAX_SHADER_PROGRAMS
     });
 
     let elsewhere = ctx.spawn_document();
@@ -251,17 +243,22 @@ fn the_program_cap_is_charged_per_document(#[from(ctx_blobs)] mut ctx: TestConte
     );
 
     ctx.tick_until(|world| {
-        world.query::<&HsdShaderGraphMaterial>().iter(world).count() == MAX_SHADER_PROGRAMS + 1
+        world
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
+            .iter(world)
+            .count()
+            == MAX_SHADER_PROGRAMS + 1
     });
 }
 
-/// Now that a program is shared, dropping one document must not evict a graph
-/// another still holds — the next prim to ask for it would otherwise compile a
-/// second copy and specialize a second pipeline for identical WGSL.
+/// Dropping one document must not evict a graph another still holds. The next
+/// prim to ask for it would otherwise compile a second copy and specialize a
+/// second pipeline for identical WGSL.
 ///
-/// Asserted by asking for it again rather than by reading the cache: a
+/// Asserted by asking for it again rather than by reading the cache. A
 /// material holds its own strong `Handle<Shader>`, so the asset stays alive
-/// whether or not the cache still has it and its liveness proves nothing.
+/// whether or not the cache still holds the graph, and that liveness alone
+/// proves nothing.
 #[traced_test]
 #[rstest]
 fn dropping_one_document_keeps_a_graph_another_still_holds(
@@ -276,7 +273,13 @@ fn dropping_one_document_keeps_a_graph_another_still_holds(
     let doomed = leaving.create_prim();
     leaving.set_shader_graph(doomed, bytes.clone());
 
-    ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
+    ctx.tick_until(|world| {
+        world
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
+            .iter(world)
+            .count()
+            == 2
+    });
     let before = fragment_shaders(&mut ctx).pop().expect("a compiled shader");
 
     ctx.despawn_document(&leaving);
@@ -284,7 +287,13 @@ fn dropping_one_document_keeps_a_graph_another_still_holds(
 
     let again = ctx.create_prim();
     ctx.set_shader_graph(again, bytes);
-    ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
+    ctx.tick_until(|world| {
+        world
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
+            .iter(world)
+            .count()
+            == 2
+    });
 
     let after = fragment_shaders(&mut ctx);
     assert_eq!(after.len(), 2);
@@ -297,7 +306,7 @@ fn dropping_one_document_keeps_a_graph_another_still_holds(
 fn fragment_shaders(ctx: &mut TestContext) -> Vec<Handle<Shader>> {
     let world = ctx.app.world_mut();
     let handles: Vec<_> = world
-        .query::<&HsdShaderGraphMaterial>()
+        .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
         .iter(world)
         .map(|m| m.0.clone())
         .collect();
@@ -308,8 +317,6 @@ fn fragment_shaders(ctx: &mut TestContext) -> Vec<Handle<Shader>> {
         .collect()
 }
 
-/// Removing the graph attribute removes the built material, as
-/// `image/data`/`material/value` removal does.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_removed_when_removed(#[from(ctx_blobs)] mut ctx: TestContext) {
@@ -320,7 +327,7 @@ fn test_shader_graph_removed_when_removed(#[from(ctx_blobs)] mut ctx: TestContex
 
     ctx.tick_until(|world| {
         world
-            .query::<&HsdShaderGraphMaterial>()
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
             .iter(world)
             .next()
             .is_some()
@@ -330,12 +337,10 @@ fn test_shader_graph_removed_when_removed(#[from(ctx_blobs)] mut ctx: TestContex
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut q = world.query::<&HsdMaterialGraphSlot>();
+    let mut q = world.query::<&ShaderGraphData>();
     assert!(q.iter(world).next().is_none());
 }
 
-/// A graph with a displacement network compiles and caches a vertex shader
-/// too, not just a fragment one.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
@@ -365,7 +370,7 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         let Some(hsd_mat) = q.iter(world).next() else {
             return false;
         };
@@ -402,7 +407,7 @@ fn blend_and_cull_reach_the_material(#[from(ctx_blobs)] mut ctx: TestContext) {
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         let Some(hsd_mat) = q.iter(world).next() else {
             return false;
         };
@@ -417,9 +422,6 @@ fn blend_and_cull_reach_the_material(#[from(ctx_blobs)] mut ctx: TestContext) {
     assert_eq!(material.cull_mode, Some(Face::Front));
 }
 
-/// One binding, two backends: `material/binding` names a prim, not a backend,
-/// so a prim bound to one carrying a graph renders that graph and must not
-/// also carry a competing `StandardMaterial`.
 #[traced_test]
 #[rstest]
 fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestContext) {
@@ -439,12 +441,12 @@ fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestCo
 
     let mut bound: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
-        let mut q = world.query::<(Entity, &HsdShaderGraphMaterial)>();
+        let mut q = world.query::<(Entity, &MeshMaterial3d<ShaderGraphMaterial>)>();
         let found = q.iter(world).count();
         if found < 2 {
             return false;
         }
-        let mut q = world.query::<(&HsdShaderGraphMaterial, &ShaderGraphOverridesData)>();
+        let mut q = world.query::<(&MeshMaterial3d<ShaderGraphMaterial>, &ShaderOverridesData)>();
         let Some((mat, _)) = q.iter(world).next() else {
             return false;
         };
@@ -470,8 +472,6 @@ fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestCo
     );
 }
 
-/// Editing the source prim's graph after another prim binds to it rebuilds
-/// the bound prim too, not just the source.
 #[traced_test]
 #[rstest]
 fn editing_the_source_graph_after_binding_rebuilds_the_bound_prim(
@@ -487,7 +487,7 @@ fn editing_the_source_graph_after_binding_rebuilds_the_bound_prim(
 
     let mut before: Option<Handle<Shader>> = None;
     ctx.tick_until(|world| {
-        let Some(mat) = world.get::<HsdShaderGraphMaterial>(beam_entity) else {
+        let Some(mat) = world.get::<MeshMaterial3d<ShaderGraphMaterial>>(beam_entity) else {
             return false;
         };
         let assets = world.resource::<Assets<ShaderGraphMaterial>>();
@@ -503,7 +503,7 @@ fn editing_the_source_graph_after_binding_rebuilds_the_bound_prim(
 
     ctx.tick_until(|world| {
         let mat = world
-            .get::<HsdShaderGraphMaterial>(beam_entity)
+            .get::<MeshMaterial3d<ShaderGraphMaterial>>(beam_entity)
             .expect("beam still has a material");
         let assets = world.resource::<Assets<ShaderGraphMaterial>>();
         let material = assets.get(&mat.0).expect("material asset");
@@ -511,8 +511,6 @@ fn editing_the_source_graph_after_binding_rebuilds_the_bound_prim(
     });
 }
 
-/// Setting an image prim's data after a graph sampling it has already built
-/// still fills the texture slot, rather than leaving it empty forever.
 #[traced_test]
 #[rstest]
 fn setting_image_data_after_the_graph_is_built_fills_the_texture_slot(
@@ -545,7 +543,7 @@ fn setting_image_data_after_the_graph_is_built_fills_the_texture_slot(
 
     ctx.tick_until(|world| {
         world
-            .query::<&HsdShaderGraphMaterial>()
+            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
             .iter(world)
             .next()
             .is_some()
@@ -569,7 +567,7 @@ fn setting_image_data_after_the_graph_is_built_fills_the_texture_slot(
         else {
             return false;
         };
-        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
         let Some(mat) = q.iter(world).next() else {
             return false;
         };

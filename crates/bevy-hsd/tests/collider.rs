@@ -1,6 +1,5 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::HsdCollider;
 use bytemuck::cast_slice;
 use hsd::attributes::collider::ColliderKind;
 use rstest::rstest;
@@ -19,21 +18,13 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut q = world.query::<(&HsdCollider, &Collider)>();
-    assert!(
-        q.iter(world).next().is_some(),
-        "HsdCollider + Collider expected"
-    );
+    let mut q = world.query::<&Collider>();
+    assert!(q.iter(world).next().is_some(), "Collider expected");
 
     ctx.remove_attr::<ColliderKind>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut q_marker = world.query::<&HsdCollider>();
-    assert!(
-        q_marker.iter(world).next().is_none(),
-        "HsdCollider should be removed"
-    );
     let mut q_col = world.query::<&Collider>();
     assert!(
         q_col.iter(world).next().is_none(),
@@ -51,11 +42,6 @@ fn test_collider_invalid_sphere(mut ctx: TestContext) {
         ctx.app.update();
 
         let world = ctx.app.world_mut();
-        let mut q_marker = world.query::<&HsdCollider>();
-        assert!(
-            q_marker.iter(world).next().is_some(),
-            "HsdCollider marker expected even for invalid"
-        );
         let mut q_col = world.query::<&Collider>();
         assert!(
             q_col.iter(world).next().is_none(),

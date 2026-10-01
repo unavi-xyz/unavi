@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdDocId,
-    HsdSource,
-    load::{
-        HsdAsset,
-        LoadHsd,
+    document::HsdDocId,
+    package::{
+        ImportPackage,
+        PackageAsset,
     },
+    reference::ReferenceInstance,
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
@@ -47,9 +47,9 @@ fn test_reference_target_is_served(mut ctx: TestContext) {
 
     ctx.tick_until(move |world| {
         world
-            .query::<&HsdSource>()
+            .query::<&ReferenceInstance>()
             .iter(world)
-            .any(|source| source.0 == target_id)
+            .any(|instance| instance.target == target_id)
     });
     assert!(backing.is_served(target));
 }
@@ -64,9 +64,9 @@ fn test_instanced_sub_documents_are_served(mut ctx: TestContext) {
     let handle = ctx
         .app
         .world_mut()
-        .resource_mut::<Assets<HsdAsset>>()
-        .add(HsdAsset(package));
-    let instance = ctx.app.world_mut().spawn(LoadHsd { handle }).id();
+        .resource_mut::<Assets<PackageAsset>>()
+        .add(PackageAsset(package));
+    let instance = ctx.app.world_mut().spawn(ImportPackage(handle)).id();
 
     ctx.tick_until(move |world| world.get::<HsdDocId>(instance).is_some());
     let root = NamespaceId::from(

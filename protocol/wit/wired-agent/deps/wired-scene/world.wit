@@ -1,40 +1,24 @@
-package wired:scene;
+/// Documents and the prims they hold: the scene a script reads and edits.
+///
+/// A document is a tree of prims. A prim is nothing but an id; everything
+/// about it, from its place in the tree to its mesh, is a property. Each
+/// property is composed from layers, strongest first:
+///
+/// - `shared`: what peers present in the space state for this session.
+/// - `local`: what this peer states, for itself only.
+/// - durable: what the document holds, which `commit` writes.
+///
+/// A script owns its own document, the documents it creates, and every
+/// document authored by the same user as its own. It may read any document
+/// it can open, and write only those it owns.
+package wired:scene@0.1.0;
 
-world all {
-  import api;
-  import types;
-}
+/// The built-in properties a prim can carry.
+interface properties {
+  use wired:core/math@0.1.0.{vec2, vec3, transform, color};
+  use wired:core/ids@0.1.0.{document-id, prim-id};
 
-interface api {
-  use types.{blob-id, document, prim, prim-id, document-id};
-  use wired:error/types.{error};
-
-  self-prim:     func() -> result<prim, error>;
-  self-document: func() -> result<document, error>;
-
-  get-document:    func(id: document-id) -> result<option<document>, error>;
-  create-document: func() -> result<document, error>;
-  remove-document: func(id: document-id) -> result<_, error>;
-
-  /// Mints an independent document holding what `id` has authored, which the
-  /// two then diverge from. A copy, not a reference: the copy's scripts see
-  /// the copy's prims, which is what a template is for.
-  copy-document: func(id: document-id) -> result<document, error>;
-}
-
-interface types {
-  use wired:math/types.{vec2, vec3, transform};
-  use wired:error/types.{error};
-
-  /// 128 random bits rendered as 22 characters of unpadded base64url.
-  /// Fixed-length, so no id is a prefix of another.
-  type prim-id     = string;
-  type record-id   = list<u8>;
-  type document-id = record-id;
-  type blob-id     = list<u8>;
-  /// 16 bytes shared by the two halves of a two-way portal.
-  type link-id     = list<u8>;
-
+  /// How a mesh's vertices are assembled into primitives.
   enum topology {
     point-list,
     line-list,
@@ -43,349 +27,149 @@ interface types {
     triangle-strip,
   }
 
-  /// Vertex buffers live in their own `mesh/stream:<NAME>` entries set with
-  /// `set-mesh-stream`.
-  record mesh {
-    topology: topology,
+  /// A per-vertex stream of a mesh, and how many floats each vertex takes.
+  enum vertex-attribute {
+    /// 3 floats, in the prim's own frame. Required for a mesh to draw.
+    position,
+    /// 3 floats, unit length.
+    normal,
+    /// 4 floats: a unit tangent and the bitangent sign.
+    tangent,
+    /// 4 floats, linear RGBA.
+    color,
+    /// 2 floats.
+    uv0,
+    /// 2 floats.
+    uv1,
   }
 
-  record color {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
+  record vertex-stream {
+    attribute: vertex-attribute,
+    /// Packed per vertex, every stream of a mesh holding the same number of
+    /// vertices. At most 4 MiB.
+    values:    list<f32>,
   }
 
   enum alpha-mode {
-    add,
-    blend,
+    opaque,
+    /// Discards fragments below `alpha-cutoff`.
     mask,
-    multiply,
-    opaque,
-    pre-multiplied,
-  }
-
-  /// Texture slots are relationships set with `set-relationship`, under
-  /// `material/base_color_texture` and friends.
-  record material {
-    alpha-cutoff: option<f32>,
-    alpha-mode:   option<alpha-mode>,
-    base-color:   option<color>,
-    double-sided: option<bool>,
-    emissive:     option<color>,
-    metallic:     option<f32>,
-    roughness:    option<f32>,
-  }
-
-  /// A value a shader graph's public input can be overridden with.
-  variant graph-value {
-    float(f32),
-    vec2(vec2),
-    vec3(vec3),
-    color(color),
-  }
-
-  enum value-kind {
-    float,
-    vec2,
-    vec3,
-    color,
-  }
-
-  /// A node input: a constant, one of the graph's public inputs, or an
-  /// earlier node in the same network.
-  variant port {
-    const(graph-value),
-    /// Index into the graph's `public-inputs`.
-    input(u16),
-    /// Index into the enclosing network's node list. Must be strictly lower
-    /// than the node holding this port, which is the whole of why a graph
-    /// cannot describe a cycle. Never reaches across networks: the two run as
-    /// different shader stages and share no per-invocation value.
-    node(u16),
-  }
-
-  record binary-op { a: port, b: port }
-  record lerp-op { a: port, b: port, t: port }
-  record pow-op { x: port, y: port }
-  record atan2-op { y: port, x: port }
-  record select-op { cond: port, a: port, b: port }
-  record clamp-op { x: port, low: port, high: port }
-  record step-op { edge: port, x: port }
-  record smoothstep-op { low: port, high: port, x: port }
-  record texture-sample-op {
-    uv: port,
-    /// One of a fixed set of texture bindings, never an open-ended name.
-    slot: u8,
-  }
-  record extract-op { v: port, channel: u8 }
-  record combine2-op { x: port, y: port }
-  record combine3-op { x: port, y: port, z: port }
-  record combine4-op { x: port, y: port, z: port, w: port }
-  record convert-op { v: port, to: value-kind }
-  record remap-op {
-    x: port,
-    from-low: port,
-    from-high: port,
-    to-low: port,
-    to-high: port,
-  }
-  record polar-coords-op { uv: port, center: port }
-  record rotate-uv-op { uv: port, center: port, radians: port }
-
-  /// One operation in a shading network.
-  ///
-  /// Every kind has a fixed arity and one output, so a graph's cost is a
-  /// function of how many nodes it has. There is no loop, no general branch,
-  /// and no way to carry source text — a graph is safe because of its shape,
-  /// which is why a script may build one at all.
-  ///
-  /// The zero-arity kinds read shader-stage context and are each legal in one
-  /// network or both: `uv`/`world-normal`/`world-position`/`vertex-color`/
-  /// `view-direction` are surface-only, `local-position`/`local-normal` are
-  /// displacement-only, and `time`/`instance-random`/`object-position`/
-  /// `object-scale` are legal in either.
-  variant node {
-    uv,
-    world-normal,
-    world-position,
-    vertex-color,
-    local-position,
-    local-normal,
-    time,
-    /// A pseudo-random scalar per draw instance, the only way instances
-    /// sharing a graph differ without a write to each of them.
-    instance-random,
-    object-position,
-    object-scale,
-    view-direction,
-    /// Where this fragment sits on screen, `0..1` from the top left.
-    screen-uv,
-
-    add(binary-op),
-    sub(binary-op),
-    mul(binary-op),
-    div(binary-op),
-    modulo(binary-op),
-    min(binary-op),
-    max(binary-op),
-    dot(binary-op),
-    cross(binary-op),
-    distance(binary-op),
-    pow(pow-op),
-    atan2(atan2-op),
-    lerp(lerp-op),
-    clamp(clamp-op),
-    step(step-op),
-    smoothstep(smoothstep-op),
-    remap(remap-op),
-    select(select-op),
-
-    sin(port),
-    cos(port),
-    one-minus(port),
-    abs(port),
-    floor(port),
-    fract(port),
-    saturate(port),
-    sqrt(port),
-    length(port),
-    normalize(port),
-    triangle-wave(port),
-    luminance(port),
-
-    /// Power exponent on the host's own view term; a graph parameterizes it
-    /// rather than building one.
-    fresnel(port),
-    noise(port),
-    texture-sample(texture-sample-op),
-    /// What was already drawn behind this surface, sampled at a screen
-    /// position. Offsetting that position by the surface's own curvature is
-    /// what bends the scene behind it, so this is how a graph refracts.
-    ///
-    /// Only ever what was drawn *before* this surface: two surfaces reading
-    /// it do not see each other, and neither sees anything drawn after. A
-    /// graph using it is drawn in a later pass, which costs a full-screen
-    /// copy — so reach for it when the distortion is the point.
-    scene-color(port),
-
-    extract(extract-op),
-    combine2(combine2-op),
-    combine3(combine3-op),
-    combine4(combine4-op),
-    convert(convert-op),
-
-    polar-coords(polar-coords-op),
-    rotate-uv(rotate-uv-op),
-  }
-
-  /// Fed through the lighting pass. Every terminal is optional and falls back
-  /// to the renderer's own default.
-  record lit-output {
-    base-color:           option<port>,
-    emissive:             option<port>,
-    metallic:             option<port>,
-    roughness:            option<port>,
-    normal:               option<port>,
-    alpha:                option<port>,
-    /// Below this, the fragment is discarded outright.
-    alpha-clip-threshold: option<port>,
-    /// How much of what is behind this surface comes through tinted by
-    /// `base-color`, `0..1`. Above zero the surface is drawn in the
-    /// transmissive phase, where the host refracts the already-drawn scene
-    /// behind it by `thickness`/`ior` — with depth rejection, the way real
-    /// glass bends rather than smears.
-    specular-transmission: option<port>,
-    /// The Lambertian transmitted lobe, lit from behind. Clear glass that
-    /// only refracts leaves this at zero.
-    diffuse-transmission:  option<port>,
-    /// Metres the refracted ray travels inside the surface before exiting;
-    /// how far the scene behind appears displaced.
-    thickness:             option<port>,
-    /// Refractive index. `1.0` is air; water is `1.33`, glass `1.5`.
-    ior:                   option<port>,
-  }
-
-  /// Written straight out, with no lighting pass — what a beam, a hologram or
-  /// any energy effect needs.
-  record unlit-output {
-    color:                port,
-    alpha-clip-threshold: option<port>,
-  }
-
-  variant surface-output {
-    lit(lit-output),
-    unlit(unlit-output),
-  }
-
-  /// How a surface composites against what is already drawn. Declared rather
-  /// than inferred from which terminals are connected.
-  enum blend-mode {
-    opaque,
     blend,
     add,
     multiply,
+    premultiplied,
   }
 
-  enum cull-mode {
-    back,
-    front,
-    none,
+  /// A physically based material. Every unset field takes the renderer's
+  /// default. Textures are `relation`s, set beside it.
+  record material {
+    base-color:   option<color>,
+    /// Added light, in linear RGB; alpha is ignored.
+    emissive:     option<color>,
+    /// 0 to 1.
+    metallic:     option<f32>,
+    /// 0 to 1.
+    roughness:    option<f32>,
+    alpha-mode:   option<alpha-mode>,
+    alpha-cutoff: option<f32>,
+    double-sided: option<bool>,
   }
 
-  /// The fragment-stage network.
-  record surface-graph {
-    nodes:        list<node>,
-    output:       surface-output,
-    blend:        blend-mode,
-    cull:         cull-mode,
-    /// Whether this surface occludes light. Declared, because blending does
-    /// not decide shadowing.
-    cast-shadows: bool,
-  }
-
-  /// The vertex-stage network.
-  ///
-  /// `position-offset` moves a vertex in the prim's own frame, before it is
-  /// placed in the world. `world-position-offset` moves it afterward, and is
-  /// the only way to displace along a direction that does not rotate and
-  /// scale with the prim.
-  record displacement-graph {
-    nodes:                 list<node>,
-    position-offset:       option<port>,
-    normal-override:       option<port>,
-    world-position-offset: option<port>,
-  }
-
-  /// A whole shading description: shared inputs, a fragment network, and
-  /// optionally a vertex one.
-  ///
-  /// `public-inputs` are the defaults; a prim rendering this graph overrides
-  /// them per-instance with `set-graph-overrides`, which costs nothing like
-  /// submitting a graph does.
-  record shader-graph {
-    public-inputs: list<graph-value>,
-    surface:       surface-graph,
-    displacement:  option<displacement-graph>,
-  }
-
-  /// How a sampler treats coordinates outside `[0, 1]`.
+  /// How a sampler treats coordinates outside 0 to 1.
   enum address-mode {
     repeat,
     mirror-repeat,
     clamp-to-edge,
   }
 
-  /// How a sampler picks between texels.
   enum filter-mode {
     linear,
     nearest,
   }
 
-  /// The encoded bytes are the prim's `image/data` entry, set with
-  /// `set-image-data`; this record is sampler settings only.
-  record image {
+  /// How an image is sampled. The encoded image itself is `image-data`.
+  record image-sampler {
     address-mode-u: option<address-mode>,
     address-mode-v: option<address-mode>,
     address-mode-w: option<address-mode>,
     mag-filter:     option<filter-mode>,
     min-filter:     option<filter-mode>,
     mipmap-filter:  option<filter-mode>,
+    /// Whether the image holds sRGB color, which is the default, rather
+    /// than linear data such as a normal map.
     srgb:           option<bool>,
   }
 
-  /// `convex-hull` and `trimesh` read their buffers from the prim's
-  /// `collider/vertices` and `collider/indices` entries, set with
-  /// `set-collider-vertices` and `set-collider-indices`.
-  variant collider {
-    capsule(collider-capsule),
-    convex-hull,
-    cuboid(vec3),
-    cylinder(collider-cylinder),
-    sphere(f32),
-    trimesh,
-  }
-
+  /// Along the prim's Y axis, centered on its origin.
   record collider-capsule {
+    /// Of the cylinder between the two hemispheres.
     height: f32,
     radius: f32,
   }
 
+  /// Along the prim's Y axis, centered on its origin.
   record collider-cylinder {
     height: f32,
     radius: f32,
   }
 
+  /// A collision shape in the prim's own frame.
+  variant collider {
+    capsule(collider-capsule),
+    /// The hull of `collider-vertices`.
+    convex-hull,
+    /// A box of these full extents, centered on the origin.
+    cuboid(vec3),
+    cylinder(collider-cylinder),
+    /// A sphere of this radius.
+    sphere(f32),
+    /// The triangles of `collider-vertices` and `collider-indices`.
+    trimesh,
+  }
+
   enum rigid-body-kind {
+    /// Moved by the simulation.
     dynamic,
+    /// Moved only by its transform, pushing dynamic bodies aside.
     kinematic,
+    /// Never moves.
     %static,
   }
 
+  /// Makes the prim's collider part of the simulation. Unset fields take
+  /// the simulation's defaults.
   record rigid-body {
     kind:            rigid-body-kind,
-    angular-damping: option<f32>,
-    friction:        option<f32>,
-    linear-damping:  option<f32>,
+    /// Kilograms.
     mass:            option<f32>,
+    friction:        option<f32>,
+    /// 0 for no bounce, 1 for a perfectly elastic one.
     restitution:     option<f32>,
+    linear-damping:  option<f32>,
+    angular-damping: option<f32>,
   }
 
+  /// 128 bits shared by the two halves of a two-way portal.
+  type link-id = tuple<u64, u64>;
+
   record portal-destination {
-    space: record-id,
+    /// The space the portal looks into.
+    space: document-id,
     /// Pairs this portal with the one in `space` bearing the same link. A
-    /// destination without one is a one-way gateway.
+    /// destination without one is one-way.
     link:  option<link-id>,
   }
 
+  /// A rectangular window into another space, in the prim's XY plane,
+  /// facing +Z.
   record portal {
+    width:       f32,
+    height:      f32,
     destination: option<portal-destination>,
-    size-x:      f32,
-    size-y:      f32,
   }
 
-  /// Marks a prim as a spawn area: players spawn at a random point in a
-  /// horizontal circle of `radius` around the prim's origin.
+  /// Marks the prim as a spawn area: arriving users appear at a random
+  /// point within `radius` of its origin, on its XZ plane.
   record spawn {
     radius: f32,
   }
@@ -396,8 +180,7 @@ interface types {
     right,
   }
 
-  /// Where the text block sits relative to the prim's origin. `align`
-  /// answers the horizontal, so this only answers the vertical.
+  /// Which line of the text block sits on the prim's origin.
   enum text-anchor {
     baseline,
     top,
@@ -407,189 +190,234 @@ interface types {
 
   enum text-billboard {
     none,
-    /// Yaw only: the label stays upright.
+    /// Turns about Y to face the viewer, staying upright.
     yaw,
+    /// Turns fully to face the viewer.
     full,
   }
 
-  /// A string drawn in the world.
-  ///
-  /// One string, one style; no markup or rich text.
+  /// A string drawn in the prim's XY plane, reading along +X. One style for
+  /// the whole string; there is no markup.
   record text {
+    /// At most 4 KiB.
     value:         string,
-    /// Em height in metres.
+    /// Em height in meters.
     size:          option<f32>,
     align:         option<text-align>,
     anchor:        option<text-anchor>,
-    /// Wrap width in metres. None breaks only on newlines.
+    /// Wrap width in meters. Unset breaks only on newlines.
     wrap:          option<f32>,
-    /// Multiple of the font's own baseline-to-baseline distance.
+    /// A multiple of the font's line spacing.
     line-height:   option<f32>,
     color:         option<color>,
-    /// Drawn behind the glyph.
+    /// Drawn behind the glyphs.
     outline:       option<color>,
+    /// In ems.
     outline-width: option<f32>,
+    /// Glow strength, 0 for none.
     emissive:      option<f32>,
     billboard:     option<text-billboard>,
   }
 
+  /// A named link from one prim to another in the same document.
+  variant relation {
+    /// The shader graph this prim draws with, authored on another prim.
+    shader-binding,
+    base-color-texture,
+    emissive-texture,
+    metallic-roughness-texture,
+    normal-texture,
+    occlusion-texture,
+    /// The texture a shader graph samples at this slot, 0 to 3.
+    shader-texture(u8),
+    /// An application-defined relation, named `group/field`. The group must
+    /// not be one the host defines.
+    custom(string),
+  }
+
+  /// A property and its value. Each case names one key.
+  variant property {
+    /// The prim's parent, `none` for a root of the document.
+    parent(option<prim-id>),
+    /// At most 1 KiB.
+    name(string),
+    /// Relative to the parent, or to the document for a root.
+    transform(transform),
+    /// Places another document under this prim, as it currently stands.
+    reference(document-id),
+    mesh-topology(topology),
+    mesh-vertices(vertex-stream),
+    /// Indices into the vertex streams. At most 4 MiB.
+    mesh-indices(list<u32>),
+    material(material),
+    image-sampler(image-sampler),
+    /// An encoded PNG, JPEG or KTX2 image. At most 16 MiB.
+    image-data(list<u8>),
+    text(text),
+    collider(collider),
+    /// Packed XYZ positions. At most 4 MiB.
+    collider-vertices(list<f32>),
+    /// Triangle indices into `collider-vertices`. At most 4 MiB.
+    collider-indices(list<u32>),
+    rigid-body(rigid-body),
+    /// A multiple of the world's gravity. Defaults to 1.
+    gravity-scale(f32),
+    portal(portal),
+    spawn(spawn),
+    relation(tuple<relation, prim-id>),
+    /// Application data under `group/field`, outside the groups the host
+    /// defines. At most 64 KiB. The host stores and replicates the bytes but
+    /// never reads them.
+    custom(tuple<string, list<u8>>),
+  }
+
+  /// Names a property without its value.
+  variant property-key {
+    parent,
+    name,
+    transform,
+    reference,
+    mesh-topology,
+    mesh-vertices(vertex-attribute),
+    mesh-indices,
+    material,
+    image-sampler,
+    image-data,
+    text,
+    collider,
+    collider-vertices,
+    collider-indices,
+    rigid-body,
+    gravity-scale,
+    portal,
+    spawn,
+    relation(relation),
+    custom(string),
+  }
+}
+
+interface document {
+  use wired:core/math@0.1.0.{transform};
+  use wired:core/ids@0.1.0.{document-id, prim-id, prim-ref};
+  use wired:core/error@0.1.0.{error};
+  use properties.{property, property-key};
+
+  /// Where a write lands. Neither layer is durable; `commit` is.
+  enum layer {
+    /// This peer only, gone when the document unloads.
+    ///
+    /// Every peer runs the same scripts, so a deterministic local write is
+    /// seen everywhere without being sent anywhere. Reach for `shared` when
+    /// the value depends on one peer, such as user input.
+    local,
+    /// Every peer present in the space, live, for the rest of the session.
+    ///
+    /// Peers accept a document's shared state only from its author, so a
+    /// shared write succeeds only on the peer whose user authors the document
+    /// (`wired:peer/authority.is-owner`), and fails with `forbidden` on every
+    /// other. A document no author has proven, such as a space's own
+    /// content, takes shared writes from anyone present. Relations cannot be
+    /// shared.
+    shared,
+  }
+
+  variant edit {
+    /// Sets a property. Setting `parent` moves the prim; the prim must exist
+    /// and the new parent must not lie beneath it.
+    set(tuple<prim-id, property>),
+    /// Drops this layer's value for a key, so weaker layers show through.
+    /// A `shared` value stays stated for the session, so clearing one states
+    /// that the key has no value, hiding weaker layers too. `parent` cannot be
+    /// cleared; use `remove`.
+    clear(tuple<prim-id, property-key>),
+    /// Takes a prim and everything beneath it out of the scene.
+    remove(prim-id),
+  }
+
+  /// What a placed document's root hangs from.
+  variant anchor {
+    /// The root of the space.
+    space,
+    /// A prim of any loaded document.
+    prim(prim-ref),
+  }
+
+  /// A document in the world. Holding one is the capability to read it, and
+  /// to write it when the script owns it; writes to a document the script
+  /// does not own fail with `forbidden`.
   resource document {
-    id:    func() -> document-id;
-    clone: func() -> document;
+    id: func() -> document-id;
 
-    roots:       func() -> list<prim>;
-    prims:       func() -> list<prim>;
-    get-prim:    func(id: prim-id) -> option<prim>;
-    create-prim: func() -> result<prim, error>;
-    remove-prim: func(value: borrow<prim>) -> result<_, error>;
+    /// Whether the script owns this document: its own, one it created, or
+    /// one authored by the same user as its own.
+    owned: func() -> bool;
 
-    /// Rigid transform from this document's root frame to `other`'s root
-    /// frame, or none when the two documents are not in the same space.
-    offset-to: func(other: borrow<document>) -> result<option<transform>, error>;
+    /// Whether `prim` is in the scene.
+    contains: func(prim: prim-id) -> bool;
+    /// Prims with no parent, in id order.
+    roots:    func() -> list<prim-id>;
+    /// Every prim in the scene, in no particular order.
+    prims:    func() -> list<prim-id>;
+    /// In id order. Empty for a prim not in the scene.
+    children: func(prim: prim-id) -> list<prim-id>;
+    /// Every prim whose `name` is exactly `name`.
+    find-by-name: func(name: string) -> list<prim-id>;
 
-    /// Promotes the named keys' live opinions into the strongest durable layer
-    /// this client can write, else the session layer.
-    ///
-    /// A key is `namespace/field`, or a bare `namespace` for a built-in with
-    /// one value (e.g. `xform`, `state/link`). A built-in namespace is
-    /// schema-checked — a wrong-kind or unknown field is refused; any other
-    /// namespace is free-form and needs a field.
-    ///
-    /// Writing and keeping are separate acts: `set-property` family calls land
-    /// in the runtime layer and evaporate with the session, and `commit` is
-    /// the only thing that makes one survive. Granularity is per property,
-    /// never per prim: committing a prim would sweep up whatever a script is
-    /// animating on it.
-    ///
-    /// A no-op unless this peer holds the *calling* document, since a tool's
-    /// script runs on every peer and only the peer wielding it means anything
-    /// by the call. Where the promotion lands is then decided by what this
-    /// client holds a key for: this document, else an override in a document
-    /// referencing it, else the session layer — visible to everyone present,
-    /// attributed, and gone when they leave.
-    commit: func(props: list<tuple<prim-id, string>>) -> result<_, error>;
+    /// The composed value of a property: the strongest layer's. For
+    /// `transform` that is the stated value, not where physics has since
+    /// moved the prim; see `world-transform`.
+    get:      func(prim: prim-id, key: property-key) -> option<property>;
+    /// `get` for many keys in one call, answered in order.
+    get-many: func(keys: list<tuple<prim-id, property-key>>) -> list<option<property>>;
+    /// Every key that has a value on `prim`.
+    keys:     func(prim: prim-id) -> list<property-key>;
 
-    /// Attaches this document's root to a prim, or the space root when `none`.
-    /// Per-peer runtime state, never persisted.
+    /// Where `prim` is in the world this frame, including what physics and
+    /// animation did to it since its `transform` was written.
+    world-transform: func(prim: prim-id) -> result<transform, error>;
+    /// The transform from this document's root to `other`'s, or `none` when
+    /// either is not placed.
+    offset-to: func(other: borrow<document>) -> option<transform>;
+
+    /// Adds a prim under `parent`, or as a root, and answers its id.
+    create-prim: func(layer: layer, parent: option<prim-id>) -> result<prim-id, error>;
+
+    /// Applies every edit in `layer` together, or none of them, so peers
+    /// never see half a batch. At most 4096 edits. In `local`, an edit naming
+    /// a prim the document does not hold fails the batch with `not-found`.
+    apply: func(layer: layer, edits: list<edit>) -> result<_, error>;
+
+    /// Makes the live value of each key durable, in the document itself
+    /// when this peer can write it, or as an override in the document
+    /// referencing it. Fails with `forbidden` when it can write neither.
     ///
-    /// A document a script mints is held until one of these is called: it has
-    /// an id and prims, and can be built up in full, but nothing of it is
-    /// drawn or simulated. Placing it puts the whole document in at once,
-    /// where it was put, so what a first placement shows is a document
-    /// appearing rather than one arriving at the origin and moving. Fails if
-    /// the anchor target is not itself in the scene.
-    set-anchor: func(target: option<borrow<prim>>) -> result<_, error>;
-    set-offset: func(value: transform) -> result<_, error>;
+    /// Takes effect only on the peer holding the script's document
+    /// (`wired:peer/authority`); elsewhere it succeeds and does nothing, so a
+    /// script running on every peer commits once. A script outside any space
+    /// runs on one peer, which always commits.
+    commit: func(keys: list<tuple<prim-id, property-key>>) -> result<_, error>;
+
+    /// Puts the document into the scene, or moves it, at `offset` from
+    /// `anchor`. Per peer, never stored.
+    ///
+    /// A created document is held out of the scene until it is placed, so it
+    /// can be built in full and then appear at once.
+    place: func(anchor: anchor, offset: transform) -> result<_, error>;
   }
 
-  resource prim {
-    id:    func() -> prim-id;
-    clone: func() -> prim;
+  /// The document the calling script belongs to.
+  script-document: func() -> result<document, error>;
+  /// The prim the calling script is attached to, in its own document.
+  script-prim: func() -> prim-id;
 
-    parent:       func() -> option<prim>;
-    children:     func() -> list<prim>;
-    add-child:    func(child: borrow<prim>) -> result<_, error>;
-    remove-child: func(child: borrow<prim>) -> result<_, error>;
-
-    name:     func() -> option<string>;
-    set-name: func(value: option<string>) -> result<_, error>;
-
-    /// The document this prim stands for, realized as a child of it. Setting
-    /// it realizes the target; clearing it or deleting the prim tears it down.
-    /// The target resolves to its current state — a reference is not pinned to
-    /// a version.
-    reference:     func() -> option<document-id>;
-    set-reference: func(value: option<document-id>) -> result<_, error>;
-
-    /// What present peers say about this prim this session, keyed by property
-    /// name: replicated, attributed to whoever wrote each key, and gone when
-    /// they leave. A key nobody states, or one a peer has blocked, is absent.
-    ///
-    /// A name is `namespace/field` (e.g. `state/link`). The same key space the
-    /// document uses, so an opinion stated here composes over what the
-    /// document says and can be promoted into it by `commit`. A built-in
-    /// namespace is schema-checked; any other namespace is free-form.
-    session: func() -> list<tuple<string, list<u8>>>;
-
-    /// States session opinions on this prim, as one atomic batch — generated
-    /// state code flushes a whole dirty set once per tick, and a batch that
-    /// applied by halves could render half a tick.
-    ///
-    /// A value of `none` blocks its key for the session rather than stating
-    /// one. Refused on a document owned by another peer: what a peer may say
-    /// about someone else's content is the owner's to decide, and saying it
-    /// needs no hold.
-    set-session: func(values: list<tuple<string, option<list<u8>>>>) -> result<_, error>;
-
-    xform:     func() -> option<transform>;
-    set-xform: func(value: option<transform>) -> result<_, error>;
-
-    /// Live world-space transform, recomputed each call.
-    global-xform: func() -> transform;
-
-    gravity-scale:     func() -> f32;
-    set-gravity-scale: func(value: f32) -> result<_, error>;
-
-    mesh:     func() -> option<mesh>;
-    set-mesh: func(value: option<mesh>) -> result<_, error>;
-
-    /// Host stores the values inline in the prim's slot entry.
-    set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
-    set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
-
-    /// Reads back a vertex stream written with `set-mesh-stream`, in the
-    /// prim's own frame.
-    mesh-stream: func(key: string) -> option<list<f32>>;
-
-    material:     func() -> option<material>;
-    set-material: func(value: option<material>) -> result<_, error>;
-
-    /// The shading this prim is drawn with, in place of `material`.
-    ///
-    /// Validated and compiled by the host: a graph is bounded by its shape,
-    /// so building one carries no risk that shader text would. Costs one of
-    /// the document's shader programs, and the compiled result is shared by
-    /// content — every prim submitting the same graph draws with one program.
-    ///
-    /// A prim may instead reach a graph its package authored, through the
-    /// `material/binding` relationship, which costs nothing to point at.
-    set-material-graph: func(value: option<shader-graph>) -> result<_, error>;
-
-    /// Per-instance overrides of the shader graph this prim renders, keyed by
-    /// public-input index. Cheap: the graph is untouched, so prims sharing one
-    /// still share its compiled program.
-    graph-overrides:     func() -> list<tuple<u16, graph-value>>;
-    set-graph-overrides: func(values: list<tuple<u16, graph-value>>) -> result<_, error>;
-
-    image:          func() -> option<image>;
-    set-image:      func(value: option<image>) -> result<_, error>;
-    set-image-data: func(bytes: option<list<u8>>) -> result<_, error>;
-
-    collider:               func() -> option<collider>;
-    set-collider:           func(value: option<collider>) -> result<_, error>;
-    set-collider-vertices:  func(values: option<list<f32>>) -> result<_, error>;
-    set-collider-indices:   func(values: option<list<u32>>) -> result<_, error>;
-
-    rigid-body:     func() -> option<rigid-body>;
-    set-rigid-body: func(value: option<rigid-body>) -> result<_, error>;
-
-    portal:     func() -> option<portal>;
-    set-portal: func(value: option<portal>) -> result<_, error>;
-
-    spawn:     func() -> option<spawn>;
-    set-spawn: func(value: option<spawn>) -> result<_, error>;
-
-    text:     func() -> option<text>;
-    set-text: func(value: option<text>) -> result<_, error>;
-
-    /// Every relationship field this prim resolves, keyed by `namespace/field`
-    /// (e.g. `material/binding`).
-    relationships:    func() -> list<tuple<string, prim-id>>;
-    get-relationship: func(key: string) -> option<prim-id>;
-    /// A target of `none` clears `key` only if it currently holds a
-    /// relationship — this cannot delete an attribute field such as
-    /// `mesh/topology`. A built-in namespace is schema-checked: `key` must
-    /// name one of its relationship fields, or the call is refused.
-    set-relationship: func(key: string, target: option<prim-id>) -> result<_, error>;
-  }
+  /// A document loaded on this peer, or `none` when it is not.
+  open-document: func(id: document-id) -> result<option<document>, error>;
+  /// Mints an empty document the script owns, held until it is placed.
+  create-document: func() -> result<document, error>;
+  /// Mints a document holding what `source` durably holds, which the two
+  /// then diverge from. Live layers are not copied.
+  copy-document: func(source: borrow<document>) -> result<document, error>;
+  /// Removes a document this script created from the world, and deletes
+  /// this peer's copy of it.
+  delete-document: func(document: document) -> result<_, error>;
 }

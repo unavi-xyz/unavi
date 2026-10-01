@@ -7,11 +7,8 @@ use bevy::{
 };
 use parking_lot::Mutex;
 use unavi_script::{
-    debug::spatial_receptors,
-    runtime::shared::registry::{
-        event::EventBus,
-        transform::TransformSnapshots,
-    },
+    EventBus,
+    TransformSnapshots,
 };
 
 const EVENT_LIFETIME: f32 = 0.8;
@@ -40,7 +37,7 @@ pub fn install_emit_observer(bus: Res<EventBus>) {
 pub struct EventPings(Vec<(EmittedSpatialEvent, f32)>);
 
 pub fn draw_receptors(bus: Res<EventBus>, transforms: Res<TransformSnapshots>, mut gizmos: Gizmos) {
-    for r in spatial_receptors(&bus, &transforms) {
+    for r in bus.spatial_listeners(&transforms) {
         gizmos
             .sphere(
                 Isometry3d::from_translation(r.position),

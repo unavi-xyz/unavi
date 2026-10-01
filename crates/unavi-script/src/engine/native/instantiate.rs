@@ -1,3 +1,5 @@
+//! Builds each script's store and instance.
+
 use std::sync::Arc;
 
 use bevy::prelude::*;
@@ -16,7 +18,10 @@ use bevy_hsd::{
     },
 };
 use smol_str::SmolStr;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    Mutex,
+    oneshot,
+};
 use tracing::{
     Instrument,
     Span,
@@ -28,103 +33,89 @@ use unavi_space::{
 };
 use wasmtime::{
     Store,
-    component::Linker,
+    UpdateDeadline,
 };
-use wasmtime_wasi::{
-    ResourceTable,
-    WasiCtxBuilder,
-};
+use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::{
     Script,
-    engine::{
-        ScriptEngine,
-        native::{
-            WasmtimeEngine,
-            fixed_update::LastFixedUpdate,
-            log::{
-                ScriptStderr,
-                ScriptStdout,
-            },
+    ScriptStatus,
+    bindings::native::{
+        HostCtx,
+        Shell,
+    },
+    engine::native::{
+        WasmtimeEngine,
+        log::{
+            ScriptStderr,
+            ScriptStdout,
         },
+    },
+    host::{
+        ScriptHost,
+        ScriptIdentity,
+        SharedResources,
     },
     load::asset::Wasm,
     quota::{
         QuotaExempt,
         limiter::QuotaLimiter,
     },
-    runtime::{
-        Runtime,
-        native::{
-            NativeRuntime,
-            add_apis_to_linker,
-        },
-        shared::{
-            Api,
-            registry::{
-                agent::AgentProxyRegistry,
-                event::EventBus,
-                pointer::Pointers,
-                transform::TransformSnapshots,
-            },
-        },
-    },
 };
 
-#[derive(Component, Deref, DerefMut)]
-pub struct InstantiatingScript(tokio::sync::oneshot::Receiver<bindings::Guest>);
+/// Frames one call may run for before the guest is stopped. Waiting on a host
+/// call does not count, only running guest code.
+const MAX_CALL_EPOCHS: u32 = 60;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct ScriptStore(pub Arc<Mutex<Store<Runtime>>>);
+/// A script's store, shared with the task running its current call.
+#[derive(Component, Clone)]
+pub struct ScriptStore(pub Arc<Mutex<Store<HostCtx>>>);
 
-#[derive(Component)]
-#[require(LastFixedUpdate)]
-pub struct ScriptGuest(pub Arc<bindings::Guest>);
+/// A script's instance, once instantiated.
+#[derive(Component, Clone)]
+pub struct ScriptInstance(pub Arc<Shell>);
 
 #[derive(Component)]
 pub struct ScriptSpan(pub Span);
 
+#[derive(Component)]
+pub struct Instantiating(oneshot::Receiver<Shell>);
+
 pub fn instantiate_scripts(
+    engine: Res<WasmtimeEngine>,
     wasms: Res<Assets<Wasm>>,
-    engines: Query<&WasmtimeEngine>,
-    to_instantiate: Query<
-        (Entity, &Script, &ScriptEngine, NameOrEntity, &Prim, &PrimOf),
-        (Without<InstantiatingScript>, Without<ScriptGuest>),
+    scripts: Query<
+        (Entity, &Script, &ScriptStatus, NameOrEntity, &Prim, &PrimOf),
+        (Without<Instantiating>, Without<ScriptStore>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     root: Option<Res<RootDocument>>,
     view: Option<Res<SpaceView>>,
-    agents: Res<AgentProxyRegistry>,
-    pointers: Res<Pointers>,
-    transforms: Res<TransformSnapshots>,
-    event_bus: Res<EventBus>,
+    shared: SharedResources,
     async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
     let Some(view) = view else {
         return;
     };
-    let root_doc = root.map(|root| root.0);
 
-    for (entity, script, engine_ent, name, prim, doc_ent) in to_instantiate {
+    for (entity, script, status, name, prim, prim_of) in scripts {
+        if status.is_trapped() {
+            continue;
+        }
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((doc_id, doc, exempt)) = docs.get(doc_ent.0) else {
-            continue;
-        };
-        let Ok(engine) = engines.get(engine_ent.0) else {
-            warn_once!("Can't instantiate: no engine");
+        let Ok((doc_id, doc, exempt)) = docs.get(prim_of.0) else {
             continue;
         };
 
-        let span = info_span!("", name = name.to_string());
-
+        let name = name.to_string();
+        let span = info_span!("", name);
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
-        stdout.drain(SmolStr::new(name.to_string()));
-        stderr.drain(SmolStr::new(name.to_string()));
-
+        stdout.drain(SmolStr::new(&name));
+        stderr.drain(SmolStr::new(&name));
         let wasi_ctx = WasiCtxBuilder::new()
             .stdout(stdout_stream)
             .stderr(stderr_stream)
@@ -137,105 +128,86 @@ pub fn instantiate_scripts(
         } else {
             view.document_quota(doc_id.0)
         };
-
-        let state = Runtime {
-            api:    Arc::new(Api {
-                state: Arc::clone(&doc.0),
-                doc_id: doc_id.0,
-                prim: prim.0,
-                view: (*view).clone(),
-                quota: Arc::clone(&quota),
-                root_doc,
-                agents: agents.clone(),
-                pointers: pointers.clone(),
-                transforms: transforms.clone(),
-                event_bus: event_bus.clone(),
-                async_world: (*async_world).clone(),
-                wired_agent: Mutex::default(),
-                wired_event: Mutex::default(),
-                wired_input: Mutex::default(),
-                wired_scene: Mutex::default(),
-                wired_storage: Mutex::default(),
-            }),
-            native: NativeRuntime {
-                table: ResourceTable::default(),
-                wasi_ctx,
-                limiter: QuotaLimiter::new(quota),
+        let host = ScriptHost::new(
+            ScriptIdentity {
+                doc:      doc_id.0,
+                prim:     prim.0,
+                state:    Arc::clone(&doc.0),
+                view:     (*view).clone(),
+                quota:    Arc::clone(&quota),
+                world:    (*async_world).clone(),
+                root_doc: root.as_ref().map(|root| root.0),
             },
-        };
-        let mut store = Store::new(&engine.0, state);
-        store.epoch_deadline_async_yield_and_update(1);
-        store.limiter(|state| &mut state.native.limiter);
+            shared.get(),
+        );
+
+        let mut store = Store::new(
+            &engine.engine,
+            HostCtx::new(host, QuotaLimiter::new(quota), wasi_ctx),
+        );
+        store.limiter(|ctx| &mut ctx.limiter);
+        // A guest yields to the executor once a frame, and is stopped once a
+        // single call has run for too many of them.
+        store.epoch_deadline_callback(|mut ctx| {
+            let ctx = ctx.data_mut();
+            ctx.epochs += 1;
+            Ok(if ctx.epochs > MAX_CALL_EPOCHS {
+                UpdateDeadline::Interrupt
+            } else {
+                UpdateDeadline::Yield(1)
+            })
+        });
+        store.set_epoch_deadline(1);
         let store = Arc::new(Mutex::new(store));
 
-        let engine = engine.0.clone();
-        let wasm = wasm.0.clone();
-
-        let (tx, rx) = tokio::sync::oneshot::channel();
-
-        task::spawn({
-            let store = Arc::clone(&store);
+        let (tx, rx) = oneshot::channel();
+        let engine = engine.clone();
+        let (bytes, hash) = (Arc::clone(&wasm.bytes), wasm.hash);
+        let task_store = Arc::clone(&store);
+        let status = status.clone();
+        task::spawn(
             async move {
-                let mut store = store.lock().await;
-                match instantiate_component(&engine, &wasm, &mut store).await {
-                    Ok(g) => {
-                        let _ = tx.send(g);
+                let mut store = task_store.lock().await;
+                let instance = async {
+                    let pre = engine.prepare(hash, &bytes)?;
+                    pre.instantiate_async(&mut *store).await
+                };
+                match instance.await {
+                    Ok(instance) => {
+                        let _ = tx.send(instance);
                     }
-                    Err(err) => error!(?err, "Failed to instantiate component"),
+                    Err(err) => {
+                        if status.trap() {
+                            error!(?err, "Failed to instantiate the script; it will not run");
+                        }
+                    }
                 }
             }
-            .instrument(span.clone())
-        });
+            .instrument(span.clone()),
+        );
 
-        commands.entity(entity).insert((
-            InstantiatingScript(rx),
-            ScriptStore(store),
-            ScriptSpan(span),
-        ));
+        commands
+            .entity(entity)
+            .insert((Instantiating(rx), ScriptStore(store), ScriptSpan(span)));
     }
 }
 
-mod bindings {
-    wasmtime::component::bindgen!({
-        path: "../../protocol/wit/wired-script",
-        imports: {
-            default: async,
-        },
-        exports: {
-            default: async,
-        }
-    });
-}
-
-async fn instantiate_component(
-    engine: &wasmtime::Engine,
-    binary: &[u8],
-    store: &mut Store<Runtime>,
-) -> anyhow::Result<bindings::Guest> {
-    let component = wasmtime::component::Component::from_binary(engine, binary)?;
-
-    let mut linker = Linker::new(engine);
-    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-    add_apis_to_linker(&mut linker)?;
-
-    info!("Instantiating script");
-    let guest = bindings::Guest::instantiate_async(store, &component, &linker).await?;
-    info!("Instantiated");
-
-    Ok(guest)
-}
-
-pub fn poll_instantiating(
-    instantiating: Query<(Entity, &mut InstantiatingScript)>,
+pub fn finish_instantiating(
+    mut scripts: Query<(Entity, &mut Instantiating)>,
     mut commands: Commands,
 ) {
-    for (entity, mut rx) in instantiating {
-        let Ok(guest) = rx.try_recv() else {
-            continue;
-        };
-        commands
-            .entity(entity)
-            .remove::<InstantiatingScript>()
-            .insert(ScriptGuest(Arc::new(guest)));
+    for (entity, mut instantiating) in &mut scripts {
+        match instantiating.0.try_recv() {
+            Ok(instance) => {
+                commands
+                    .entity(entity)
+                    .remove::<Instantiating>()
+                    .insert(ScriptInstance(Arc::new(instance)));
+            }
+            Err(oneshot::error::TryRecvError::Empty) => {}
+            Err(oneshot::error::TryRecvError::Closed) => {
+                commands.entity(entity).remove::<Instantiating>();
+            }
+        }
     }
 }

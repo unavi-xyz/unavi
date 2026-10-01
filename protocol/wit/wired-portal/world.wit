@@ -1,27 +1,46 @@
-package wired:portal;
+/// Portals between spaces, and travel through them.
+///
+/// A two-way portal is two halves, one in each space, bearing the same
+/// link. Opening one half asks the scripts of the target space for the other:
+/// they hear a `link-intent` and answer it with `pair`.
+package wired:portal@0.1.0;
 
-world all {
-  import api;
-}
+interface portals {
+  use wired:core/ids@0.1.0.{document-id, prim-id};
+  use wired:core/error@0.1.0.{error};
+  use wired:scene/document@0.1.0.{document};
+  use wired:scene/properties@0.1.0.{link-id};
 
-interface api {
-  use wired:scene/types.{prim, document-id, link-id};
-  use wired:error/types.{error};
+  /// A portal in `source-space` bearing `link` that nothing in this space
+  /// answers yet.
+  record link-intent {
+    source-space: document-id,
+    link:         link-id,
+  }
 
-  /// States a two-way destination into `target-space` on `prim` for this
-  /// session, keeping the prim's portal size. Fails on a prim with no portal.
-  ///
-  /// The link is derived from the prim and target, so every peer opening the
-  /// same portal to the same space states the same link. Scripts in the target
-  /// space hear a `link-intent` on `unavi:portal:intent` until one answers it
-  /// with `pair`.
-  open: func(prim: prim, target-space: document-id) -> result<_, error>;
-
-  /// Answers a link intent: states a destination into `source-space` under
-  /// `link` on `prim` for this session, keeping the prim's portal size. Fails
+  /// Points the portal on `prim` into `target-space` for this session,
+  /// keeping its size, as a `shared` write. Fails with `invalid-argument`
   /// on a prim with no portal.
-  pair: func(prim: prim, source-space: document-id, link: link-id) -> result<_, error>;
+  ///
+  /// The link is derived from the prim and the target, so every peer
+  /// opening the same portal states the same one.
+  open: func(document: borrow<document>, prim: prim-id, target-space: document-id) -> result<_, error>;
 
-  /// Teleport the local agent into `target-space`, loading it if needed.
+  /// Answers `intent` with the portal on `prim`, as a `shared` write.
+  pair: func(document: borrow<document>, prim: prim-id, intent: link-intent) -> result<_, error>;
+
+  /// Moves the local user into `target-space`, loading it if needed.
   travel: func(target-space: document-id) -> result<_, error>;
+
+  /// Hears intents addressed to the script's space, each once.
+  intents: func() -> result<intent-subscription, error>;
+
+  /// Holds up to 64 intents.
+  resource intent-subscription {
+    drain:   func(max: u32) -> list<link-intent>;
+    dropped: func() -> u64;
+    /// Takes `intent` for this script, answering whether it won: exactly one
+    /// subscriber in the space does.
+    claim:   func(intent: link-intent) -> bool;
+  }
 }

@@ -1,47 +1,59 @@
-package wired:physics;
+/// The rigid-body simulation: raycasts, and the motion of bodies a script
+/// owns.
+///
+/// The simulation runs on every peer. A body's motion is decided by the peer
+/// holding its document (`wired:peer/authority`) and sent to the others, so
+/// a write made on any other peer is overwritten by the holder's.
+package wired:physics@0.1.0;
 
-world all {
-  import api;
-  import types;
-}
-
-interface types {
-  use wired:math/types.{vec3};
-  use wired:scene/types.{prim-id, document-id};
+interface simulation {
+  use wired:core/math@0.1.0.{vec3, ray};
+  use wired:core/ids@0.1.0.{document-id, prim-id, prim-ref};
+  use wired:core/error@0.1.0.{error};
+  use wired:scene/document@0.1.0.{document};
 
   record ray-hit {
-    document: document-id,
-    prim:     prim-id,
+    /// The prim whose collider was hit.
+    target:   prim-ref,
     point:    vec3,
+    /// Unit length, facing back along the ray.
     normal:   vec3,
     distance: f32,
   }
-}
 
-interface api {
-  use types.{ray-hit};
-  use wired:math/types.{vec3};
-  use wired:scene/types.{prim, document-id};
-  use wired:error/types.{error};
+  /// What a raycast passes through.
+  record ray-filter {
+    /// Skips the local user's own body, so a ray from the camera does not
+    /// stop at the head it starts in.
+    exclude-local-agent: bool,
+    /// Skips every collider in these documents. At most 64.
+    exclude-documents:   list<document-id>,
+  }
 
-  /// Closest dynamic/static collider hit along the world-space ray.
-  raycast: func(origin: vec3, dir: vec3, max-dist: f32) -> result<option<ray-hit>, error>;
+  /// How a body is moving this step.
+  record body-velocity {
+    /// Meters per second, world space.
+    linear:  vec3,
+    /// Radians per second about each world axis.
+    angular: vec3,
+  }
 
-  /// Live linear velocity of a dynamic body.
-  get-linear-velocity: func(prim: borrow<prim>) -> result<vec3, error>;
+  /// The closest collider along `ray` within `max-distance`.
+  raycast: func(ray: ray, max-distance: f32, filter: ray-filter) -> result<option<ray-hit>, error>;
 
-  /// Takes networked effect only while the caller holds the prim's document.
-  set-linear-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
+  /// Fails with `not-ready` until the prim's body is in the simulation, and
+  /// `invalid-argument` for a body that is not dynamic.
+  velocity: func(document: borrow<document>, prim: prim-id) -> result<body-velocity, error>;
 
-  /// Takes networked effect only while the caller holds the prim's document.
-  set-angular-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
+  /// Sets either velocity of a dynamic body, leaving `none` unchanged.
+  set-velocity: func(
+    document: borrow<document>,
+    prim:     prim-id,
+    linear:   option<vec3>,
+    angular:  option<vec3>,
+  ) -> result<_, error>;
 
-  /// Persistent world-space force the solver applies every step until changed;
-  /// a zero vector clears it. Hold-gated like the velocity writes.
-  apply-force: func(prim: borrow<prim>, force: vec3) -> result<_, error>;
-
-  /// Takes transform and simulation authority over `doc`, one holder at a
-  /// time. The latest claim wins; releasing falls hold back to whoever owns it.
-  take-hold:    func(doc: document-id) -> result<_, error>;
-  release-hold: func(doc: document-id) -> result<_, error>;
+  /// A world-space force the simulation applies every step until it is set
+  /// again. Zero clears it.
+  set-force: func(document: borrow<document>, prim: prim-id, force: vec3) -> result<_, error>;
 }

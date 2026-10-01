@@ -1,0 +1,166 @@
+/// The vocabulary every `wired:*` package shares: math, identifiers and the
+/// error type, plus the conventions they are all read by.
+///
+/// Units: lengths in meters, time in seconds, mass in kilograms, angles in
+/// radians, forces in newtons. Space is right-handed with +Y up and -Z
+/// forward. Rotations are unit quaternions. Colors are linear RGB with
+/// straight (not premultiplied) alpha, each channel nominally 0 to 1.
+///
+/// Errors: a call that can fail returns `result<_, error>`. Passing a handle
+/// that was already dropped, or one from another script, traps; every other
+/// failure is an `error`, so a script can always branch on it.
+///
+/// Permissions: a script runs with the permissions its document's author is
+/// granted on this peer. A call outside them fails with `permission`, and
+/// `wired:script/host.granted` answers ahead of time. A resource is checked
+/// once, when it is created, and keeps working for as long as it is held.
+///
+/// Results that arrive later are `pending-<noun>` resources: `poll` answers
+/// `none` until the result is ready, then the same result on every later
+/// poll. Dropping one cancels it. A call that can answer at once just
+/// returns.
+///
+/// Streams are `<noun>-subscription` resources. `drain(max)` takes up to
+/// `max` queued items, oldest first. A queue that overflows drops its oldest
+/// item, and `dropped` counts how many it has lost since it was created.
+/// Draining once per tick is the expected pattern.
+package wired:core@0.1.0;
+
+interface math {
+  record vec2 {
+    x: f32,
+    y: f32,
+  }
+
+  record vec3 {
+    x: f32,
+    y: f32,
+    z: f32,
+  }
+
+  /// A unit quaternion. The identity is `{ x: 0, y: 0, z: 0, w: 1 }`.
+  record quat {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+  }
+
+  /// Scale, then rotation, then translation.
+  record transform {
+    translation: vec3,
+    rotation:    quat,
+    scale:       vec3,
+  }
+
+  /// Linear RGB with straight alpha.
+  record color {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+  }
+
+  /// A half-line in world space. `direction` need not be normalized; a zero
+  /// direction is an invalid argument.
+  record ray {
+    origin:    vec3,
+    direction: vec3,
+  }
+}
+
+interface ids {
+  /// 256 bits naming a document, as four little-endian 64-bit words: the
+  /// first word holds bytes 0..8 of the id.
+  type document-id = tuple<u64, u64, u64, u64>;
+
+  /// 128 bits naming a prim, unique within its document, in the same word
+  /// order as `document-id`.
+  type prim-id = tuple<u64, u64>;
+
+  /// A prim in some document.
+  record prim-ref {
+    document: document-id,
+    prim:     prim-id,
+  }
+
+  /// A user's decentralized identifier, such as `did:key:z6Mk...`.
+  type did = string;
+}
+
+interface error {
+  /// A capability a script's document may be granted. Which ones it holds
+  /// depends on how far this peer trusts the document's author.
+  enum permission {
+    /// Reading the scene and writing documents the script owns.
+    scene,
+    /// Minting new documents.
+    create-document,
+    /// Making edits durable.
+    commit,
+    /// Sending and receiving messages.
+    event,
+    /// Input aimed at prims the script owns.
+    input,
+    /// Every input event and pointer of the local user, aimed or not.
+    input-device,
+    /// The local user's camera and body.
+    local-agent,
+    /// The local user's identifier.
+    identity,
+    /// Who authors and holds documents.
+    peer,
+    /// Raycasts and rigid-body state.
+    physics,
+    /// Opening and pairing portals.
+    portal,
+    /// Moving the local user to another space.
+    travel,
+  }
+
+  /// A budget that refills over time.
+  enum rate {
+    create-document,
+    create-prim,
+    emit,
+    /// Large property writes: mesh, collider and image data, shader graphs.
+    upload,
+    portal,
+  }
+
+  /// A ceiling on something held. Only releasing something frees it.
+  enum limit {
+    documents,
+    prims,
+    /// Live resource handles of every kind.
+    handles,
+    subscriptions,
+    /// Bytes of `shared` layer state.
+    shared-memory,
+    /// Guest linear memory.
+    memory,
+  }
+
+  variant error {
+    /// The caller passed something malformed or out of bounds; the string
+    /// says what, for a human.
+    invalid-argument(string),
+    /// The target does not exist, or is not loaded on this peer.
+    not-found,
+    /// The target exists but cannot be used yet, such as a body that has not
+    /// entered the simulation. Retrying on a later tick may succeed.
+    not-ready,
+    /// The script's document lacks this permission.
+    permission(permission),
+    /// The script may not do this to this target, such as writing a
+    /// document it does not own.
+    forbidden,
+    /// A rate budget is spent. It refills, so a later retry may succeed.
+    rate-limited(rate),
+    /// A ceiling is reached. Retrying succeeds only after something is
+    /// released.
+    limit-reached(limit),
+    /// The host failed; the string says how, for a human.
+    internal(string),
+  }
+}

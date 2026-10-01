@@ -1,3 +1,5 @@
+//! How long a frame waits for its scripts, pumping their host calls meanwhile.
+
 use std::{
     sync::{
         Arc,

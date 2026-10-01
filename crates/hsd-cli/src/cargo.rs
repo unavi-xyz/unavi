@@ -21,6 +21,13 @@ pub fn read_cargo_name(cargo_toml: &Path) -> Result<String> {
     Ok(name)
 }
 
+/// WIT packages the host provides, which a guest imports rather than
+/// composes.
+fn is_host_package(name: &str) -> bool {
+    name.starts_with("wired-") || name == "unavi-host"
+}
+
+/// The library components a guest's `wit/deps.toml` composes into it.
 pub fn find_lib_deps(crate_dir: &Path) -> Result<Vec<(String, PathBuf)>> {
     let deps_toml_path = crate_dir.join("wit/deps.toml");
     if !deps_toml_path.exists() {
@@ -30,7 +37,7 @@ pub fn find_lib_deps(crate_dir: &Path) -> Result<Vec<(String, PathBuf)>> {
     let table: toml::Table = toml::from_str(&content)?;
     let mut result = Vec::new();
     for (name, value) in &table {
-        if name.starts_with("wired-") {
+        if is_host_package(name) {
             continue;
         }
         let path_str = value.as_str().with_context(|| format!("dep {name} path"))?;

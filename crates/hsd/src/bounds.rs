@@ -26,3 +26,6 @@ pub const MAX_PACKAGE_BYTES: usize = 256 * MB;
 /// Most sub-documents one `.hsdz` package may carry. Each mints a namespace
 /// when the package is instanced.
 pub const MAX_PACKAGE_DOCUMENTS: usize = 256;
+
+/// Largest encoded image a single prim may carry.
+pub const MAX_IMAGE_BYTES: usize = 16 * MB;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::package::ImportPackage;
-use unavi_script::quota::QuotaExempt;
+use unavi_script::QuotaExempt;
 
 const SHELL_HSD: &str = "hsd/unavi_halo.hsdz";
 const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"];

@@ -53,6 +53,18 @@ impl Bindings {
         self.inner.lock().dids.get(&peer).cloned()
     }
 
+    /// Every connected peer bound to `did`.
+    #[must_use]
+    pub fn peers_of(&self, did: &Did) -> Vec<EndpointId> {
+        self.inner
+            .lock()
+            .dids
+            .iter()
+            .filter(|(_, bound)| *bound == did)
+            .map(|(peer, _)| *peer)
+            .collect()
+    }
+
     #[must_use]
     pub fn is_bound(&self, peer: EndpointId) -> bool {
         self.inner.lock().dids.contains_key(&peer)

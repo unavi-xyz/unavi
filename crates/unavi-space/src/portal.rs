@@ -7,7 +7,10 @@ use bevy::{
 };
 use bevy_hsd::{
     attributes::portal::PortalConfig,
-    document::HsdDocId,
+    document::{
+        DocIndex,
+        HsdDocId,
+    },
     prim::PrimOf,
 };
 use unavi_policy::{
@@ -22,10 +25,7 @@ use unavi_portal::{
 use crate::{
     authority::SpaceView,
     grid::ActiveSpace,
-    index::{
-        DocIndex,
-        Index,
-    },
+    index::Index,
     membership::{
         Space,
         SpaceId,

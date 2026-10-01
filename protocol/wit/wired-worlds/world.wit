@@ -1,0 +1,34 @@
+/// The worlds a guest targets.
+///
+/// Every interface is linked for every guest. Which calls succeed is decided
+/// at run time by the permissions of the guest's document, not by the world
+/// it was built against.
+package wired:worlds@0.1.0;
+
+/// Everything a guest may import.
+world imports {
+  import wired:script/host@0.1.0;
+  import wired:scene/properties@0.1.0;
+  import wired:scene/document@0.1.0;
+  import wired:shading/graph@0.1.0;
+  import wired:physics/simulation@0.1.0;
+  import wired:peer/identity@0.1.0;
+  import wired:peer/authority@0.1.0;
+  import wired:event/messaging@0.1.0;
+  import wired:input/types@0.1.0;
+  import wired:input/targeted@0.1.0;
+  import wired:input/device@0.1.0;
+  import wired:agent/local@0.1.0;
+  import wired:portal/portals@0.1.0;
+}
+
+/// A component composed into a script at build time.
+world library {
+  include imports;
+}
+
+/// A script attached to a prim.
+world script {
+  include imports;
+  export wired:script/lifecycle@0.1.0;
+}

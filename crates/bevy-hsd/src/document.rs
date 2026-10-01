@@ -4,7 +4,14 @@ use std::sync::{
     MutexGuard,
 };
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::{
+        lifecycle::HookContext,
+        world::DeferredWorld,
+    },
+    platform::collections::HashMap,
+    prelude::*,
+};
 use hsd::{
     id::DocId,
     state::HsdState,
@@ -46,7 +53,42 @@ pub struct Unplaced;
 /// The namespace id of a namespace-backed document, or the site id of a
 /// reference instance.
 #[derive(Component, Debug, Clone, Copy)]
+#[component(on_insert = index_document, on_discard = unindex_document)]
 pub struct HsdDocId(pub DocId);
+
+/// Every entity carrying an [`HsdDocId`], by document id, so a lookup never
+/// scans the world. Kept by [`HsdDocId`]'s hooks; a world without this
+/// resource keeps none.
+#[derive(Resource, Default)]
+pub struct DocIndex(HashMap<DocId, Entity>);
+
+impl DocIndex {
+    #[must_use]
+    pub fn get(&self, doc: DocId) -> Option<Entity> {
+        self.0.get(&doc).copied()
+    }
+}
+
+fn index_document(mut world: DeferredWorld, ctx: HookContext) {
+    let Some(id) = world.get::<HsdDocId>(ctx.entity).map(|id| id.0) else {
+        return;
+    };
+    if let Some(mut index) = world.get_resource_mut::<DocIndex>() {
+        index.0.insert(id, ctx.entity);
+    }
+}
+
+/// Leaves the id alone if another entity has since claimed it.
+fn unindex_document(mut world: DeferredWorld, ctx: HookContext) {
+    let Some(id) = world.get::<HsdDocId>(ctx.entity).map(|id| id.0) else {
+        return;
+    };
+    if let Some(mut index) = world.get_resource_mut::<DocIndex>()
+        && index.0.get(&id) == Some(&ctx.entity)
+    {
+        index.0.remove(&id);
+    }
+}
 
 /// Keeps the namespace open, which protects it from retention.
 #[derive(Component, Debug, Clone)]

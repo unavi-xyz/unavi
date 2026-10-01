@@ -1,3 +1,5 @@
+//! Script output, logged through `tracing`.
+
 use tracing::{
     info,
     warn,

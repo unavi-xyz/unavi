@@ -17,7 +17,10 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    document::HsdDocId,
+    document::{
+        DocIndex,
+        HsdDocId,
+    },
     prim::{
         Prim,
         PrimIndex,
@@ -28,10 +31,7 @@ use web_time::Instant;
 
 use crate::{
     authority::SpaceView,
-    index::{
-        DocIndex,
-        Index,
-    },
+    index::Index,
     link::{
         PeerLink,
         senders::{

@@ -18,7 +18,10 @@ use bevy_async::{
     AsyncCommands,
     AsyncWorld,
 };
-use bevy_hsd::document::Hsd;
+use bevy_hsd::document::{
+    DocIndex,
+    Hsd,
+};
 use bevy_iroh::store::DataStore;
 use hsd::{
     id::DocId,
@@ -43,7 +46,6 @@ use crate::{
     identity::LocalIdentity,
     index::{
         self,
-        DocIndex,
         Index,
         Indexed,
     },

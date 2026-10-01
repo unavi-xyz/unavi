@@ -1,23 +1,14 @@
-package wired:agent;
+/// The local user's body: where they look, where their limbs are, and
+/// documents carried with them.
+package wired:agent@0.1.0;
 
-world all {
-  import api;
-  import types;
-}
+interface local {
+  use wired:core/math@0.1.0.{transform};
+  use wired:core/error@0.1.0.{error};
+  use wired:scene/document@0.1.0.{document};
 
-interface api {
-  use wired:scene/types.{prim};
-  use types.{agent};
-  use wired:error/types.{error};
-
-  local-agent:  func() -> result<agent, error>;
-  local-camera: func() -> result<prim, error>;
-}
-
-interface types {
-  use wired:scene/types.{prim, document};
-
-  enum bone-name {
+  /// The VRM 1.0 humanoid bone set.
+  enum humanoid-bone {
     hips,
     spine,
     chest,
@@ -75,9 +66,21 @@ interface types {
     right-little-distal,
   }
 
-  resource agent {
-    /// Virtual prim tracking the named bone; none if the bone is absent from
-    /// the VRM model.
-    bone: func(name: bone-name) -> option<prim>;
+  variant attachment {
+    camera,
+    bone(humanoid-bone),
   }
+
+  /// The camera's world transform this frame. Fails with `not-ready`
+  /// until the user's body has loaded.
+  camera-transform: func() -> result<transform, error>;
+
+  /// A bone's world transform this frame, or `none` when the user's avatar
+  /// lacks it. Fails with `not-ready` until the avatar has loaded.
+  bone-transform: func(bone: humanoid-bone) -> result<option<transform>, error>;
+
+  /// Places a document the script owns at `offset` from the camera or a
+  /// bone, so it moves with the user. Per peer, like
+  /// `wired:scene/document.place`, which detaches it again.
+  attach: func(document: borrow<document>, to: attachment, offset: transform) -> result<_, error>;
 }

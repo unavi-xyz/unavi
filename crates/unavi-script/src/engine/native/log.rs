@@ -1,3 +1,5 @@
+//! Script stdout and stderr, gathered into runs and logged.
+
 use bevy_async::task;
 use smol_str::SmolStr;
 use tokio::io::{

@@ -57,8 +57,6 @@ fn world() -> (World, Replicas) {
     let replicas = Replicas::new(policy);
     world.insert_resource(replicas.clone());
     init_indexes(&mut world);
-    world.add_observer(index::index_document);
-    world.add_observer(index::unindex_document);
     (world, replicas)
 }
 

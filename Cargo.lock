@@ -11461,13 +11461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-portal-protocol"
-version = "0.0.16"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "unavi-registry"
 version = "0.0.16"
 dependencies = [
@@ -11505,7 +11498,6 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
- "bytes",
  "directories",
  "hsd",
  "iroh",
@@ -11514,7 +11506,6 @@ dependencies = [
  "js-sys",
  "n0-future",
  "parking_lot",
- "postcard",
  "smol_str 0.3.6",
  "thiserror 2.0.20",
  "tokio",
@@ -11528,15 +11519,12 @@ dependencies = [
  "unavi-local",
  "unavi-physics",
  "unavi-policy",
- "unavi-portal",
- "unavi-portal-protocol",
  "unavi-space",
  "unavi-store",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
- "web-time",
  "xdid",
 ]
 

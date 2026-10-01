@@ -36,8 +36,10 @@ jobs:
       - name: Upload WIT deps
         uses: actions/upload-artifact@v7
         with:
-          name: protocol-wit-deps
-          path: protocol/wit
+          name: wit-deps
+          path: |
+            protocol/wit
+            crates/unavi-script/wit
           retention-days: 1
   build-windows:
     needs: build-hsd
@@ -60,8 +62,8 @@ jobs:
       - name: Download WIT deps
         uses: actions/download-artifact@v8
         with:
-          name: protocol-wit-deps
-          path: protocol/wit
+          name: wit-deps
+          path: .
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-08-14

@@ -36,6 +36,7 @@ impl Plugin for HsdPlugin {
             MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
         ))
+            .init_resource::<document::DocIndex>()
             .init_asset::<package::PackageAsset>()
             .init_resource::<attributes::shader::cache::ShaderGraphCache>()
             .register_asset_loader(package::PackageLoader)

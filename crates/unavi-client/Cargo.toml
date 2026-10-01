@@ -18,7 +18,6 @@ devtools = [
   "dep:unavi-space-devtools",
   "unavi-input/devtools",
   "unavi-input/egui-filter",
-  "unavi-script/debug",
 ]
 webgpu = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 

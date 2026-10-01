@@ -1,0 +1,47 @@
+/// The UNAVI client's own extensions to the `wired` protocol, for the shell
+/// and the tools it ships. Not part of the protocol: another host need not
+/// provide them, and a guest importing them runs only here.
+package unavi:host@0.1.0;
+
+/// Reads of the documents this node keeps: its root document, and the views
+/// of the registries it follows. Needs the storage grant, which only the
+/// local user's own content holds; anything else fails with `forbidden`.
+interface node-storage {
+  use wired:core/ids@0.1.0.{document-id};
+  use wired:core/error@0.1.0.{error};
+
+  record entry {
+    key:   string,
+    value: list<u8>,
+  }
+
+  /// This node's root document, once the store has opened it.
+  root-document: func() -> result<option<document-id>, error>;
+
+  /// The registry views this node follows, kept synced locally. Their entry
+  /// keys are rank-ordered.
+  registries: func() -> result<list<document-id>, error>;
+
+  /// The value at `key` in `document`, `none` when it holds none. Fails
+  /// with `not-found` for a document that is neither of the above.
+  get: func(document: document-id, key: string) -> result<pending-value, error>;
+
+  /// Up to `limit` entries whose key starts with `prefix`, in key order, at
+  /// most 256.
+  list-entries: func(document: document-id, prefix: string, limit: u32) -> result<pending-entries, error>;
+
+  resource pending-value {
+    poll: func() -> option<result<option<list<u8>>, error>>;
+  }
+
+  resource pending-entries {
+    poll: func() -> option<result<list<entry>, error>>;
+  }
+}
+
+/// What this host links for every script: the `wired` script world plus
+/// its own extensions.
+world shell {
+  include wired:worlds/script@0.1.0;
+  import node-storage;
+}

@@ -11,8 +11,6 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bevy_hsd::document::HsdDocId;
-use hsd::id::DocId;
 
 /// A component that names the id its entity is looked up by.
 pub trait Indexed: Component {
@@ -68,40 +66,6 @@ pub fn discard<C: Indexed>(mut world: DeferredWorld, ctx: HookContext) {
         && index.0.get(&key) == Some(&ctx.entity)
     {
         index.0.remove(&key);
-    }
-}
-
-/// Every entity carrying an [`HsdDocId`], by document id. Kept by
-/// [`index_document`] and [`unindex_document`].
-#[derive(Resource, Default)]
-pub struct DocIndex(HashMap<DocId, Entity>);
-
-impl DocIndex {
-    #[must_use]
-    pub fn get(&self, doc: DocId) -> Option<Entity> {
-        self.0.get(&doc).copied()
-    }
-}
-
-pub fn index_document(
-    trigger: On<Insert, HsdDocId>,
-    ids: Query<&HsdDocId>,
-    mut index: ResMut<DocIndex>,
-) {
-    if let Ok(id) = ids.get(trigger.entity) {
-        index.0.insert(id.0, trigger.entity);
-    }
-}
-
-pub fn unindex_document(
-    trigger: On<Discard, HsdDocId>,
-    ids: Query<&HsdDocId>,
-    mut index: ResMut<DocIndex>,
-) {
-    if let Ok(id) = ids.get(trigger.entity)
-        && index.0.get(&id.0) == Some(&trigger.entity)
-    {
-        index.0.remove(&id.0);
     }
 }
 

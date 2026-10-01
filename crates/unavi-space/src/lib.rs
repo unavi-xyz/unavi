@@ -69,8 +69,6 @@ impl Plugin for SpacePlugin {
             .init_resource::<discovery::HeardPresence>()
             .init_resource::<discovery::PeerPresence>()
             .init_resource::<discovery::gossip::ActiveSpaceSignal>()
-            .add_observer(index::index_document)
-            .add_observer(index::unindex_document)
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)
             .add_observer(grid::release_anchor)

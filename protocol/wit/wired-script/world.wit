@@ -1,16 +1,44 @@
-package wired:script;
+/// A script's lifecycle, and what it can ask the host about itself.
+package wired:script@0.1.0;
 
-world guest {
-  export guest-api;
+/// Exported by every script. The host calls into it; a script never calls
+/// these itself.
+///
+/// Calls never overlap: each export returns before the host makes the next
+/// call into the same script. A call that is still running when its next
+/// turn comes skips that turn rather than queueing it. A script that never
+/// returns is stopped and not called again.
+interface lifecycle {
+  /// When a call is made, measured on one clock this peer's scripts share.
+  /// The clock is monotonic but is not synchronized with other peers.
+  record tick {
+    /// Seconds since the previous call of the same export, zero for the
+    /// first.
+    dt:    f32,
+    /// Seconds on the host clock.
+    time:  f64,
+    /// How many calls of this export came before this one.
+    index: u64,
+  }
+
+  /// Called once, before any other export. An error retires the script,
+  /// with the message logged.
+  init: func() -> result<_, string>;
+
+  /// Called once per rendered frame. Drawing and animation belong here.
+  update: func(tick: tick);
+
+  /// Called at a fixed rate the host chooses (currently 20 Hz), carried in
+  /// `tick.dt`. Input, messages and simulation belong here.
+  fixed-update: func(tick: tick);
 }
 
-interface guest-api {
-  /// Called once on instantiation.
-  init: func();
+/// What a script can ask the host about itself.
+interface host {
+  use wired:core/error@0.1.0.{permission};
 
-  /// Called every frame, before rendering.
-  update: func();
-
-  /// Called on a fixed interval.
-  fixed-update: func();
+  /// Whether the script's document holds `permission` now. Grants can
+  /// change while a script runs, as the user decides how far to trust an
+  /// author.
+  granted: func(permission: permission) -> bool;
 }

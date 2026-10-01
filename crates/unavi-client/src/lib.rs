@@ -134,7 +134,7 @@ impl Plugin for UnaviPlugin {
         })
         .configure_sets(
             Update,
-            unavi_script::ScriptSnapshotSet.after(unavi_agent::AgentMovementSet),
+            unavi_script::ScriptSystems::Snapshot.after(unavi_agent::AgentMovementSet),
         )
         .add_systems(Startup, icon::set_window_icon);
 

@@ -1,31 +1,44 @@
-use std::sync::{
-    Arc,
-    atomic::{
-        AtomicBool,
-        Ordering,
-    },
-};
+//! Runs WebAssembly components attached to prims as scripts, and hosts the
+//! `wired` protocol they call.
+//!
+//! [`host`] implements every call, [`bindings`] lowers it onto an engine, and
+//! the engine drives each script's lifecycle.
 
 use bevy::prelude::*;
 use unavi_space::membership::MembershipPlugin;
 
-use crate::load::asset::Wasm;
-
-#[cfg(feature = "debug")] pub mod debug;
+mod bindings;
 mod engine;
-pub mod error;
-pub mod load;
-mod portal_host;
-pub mod quota;
-pub mod runtime;
+mod error;
+mod host;
+mod link_intents;
+mod load;
+mod quota;
+mod status;
 
-/// Refreshes the transform snapshot to the current frame's poses.
-///
-/// Runs in `Update` after agent movement so per-frame script reads observe this
-/// frame's camera rather than the previous frame's. Script execution runs after
-/// this set.
+pub use crate::{
+    host::shared_state::{
+        event_bus::{
+            EventBus,
+            SpatialListener,
+        },
+        transforms::TransformSnapshots,
+    },
+    load::asset::Wasm,
+    quota::QuotaExempt,
+    status::ScriptStatus,
+};
+
+/// Where scripts run in the frame.
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct ScriptSnapshotSet;
+pub enum ScriptSystems {
+    /// Refreshes the poses scripts read. Runs in `Update`, after whatever moves
+    /// the local agent, so a script sees this frame's camera.
+    Snapshot,
+    /// Runs each script's `update`, after the snapshot and before documents
+    /// apply their changes, so a write lands the same frame.
+    Tick,
+}
 
 pub struct ScriptPlugin;
 
@@ -35,44 +48,17 @@ impl Plugin for ScriptPlugin {
             app.add_plugins(MembershipPlugin);
         }
 
-        app.add_plugins((
-            engine::EnginePlugin,
-            load::LoadPlugin,
-            runtime::shared::SharedRuntimePlugin,
-        ))
-        .add_systems(FixedUpdate, portal_host::emit_link_intents);
+        app.configure_sets(
+            Update,
+            (ScriptSystems::Snapshot, ScriptSystems::Tick)
+                .chain()
+                .before(bevy_hsd::HsdSystems),
+        )
+        .add_plugins((engine::EnginePlugin, load::LoadPlugin, host::HostPlugin));
     }
 }
 
+/// A script component attached to a prim, run from the moment it is added.
 #[derive(Component)]
-#[require(FixedUpdating, Trapped, Updating)]
+#[require(ScriptStatus, engine::TickClocks)]
 pub struct Script(pub Handle<Wasm>);
-
-#[derive(Component, Default)]
-pub struct FixedUpdating(pub Arc<AtomicBool>);
-
-#[derive(Component, Default)]
-pub struct Updating(pub Arc<AtomicBool>);
-
-/// Whether this script's instance has trapped, and is therefore finished.
-///
-/// A trap leaves a component instance permanently un-enterable — every call
-/// after it fails with "cannot enter component instance" — so a trapped script
-/// is driven no further. Shared rather than a plain flag because the tick that
-/// discovers the trap runs off the world.
-#[derive(Component, Default)]
-pub struct Trapped(pub Arc<AtomicBool>);
-
-impl Trapped {
-    /// Records the trap, answering whether this was the one that found it —
-    /// so the failure is reported once rather than every frame forever.
-    #[must_use]
-    pub fn set(&self) -> bool {
-        !self.0.swap(true, Ordering::SeqCst)
-    }
-
-    #[must_use]
-    pub fn get(&self) -> bool {
-        self.0.load(Ordering::SeqCst)
-    }
-}

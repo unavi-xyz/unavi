@@ -11267,7 +11267,6 @@ dependencies = [
  "unavi-input",
  "unavi-physics",
  "unavi-portal",
- "xdid",
 ]
 
 [[package]]
@@ -11286,7 +11285,6 @@ dependencies = [
  "bevy",
  "bevy_vrm",
  "gltf",
- "paste",
  "thiserror 2.0.20",
  "unavi-assets",
 ]

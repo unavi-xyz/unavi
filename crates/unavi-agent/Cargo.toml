@@ -22,7 +22,6 @@ unavi-avatar.path  = "../unavi-avatar"
 unavi-input.path   = "../unavi-input"
 unavi-physics.path = "../unavi-physics"
 unavi-portal.path  = "../unavi-portal"
-xdid.workspace     = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_xr.workspace   = true

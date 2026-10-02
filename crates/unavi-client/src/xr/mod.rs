@@ -19,7 +19,7 @@ impl Plugin for XrPlugin {
             TrackingUtilitiesPlugin,
             TransformUtilitiesPlugin,
         ))
-        .insert_resource(unavi_agent::config::XrMode(true))
+        .insert_resource(unavi_agent::config::InputMode::Xr)
         .add_systems(FixedUpdate, set_xr_camera_layers);
     }
 }

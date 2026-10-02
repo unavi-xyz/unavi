@@ -170,10 +170,7 @@ pub fn apply_remote_poses(
                 ChildOf(space),
             ));
             let remote_id = remote.id();
-            remote.insert(AverageVelocity {
-                target: Some(remote_id),
-                ..Default::default()
-            });
+            remote.insert(AverageVelocity::new(remote_id));
             continue;
         };
 

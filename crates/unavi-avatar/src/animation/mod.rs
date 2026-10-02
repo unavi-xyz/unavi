@@ -3,20 +3,18 @@ use bevy_vrm::BoneName;
 
 use crate::animation::{
     load::AvatarAnimationNodes,
-    weights::{
-        AnimationWeights,
-        TargetAnimationWeights,
-    },
+    weights::AnimationWeights,
 };
 
 pub mod defaults;
 pub mod load;
+pub mod locomotion;
 mod mixamo;
 pub mod raw;
 pub mod velocity;
 pub mod weights;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum AnimationName {
     Falling,
     #[default]
@@ -28,7 +26,7 @@ pub enum AnimationName {
 }
 
 #[derive(Component)]
-#[require(AnimationWeights, TargetAnimationWeights)]
+#[require(AnimationWeights)]
 pub struct AnimationPlayerInitialized;
 
 pub fn init_animation_players(
@@ -50,63 +48,91 @@ pub fn init_animation_players(
     }
 }
 
+/// The animation graph's mask group for `bone`.
+///
+/// `BoneName` is a fieldless enum with no two variants sharing a
+/// discriminant, so its own discriminant is already a distinct group id;
+/// see the test below for the guarantee this relies on.
 #[must_use]
 pub const fn bone_mask_group(bone: BoneName) -> u32 {
-    match bone {
-        BoneName::Hips => 0,
-        BoneName::Spine => 1,
-        BoneName::Chest => 2,
-        BoneName::Neck => 3,
-        BoneName::Head => 4,
-        BoneName::LeftShoulder => 5,
-        BoneName::LeftUpperArm => 6,
-        BoneName::LeftLowerArm => 7,
-        BoneName::LeftHand => 8,
-        BoneName::RightShoulder => 9,
-        BoneName::RightUpperArm => 10,
-        BoneName::RightLowerArm => 11,
-        BoneName::RightHand => 12,
-        BoneName::LeftUpperLeg => 13,
-        BoneName::LeftLowerLeg => 14,
-        BoneName::LeftFoot => 15,
-        BoneName::LeftToes => 16,
-        BoneName::RightUpperLeg => 17,
-        BoneName::RightLowerLeg => 18,
-        BoneName::RightFoot => 19,
-        BoneName::RightToes => 20,
-        BoneName::LeftEye => 21,
-        BoneName::RightEye => 22,
-        BoneName::Jaw => 23,
-        BoneName::LeftThumbProximal => 24,
-        BoneName::LeftThumbIntermediate => 25,
-        BoneName::LeftThumbDistal => 26,
-        BoneName::LeftIndexProximal => 27,
-        BoneName::LeftIndexIntermediate => 28,
-        BoneName::LeftIndexDistal => 29,
-        BoneName::LeftMiddleProximal => 30,
-        BoneName::LeftMiddleIntermediate => 31,
-        BoneName::LeftMiddleDistal => 32,
-        BoneName::LeftRingProximal => 33,
-        BoneName::LeftRingIntermediate => 34,
-        BoneName::LeftRingDistal => 35,
-        BoneName::LeftLittleProximal => 36,
-        BoneName::LeftLittleIntermediate => 37,
-        BoneName::LeftLittleDistal => 38,
-        BoneName::RightThumbProximal => 39,
-        BoneName::RightThumbIntermediate => 40,
-        BoneName::RightThumbDistal => 41,
-        BoneName::RightIndexProximal => 42,
-        BoneName::RightIndexIntermediate => 43,
-        BoneName::RightIndexDistal => 44,
-        BoneName::RightMiddleProximal => 45,
-        BoneName::RightMiddleIntermediate => 46,
-        BoneName::RightMiddleDistal => 47,
-        BoneName::RightRingProximal => 48,
-        BoneName::RightRingIntermediate => 49,
-        BoneName::RightRingDistal => 50,
-        BoneName::RightLittleProximal => 51,
-        BoneName::RightLittleIntermediate => 52,
-        BoneName::RightLittleDistal => 53,
-        BoneName::UpperChest => 54,
+    bone as u32
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use bevy_vrm::BoneName;
+
+    use super::bone_mask_group;
+
+    /// Every bone this animation system knows about (see
+    /// [`mixamo::MIXAMO_BONES`](super::mixamo) for the subset Mixamo
+    /// clips retarget onto) plus the ones it does not: a full
+    /// cross-check that `BoneName as u32` stays injective.
+    const ALL_BONES: &[BoneName] = &[
+        BoneName::Hips,
+        BoneName::Spine,
+        BoneName::Chest,
+        BoneName::UpperChest,
+        BoneName::Neck,
+        BoneName::Head,
+        BoneName::LeftEye,
+        BoneName::RightEye,
+        BoneName::Jaw,
+        BoneName::LeftShoulder,
+        BoneName::LeftUpperArm,
+        BoneName::LeftLowerArm,
+        BoneName::LeftHand,
+        BoneName::RightShoulder,
+        BoneName::RightUpperArm,
+        BoneName::RightLowerArm,
+        BoneName::RightHand,
+        BoneName::LeftUpperLeg,
+        BoneName::LeftLowerLeg,
+        BoneName::LeftFoot,
+        BoneName::LeftToes,
+        BoneName::RightUpperLeg,
+        BoneName::RightLowerLeg,
+        BoneName::RightFoot,
+        BoneName::RightToes,
+        BoneName::LeftThumbProximal,
+        BoneName::LeftThumbIntermediate,
+        BoneName::LeftThumbDistal,
+        BoneName::LeftIndexProximal,
+        BoneName::LeftIndexIntermediate,
+        BoneName::LeftIndexDistal,
+        BoneName::LeftMiddleProximal,
+        BoneName::LeftMiddleIntermediate,
+        BoneName::LeftMiddleDistal,
+        BoneName::LeftRingProximal,
+        BoneName::LeftRingIntermediate,
+        BoneName::LeftRingDistal,
+        BoneName::LeftLittleProximal,
+        BoneName::LeftLittleIntermediate,
+        BoneName::LeftLittleDistal,
+        BoneName::RightThumbProximal,
+        BoneName::RightThumbIntermediate,
+        BoneName::RightThumbDistal,
+        BoneName::RightIndexProximal,
+        BoneName::RightIndexIntermediate,
+        BoneName::RightIndexDistal,
+        BoneName::RightMiddleProximal,
+        BoneName::RightMiddleIntermediate,
+        BoneName::RightMiddleDistal,
+        BoneName::RightRingProximal,
+        BoneName::RightRingIntermediate,
+        BoneName::RightRingDistal,
+        BoneName::RightLittleProximal,
+        BoneName::RightLittleIntermediate,
+        BoneName::RightLittleDistal,
+    ];
+
+    #[test]
+    fn every_bone_gets_a_distinct_mask_group() {
+        let groups: HashSet<u32> = ALL_BONES.iter().copied().map(bone_mask_group).collect();
+        assert_eq!(groups.len(), ALL_BONES.len());
+        // `AnimationMask` is a u64, so a group past 63 masks nothing.
+        assert!(groups.iter().all(|&group| group < u64::BITS));
     }
 }

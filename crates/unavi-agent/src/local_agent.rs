@@ -37,7 +37,6 @@ use unavi_portal::{
 };
 
 use crate::{
-    Agent,
     AgentAvatar,
     AgentCamera,
     AgentRig,
@@ -46,22 +45,25 @@ use crate::{
     Grounded,
     LocalAgent,
     LocalAgentEntities,
+    TrackedHead,
     config::{
         AgentConfig,
-        XrMode,
-    },
-    tracking::{
-        TrackedHead,
-        TrackedPose,
+        InputMode,
     },
 };
 
 const CAMERA_NEAR_PLANE: f32 = 0.01;
+/// Max ground slope Tnua's walk basis will still treat as "grounded".
+const MAX_WALK_SLOPE_DEGREES: f32 = 55.0;
+/// The initial camera/head height is set a little below the rig's full
+/// height, since the avatar's own eye position has not been measured yet
+/// (see `fit::fit_rig_to_avatar`); it is corrected once the VRM loads.
+const INITIAL_EYE_DROP: f32 = 0.1;
 
 pub fn spawn_local_agent(
     trigger: On<Add, LocalAgent>,
     asset_server: Res<AssetServer>,
-    xr_mode: Res<XrMode>,
+    input_mode: Res<InputMode>,
     agent: Query<(&AgentConfig, Option<&VrmPath>)>,
     mut commands: Commands,
 ) {
@@ -71,7 +73,9 @@ pub fn spawn_local_agent(
     };
 
     let animations = default_character_animations(&asset_server);
-    let camera = spawn_camera(&mut commands, xr_mode.0);
+    let camera = spawn_camera(&mut commands, input_mode.is_xr());
+
+    let (body_collider, sensor_shape) = config.rig_shapes();
 
     let body = commands
         .spawn((
@@ -79,12 +83,12 @@ pub fn spawn_local_agent(
             Grounded(true),
             Pickable::IGNORE,
             RigidBody::Dynamic,
-            Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
+            body_collider,
             TnuaController::<ControlScheme>::default(),
             TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
                 basis: TnuaBuiltinWalkConfig {
                     float_height: config.float_height(),
-                    max_slope: 55.0f32.to_radians(),
+                    max_slope: MAX_WALK_SLOPE_DEGREES.to_radians(),
                     ..Default::default()
                 },
                 jump:  TnuaBuiltinJumpConfig {
@@ -92,23 +96,16 @@ pub fn spawn_local_agent(
                     ..Default::default()
                 },
             })),
-            TnuaAvian3dSensorShape(Collider::cylinder(
-                config.effective_vrm_radius() - 0.01,
-                0.0,
-            )),
+            TnuaAvian3dSensorShape(sensor_shape),
             LockedAxes::ROTATION_LOCKED,
-            Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
+            Transform::from_xyz(0.0, config.rig_height() / 2.0, 0.0),
             PortalBody,
         ))
         .id();
 
-    let initial_eye_y = config.effective_vrm_height() / 2.0 - 0.1;
+    let initial_eye_y = config.rig_height() / 2.0 - INITIAL_EYE_DROP;
     let tracked_head = commands
-        .spawn((
-            TrackedHead,
-            TrackedPose::new(Vec3::new(0.0, initial_eye_y, 0.0), Quat::IDENTITY),
-            Transform::from_xyz(0.0, initial_eye_y, 0.0),
-        ))
+        .spawn((TrackedHead, Transform::from_xyz(0.0, initial_eye_y, 0.0)))
         .add_child(camera)
         .id();
 
@@ -118,7 +115,7 @@ pub fn spawn_local_agent(
         SpatialQueryFilter::default().with_excluded_entities([body]),
     ));
 
-    if xr_mode.0 {
+    if input_mode.is_xr() {
         spawn_hand_pointers(&mut commands);
     } else {
         commands
@@ -133,19 +130,15 @@ pub fn spawn_local_agent(
     let avatar = avatar_cmd.id();
 
     commands.entity(avatar).insert((
-        AverageVelocity {
-            target: Some(body),
-            ..Default::default()
-        },
+        AverageVelocity::new(body),
         animations,
-        Transform::from_xyz(0.0, -config.effective_vrm_height() / 2.0, 0.0),
+        Transform::from_xyz(0.0, -config.rig_height() / 2.0, 0.0),
     ));
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
     commands
         .entity(trigger.entity)
         .insert((
-            Agent,
             AgentAvatar(avatar),
             AgentCamera(camera),
             LocalAgentEntities { body, tracked_head },

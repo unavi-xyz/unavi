@@ -13,7 +13,7 @@ use unavi_agent::{
     AgentAvatar,
     LocalAgent,
     LocalAgentEntities,
-    config::XrMode,
+    config::InputMode,
 };
 use unavi_avatar::bones::AvatarBones;
 
@@ -65,7 +65,7 @@ const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
 pub fn send_agent_pose(
     time: Res<Time>,
     active: Res<ActiveSpace>,
-    xr: Option<Res<XrMode>>,
+    xr: Option<Res<InputMode>>,
     spaces: Query<&Space>,
     agent: Query<&AgentAvatar, With<LocalAgent>>,
     avatars: Query<&AvatarBones>,
@@ -96,7 +96,7 @@ pub fn send_agent_pose(
 
     // Bone tracking is only meaningful in VR, where limbs are driven by real
     // pose data; on desktop peers reconstruct limbs from locomotion animation.
-    let bones = if xr.is_some_and(|xr| xr.0) {
+    let bones = if xr.is_some_and(|mode| mode.is_xr()) {
         avatars
             .get(avatar.0)
             .map_or_default(|bones| gather_bones(bones, &locals))

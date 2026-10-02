@@ -1,12 +1,12 @@
 use bevy::{
     animation::ActiveAnimation,
-    platform::collections::HashMap,
     prelude::*,
 };
 
 use super::{
     AnimationName,
     AvatarAnimationNodes,
+    locomotion::LocomotionProfile,
     velocity::AverageVelocity,
 };
 use crate::{
@@ -14,21 +14,44 @@ use crate::{
     Grounded,
 };
 
-#[derive(Component, Clone, Default, Deref, DerefMut)]
-pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
+/// Blend weight for each locomotion clip, indexed by name instead of a
+/// `HashMap` since the set of names is fixed and known at compile time.
+#[derive(Component, Clone, Copy, Default)]
+pub struct AnimationWeights {
+    idle:       f32,
+    walk:       f32,
+    walk_left:  f32,
+    walk_right: f32,
+    sprint:     f32,
+    falling:    f32,
+}
 
-#[derive(Component, Clone, Default, Deref, DerefMut)]
-pub struct TargetAnimationWeights(pub HashMap<AnimationName, f32>);
+impl AnimationWeights {
+    const fn get(&self, name: AnimationName) -> f32 {
+        match name {
+            AnimationName::Idle => self.idle,
+            AnimationName::Walk => self.walk,
+            AnimationName::WalkLeft => self.walk_left,
+            AnimationName::WalkRight => self.walk_right,
+            AnimationName::Sprint => self.sprint,
+            AnimationName::Falling => self.falling,
+        }
+    }
+
+    const fn set(&mut self, name: AnimationName, value: f32) {
+        match name {
+            AnimationName::Idle => self.idle = value,
+            AnimationName::Walk => self.walk = value,
+            AnimationName::WalkLeft => self.walk_left = value,
+            AnimationName::WalkRight => self.walk_right = value,
+            AnimationName::Sprint => self.sprint = value,
+            AnimationName::Falling => self.falling = value,
+        }
+    }
+}
 
 const BLEND_HALFLIFE_SECS: f32 = 0.1;
 const WEIGHT_THRESHOLD: f32 = 0.02;
-
-pub const DEFAULT_WALK_SPEED: f32 = 4.0;
-pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
-
-const WALK_START: f32 = DEFAULT_WALK_SPEED / 4.0;
-const SPRINT_START: f32 = DEFAULT_WALK_SPEED * (DEFAULT_SPRINT_MULTI - 1.0).mul_add(0.5, 1.0);
-const SPRINT_END: f32 = DEFAULT_WALK_SPEED * DEFAULT_SPRINT_MULTI;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct MotionState {
@@ -65,7 +88,10 @@ fn inverse_lerp(a: f32, b: f32, v: f32) -> f32 {
 }
 
 /// Locomotion weights are normalized to sum to 1.0.
-fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
+fn calculate_locomotion_weights(
+    motion: &MotionState,
+    profile: LocomotionProfile,
+) -> LocomotionWeights {
     let mut weights = LocomotionWeights::default();
 
     if !motion.is_grounded {
@@ -77,7 +103,7 @@ fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     let strafe = motion.strafe_speed;
     let speed = forward.hypot(strafe);
 
-    if speed < WALK_START {
+    if speed < profile.walk_start() {
         weights.idle = 1.0;
         return weights;
     }
@@ -90,7 +116,7 @@ fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     let strafe_ratio = raw_strafe * raw_strafe; // Square to reduce influence.
     let forward_ratio = 1.0 - strafe_ratio;
 
-    let sprint_blend = inverse_lerp(SPRINT_START, SPRINT_END, speed);
+    let sprint_blend = inverse_lerp(profile.sprint_start(), profile.sprint_end(), speed);
     let walk_blend = 1.0 - sprint_blend;
 
     weights.walk = forward_ratio * walk_blend;
@@ -114,7 +140,7 @@ fn initialize_missing_animations(
         if player.animation(*node).is_none() {
             let animation = player.play(*node).repeat();
             animation.set_weight(0.0);
-            weights.insert(name.clone(), 0.0);
+            weights.set(*name, 0.0);
         }
     }
 }
@@ -129,7 +155,7 @@ fn apply_locomotion_animations(
 ) {
     apply_weight(
         AnimationName::WalkLeft,
-        &mut loco_weights.walk_left.clone(),
+        loco_weights.walk_left,
         alpha,
         player,
         nodes,
@@ -138,46 +164,46 @@ fn apply_locomotion_animations(
 
     apply_weight(
         AnimationName::WalkRight,
-        &mut loco_weights.walk_right.clone(),
+        loco_weights.walk_right,
         alpha,
         player,
         nodes,
         weights,
     );
 
-    let walk = apply_weight(
+    if let Some(walk) = apply_weight(
         AnimationName::Walk,
-        &mut loco_weights.walk.clone(),
+        loco_weights.walk,
         alpha,
         player,
         nodes,
         weights,
-    );
-
-    if motion.forward_speed.is_sign_positive() {
-        walk.set_speed(1.0);
-    } else {
-        walk.set_speed(-1.0);
+    ) {
+        walk.set_speed(if motion.forward_speed.is_sign_positive() {
+            1.0
+        } else {
+            -1.0
+        });
     }
 
-    let sprint = apply_weight(
+    if let Some(sprint) = apply_weight(
         AnimationName::Sprint,
-        &mut loco_weights.sprint.clone(),
+        loco_weights.sprint,
         alpha,
         player,
         nodes,
         weights,
-    );
-
-    if motion.forward_speed.is_sign_positive() {
-        sprint.set_speed(1.0);
-    } else {
-        sprint.set_speed(-1.0);
+    ) {
+        sprint.set_speed(if motion.forward_speed.is_sign_positive() {
+            1.0
+        } else {
+            -1.0
+        });
     }
 
     apply_weight(
         AnimationName::Falling,
-        &mut loco_weights.falling.clone(),
+        loco_weights.falling,
         alpha,
         player,
         nodes,
@@ -188,21 +214,17 @@ fn apply_locomotion_animations(
 pub fn play_avatar_animations(
     time: Res<Time>,
     rigs: Query<(&Transform, &Grounded)>,
-    avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<Avatar>>,
+    avatars: Query<(&AvatarAnimationNodes, &AverageVelocity, &LocomotionProfile), With<Avatar>>,
     mut animation_players: Query<(&mut AnimationWeights, &mut AnimationPlayer, &ChildOf)>,
 ) {
     let alpha = 1.0 - (-time.delta_secs() / BLEND_HALFLIFE_SECS).exp();
 
     for (mut weights, mut player, parent) in &mut animation_players {
-        let Ok((nodes, avg)) = avatars.get(parent.parent()) else {
+        let Ok((nodes, avg, profile)) = avatars.get(parent.parent()) else {
             continue;
         };
 
-        let Some(rig_entity) = avg.target else {
-            continue;
-        };
-
-        let Ok((transform, grounded)) = rigs.get(rig_entity) else {
+        let Ok((transform, grounded)) = rigs.get(avg.target) else {
             continue;
         };
 
@@ -211,7 +233,7 @@ pub fn play_avatar_animations(
         let mut motion = analyze_motion(avg.velocity, transform);
         motion.is_grounded = grounded.0;
 
-        let loco_weights = calculate_locomotion_weights(&motion);
+        let loco_weights = calculate_locomotion_weights(&motion, *profile);
 
         apply_locomotion_animations(
             &loco_weights,
@@ -222,11 +244,9 @@ pub fn play_avatar_animations(
             &motion,
         );
 
-        let mut idle_weight = loco_weights.idle;
-
         apply_weight(
             AnimationName::Idle,
-            &mut idle_weight,
+            loco_weights.idle,
             alpha,
             &mut player,
             nodes,
@@ -235,28 +255,29 @@ pub fn play_avatar_animations(
     }
 }
 
+/// Blends `weights`' entry for `name` toward `target`, and applies the
+/// result to the matching animation node if the avatar's clip set has one.
+/// `None` (no node loaded for `name`, e.g. the raw asset was missing that
+/// clip) is not an error: the avatar simply never plays that animation.
 fn apply_weight<'a>(
     name: AnimationName,
-    weight: &mut f32,
+    target: f32,
     alpha: f32,
     player: &'a mut AnimationPlayer,
     nodes: &AvatarAnimationNodes,
     weights: &mut AnimationWeights,
-) -> &'a mut ActiveAnimation {
-    let prev = weights[&name];
-    *weight = weight.mul_add(alpha, prev * (1.0 - alpha));
+) -> Option<&'a mut ActiveAnimation> {
+    let prev = weights.get(name);
+    let mut weight = target.mul_add(alpha, prev * (1.0 - alpha));
 
-    if *weight < WEIGHT_THRESHOLD {
-        *weight = 0.0;
+    if weight < WEIGHT_THRESHOLD {
+        weight = 0.0;
     }
+    weight = weight.min(1.0);
+    weights.set(name, weight);
 
-    *weight = weight.min(1.0);
-
-    let animation = player
-        .animation_mut(nodes.0[&name])
-        .expect("animation not found");
-    animation.set_weight(*weight);
-    weights.insert(name, *weight);
-
-    animation
+    let node = *nodes.0.get(&name)?;
+    let animation = player.animation_mut(node)?;
+    animation.set_weight(weight);
+    Some(animation)
 }

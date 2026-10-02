@@ -21,11 +21,8 @@ use unavi_input::{
 use crate::{
     AgentRig,
     LocalAgentEntities,
+    TrackedHead,
     movement::MovementYaw,
-    tracking::{
-        TrackedHead,
-        TrackedPose,
-    },
 };
 
 #[derive(Resource, Default)]
@@ -117,18 +114,26 @@ pub fn apply_xr_turn(
 }
 
 /// HMD yaw, the reference direction for thumbstick-relative movement.
-pub fn update_movement_yaw(pose: Res<HmdWorldPose>, mut yaw: ResMut<MovementYaw>) {
-    yaw.0 = pose.yaw;
+pub fn update_movement_yaw(
+    agents: Query<&LocalAgentEntities>,
+    pose: Res<HmdWorldPose>,
+    mut yaws: Query<&mut MovementYaw, With<AgentRig>>,
+) {
+    for entities in agents.iter() {
+        if let Ok(mut yaw) = yaws.get_mut(entities.body) {
+            yaw.0 = pose.yaw;
+        }
+    }
 }
 
 pub fn update_xr_head_tracking(
     agents: Query<&LocalAgentEntities>,
-    mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
+    mut tracked_heads: Query<&mut Transform, With<TrackedHead>>,
     pose: Res<HmdWorldPose>,
 ) {
     for entities in agents.iter() {
-        if let Ok(mut head_pose) = tracked_heads.get_mut(entities.tracked_head) {
-            head_pose.rotation = pose.rotation;
+        if let Ok(mut head_transform) = tracked_heads.get_mut(entities.tracked_head) {
+            head_transform.rotation = pose.rotation;
         }
     }
 }

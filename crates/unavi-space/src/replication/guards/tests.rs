@@ -94,12 +94,12 @@ fn a_local_pin_broadcasts_and_its_guard_releases_it() {
 
     let stater = local(&mut world, peer(1), me.did());
     assert!(spawn_pin(&mut world, &stater, doc, space, proven));
-    assert_eq!(replicas.owner(space, doc), Some(peer(1)));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(peer(1)));
     assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
 
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     world.despawn(tracker);
-    assert_eq!(replicas.owner(space, doc), None);
+    assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Unpin { doc: d }) if d == doc));
     replicas.unregister_stream(feed.token);
 }
@@ -168,10 +168,10 @@ fn a_departing_peer_takes_its_pins() {
 
     let stater = remote(&mut world, peer(2), Some(alice.did()));
     assert!(spawn_pin(&mut world, &stater, doc, space, proven));
-    assert_eq!(replicas.owner(space, doc), Some(peer(2)));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(peer(2)));
 
     world.despawn(stater.entity);
-    assert_eq!(replicas.owner(space, doc), None);
+    assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(!replicas.has_doc(space, doc));
 }
 
@@ -182,14 +182,14 @@ fn a_hold_is_refused_to_a_stranger_and_granted_by_release() {
     let (doc, proven) = authored(3, &alice);
     let space = space(b"hold");
 
-    let owner = remote(&mut world, peer(1), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &owner, doc, space, proven));
+    let author_device = remote(&mut world, peer(1), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author_device, doc, space, proven));
 
     let guest = remote(&mut world, peer(2), None);
     assert!(!spawn_hold(&mut world, &guest, doc, space));
     assert_eq!(replicas.holder(space, doc), Some(peer(1)));
 
-    release_hold(&mut world, &owner, doc, Some(peer(2)));
+    release_hold(&mut world, &author_device, doc, Some(peer(2)));
     assert!(spawn_hold(&mut world, &guest, doc, space));
     assert_eq!(replicas.holder(space, doc), Some(peer(2)));
 
@@ -217,10 +217,10 @@ fn a_superseded_stream_leaves_the_peers_state() {
     assert_eq!(e0, e1);
 
     release_remote_peer(&mut world, e0, 0);
-    assert_eq!(replicas.owner(space, doc), Some(peer(2)));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(peer(2)));
 
     release_remote_peer(&mut world, e1, 1);
-    assert_eq!(replicas.owner(space, doc), None);
+    assert_eq!(replicas.author_endpoint(space, doc), None);
 }
 
 #[test]
@@ -232,7 +232,7 @@ fn state_for_an_unentered_space_waits_unparented() {
 
     let stater = remote(&mut world, peer(2), Some(alice.did()));
     assert!(spawn_pin(&mut world, &stater, doc, space, proven));
-    assert_eq!(replicas.owner(space, doc), Some(peer(2)));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(peer(2)));
 
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     assert!(world.get::<ChildOf>(tracker).is_none());

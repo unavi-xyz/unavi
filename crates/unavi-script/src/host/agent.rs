@@ -51,7 +51,7 @@ pub fn bone_transform(host: &ScriptHost, bone: BoneName) -> Result<Option<Transf
         .transpose()
 }
 
-/// Places a document the script owns relative to the camera or a bone.
+/// Places a document the script may write relative to the camera or a bone.
 pub async fn attach(
     host: &ScriptHost,
     doc: u32,

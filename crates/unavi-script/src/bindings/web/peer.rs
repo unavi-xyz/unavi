@@ -16,8 +16,8 @@ impl Runtime {
         peer::self_did(&self.host.borrow()).map_err(convert::raise)
     }
 
-    pub fn owner(&self, document: &DocumentHandle) -> Result<JsValue, JsValue> {
-        peer::owner(&self.host.borrow(), document.rep())
+    pub fn author(&self, document: &DocumentHandle) -> Result<JsValue, JsValue> {
+        peer::author(&self.host.borrow(), document.rep())
             .map(|did| did.map_or(JsValue::UNDEFINED, |did| JsValue::from_str(&did)))
             .map_err(convert::raise)
     }
@@ -28,9 +28,9 @@ impl Runtime {
             .map_err(convert::raise)
     }
 
-    #[wasm_bindgen(js_name = "isOwner")]
-    pub fn is_owner(&self, document: &DocumentHandle) -> Result<bool, JsValue> {
-        peer::is_owner(&self.host.borrow(), document.rep()).map_err(convert::raise)
+    #[wasm_bindgen(js_name = "isAuthor")]
+    pub fn is_author(&self, document: &DocumentHandle) -> Result<bool, JsValue> {
+        peer::is_author(&self.host.borrow(), document.rep()).map_err(convert::raise)
     }
 
     #[wasm_bindgen(js_name = "isHolder")]

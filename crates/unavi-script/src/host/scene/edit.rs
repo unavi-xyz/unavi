@@ -87,7 +87,7 @@ pub async fn create_prim(
     layer: Layer,
     parent: Option<PrimId>,
 ) -> Result<PrimId, ScriptError> {
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
     crate::quota::take(&host.quota, Flow::CreatePrim, 1)?;
 
     if let Some(parent) = parent
@@ -129,7 +129,7 @@ pub async fn apply(
     layer: Layer,
     edits: Vec<Edit>,
 ) -> Result<(), ScriptError> {
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
     if edits.len() > MAX_EDITS {
         return Err(ScriptError::invalid("at most 4096 edits per apply"));
     }
@@ -326,22 +326,23 @@ enum Landing {
 
 /// Makes the live value of each key durable.
 ///
-/// Does nothing unless this peer holds the script's document: every peer runs
-/// the script, and only the holder's copy speaks for it. A script outside any
-/// space runs on this peer alone.
+/// Does nothing unless this peer is the author's endpoint of the script's own
+/// document: every peer runs the script, holding is transferable to a peer
+/// with no write key, and only the author's device can make an opinion
+/// durable. A script outside any space runs on this peer alone.
 pub async fn commit(
     host: &ScriptHost,
     doc: u32,
     keys: Vec<(PrimId, PropertyKey)>,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Commit)?;
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
 
     if let Some(space) = host.view.space_of(host.doc)
         && !host
             .view
             .replicas()
-            .is_holder(space, host.doc, host.view.me())
+            .is_author_endpoint(space, host.doc, host.view.me())
     {
         return Ok(());
     }

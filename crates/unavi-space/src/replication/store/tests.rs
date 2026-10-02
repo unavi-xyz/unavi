@@ -54,11 +54,11 @@ fn replicas() -> Replicas {
 }
 
 #[test]
-fn the_owner_is_the_authors_first_device_to_pin() {
+fn the_author_endpoint_is_the_authors_first_device_to_pin() {
     let replicas = replicas();
     let alice = identity();
     let (doc, proof) = authored(1, &alice);
-    let space = space(b"owner");
+    let space = space(b"author-endpoint");
     let (laptop, phone) = (peer(1), peer(2));
 
     replicas
@@ -67,13 +67,13 @@ fn the_owner_is_the_authors_first_device_to_pin() {
     replicas
         .add_pin(laptop, doc, space, alice.did().clone(), proof, 30)
         .expect("pin");
-    assert_eq!(replicas.owner(space, doc), Some(phone));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(phone));
     assert_eq!(replicas.author(doc).as_ref(), Some(alice.did()));
 
     replicas.remove_pin(phone, doc);
-    assert_eq!(replicas.owner(space, doc), Some(laptop));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(laptop));
     replicas.remove_pin(laptop, doc);
-    assert_eq!(replicas.owner(space, doc), None);
+    assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(!replicas.has_doc(space, doc));
 }
 
@@ -92,7 +92,7 @@ fn a_second_author_cannot_claim_a_pinned_document() {
         replicas.add_pin(peer(2), doc, space, mallory.did().clone(), mallory_proof, 0),
         Err(PinRefused::WrongAuthor)
     );
-    assert_eq!(replicas.owner(space, doc), Some(peer(1)));
+    assert_eq!(replicas.author_endpoint(space, doc), Some(peer(1)));
 }
 
 /// The first pin decides a document's space only because only the author
@@ -120,26 +120,26 @@ fn only_the_author_or_whom_the_holder_released_to_may_hold() {
     let alice = identity();
     let (doc, proof) = authored(4, &alice);
     let space = space(b"hold");
-    let (owner, guest, other) = (peer(1), peer(2), peer(3));
+    let (author_device, guest, other) = (peer(1), peer(2), peer(3));
     let guest_did: Did = "did:web:guest.example".parse().expect("did");
 
     replicas
-        .add_pin(owner, doc, space, alice.did().clone(), proof, 1)
+        .add_pin(author_device, doc, space, alice.did().clone(), proof, 1)
         .expect("pin");
-    assert_eq!(replicas.holder(space, doc), Some(owner));
+    assert_eq!(replicas.holder(space, doc), Some(author_device));
 
     assert!(
         !replicas.add_hold(guest, Some(&guest_did), doc, space, 2),
         "a stranger cannot take physics authority"
     );
 
-    replicas.remove_hold(owner, doc, Some(guest));
+    replicas.remove_hold(author_device, doc, Some(guest));
     assert!(!replicas.add_hold(other, None, doc, space, 3));
     assert!(replicas.add_hold(guest, Some(&guest_did), doc, space, 4));
     assert_eq!(replicas.holder(space, doc), Some(guest));
 
     replicas.remove_hold(guest, doc, None);
-    assert_eq!(replicas.holder(space, doc), Some(owner));
+    assert_eq!(replicas.holder(space, doc), Some(author_device));
     assert!(
         !replicas.add_hold(guest, Some(&guest_did), doc, space, 5),
         "a release spends the grant"
@@ -163,7 +163,7 @@ fn an_authored_documents_session_is_the_authors_alone() {
     );
     assert_eq!(
         replicas.add_session(peer(2), Some(&stranger), doc, space, write("k", b"x"), 3),
-        Err(SessionError::NotOwner)
+        Err(SessionError::NotAuthor)
     );
     assert_eq!(
         replicas.add_session(
@@ -174,7 +174,7 @@ fn an_authored_documents_session_is_the_authors_alone() {
             write("k", b"x"),
             4
         ),
-        Err(SessionError::NotOwner),
+        Err(SessionError::NotAuthor),
         "a document present in one space is not writable through another"
     );
     assert_eq!(

@@ -14,7 +14,7 @@ Scripts are WebAssembly components attached to prims. They talk to the host thro
 | `wired:scene` | `properties`, `document` | documents, prims and their properties |
 | `wired:shading` | `graph` | shader graphs built as data |
 | `wired:physics` | `simulation` | raycasts and rigid-body motion |
-| `wired:peer` | `identity`, `authority` | who the user is, and who owns and holds documents |
+| `wired:peer` | `identity`, `authority` | who the user is, and who authors and holds documents |
 | `wired:event` | `messaging` | messages between scripts on one peer |
 | `wired:input` | `types`, `targeted`, `device` | pointer input |
 | `wired:agent` | `local` | the local user's camera and body |
@@ -32,14 +32,14 @@ A script targets `wired:worlds/script`. A library composed into a script at buil
 
 ### Documents and layers
 
-A document is a tree of prims, and everything about a prim is a property. A script reads any document it can open. It writes only documents it **owns**: its own document, documents it created, and documents authored by the same user as its own. Writing, placing, listening for input on, or moving the body of any other document fails with `forbidden`.
+A document is a tree of prims, and everything about a prim is a property. A script reads any document it can open. It writes only documents it **may write**: its own document, documents it created, and documents authored by the same user as its own. Writing, placing, listening for input on, or moving the body of any other document fails with `forbidden`.
 
 Every write names the layer it lands in:
 
 - `local`: this peer only. Every peer runs the same scripts, so a deterministic local write is seen everywhere without being sent anywhere.
-- `shared`: sent live to every peer present in the space, for the rest of the session. Peers accept a document's shared state only from its author, so a shared write succeeds only on the peer whose user authors the document (`wired:peer/authority.is-owner`). On every other peer it fails with `forbidden`. A document no author has proven, such as a space's own content, takes shared writes from anyone present.
+- `shared`: sent live to every peer present in the space, for the rest of the session. Peers accept a document's shared state only from its author, so a shared write succeeds only on the peer whose user authors the document (`wired:peer/authority.is-author`). On every other peer it fails with `forbidden`. A document no author has proven, such as a space's own content, takes shared writes from anyone present.
 
-Neither layer is durable. `commit` makes the live value of a key durable, on the peer that holds the script's document. Reads see the composed value: `shared` over `local` over durable.
+Neither layer is durable. `commit` makes the live value of a key durable, on the author's device of the script's own document. Reads see the composed value: `shared` over `local` over durable.
 
 In the generated Rust bindings, abbreviated:
 
@@ -48,7 +48,7 @@ In the generated Rust bindings, abbreviated:
 door.apply(Layer::Local, &[Edit::Set((hinge, Property::Transform(open)))])?;
 
 // What one user typed has to be sent.
-if authority::is_owner(&board)? {
+if authority::is_author(&board)? {
     board.apply(Layer::Shared, &[Edit::Set((label, Property::Text(typed)))])?;
 }
 ```

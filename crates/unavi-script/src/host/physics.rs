@@ -1,4 +1,4 @@
-//! `wired:physics`: raycasts, and the motion of bodies a script owns.
+//! `wired:physics`: raycasts, and the motion of bodies a script may write.
 
 use std::collections::HashSet;
 
@@ -186,7 +186,7 @@ pub async fn set_velocity(
     angular: Option<Vec3>,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Physics)?;
-    let doc = host.owned_document(doc)?.id;
+    let doc = host.writable_document(doc)?.id;
     let linear = linear.map(checked).transpose()?;
     let angular = angular.map(checked).transpose()?;
     host.world_call(move |world| {
@@ -211,7 +211,7 @@ pub async fn set_force(
     force: Vec3,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Physics)?;
-    let doc = host.owned_document(doc)?.id;
+    let doc = host.writable_document(doc)?.id;
     let force = checked(force)?;
     host.world_call(move |world| {
         let entity = dynamic_body(world, doc, prim)?;

@@ -73,7 +73,7 @@ impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
             SessionError::QuotaExceeded => Self::LimitReached(Stock::SessionMemory),
-            SessionError::NotOwner => Self::Forbidden,
+            SessionError::NotAuthor => Self::Forbidden,
             SessionError::BadName => Self::invalid("invalid shared property name"),
             SessionError::Unavailable => Self::Internal("the world is gone".into()),
         }
@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn a_shared_write_by_a_non_author_is_forbidden() {
         assert_eq!(
-            ScriptError::from(SessionError::NotOwner),
+            ScriptError::from(SessionError::NotAuthor),
             ScriptError::Forbidden
         );
     }

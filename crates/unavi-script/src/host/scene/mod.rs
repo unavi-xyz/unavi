@@ -105,8 +105,8 @@ pub fn id(host: &ScriptHost, doc: u32) -> Result<DocId, ScriptError> {
     Ok(host.document(doc)?.id)
 }
 
-pub fn owned(host: &ScriptHost, doc: u32) -> Result<bool, ScriptError> {
-    Ok(host.owns(host.document(doc)?.id))
+pub fn may_write(host: &ScriptHost, doc: u32) -> Result<bool, ScriptError> {
+    Ok(host.may_write(host.document(doc)?.id))
 }
 
 pub fn contains(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<bool, ScriptError> {

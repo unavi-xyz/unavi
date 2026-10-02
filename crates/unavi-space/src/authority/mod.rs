@@ -267,7 +267,7 @@ mod tests {
 
     /// The shell hangs at the app root and belongs to no space, so a document
     /// it mints names its own space. Resolving `space_of` through the host
-    /// chain alone loses that, and the beacon never reads as self-owned.
+    /// chain alone loses that, and the beacon never reads as self-authored.
     #[test]
     fn a_child_of_a_spaceless_host_resolves_by_its_own_space() {
         let policy = Policy::new();

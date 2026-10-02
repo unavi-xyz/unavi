@@ -82,7 +82,7 @@ pub struct PeerModel {
     /// The DID this peer proved over its own connection, absent while it has
     /// proved none.
     pub did:       Option<String>,
-    /// The trust level the peer sits at, which is what every cross-owner
+    /// The trust level the peer sits at, which is what every cross-author
     /// write is judged against.
     pub trust:     Trust,
     /// Pinned docs as (doc, space, pinned-at).
@@ -102,7 +102,7 @@ pub struct SpaceModel {
 #[derive(std::hash::Hash)]
 pub struct SpaceDocRow {
     pub doc:       NamespaceId,
-    pub owner:     Option<EndpointId>,
+    pub author:    Option<EndpointId>,
     pub pins:      usize,
     pub instanced: bool,
 }
@@ -112,7 +112,7 @@ pub struct DocModel {
     pub doc:           NamespaceId,
     pub space:         Option<NamespaceId>,
     pub is_space_base: bool,
-    pub owner:         Option<EndpointId>,
+    pub author:        Option<EndpointId>,
     pub holder:        Option<EndpointId>,
     pub pinned_by:     Vec<(EndpointId, u64)>,
     pub session:       Vec<DocCell>,
@@ -247,7 +247,7 @@ impl InspectData<'_, '_> {
                     let doc_id = DocId(*doc.as_bytes());
                     SpaceDocRow {
                         doc,
-                        owner: view.replicas().owner(space_id, doc_id),
+                        author: view.replicas().author_endpoint(space_id, doc_id),
                         pins: snap
                             .peers
                             .iter()
@@ -297,7 +297,7 @@ impl InspectData<'_, '_> {
             doc,
             space,
             is_space_base: space == Some(doc),
-            owner: space.and_then(|s| view.replicas().owner(s.into(), doc_id)),
+            author: space.and_then(|s| view.replicas().author_endpoint(s.into(), doc_id)),
             holder: space.and_then(|s| view.replicas().holder(s.into(), doc_id)),
             pinned_by,
             session: doc_session(doc_id, snap),

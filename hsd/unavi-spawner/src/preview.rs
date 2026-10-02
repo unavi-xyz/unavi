@@ -34,7 +34,7 @@ const ABOVE: f32 = 0.13;
 const SPIN: f32 = 1.4;
 
 /// A document of its own, so `attach` carries exactly this cube and nothing
-/// else the script owns.
+/// else the script may write.
 pub struct Preview {
     doc:      Document,
     cube:     (u64, u64),

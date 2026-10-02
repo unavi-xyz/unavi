@@ -32,14 +32,14 @@ pub enum Anchor {
     Entity(Entity),
 }
 
-/// Puts a document the script owns into the scene, or moves it.
+/// Puts a document the script may write into the scene, or moves it.
 pub async fn place(
     host: &ScriptHost,
     doc: u32,
     anchor: Anchor,
     offset: XformAttr,
 ) -> Result<(), ScriptError> {
-    let id = host.owned_document(doc)?.id;
+    let id = host.writable_document(doc)?.id;
     let offset = checked(offset)?;
     host.world_call(move |world| place_in(world, id, anchor, offset))
         .await?

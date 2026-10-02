@@ -28,7 +28,7 @@ use crate::{
                 InputSubscription,
             },
         },
-        peer::authority::is_owner,
+        peer::authority::is_author,
         scene::{
             document::{
                 Document,
@@ -225,7 +225,7 @@ impl Beacon {
             }
         }
 
-        if !is_owner(&self.doc)? {
+        if !is_author(&self.doc)? {
             return Ok(());
         }
 

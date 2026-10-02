@@ -43,7 +43,7 @@ pub async fn set_graph(
     layer: Layer,
     graph: Option<ShaderGraph>,
 ) -> Result<(), ScriptError> {
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
     let fields = match graph {
         Some(graph) => {
             validate(&graph).map_err(|err| ScriptError::invalid(err.to_string()))?;
@@ -80,7 +80,7 @@ pub async fn set_overrides(
     layer: Layer,
     values: Vec<(u16, GraphValue)>,
 ) -> Result<(), ScriptError> {
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
     if values.len() > MAX_PUBLIC_INPUTS {
         return Err(ScriptError::invalid("a graph has at most 16 public inputs"));
     }

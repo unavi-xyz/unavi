@@ -24,16 +24,16 @@ impl identity::Host for HostCtx {
 }
 
 impl authority::Host for HostCtx {
-    fn owner(&mut self, doc: Resource<DocumentRes>) -> Result<Option<String>, ScriptError> {
-        peer::owner(&self.host, doc.rep())
+    fn author(&mut self, doc: Resource<DocumentRes>) -> Result<Option<String>, ScriptError> {
+        peer::author(&self.host, doc.rep())
     }
 
     fn holder(&mut self, doc: Resource<DocumentRes>) -> Result<Option<String>, ScriptError> {
         peer::holder(&self.host, doc.rep())
     }
 
-    fn is_owner(&mut self, doc: Resource<DocumentRes>) -> Result<bool, ScriptError> {
-        peer::is_owner(&self.host, doc.rep())
+    fn is_author(&mut self, doc: Resource<DocumentRes>) -> Result<bool, ScriptError> {
+        peer::is_author(&self.host, doc.rep())
     }
 
     fn is_holder(&mut self, doc: Resource<DocumentRes>) -> Result<bool, ScriptError> {

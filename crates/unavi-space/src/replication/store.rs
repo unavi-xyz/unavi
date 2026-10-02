@@ -363,13 +363,13 @@ impl Inner {
     /// otherwise, and nobody on a document present in another space.
     fn may_write(&self, did: Option<&Did>, doc: DocId, space: SpaceId) -> Result<(), SessionError> {
         if self.docs.get(&doc).is_some_and(|p| p.space != space) {
-            return Err(SessionError::NotOwner);
+            return Err(SessionError::NotAuthor);
         }
         if doc == space.doc() {
             return Ok(());
         }
         match self.author_of(doc) {
-            Some(author) if did != Some(&author) => Err(SessionError::NotOwner),
+            Some(author) if did != Some(&author) => Err(SessionError::NotAuthor),
             _ => Ok(()),
         }
     }
@@ -389,7 +389,7 @@ impl Inner {
         self.ensure_presence(doc, space, None)
             .map_err(|err| match err {
                 PinRefused::Quota => SessionError::QuotaExceeded,
-                PinRefused::WrongSpace | PinRefused::WrongAuthor => SessionError::NotOwner,
+                PinRefused::WrongSpace | PinRefused::WrongAuthor => SessionError::NotAuthor,
             })?;
 
         let presence = self.docs.get(&doc).expect("presence ensured");
@@ -535,15 +535,15 @@ impl Inner {
 
     /// The first of the author's endpoints to pin `doc`. Only the author pins,
     /// so this is one of its devices.
-    fn owner(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
+    fn author_endpoint(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
         self.resolve_peer(space, doc, false, |e| e.pin)
     }
 
-    /// The latest hold, else the owner, so an author drives its objects until
-    /// someone it allowed takes over.
+    /// The latest hold, else the author's endpoint, so an author drives its
+    /// objects until someone it allowed takes over.
     fn holder(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
         self.resolve_peer(space, doc, true, |e| e.hold)
-            .or_else(|| self.owner(space, doc))
+            .or_else(|| self.author_endpoint(space, doc))
     }
 
     /// The value at `key`, or `None` for a tombstone or a key nothing wrote.
@@ -784,8 +784,8 @@ impl Replicas {
 
     /// The first of the author's endpoints to pin `doc`.
     #[must_use]
-    pub fn owner(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
-        self.0.lock().owner(space, doc)
+    pub fn author_endpoint(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
+        self.0.lock().author_endpoint(space, doc)
     }
 
     #[must_use]
@@ -796,6 +796,13 @@ impl Replicas {
     #[must_use]
     pub fn is_holder(&self, space: SpaceId, doc: DocId, me: EndpointId) -> bool {
         self.holder(space, doc) == Some(me)
+    }
+
+    /// Whether `me` is the author's endpoint resolving `doc`: the device that
+    /// may commit it durably.
+    #[must_use]
+    pub fn is_author_endpoint(&self, space: SpaceId, doc: DocId, me: EndpointId) -> bool {
+        self.author_endpoint(space, doc) == Some(me)
     }
 
     #[must_use]
@@ -846,27 +853,28 @@ impl Replicas {
             })
     }
 
-    /// Remote peers pinning `doc`, which `me` can sync it from, owner first.
+    /// Remote peers pinning `doc`, which `me` can sync it from, the author's
+    /// endpoint first.
     #[must_use]
     pub fn sync_sources(&self, doc: DocId, me: EndpointId) -> Vec<EndpointId> {
         let inner = self.0.lock();
         let Some(space) = inner.docs.get(&doc).map(|p| p.space) else {
             return Vec::new();
         };
-        let owner = inner.owner(space, doc);
+        let author_endpoint = inner.author_endpoint(space, doc);
         let mut sources = inner
             .peers
             .iter()
             .filter(|(pid, r)| {
                 **pid != me
-                    && Some(**pid) != owner
+                    && Some(**pid) != author_endpoint
                     && r.docs.get(&doc).is_some_and(|e| e.pin.is_some())
             })
             .map(|(pid, _)| *pid)
             .collect::<Vec<_>>();
         drop(inner);
-        if let Some(owner) = owner.filter(|o| *o != me) {
-            sources.insert(0, owner);
+        if let Some(author_endpoint) = author_endpoint.filter(|o| *o != me) {
+            sources.insert(0, author_endpoint);
         }
         sources
     }

@@ -291,9 +291,9 @@ function buildImports(wasi: WASIShim, rt: any) {
       selfDid: rt.selfDid.bind(rt),
     },
     "wired:peer/authority": {
-      owner: rt.owner.bind(rt),
+      author: rt.author.bind(rt),
       holder: rt.holder.bind(rt),
-      isOwner: rt.isOwner.bind(rt),
+      isAuthor: rt.isAuthor.bind(rt),
       isHolder: rt.isHolder.bind(rt),
       takeHold: rt.takeHold.bind(rt),
       releaseHold: rt.releaseHold.bind(rt),

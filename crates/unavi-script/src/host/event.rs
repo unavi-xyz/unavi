@@ -107,8 +107,8 @@ fn filter(docs: Option<Vec<DocId>>) -> Result<Option<HashSet<DocId>>, ScriptErro
     }
 }
 
-/// A spatial scope must sit on a prim of a document the script owns, so a
-/// script cannot speak or listen from somewhere else's position.
+/// A spatial scope must sit on a prim of a document the script may write, so
+/// a script cannot speak or listen from somewhere else's position.
 fn bus_scope(host: &ScriptHost, scope: Scope) -> Result<BusScope, ScriptError> {
     match scope {
         Scope::Global => Ok(BusScope::Global),
@@ -118,7 +118,7 @@ fn bus_scope(host: &ScriptHost, scope: Scope) -> Result<BusScope, ScriptError> {
                     "a radius must be finite and not negative",
                 ));
             }
-            if !host.owns(doc) {
+            if !host.may_write(doc) {
                 return Err(ScriptError::Forbidden);
             }
             Ok(BusScope::Spatial {

@@ -132,13 +132,13 @@ fn space_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &SpaceModel) {
         b.spawn(widgets::dim_text("(none)"));
     } else {
         b.spawn(widgets::grid_node(4)).with_children(|g| {
-            for h in ["doc", "owner", "pins", "instanced"] {
+            for h in ["doc", "author", "pins", "instanced"] {
                 g.spawn(widgets::header_cell(h));
             }
             for row in &m.docs {
                 widgets::chip(g, row.doc.as_bytes(), Page::Doc(row.doc));
-                match row.owner {
-                    Some(owner) => widgets::chip(g, owner.as_bytes(), Page::Peer(owner)),
+                match row.author {
+                    Some(author) => widgets::chip(g, author.as_bytes(), Page::Peer(author)),
                     None => {
                         g.spawn(widgets::dim_text("space"));
                     }
@@ -168,9 +168,9 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
             g.spawn(widgets::header_cell("space"));
             widgets::chip(g, space.as_bytes(), Page::Space(space));
         }
-        g.spawn(widgets::header_cell("owner"));
-        match m.owner {
-            Some(owner) => widgets::chip(g, owner.as_bytes(), Page::Peer(owner)),
+        g.spawn(widgets::header_cell("author"));
+        match m.author {
+            Some(author) => widgets::chip(g, author.as_bytes(), Page::Peer(author)),
             None => {
                 g.spawn(widgets::dim_text("space"));
             }

@@ -82,7 +82,7 @@ impl Permissions {
             // to, and the agent pose is continuous motion capture of a real
             // person. Neither is something a stranger's prop may read.
             // Commit is what makes an opinion durable, so a malicious prop
-            // standing in its owner's room must not hold it — possession
+            // standing in its author's room must not hold it — possession
             // already keeps it from another peer's document, and trust is
             // what stops it writing the room it stands in. The shell and the
             // tools it ships are authored at this rung; content is not.

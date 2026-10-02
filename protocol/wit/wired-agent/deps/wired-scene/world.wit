@@ -8,9 +8,9 @@
 /// - `local`: what this peer states, for itself only.
 /// - durable: what the document holds, which `commit` writes.
 ///
-/// A script owns its own document, the documents it creates, and every
+/// A script may write its own document, the documents it creates, and every
 /// document authored by the same user as its own. It may read any document
-/// it can open, and write only those it owns.
+/// it can open, and write only those.
 package wired:scene@0.1.0;
 
 /// The built-in properties a prim can carry.
@@ -314,7 +314,7 @@ interface document {
     ///
     /// Peers accept a document's shared state only from its author, so a
     /// shared write succeeds only on the peer whose user authors the document
-    /// (`wired:peer/authority.is-owner`), and fails with `forbidden` on every
+    /// (`wired:peer/authority.is-author`), and fails with `forbidden` on every
     /// other. A document no author has proven, such as a space's own
     /// content, takes shared writes from anyone present. Relations cannot be
     /// shared.
@@ -343,14 +343,14 @@ interface document {
   }
 
   /// A document in the world. Holding one is the capability to read it, and
-  /// to write it when the script owns it; writes to a document the script
-  /// does not own fail with `forbidden`.
+  /// to write it when the script may write it; writes to a document the
+  /// script may not write fail with `forbidden`.
   resource document {
     id: func() -> document-id;
 
-    /// Whether the script owns this document: its own, one it created, or
-    /// one authored by the same user as its own.
-    owned: func() -> bool;
+    /// Whether the script may write this document: its own, one it created,
+    /// or one authored by the same user as its own.
+    may-write: func() -> bool;
 
     /// Whether `prim` is in the scene.
     contains: func(prim: prim-id) -> bool;
@@ -391,7 +391,7 @@ interface document {
     /// when this peer can write it, or as an override in the document
     /// referencing it. Fails with `forbidden` when it can write neither.
     ///
-    /// Takes effect only on the peer holding the script's document
+    /// Takes effect only on the author's device of the script's own document
     /// (`wired:peer/authority`); elsewhere it succeeds and does nothing, so a
     /// script running on every peer commits once. A script outside any space
     /// runs on one peer, which always commits.
@@ -412,7 +412,7 @@ interface document {
 
   /// A document loaded on this peer, or `none` when it is not.
   open-document: func(id: document-id) -> result<option<document>, error>;
-  /// Mints an empty document the script owns, held until it is placed.
+  /// Mints an empty document the script may write, held until it is placed.
   create-document: func() -> result<document, error>;
   /// Mints a document holding what `source` durably holds, which the two
   /// then diverge from. Live layers are not copied.

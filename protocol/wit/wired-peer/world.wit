@@ -1,8 +1,9 @@
 /// Who the local user is, and who speaks for each document.
 ///
-/// A document's owner is the user who authors it: the one holding its write
-/// key. Its holder is the peer currently deciding how it moves, by default
-/// the owner's peer. Owners and holders are users, named by DID.
+/// A document's author is the user holding its write key. Not transferable.
+/// Its holder is the peer currently deciding how it moves, by default the
+/// author's peer. Holding is transferable. Authors and holders are users,
+/// named by DID.
 package wired:peer@0.1.0;
 
 interface identity {
@@ -20,21 +21,21 @@ interface authority {
 
   /// Who authors `document`, or `none` when no author has proven itself,
   /// as with a space's own content.
-  owner: func(document: borrow<document>) -> result<option<did>, error>;
+  author: func(document: borrow<document>) -> result<option<did>, error>;
   /// Who holds `document` now: the latest peer to take hold, else its
-  /// owner. `none` outside a space.
+  /// author. `none` outside a space.
   holder: func(document: borrow<document>) -> result<option<did>, error>;
 
   /// Whether the local user authors `document`, which is what lets this
   /// peer's `shared` writes to it land.
-  is-owner: func(document: borrow<document>) -> result<bool, error>;
+  is-author: func(document: borrow<document>) -> result<bool, error>;
   /// Whether this peer holds `document` now.
   is-holder: func(document: borrow<document>) -> result<bool, error>;
 
-  /// Takes hold of a document the script owns, so this peer drives its
-  /// motion. Only its owner, or a user the holder released it to, may.
+  /// Takes hold of a document the script may write, so this peer drives its
+  /// motion. Only its author, or a user the holder released it to, may.
   take-hold: func(document: borrow<document>) -> result<_, error>;
-  /// Gives up this peer's hold, returning it to the owner, or letting `to`
+  /// Gives up this peer's hold, returning it to the author, or letting `to`
   /// take it next.
   release-hold: func(document: borrow<document>, to: option<did>) -> result<_, error>;
 }

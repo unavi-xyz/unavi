@@ -1,5 +1,5 @@
 /// The rigid-body simulation: raycasts, and the motion of bodies a script
-/// owns.
+/// may write.
 ///
 /// The simulation runs on every peer. A body's motion is decided by the peer
 /// holding its document (`wired:peer/authority`) and sent to the others, so

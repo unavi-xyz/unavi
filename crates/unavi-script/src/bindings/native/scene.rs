@@ -47,8 +47,8 @@ impl HostDocument for HostCtx {
         Ok(convert::wit_doc_id(scene::id(&self.host, doc.rep())?))
     }
 
-    fn owned(&mut self, doc: Resource<DocumentRes>) -> wasmtime::Result<bool> {
-        Ok(scene::owned(&self.host, doc.rep())?)
+    fn may_write(&mut self, doc: Resource<DocumentRes>) -> wasmtime::Result<bool> {
+        Ok(scene::may_write(&self.host, doc.rep())?)
     }
 
     fn contains(&mut self, doc: Resource<DocumentRes>, prim: PrimId) -> wasmtime::Result<bool> {

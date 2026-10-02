@@ -48,7 +48,7 @@ pub struct Held {
     offset:     Vec3,
     offset_rot: Quat,
     /// The gravity scale to restore on release; `none` when the prop is not
-    /// owned by this script, so there was nothing to zero.
+    /// one this script may write, so there was nothing to zero.
     gravity:    Option<f32>,
     /// Where the ray landed, in body-local space; the beam attaches here, so
     /// grabbing a corner drags that corner.
@@ -109,8 +109,8 @@ impl Held {
         }
 
         // Writing `gravity-scale` only succeeds on a document this script
-        // owns; grabbing someone else's prop leaves gravity alone, so it
-        // still falls while the controller fights to hold its position.
+        // may write; grabbing someone else's prop leaves gravity alone, so
+        // it still falls while the controller fights to hold its position.
         let gravity = match doc.get(prim, &PropertyKey::GravityScale) {
             Some(Property::GravityScale(g)) => g,
             _ => 1.0,

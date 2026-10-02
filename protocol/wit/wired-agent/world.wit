@@ -79,7 +79,7 @@ interface local {
   /// lacks it. Fails with `not-ready` until the avatar has loaded.
   bone-transform: func(bone: humanoid-bone) -> result<option<transform>, error>;
 
-  /// Places a document the script owns at `offset` from the camera or a
+  /// Places a document the script may write at `offset` from the camera or a
   /// bone, so it moves with the user. Per peer, like
   /// `wired:scene/document.place`, which detaches it again.
   attach: func(document: borrow<document>, to: attachment, offset: transform) -> result<_, error>;

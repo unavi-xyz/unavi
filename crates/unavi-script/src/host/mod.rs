@@ -1,7 +1,7 @@
 //! The engine-agnostic implementation of every host call.
 //!
 //! Each `wired:*` package has a module here taking and returning host types.
-//! Permission and ownership checks happen here, once, so a binding only
+//! Permission and write-scope checks happen here, once, so a binding only
 //! lowers values and can never forget a check.
 
 use std::sync::{
@@ -176,14 +176,14 @@ impl ScriptHost {
         self.require(api).is_ok()
     }
 
-    /// Whether this script owns `doc`: its own document, one it created, or
-    /// one whose author also authors its own. Only an owned document may be
-    /// written, placed, listened to or moved.
+    /// Whether this script may write `doc`: its own document, one it
+    /// created, or one whose author also authors its own. Only a writable
+    /// document may be written, placed, listened to or moved.
     ///
     /// Authorship is read per call, so a document whose author resolves late
     /// is judged by what is known now.
     #[must_use]
-    pub fn owns(&self, doc: DocId) -> bool {
+    pub fn may_write(&self, doc: DocId) -> bool {
         doc == self.doc
             || self.minted.contains(&doc)
             || self
@@ -197,10 +197,10 @@ impl ScriptHost {
         self.documents.get(handle)
     }
 
-    /// The document behind `handle`, if the script owns it.
-    pub fn owned_document(&self, handle: u32) -> Result<&DocumentRes, ScriptError> {
+    /// The document behind `handle`, if the script may write it.
+    pub fn writable_document(&self, handle: u32) -> Result<&DocumentRes, ScriptError> {
         let doc = self.documents.get(handle)?;
-        if self.owns(doc.id) {
+        if self.may_write(doc.id) {
             Ok(doc)
         } else {
             Err(ScriptError::Forbidden)

@@ -66,8 +66,9 @@ impl DocumentHandle {
             .map_err(convert::into_trap)
     }
 
-    pub fn owned(&self) -> Result<bool, JsValue> {
-        scene::owned(&self.host.borrow(), self.rep).map_err(convert::into_trap)
+    #[wasm_bindgen(js_name = "mayWrite")]
+    pub fn may_write(&self) -> Result<bool, JsValue> {
+        scene::may_write(&self.host.borrow(), self.rep).map_err(convert::into_trap)
     }
 
     pub fn contains(&self, prim: JsValue) -> Result<bool, JsValue> {

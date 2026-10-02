@@ -18,7 +18,7 @@ pub fn self_did(host: &ScriptHost) -> Result<String, ScriptError> {
 }
 
 /// The DID of whoever authors `doc`.
-pub fn owner(host: &ScriptHost, doc: u32) -> Result<Option<String>, ScriptError> {
+pub fn author(host: &ScriptHost, doc: u32) -> Result<Option<String>, ScriptError> {
     host.require(HostApi::Peer)?;
     let id = host.document(doc)?.id;
     Ok(host.view.author(id).map(|did| did.to_string()))
@@ -46,7 +46,7 @@ fn holder_peer(host: &ScriptHost, doc: u32) -> Result<Option<EndpointId>, Script
         .and_then(|space| host.view.replicas().holder(space, id)))
 }
 
-pub fn is_owner(host: &ScriptHost, doc: u32) -> Result<bool, ScriptError> {
+pub fn is_author(host: &ScriptHost, doc: u32) -> Result<bool, ScriptError> {
     host.require(HostApi::Peer)?;
     Ok(host.view.is_mine(host.document(doc)?.id))
 }
@@ -57,7 +57,7 @@ pub fn is_holder(host: &ScriptHost, doc: u32) -> Result<bool, ScriptError> {
 }
 
 fn space(host: &ScriptHost, doc: u32) -> Result<(hsd::id::DocId, SpaceId), ScriptError> {
-    let id = host.owned_document(doc)?.id;
+    let id = host.writable_document(doc)?.id;
     let space = host
         .view
         .space_of(id)
@@ -65,8 +65,8 @@ fn space(host: &ScriptHost, doc: u32) -> Result<(hsd::id::DocId, SpaceId), Scrip
     Ok((id, space))
 }
 
-/// Takes hold of a document the script owns. The replica refuses a peer that
-/// neither authors it nor was released to.
+/// Takes hold of a document the script may write. The replica refuses a peer
+/// that neither authors it nor was released to.
 pub fn take_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     host.require(HostApi::Peer)?;
     let (id, space) = space(host, doc)?;
@@ -74,7 +74,7 @@ pub fn take_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     Ok(())
 }
 
-/// Releases this peer's hold on a document the script owns, to `to` if
+/// Releases this peer's hold on a document the script may write, to `to` if
 /// named. Fails with `not-found` when no peer proving `to` is connected.
 pub fn release_hold(host: &ScriptHost, doc: u32, to: Option<&str>) -> Result<(), ScriptError> {
     host.require(HostApi::Peer)?;

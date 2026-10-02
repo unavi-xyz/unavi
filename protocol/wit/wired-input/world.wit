@@ -88,7 +88,7 @@ interface targeted {
   use types.{input-subscription};
 
   /// Input aimed at `prim` or anything beneath it, in a document the script
-  /// owns. Only prims with a collider can be aimed at.
+  /// may write. Only prims with a collider can be aimed at.
   listen: func(document: borrow<document>, prim: prim-id) -> result<input-subscription, error>;
 }
 

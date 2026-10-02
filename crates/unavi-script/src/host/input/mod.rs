@@ -171,11 +171,11 @@ impl Drop for InputSubscription {
     }
 }
 
-/// Input aimed at `prim` of a document the script owns, or anything beneath
-/// it.
+/// Input aimed at `prim` of a document the script may write, or anything
+/// beneath it.
 pub fn listen_targeted(host: &mut ScriptHost, doc: u32, prim: PrimId) -> Result<u32, ScriptError> {
     host.require(HostApi::Input)?;
-    let doc = host.owned_document(doc)?.id;
+    let doc = host.writable_document(doc)?.id;
     subscribe(host, Target::Prim(doc, prim))
 }
 

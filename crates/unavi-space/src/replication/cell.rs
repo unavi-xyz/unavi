@@ -53,7 +53,7 @@ pub enum SessionError {
     /// The document has an author and the writer is not it, or the document
     /// belongs to another space.
     #[error("session write to an authored document by someone else")]
-    NotOwner,
+    NotAuthor,
     #[error("session write exceeds quota")]
     QuotaExceeded,
     /// The world the replica lives in is gone.

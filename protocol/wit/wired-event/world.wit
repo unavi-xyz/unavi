@@ -13,7 +13,7 @@ interface messaging {
   use wired:core/ids@0.1.0.{document-id, prim-ref};
   use wired:core/error@0.1.0.{error};
 
-  /// A sphere around a prim of a document the script owns.
+  /// A sphere around a prim of a document the script may write.
   record spatial {
     origin: prim-ref,
     /// Meters.

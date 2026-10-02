@@ -47,7 +47,7 @@ pub fn trust_peer(view: &SpaceView, peer: EndpointId) -> Result<(), NoIdentity> 
 /// Records `trust` for `peer`, or clears it when `trust` is `None`.
 ///
 /// The peer's quota takes the new level's limits in place, so documents it
-/// already owns are bound by them at once.
+/// already authors are bound by them at once.
 fn set_trust(view: &SpaceView, peer: EndpointId, trust: Option<Trust>) -> Result<(), NoIdentity> {
     let did = view.identity().bindings.did_of(peer).ok_or(NoIdentity)?;
 

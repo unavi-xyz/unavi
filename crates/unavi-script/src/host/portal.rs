@@ -62,7 +62,7 @@ async fn set_destination(
     destination: PortalDestination,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Portal)?;
-    let doc = host.owned_document(doc)?.clone();
+    let doc = host.writable_document(doc)?.clone();
     crate::quota::take(&host.quota, Flow::PortalOpen, 1)?;
     let mut portal = doc
         .read(|state| state.attribute::<PortalAttr>(prim).and_then(Result::ok))?

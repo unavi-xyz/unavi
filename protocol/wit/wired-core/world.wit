@@ -92,7 +92,7 @@ interface error {
   /// A capability a script's document may be granted. Which ones it holds
   /// depends on how far this peer trusts the document's author.
   enum permission {
-    /// Reading the scene and writing documents the script owns.
+    /// Reading the scene and writing documents the script may write.
     scene,
     /// Minting new documents.
     create-document,
@@ -100,7 +100,7 @@ interface error {
     commit,
     /// Sending and receiving messages.
     event,
-    /// Input aimed at prims the script owns.
+    /// Input aimed at prims of a document the script may write.
     input,
     /// Every input event and pointer of the local user, aimed or not.
     input-device,

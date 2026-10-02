@@ -20,7 +20,6 @@ use crate::{
         ShellPre,
         linker,
     },
-    engine::TickKind,
 };
 
 mod drive;
@@ -100,14 +99,4 @@ impl WasmtimeEngine {
 /// measured in.
 fn increment_epoch(engine: Res<WasmtimeEngine>) {
     engine.engine.increment_epoch();
-}
-
-impl TickKind {
-    const fn export(self) -> &'static str {
-        match self {
-            Self::Init => "init",
-            Self::Update => "update",
-            Self::FixedUpdate => "fixed-update",
-        }
-    }
 }

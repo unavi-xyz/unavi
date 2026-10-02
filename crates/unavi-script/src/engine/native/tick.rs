@@ -19,9 +19,11 @@ use crate::{
     ScriptStatus,
     bindings::native::generated::exports::wired::script::lifecycle::Tick as WitTick,
     engine::{
+        Schedule,
         Tick,
         TickClocks,
         TickKind,
+        lane_for,
         native::{
             drive::{
                 script_budget,
@@ -72,22 +74,16 @@ pub fn drive<const SCHEDULE: u8>(
         };
         let now = time.elapsed();
 
+        let schedule = if SCHEDULE == UPDATE {
+            Schedule::Update
+        } else {
+            Schedule::Fixed
+        };
         for (status, instance, store, span, mut clocks) in &mut scripts {
-            if status.is_trapped() {
+            let Some(kind) = crate::engine::next_tick(schedule, status, &clocks, now) else {
                 continue;
-            }
-            let kind = match (SCHEDULE, status.is_initialized()) {
-                (UPDATE, true) => TickKind::Update,
-                (UPDATE, false) => continue,
-                (_, false) => TickKind::Init,
-                (_, true) if clocks.fixed_due(now) => TickKind::FixedUpdate,
-                (_, true) => continue,
             };
-            let lane = if kind == TickKind::Update {
-                Lane::Update
-            } else {
-                Lane::Fixed
-            };
+            let lane = lane_for(kind);
             if !status.begin(lane) {
                 continue;
             }

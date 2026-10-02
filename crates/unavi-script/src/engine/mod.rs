@@ -4,7 +4,12 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-mod log;
+use crate::status::{
+    Lane,
+    ScriptStatus,
+};
+
+pub mod log;
 
 #[cfg(not(target_family = "wasm"))] mod native;
 #[cfg(target_family = "wasm")] mod web;
@@ -33,6 +38,18 @@ pub enum TickKind {
     Init,
     Update,
     FixedUpdate,
+}
+
+impl TickKind {
+    /// The WIT export name, for the log line a trap or a failed init writes.
+    #[must_use]
+    pub const fn export(self) -> &'static str {
+        match self {
+            Self::Init => "init",
+            Self::Update => "update",
+            Self::FixedUpdate => "fixed-update",
+        }
+    }
 }
 
 /// The time a lifecycle call carries.
@@ -101,6 +118,50 @@ impl TickClocks {
     }
 }
 
+/// Which schedule is deciding a script's next call.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Schedule {
+    /// Runs `update` once a frame.
+    Update,
+    /// Runs `init` until the script initializes, then `fixed-update` at
+    /// [`FIXED_INTERVAL`].
+    Fixed,
+}
+
+/// Which lifecycle call, if any, `schedule` should make of a script right
+/// now: `None` when the script is trapped, not yet due, or a call for this
+/// schedule is already in flight.
+///
+/// Shared by both engines so native and web always agree on when a script is
+/// called.
+#[must_use]
+pub fn next_tick(
+    schedule: Schedule,
+    status: &ScriptStatus,
+    clocks: &TickClocks,
+    now: Duration,
+) -> Option<TickKind> {
+    if status.is_trapped() {
+        return None;
+    }
+    match (schedule, status.is_initialized()) {
+        (Schedule::Update, true) => Some(TickKind::Update),
+        (Schedule::Fixed, false) => Some(TickKind::Init),
+        (Schedule::Fixed, true) if clocks.fixed_due(now) => Some(TickKind::FixedUpdate),
+        (Schedule::Update, false) | (Schedule::Fixed, true) => None,
+    }
+}
+
+/// Which in-flight flag a call of `kind` holds.
+#[must_use]
+pub const fn lane_for(kind: TickKind) -> Lane {
+    if matches!(kind, TickKind::Update) {
+        Lane::Update
+    } else {
+        Lane::Fixed
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,6 +192,47 @@ mod tests {
         assert!(
             clocks.fixed_due(Duration::from_millis(110)),
             "a call 10 ms late brings the next one 10 ms closer"
+        );
+    }
+
+    #[test]
+    fn a_trapped_script_is_never_due() {
+        let status = ScriptStatus::default();
+        assert!(status.trap());
+        let clocks = TickClocks::default();
+        assert_eq!(
+            next_tick(Schedule::Fixed, &status, &clocks, Duration::ZERO),
+            None
+        );
+    }
+
+    #[test]
+    fn fixed_runs_init_until_initialized_then_fixed_update_on_schedule() {
+        let status = ScriptStatus::default();
+        let clocks = TickClocks::default();
+        assert_eq!(
+            next_tick(Schedule::Fixed, &status, &clocks, Duration::ZERO),
+            Some(TickKind::Init)
+        );
+        status.set_initialized();
+        assert_eq!(
+            next_tick(Schedule::Fixed, &status, &clocks, Duration::ZERO),
+            Some(TickKind::FixedUpdate)
+        );
+    }
+
+    #[test]
+    fn update_is_only_due_once_initialized() {
+        let status = ScriptStatus::default();
+        let clocks = TickClocks::default();
+        assert_eq!(
+            next_tick(Schedule::Update, &status, &clocks, Duration::ZERO),
+            None
+        );
+        status.set_initialized();
+        assert_eq!(
+            next_tick(Schedule::Update, &status, &clocks, Duration::ZERO),
+            Some(TickKind::Update)
         );
     }
 }

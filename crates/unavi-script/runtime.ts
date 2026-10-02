@@ -5,18 +5,129 @@ import {
 } from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
-const SCRIPT_ASYNC_EXPORTS = [
-  "wired:script/guest-api#init",
-  "wired:script/guest-api#update",
-  "wired:script/guest-api#fixed-update",
+/**
+ * Every import `bindings::native`'s linker marks `async`, named the way
+ * `jco`'s `asyncMode.jspi.imports` option expects: `<interface>#<name>` for a
+ * free function, `<interface>#[method]<resource>.<name>` for a resource
+ * method. Everything else lifts as a plain synchronous call.
+ *
+ * Unversioned: the import *object keys* `buildImports` below returns must be
+ * unversioned (confirmed against a transpiled dummy guest of this crate's
+ * `shell` world — jco reads `imports['wired:scene/document']`, not
+ * `imports['wired:scene/document@0.1.0']`); this list, read only by
+ * `asyncMode`'s own matcher, accepts either form, so it stays unversioned
+ * too for one convention.
+ */
+const ASYNC_IMPORTS = [
+  "wired:scene/document#open-document",
+  "wired:scene/document#create-document",
+  "wired:scene/document#copy-document",
+  "wired:scene/document#delete-document",
+  "wired:scene/document#[method]document.create-prim",
+  "wired:scene/document#[method]document.apply",
+  "wired:scene/document#[method]document.commit",
+  "wired:scene/document#[method]document.place",
+  "wired:shading/graph#set-graph",
+  "wired:shading/graph#set-overrides",
+  "wired:physics/simulation#raycast",
+  "wired:physics/simulation#velocity",
+  "wired:physics/simulation#set-velocity",
+  "wired:physics/simulation#set-force",
+  "wired:agent/local#attach",
+  "wired:portal/portals#open",
+  "wired:portal/portals#pair",
+  "wired:portal/portals#travel",
+  "unavi:host/node-storage#get",
+  "unavi:host/node-storage#list-entries",
 ];
+
+/** Every export `bindings::native`'s linker marks `async`: the whole of
+ * `wired:script/lifecycle`. */
+const ASYNC_EXPORTS = [
+  "wired:script/lifecycle#init",
+  "wired:script/lifecycle#update",
+  "wired:script/lifecycle#fixed-update",
+];
+
+interface Compiled {
+  getCoreModule: (path: string) => Promise<WebAssembly.Module>;
+  instantiate: (
+    getCoreModule: (path: string) => Promise<WebAssembly.Module>,
+    imports: Record<string, unknown>,
+  ) => Promise<unknown>;
+}
+
+/**
+ * Transpiled output, by the `blake3` hash of the component bytes Rust
+ * already hashes its `Wasm` asset by. Two scripts built from the same bytes
+ * transpile once; every further instance only instantiates.
+ */
+const compiledByHash = new Map<string, Compiled>();
+
+async function compile(bytes: Uint8Array, name: string): Promise<Compiled> {
+  const options: GenerateOptions = {
+    asyncMode: {
+      tag: "jspi",
+      val: {
+        imports: ASYNC_IMPORTS,
+        exports: ASYNC_EXPORTS,
+      },
+    },
+    instantiation: { tag: "async" },
+    name,
+    noNamespacedExports: true,
+    noNodejsCompat: true,
+    noTypescript: true,
+    strict: true,
+    // `init`'s only WIT error is a plain `string`. Without this, a failing
+    // `init` throws a `ComponentError` wrapper instead of that string, and
+    // `engine::web::tick`'s `err.as_string()` check (which tells a guest's
+    // own `init` failure apart from a real trap) would never match.
+    noComponentErrorWrapping: true,
+  };
+
+  const result = await (generate(
+    bytes,
+    options,
+  ) as unknown as Promise<Transpiled>);
+
+  const jsFile = result.files.find(([path]) => path.endsWith(".js"));
+  if (jsFile == undefined) {
+    throw new Error("transpiled JS not found");
+  }
+  const jsCode = new TextDecoder().decode(jsFile[1]);
+  const blob = new Blob([jsCode], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+  let mod: { instantiate: Compiled["instantiate"] };
+  try {
+    mod = await import(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+
+  const fileMap = new Map(result.files);
+  const getCoreModule = async (path: string): Promise<WebAssembly.Module> => {
+    const bytes = fileMap.get(path);
+    if (!bytes) {
+      throw new Error(`missing wasm module: ${path}`);
+    }
+    return await WebAssembly.compile(bytes as BufferSource);
+  };
+
+  return { getCoreModule, instantiate: mod.instantiate };
+}
 
 export async function instantiateScript(
   bytes: Uint8Array,
+  hash: string,
   name: string,
-  rt: any,
-): Promise<any> {
-  console.log("Building script", name);
+  rt: unknown,
+): Promise<unknown> {
+  let compiled = compiledByHash.get(hash);
+  if (compiled == undefined) {
+    compiled = await compile(bytes, name);
+    compiledByHash.set(hash, compiled);
+  }
 
   const wasi = new WASIShim({
     sandbox: {
@@ -29,90 +140,50 @@ export async function instantiateScript(
   const imports = buildImports(wasi, rt);
   batchOutput(imports, name, rt);
 
-  const options: GenerateOptions = {
-    asyncMode: {
-      tag: "jspi",
-      val: {
-        imports: collectAsyncImports(imports),
-        exports: SCRIPT_ASYNC_EXPORTS,
-      },
-    },
-    instantiation: { tag: "async" },
-    name,
-    noNamespacedExports: true,
-    noNodejsCompat: true,
-    noTypescript: true,
-    strict: true,
-    // tracing: true,
-  };
-
-  const result = await (generate(
-    bytes,
-    options,
-  ) as unknown as Promise<Transpiled>);
-  console.log("Generated script", name, result);
-
-  const jsFile = result.files.find(([name]) => name.endsWith(".js"));
-  if (jsFile == undefined) {
-    throw new Error("Transpiled JS not found");
-  }
-  const jsCode = new TextDecoder().decode(jsFile[1]);
-  const blob = new Blob([jsCode], { type: "text/javascript" });
-  const url = URL.createObjectURL(blob);
-
-  const mod = await import(url);
-
-  const fileMap = new Map(result.files);
-
-  async function getCoreModule(path: string): Promise<WebAssembly.Module> {
-    const bytes = fileMap.get(path);
-    if (!bytes) {
-      throw new Error(`Missing wasm module: ${path}`);
-    }
-    return await WebAssembly.compile(bytes as BufferSource);
-  }
-
-  const instance = await mod.instantiate(getCoreModule, imports);
-  if (options.tracing) {
-    // Only run for a limited number of ticks if we are tracing calls for debugging.
-    // Too many starts to lag the browser.
-    instance.ticks = 0;
-    instance.maxTicks = 2;
-  }
-  instance.name = name;
-  console.log("Instantiated script", name, instance);
-
-  return instance;
-}
-
-export async function scriptInit(instance: any): Promise<void> {
-  await instance.guestApi.init();
-}
-
-export async function scriptUpdate(instance: any): Promise<void> {
-  if (instance.ticks !== undefined && instance.ticks >= instance.maxTicks) {
-    return;
-  }
-  await instance.guestApi.update();
-}
-
-export async function scriptFixedUpdate(instance: any): Promise<void> {
-  if (instance.ticks !== undefined) {
-    if (instance.ticks >= instance.maxTicks) {
-      return;
-    }
-    instance.ticks += 1;
-  }
-  await instance.guestApi.fixedUpdate();
+  return await compiled.instantiate(compiled.getCoreModule, imports);
 }
 
 /**
- * Replaces the shim's stdout and stderr, which write straight to the console,
- * one call per write and outside the client's log filter.
+ * `noNamespacedExports` drops the package prefix but keeps each export
+ * grouped under its interface's own camelCased name, so `wired:script/
+ * lifecycle`'s exports land on `instance.lifecycle`, not on `instance`
+ * itself.
+ */
+interface Lifecycle {
+  init(): Promise<void>;
+  update(tick: unknown): Promise<void>;
+  fixedUpdate(tick: unknown): Promise<void>;
+}
+
+function lifecycle(instance: unknown): Lifecycle {
+  return (instance as { lifecycle: Lifecycle }).lifecycle;
+}
+
+export async function scriptInit(instance: unknown): Promise<void> {
+  await lifecycle(instance).init();
+}
+
+export async function scriptUpdate(
+  instance: unknown,
+  tick: unknown,
+): Promise<void> {
+  await lifecycle(instance).update(tick);
+}
+
+export async function scriptFixedUpdate(
+  instance: unknown,
+  tick: unknown,
+): Promise<void> {
+  await lifecycle(instance).fixedUpdate(tick);
+}
+
+/**
+ * Replaces the shim's stdout and stderr, which write straight to the
+ * console, one call per write and outside the client's log filter.
  *
  * Gathering a run is this side's job because only this side knows when one
- * ends: writes are held until the microtask queue drains, which under JSPI is
- * the end of the guest's synchronous stretch. `blockingFlush` deliberately
+ * ends: writes are held until the microtask queue drains, which under JSPI
+ * is the end of the guest's synchronous stretch. `blockingFlush` deliberately
  * does not force it — Rust flushes per line, and honouring that would be the
  * behaviour this replaces. The run then goes to `scriptLog`, which is where
  * native output lands too.
@@ -153,113 +224,104 @@ function batchOutput(imports: Record<string, any>, name: string, rt: any) {
   }
 }
 
-function buildImports(wasi: WASIShim, rt: any) {
-  return {
-    ...wasi.getImportObject(),
-    "wired:agent/api": {
-      localAgent: rt.wiredAgentLocalAgent.bind(rt),
-      localCamera: rt.wiredAgentLocalCamera.bind(rt),
-    },
-    "wired:agent/types": {
-      Agent: rt.wiredAgentClass(),
-    },
-    "wired:event/api": {
-      emit: rt.wiredEventEmit.bind(rt),
-      listen: rt.wiredEventListen.bind(rt),
-    },
-    "wired:event/types": {
-      Event: rt.wiredEventClass(),
-      EventReceptor: rt.wiredEventReceptorClass(),
-    },
-    "wired:input/api": {
-      registerInputListener: rt.wiredInputRegisterInputListener.bind(rt),
-    },
-    "wired:input/context": {
-      registerGlobalInputListener:
-        rt.wiredInputRegisterGlobalInputListener.bind(rt),
-      pointers: rt.wiredInputPointers.bind(rt),
-    },
-    "wired:input/types": {
-      InputListener: rt.wiredInputListenerClass(),
-    },
-    "wired:peer/api": {
-      selfPeer: rt.wiredPeerSelfPeer.bind(rt),
-      selfDid: rt.wiredPeerSelfDid.bind(rt),
-      docOwner: rt.wiredPeerDocOwner.bind(rt),
-      isSelfOwner: rt.wiredPeerIsSelfOwner.bind(rt),
-    },
-    "wired:peer/types": {},
-    "wired:physics/api": {
-      raycast: rt.wiredPhysicsRaycast.bind(rt),
-      getLinearVelocity: rt.wiredPhysicsGetLinearVelocity.bind(rt),
-      setLinearVelocity: rt.wiredPhysicsSetLinearVelocity.bind(rt),
-      setAngularVelocity: rt.wiredPhysicsSetAngularVelocity.bind(rt),
-      applyForce: rt.wiredPhysicsApplyForce.bind(rt),
-      takeHold: rt.wiredPhysicsTakeHold.bind(rt),
-      releaseHold: rt.wiredPhysicsReleaseHold.bind(rt),
-    },
-    "wired:portal/api": {
-      open: rt.wiredPortalOpen.bind(rt),
-      pair: rt.wiredPortalPair.bind(rt),
-      travel: rt.wiredPortalTravel.bind(rt),
-    },
-    "wired:scene/api": {
-      createDocument: rt.wiredSceneCreateDocument.bind(rt),
-      copyDocument: rt.wiredSceneCopyDocument.bind(rt),
-      getDocument: rt.wiredSceneGetDocument.bind(rt),
-      removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
-      selfDocument: rt.wiredSceneSelfDocument.bind(rt),
-      selfPrim: rt.wiredSceneSelfPrim.bind(rt),
-    },
-    "wired:scene/types": {
-      Document: rt.wiredSceneDocClass(),
-      Prim: rt.wiredScenePrimClass(),
-    },
-    "wired:storage/api": {
-      getStorage: rt.wiredStorageGetStorage.bind(rt),
-    },
-    "wired:storage/types": {
-      GetFuture: rt.wiredGetFutureClass(),
-      ListFuture: rt.wiredListFutureClass(),
-      Storage: rt.wiredStorageClass(),
-    },
-  };
+/**
+ * The `#[wasm_bindgen]` classes `bindings::web`'s resources are instances
+ * of. Trunk's own bootstrap snippet assigns `window.wasmBindings` to the
+ * glue module's full namespace unconditionally (confirmed in a built
+ * `dist/index.html`), so these are reachable without any reflection trick —
+ * jco needs the exact class objects to validate a captured resource with
+ * `instanceof` before calling one of its own methods, and this is the only
+ * route from Rust's exported classes to this separately bundled module.
+ */
+function resourceClasses() {
+  const bindings = (globalThis as any).wasmBindings;
+  if (bindings == undefined) {
+    throw new Error(
+      "window.wasmBindings is not set; Trunk's bootstrap must run before any script instantiates",
+    );
+  }
+  return bindings;
 }
 
-const camelToKebab = (s: string): string =>
-  s
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
-
-const isResourceClass = (value: unknown): value is { prototype: object } =>
-  typeof value === "function" &&
-  (value as { prototype?: object }).prototype != null &&
-  Object.getOwnPropertyNames((value as { prototype: object }).prototype).some(
-    (n) => n !== "constructor",
-  );
-
-function collectAsyncImports(imports: Record<string, unknown>): string[] {
-  const out: string[] = [];
-  for (const [iface, members] of Object.entries(imports)) {
-    if (!iface.startsWith("wired:")) continue;
-    for (const [name, value] of Object.entries(
-      members as Record<string, unknown>,
-    )) {
-      if (isResourceClass(value)) {
-        const resource = camelToKebab(name);
-        const proto = value.prototype;
-        for (const method of Object.getOwnPropertyNames(proto)) {
-          if (method === "constructor" || method === "free") continue;
-          if (method.startsWith("__")) continue;
-          const desc = Object.getOwnPropertyDescriptor(proto, method);
-          if (!desc || typeof desc.value !== "function") continue;
-          out.push(`${iface}#[method]${resource}.${camelToKebab(method)}`);
-        }
-      } else if (typeof value === "function") {
-        out.push(`${iface}#${camelToKebab(name)}`);
-      }
-    }
-  }
-  return out;
+/**
+ * Every host import, bound to `rt` (a `bindings::web::Runtime`). A resource
+ * import needs its class for jco's `instanceof` validation; dropping one
+ * needs nothing here at all — jco's own drop trampoline calls
+ * `rsc[Symbol.dispose]()` directly on the captured value, which
+ * `wasm-bindgen` already wires to `free()` for every exported class.
+ */
+function buildImports(wasi: WASIShim, rt: any) {
+  const classes = resourceClasses();
+  return {
+    ...wasi.getImportObject(),
+    "wired:script/host": {
+      granted: rt.granted.bind(rt),
+    },
+    "wired:scene/document": {
+      Document: classes.DocumentHandle,
+      scriptDocument: rt.scriptDocument.bind(rt),
+      scriptPrim: rt.scriptPrim.bind(rt),
+      openDocument: rt.openDocument.bind(rt),
+      createDocument: rt.createDocument.bind(rt),
+      copyDocument: rt.copyDocument.bind(rt),
+      deleteDocument: rt.deleteDocument.bind(rt),
+    },
+    "wired:event/messaging": {
+      MessageSubscription: classes.MessageSubscriptionHandle,
+      emit: rt.emit.bind(rt),
+      listen: rt.listen.bind(rt),
+    },
+    "wired:input/types": {
+      InputSubscription: classes.InputSubscriptionHandle,
+    },
+    "wired:input/targeted": {
+      listen: rt.inputTargetedListen.bind(rt),
+    },
+    "wired:input/device": {
+      listen: rt.inputDeviceListen.bind(rt),
+      pointers: rt.inputDevicePointers.bind(rt),
+    },
+    "wired:physics/simulation": {
+      raycast: rt.raycast.bind(rt),
+      velocity: rt.velocity.bind(rt),
+      setVelocity: rt.setVelocity.bind(rt),
+      setForce: rt.setForce.bind(rt),
+    },
+    "wired:peer/identity": {
+      selfDid: rt.selfDid.bind(rt),
+    },
+    "wired:peer/authority": {
+      owner: rt.owner.bind(rt),
+      holder: rt.holder.bind(rt),
+      isOwner: rt.isOwner.bind(rt),
+      isHolder: rt.isHolder.bind(rt),
+      takeHold: rt.takeHold.bind(rt),
+      releaseHold: rt.releaseHold.bind(rt),
+    },
+    "wired:agent/local": {
+      cameraTransform: rt.cameraTransform.bind(rt),
+      boneTransform: rt.boneTransform.bind(rt),
+      attach: rt.attach.bind(rt),
+    },
+    "wired:portal/portals": {
+      IntentSubscription: classes.IntentSubscriptionHandle,
+      open: rt.open.bind(rt),
+      pair: rt.pair.bind(rt),
+      travel: rt.travel.bind(rt),
+      intents: rt.intents.bind(rt),
+    },
+    "wired:shading/graph": {
+      setGraph: rt.setGraph.bind(rt),
+      overrides: rt.overrides.bind(rt),
+      setOverrides: rt.setOverrides.bind(rt),
+    },
+    "unavi:host/node-storage": {
+      PendingValue: classes.PendingValueHandle,
+      PendingEntries: classes.PendingEntriesHandle,
+      rootDocument: rt.rootDocument.bind(rt),
+      registries: rt.registries.bind(rt),
+      get: rt.get.bind(rt),
+      listEntries: rt.listEntries.bind(rt),
+    },
+  };
 }

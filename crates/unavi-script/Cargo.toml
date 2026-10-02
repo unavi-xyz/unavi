@@ -43,6 +43,9 @@ wasmtime-wasi.workspace = true
 [target.'cfg(target_family = "wasm")'.dependencies]
 anyhow.workspace       = true
 js-sys                 = "0.3.94"
+serde                  = { features = ["derive"], workspace = true }
+serde-wasm-bindgen     = "0.6.5"
+serde_bytes            = "0.11.19"
 wasm-bindgen.workspace = true
 wasm-bindgen-futures   = "0.4.76"
 

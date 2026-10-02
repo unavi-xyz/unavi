@@ -1,48 +1,24 @@
-use std::sync::Arc;
+//! `wired:agent/local`.
 
-use bevy_async::task;
+use std::rc::Rc;
+
 use bevy_vrm::BoneName;
-use unavi_policy::permissions::HostApi;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::future_to_promise;
 
 use super::{
-    raise,
-    scene::prim::PrimHandle,
-};
-use crate::runtime::{
     Runtime,
-    shared::{
-        self,
-        Api,
-    },
+    convert,
+    scene::DocumentHandle,
+};
+use crate::{
+    error::ScriptError,
+    host::agent,
 };
 
-#[wasm_bindgen]
-pub struct AgentHandle {
-    rep: u32,
-    api: Arc<Api>,
-}
-
-impl AgentHandle {
-    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
-        Self { rep, api }
-    }
-}
-
-impl Drop for AgentHandle {
-    fn drop(&mut self) {
-        if self.rep != u32::MAX {
-            let api = Arc::clone(&self.api);
-            let rep = self.rep;
-            task::spawn(async move {
-                let _ = shared::wired::agent::on_drop(&api, rep).await;
-            });
-        }
-    }
-}
-
-fn js_to_bone_name(s: &str) -> Option<BoneName> {
-    Some(match s {
+/// The two lists are the same VRM set, matched by name, mirroring native.
+fn bone_name(value: &str) -> Result<BoneName, ScriptError> {
+    Ok(match value {
         "hips" => BoneName::Hips,
         "spine" => BoneName::Spine,
         "chest" => BoneName::Chest,
@@ -98,50 +74,58 @@ fn js_to_bone_name(s: &str) -> Option<BoneName> {
         "right-little-proximal" => BoneName::RightLittleProximal,
         "right-little-intermediate" => BoneName::RightLittleIntermediate,
         "right-little-distal" => BoneName::RightLittleDistal,
-        _ => return None,
+        _ => return Err(ScriptError::invalid("not a humanoid bone")),
     })
 }
 
 #[wasm_bindgen]
-impl AgentHandle {
-    pub async fn bone(&self, name: String) -> Option<PrimHandle> {
-        let bone = js_to_bone_name(&name)?;
-        let rep = shared::wired::agent::bone(&self.api, self.rep, bone)
-            .await
-            .ok()
-            .flatten()?;
-        Some(PrimHandle::new(rep, Arc::clone(&self.api)))
-    }
-}
-
-#[wasm_bindgen]
 impl Runtime {
-    #[wasm_bindgen(js_name = "wiredAgentClass")]
-    #[must_use]
-    pub fn wired_agent_class(&self) -> JsValue {
-        let handle = AgentHandle::new(u32::MAX, Arc::clone(&self.api));
-        let js = JsValue::from(handle);
-        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    #[wasm_bindgen(js_name = "cameraTransform")]
+    pub fn camera_transform(&self) -> Result<JsValue, JsValue> {
+        agent::camera_transform(&self.host.borrow())
+            .map(convert::wit_transform)
+            .map_err(convert::raise)
     }
 
-    #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
-    pub async fn wired_agent_local_agent(&self) -> Result<AgentHandle, JsValue> {
-        self.api.require(HostApi::LocalAgent).map_err(raise)?;
-        let rep = shared::wired::agent::local_agent(&self.api)
-            .await
-            .map_err(raise)?;
-        Ok(AgentHandle::new(rep, Arc::clone(&self.api)))
+    #[wasm_bindgen(js_name = "boneTransform")]
+    pub fn bone_transform(&self, bone: &str) -> Result<JsValue, JsValue> {
+        let bone = bone_name(bone).map_err(convert::raise)?;
+        agent::bone_transform(&self.host.borrow(), bone)
+            .map(|t| t.map_or(JsValue::UNDEFINED, convert::wit_transform))
+            .map_err(convert::raise)
     }
 
-    /// The camera proxy appears only once the local agent's avatar has loaded,
-    /// so a guest is expected to retry. Answering a miss with a handle instead
-    /// of the error leaves it holding a dead prim forever.
-    #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
-    pub async fn wired_agent_local_camera(&self) -> Result<PrimHandle, JsValue> {
-        self.api.require(HostApi::LocalAgent).map_err(raise)?;
-        let rep = shared::wired::agent::local_camera(&self.api)
-            .await
-            .map_err(raise)?;
-        Ok(PrimHandle::new(rep, Arc::clone(&self.api)))
+    pub fn attach(
+        &self,
+        document: &DocumentHandle,
+        to: JsValue,
+        offset: JsValue,
+    ) -> js_sys::Promise {
+        let host = Rc::clone(&self.host);
+        let doc = document.rep();
+        let parsed = (|| -> Result<_, ScriptError> {
+            let to = match convert::tag(&to).as_str() {
+                "camera" => agent::Attachment::Camera,
+                "bone" => {
+                    let bone = convert::val(&to)
+                        .as_string()
+                        .ok_or_else(|| ScriptError::invalid("a bone is a string"))?;
+                    agent::Attachment::Bone(bone_name(&bone)?)
+                }
+                _ => return Err(ScriptError::invalid("not an attachment")),
+            };
+            Ok((to, convert::xform(offset)?))
+        })();
+        let (to, offset) = match parsed {
+            Ok(v) => v,
+            Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
+        };
+        future_to_promise(async move {
+            let host = host.borrow();
+            agent::attach(&host, doc, to, offset)
+                .await
+                .map(|()| JsValue::UNDEFINED)
+                .map_err(convert::raise)
+        })
     }
 }

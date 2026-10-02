@@ -10,7 +10,7 @@ use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
 };
-use unavi_portal::PrevTranslation;
+use unavi_portal::body::PrevTranslation;
 
 use crate::membership::Space;
 
@@ -186,21 +186,25 @@ pub fn recenter_active_space(
             if let Some(mut transform) = transform {
                 transform.translation += delta;
             }
-            if let Some(mut prev) = prev {
-                prev.0 += delta;
+            if let Some(mut prev) = prev
+                && let Some(p) = prev.0.as_mut()
+            {
+                *p += delta;
             }
         }
     }
 
-    // The agent body's `Position` is stale after a seam teleport; resync from
-    // the shifted `Transform`.
+    // The agent body's `Position` is stale after a portal teleport; resync
+    // from the shifted `Transform`.
     if let Ok((_, mut position, transform, prev)) = bodies.get_mut(body) {
         if let Some(mut transform) = transform {
             transform.translation += delta;
             position.0 = transform.translation;
         }
-        if let Some(mut prev) = prev {
-            prev.0 += delta;
+        if let Some(mut prev) = prev
+            && let Some(p) = prev.0.as_mut()
+        {
+            *p += delta;
         }
     }
 }
@@ -220,7 +224,7 @@ pub fn promote_first_space(
 mod tests {
     use bevy::transform::TransformPlugin;
     use iroh_docs::NamespaceId;
-    use unavi_portal::transition::apply_seam_crossings;
+    use unavi_portal::crossing::apply_crossings;
 
     use super::*;
 
@@ -240,7 +244,7 @@ mod tests {
                 PostUpdate,
                 (recenter_active_space, apply_anchor_offsets)
                     .chain()
-                    .after(apply_seam_crossings)
+                    .after(apply_crossings)
                     .before(TransformSystems::Propagate),
             );
         app
@@ -314,7 +318,7 @@ mod tests {
             .spawn((
                 Transform::from_translation(b_pos + local),
                 GlobalTransform::default(),
-                PrevTranslation(b_pos + local),
+                PrevTranslation(Some(b_pos + local)),
                 Position(stale),
             ))
             .id();
@@ -354,7 +358,7 @@ mod tests {
             .spawn((
                 Transform::from_translation(b_pos + local),
                 GlobalTransform::default(),
-                PrevTranslation(b_pos + local),
+                PrevTranslation(Some(b_pos + local)),
                 Position(b_pos + local),
             ))
             .id();
@@ -397,7 +401,7 @@ mod tests {
             .spawn((
                 Transform::from_translation(b_pos + local),
                 GlobalTransform::default(),
-                PrevTranslation(b_pos + local),
+                PrevTranslation(Some(b_pos + local)),
                 Position(b_pos + local),
             ))
             .id();
@@ -441,7 +445,7 @@ mod tests {
             .spawn((
                 Transform::from_translation(b_pos + local),
                 GlobalTransform::default(),
-                PrevTranslation(b_pos + local),
+                PrevTranslation(Some(b_pos + local)),
                 Position(b_pos + local),
             ))
             .id();
@@ -489,7 +493,7 @@ mod tests {
             .spawn((
                 Transform::from_translation(b_pos + local),
                 GlobalTransform::default(),
-                PrevTranslation(b_pos + local),
+                PrevTranslation(Some(b_pos + local)),
                 Position(b_pos + local),
             ))
             .id();

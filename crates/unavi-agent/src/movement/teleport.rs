@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use unavi_portal::transition::CrossedSeam;
+use unavi_portal::crossing::Crossed;
 
 use crate::{
     AgentRig,
@@ -13,7 +13,7 @@ use crate::{
 /// crossing; physical momentum is carried by `unavi_portal`'s
 /// `carry_momentum`.
 pub fn handle_agent_teleport(
-    event: On<CrossedSeam>,
+    event: On<Crossed>,
     mut target_body: ResMut<TargetBodyInput>,
     mut target_head: ResMut<TargetHeadInput>,
     agents: Query<(), With<AgentRig>>,

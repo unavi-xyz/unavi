@@ -14,8 +14,8 @@ use bevy::{
 };
 use unavi_policy::trust::TrustTable;
 use unavi_portal::{
-    echo::maintain_seam_echoes,
-    transition::apply_seam_crossings,
+    crossing::apply_crossings,
+    echo::maintain_echoes,
 };
 
 pub mod authority;
@@ -87,8 +87,8 @@ impl Plugin for SpacePlugin {
                 PostUpdate,
                 (grid::recenter_active_space, grid::apply_anchor_offsets)
                     .chain()
-                    .after(apply_seam_crossings)
-                    .before(maintain_seam_echoes)
+                    .after(apply_crossings)
+                    .before(maintain_echoes)
                     .before(TransformSystems::Propagate),
             )
             .add_systems(
@@ -124,7 +124,7 @@ impl Plugin for SpacePlugin {
             )
             .add_systems(
                 Update,
-                portal::sync_seam_home.before(unavi_portal::resolver::resolve_seams),
+                portal::sync_portal_home.before(unavi_portal::destination::resolve_destinations),
             )
             .add_systems(
                 Update,

@@ -2,7 +2,7 @@
     pbr_fragment::pbr_input_from_standard_material,
     pbr_functions::alpha_discard,
 }
-#import unavi_portal::seam_clip::{seam_clipped, seam_cap_normal}
+#import unavi_portal::portal_clip::{portal_clipped, portal_cap_normal}
 
 #ifdef PREPASS_PIPELINE
 #import bevy_pbr::{
@@ -18,7 +18,7 @@
 
 @fragment
 fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> FragmentOutput {
-    if seam_clipped(in.world_position.xyz) {
+    if portal_clipped(in.world_position.xyz) {
         discard;
     }
 
@@ -28,7 +28,7 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     // Back faces exposed by the clip are the mesh interior; shade them as a
     // flat cap facing out of the cut so the mesh reads as solid.
     if !is_front {
-        let cap_normal = seam_cap_normal();
+        let cap_normal = portal_cap_normal();
         pbr_input.world_normal = cap_normal;
         pbr_input.N = cap_normal;
     }

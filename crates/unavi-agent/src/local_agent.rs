@@ -29,9 +29,11 @@ use unavi_input::pointer::{
     backend::PointerFilter,
 };
 use unavi_portal::{
-    PortalBody,
-    PortalViewer,
-    visuals::SEAM_RENDER_LAYER,
+    body::{
+        PortalBody,
+        PortalViewer,
+    },
+    render_layers::PORTAL_RENDER_LAYER,
 };
 
 use crate::{
@@ -189,7 +191,7 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
             ..default()
         }),
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-        RenderLayers::from_layers(&[0, SEAM_RENDER_LAYER])
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
         PortalViewer,
     ));

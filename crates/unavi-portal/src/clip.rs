@@ -12,17 +12,17 @@ use bevy::{
 };
 use bevy_vrm::mtoon::MtoonMaterial;
 
-pub const SEAM_CLIP_SHADER_HANDLE: Handle<Shader> =
+pub const PORTAL_CLIP_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("9a4065b6-b09f-4091-ae05-2630fcec10bb");
-pub const SEAM_CLIP_STANDARD_SHADER_HANDLE: Handle<Shader> =
+pub const PORTAL_CLIP_STANDARD_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("4946577f-5b0d-480a-80fa-7a57ad6d8d3b");
-pub const SEAM_CLIP_MTOON_SHADER_HANDLE: Handle<Shader> =
+pub const PORTAL_CLIP_MTOON_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("8ef2d136-e292-4b14-9add-c773eeef0073");
 
-/// Base material that can be clipped at a world-space seam plane.
+/// Base material that can be clipped at a world-space portal plane.
 pub trait Clippable: Material {
-    /// Fragment shader reproducing this material's shading with the seam clip;
-    /// clip plane bound at `@binding(100)`.
+    /// Fragment shader reproducing this material's shading with the portal
+    /// clip; clip plane bound at `@binding(100)`.
     const CLIP_SHADER: Handle<Shader>;
 
     /// Render both faces, so the cap exposed at the cut is drawn.
@@ -30,7 +30,7 @@ pub trait Clippable: Material {
 }
 
 impl Clippable for StandardMaterial {
-    const CLIP_SHADER: Handle<Shader> = SEAM_CLIP_STANDARD_SHADER_HANDLE;
+    const CLIP_SHADER: Handle<Shader> = PORTAL_CLIP_STANDARD_SHADER_HANDLE;
 
     fn make_double_sided(&mut self) {
         self.cull_mode = None;
@@ -39,7 +39,7 @@ impl Clippable for StandardMaterial {
 }
 
 impl Clippable for MtoonMaterial {
-    const CLIP_SHADER: Handle<Shader> = SEAM_CLIP_MTOON_SHADER_HANDLE;
+    const CLIP_SHADER: Handle<Shader> = PORTAL_CLIP_MTOON_SHADER_HANDLE;
 
     fn make_double_sided(&mut self) {
         self.double_sided = true;
@@ -47,21 +47,21 @@ impl Clippable for MtoonMaterial {
 }
 
 /// Material extension discarding fragments behind a world-space plane, so a
-/// mesh straddling a seam does not protrude out its back side.
+/// mesh straddling a portal does not protrude out its back side.
 #[derive(Asset, AsBindGroup, Clone, TypePath)]
-pub struct SeamClip<M: Clippable> {
+pub struct PortalClip<M: Clippable> {
     #[uniform(100)]
     pub plane: Vec4,
     _base:     PhantomData<fn() -> M>,
 }
 
-impl<M: Clippable> MaterialExtension for SeamClip<M> {
+impl<M: Clippable> MaterialExtension for PortalClip<M> {
     fn fragment_shader() -> ShaderRef {
         M::CLIP_SHADER.into()
     }
 }
 
-pub type Clipped<M> = ExtendedMaterial<M, SeamClip<M>>;
+pub type Clipped<M> = ExtendedMaterial<M, PortalClip<M>>;
 pub type ClippedStandardMaterial = Clipped<StandardMaterial>;
 pub type ClippedMtoonMaterial = Clipped<MtoonMaterial>;
 
@@ -77,14 +77,14 @@ pub fn clip_plane(plane_transform: &GlobalTransform, side: f32) -> Vec4 {
     normal.extend(-normal.dot(plane_transform.translation()))
 }
 
-/// Clipped variant of a material, rendered double-sided so the shader can shade
-/// exposed back faces as a flat cap.
+/// Clipped variant of a material, rendered double-sided so the shader can
+/// shade exposed back faces as a flat cap.
 #[must_use]
 pub fn clipped_variant<M: Clippable>(mut base: M, plane: Vec4) -> Clipped<M> {
     base.make_double_sided();
     ExtendedMaterial {
         base,
-        extension: SeamClip {
+        extension: PortalClip {
             plane,
             _base: PhantomData,
         },
@@ -92,16 +92,16 @@ pub fn clipped_variant<M: Clippable>(mut base: M, plane: Vec4) -> Clipped<M> {
 }
 
 /// Original material of a mesh node whose material is temporarily swapped for
-/// a clipped variant while its body straddles a seam.
+/// a clipped variant while its body straddles a portal.
 #[derive(Component)]
 pub struct UnclippedMaterial<M: Material>(pub Handle<M>);
 
 /// Marker on a body whose subtree materials are currently clipped, recording
-/// the seam it straddles.
+/// the portal it straddles.
 #[derive(Component)]
 pub struct ClippedBody {
-    pub seam:  Entity,
-    pub plane: Vec4,
+    pub portal: Entity,
+    pub plane:  Vec4,
 }
 
 pub fn subtree(world: &World, root: Entity) -> Vec<Entity> {
@@ -185,12 +185,12 @@ pub fn clone_clipped_node<M: Clippable>(
     true
 }
 
-pub fn clip_body(world: &mut World, body: Entity, seam: Entity, plane: Vec4) {
+pub fn clip_body(world: &mut World, body: Entity, portal: Entity, plane: Vec4) {
     for node in subtree(world, body) {
         clip_node::<StandardMaterial>(world, node, plane);
         clip_node::<MtoonMaterial>(world, node, plane);
     }
-    world.entity_mut(body).insert(ClippedBody { seam, plane });
+    world.entity_mut(body).insert(ClippedBody { portal, plane });
 }
 
 pub fn unclip_body(world: &mut World, body: Entity) {
@@ -201,10 +201,10 @@ pub fn unclip_body(world: &mut World, body: Entity) {
     world.entity_mut(body).remove::<ClippedBody>();
 }
 
-pub fn update_body_clip_plane(world: &mut World, body: Entity, seam: Entity, plane: Vec4) {
+pub fn update_body_clip_plane(world: &mut World, body: Entity, portal: Entity, plane: Vec4) {
     for node in subtree(world, body) {
         update_node::<StandardMaterial>(world, node, plane);
         update_node::<MtoonMaterial>(world, node, plane);
     }
-    world.entity_mut(body).insert(ClippedBody { seam, plane });
+    world.entity_mut(body).insert(ClippedBody { portal, plane });
 }

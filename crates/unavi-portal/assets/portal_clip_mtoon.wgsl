@@ -1,10 +1,10 @@
 #import bevy_pbr::forward_io::VertexOutput
 #import bevy_shader_mtoon::mtoon::mtoon_shade
-#import unavi_portal::seam_clip::{seam_clipped, seam_cap_normal}
+#import unavi_portal::portal_clip::{portal_clipped, portal_cap_normal}
 
 @fragment
 fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> @location(0) vec4<f32> {
-    if seam_clipped(in.world_position.xyz) {
+    if portal_clipped(in.world_position.xyz) {
         discard;
     }
 
@@ -13,7 +13,7 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> @locatio
     // negated cap normal to land on the outward-facing cap.
     var v = in;
     if !is_front {
-        v.world_normal = -seam_cap_normal();
+        v.world_normal = -portal_cap_normal();
     }
 
     return mtoon_shade(v, is_front);

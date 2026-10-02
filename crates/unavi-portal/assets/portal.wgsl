@@ -9,8 +9,8 @@ var texture: texture_2d<f32>;
 var texture_sampler: sampler;
 
 struct PortalParams {
-    world_from_seam: mat4x4<f32>,
-    half_size:       vec2<f32>,
+    world_from_portal: mat4x4<f32>,
+    half_size:         vec2<f32>,
 };
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(2)
@@ -22,9 +22,10 @@ struct FragmentOutput {
 }
 
 // The portal is drawn as a full-screen pass and composited per pixel by
-// intersecting the view ray with the seam plane. Nothing is rasterized in the
-// seam plane, so there is no surface for the near plane or w-clipping to slice;
-// the result is correct from any angle, including with the eye in the plane.
+// intersecting the view ray with the portal plane. Nothing is rasterized in
+// the portal plane, so there is no surface for the near plane or w-clipping
+// to slice; the result is correct from any angle, including with the eye in
+// the plane.
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
@@ -34,10 +35,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 @fragment
 fn fragment(in: VertexOutput) -> FragmentOutput {
-    let center = params.world_from_seam[3].xyz;
-    let normal = params.world_from_seam[2].xyz;
-    let x_axis = params.world_from_seam[0].xyz;
-    let y_axis = params.world_from_seam[1].xyz;
+    let center = params.world_from_portal[3].xyz;
+    let normal = params.world_from_portal[2].xyz;
+    let x_axis = params.world_from_portal[0].xyz;
+    let y_axis = params.world_from_portal[1].xyz;
 
     let uv = (in.position.xy - view.viewport.xy) / view.viewport.zw;
     let ndc = vec2<f32>(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);

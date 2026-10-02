@@ -18,20 +18,20 @@ use bevy::{
         },
         skinning::SkinnedMesh,
     },
-    platform::collections::HashMap,
+    platform::collections::{
+        HashMap,
+        HashSet,
+    },
     prelude::*,
 };
 use bevy_vrm::mtoon::MtoonMaterial;
 
 use crate::{
-    EchoBody,
-    EchoNode,
-    GluedTo,
-    PortalBody,
-    Seam,
-    SeamEcho,
-    SeamSize,
-    SeamState,
+    body::{
+        EchoBody,
+        EchoRadius,
+        PortalBody,
+    },
     clip::{
         ClippedBody,
         clip_body,
@@ -41,63 +41,156 @@ use crate::{
         unclip_body,
         update_body_clip_plane,
     },
-    seam_transfer,
+    destination::Destination,
+    portal::{
+        Portal,
+        PortalFrame,
+        PortalState,
+        portal_transfer,
+    },
 };
 
-struct DesiredEcho {
+/// Clone of a node in an echoed body's subtree, carrying it through the
+/// portal; posed by [`maintain_echoes`] (root) or [`sync_echo_nodes`]
+/// (descendants).
+#[derive(Component, Clone, Copy)]
+pub struct EchoNode {
+    pub source: Entity,
+}
+
+/// Mirrored stand-in on the far side of a portal, spawned while its body
+/// straddles the plane.
+#[derive(Component, Clone, Copy)]
+pub struct PortalEcho {
+    pub body:   Entity,
+    pub portal: Entity,
+}
+
+pub struct DesiredEcho {
     pose:  Transform,
     plane: Vec4,
 }
 
-/// Maintains mirrored clones of bodies overlapping a seam plane.
-pub fn maintain_seam_echoes(
-    mut commands: Commands,
-    bodies: Query<(Entity, &Transform, &GlobalTransform), (With<EchoBody>, Without<SeamEcho>)>,
-    seams: Query<
-        (Entity, &GlobalTransform, &SeamSize, &GluedTo, &SeamState),
-        (With<Seam>, Without<SeamEcho>),
-    >,
-    destinations: Query<&GlobalTransform, Without<SeamEcho>>,
+/// How many `ChildOf` hops [`update_echo_radius`] walks looking for a
+/// changed node's nearest [`EchoBody`] ancestor before giving up.
+///
+/// Avatar and scene hierarchies are at most a few dozen nodes deep; this
+/// only guards against a malformed or unexpectedly deep graph.
+const MAX_ECHO_ANCESTOR_WALK: usize = 64;
+
+/// Recomputes [`EchoRadius`] for every body whose subtree bounds may have
+/// changed this frame. See [`EchoRadius`] for the contract this keeps.
+///
+/// A body's meshes often attach asynchronously as grandchildren or deeper —
+/// a glTF/VRM scene loads under the body, then bones and skinned meshes
+/// populate — so dirtiness is detected on *any* entity whose `Aabb` or
+/// `Children` changed, then walked up through `ChildOf` to the nearest
+/// [`EchoBody`] ancestor (or itself, if it is one) and recomputed from
+/// there. A descendant that loses its bounds by despawning, rather than by
+/// the `Aabb` component being removed while the entity stays, is not
+/// observed: there is nothing left to walk up from by the time the despawn
+/// commits, so that body's radius lags until some other change touches its
+/// subtree.
+pub fn update_echo_radius(
+    mut radii: Query<&mut EchoRadius>,
+    echo_bodies: Query<(), With<EchoBody>>,
+    added_bodies: Query<Entity, Added<EchoBody>>,
+    changed: Query<Entity, Or<(Changed<Aabb>, Changed<Children>)>>,
     parents: Query<&ChildOf>,
+    globals: Query<&GlobalTransform>,
     children: Query<&Children>,
     aabbs: Query<(&GlobalTransform, &Aabb)>,
-    clipped_bodies: Query<(Entity, &ClippedBody)>,
-    mut echo_roots: Query<(Entity, &SeamEcho, &mut Transform), Without<PortalBody>>,
+    mut dirty: Local<HashSet<Entity>>,
 ) {
-    let mut radii: HashMap<Entity, f32> = HashMap::new();
-    for (body, _, body_global) in &bodies {
-        let radius = subtree_radius(body, body_global, &children, &aabbs);
-        if radius > 0.0 {
-            radii.insert(body, radius);
+    dirty.clear();
+    dirty.extend(&added_bodies);
+
+    for entity in &changed {
+        let mut node = entity;
+        for _ in 0..MAX_ECHO_ANCESTOR_WALK {
+            if echo_bodies.contains(node) {
+                dirty.insert(node);
+                break;
+            }
+            let Ok(parent) = parents.get(node) else {
+                break;
+            };
+            node = parent.parent();
         }
     }
 
-    let mut desired: HashMap<(Entity, Entity), DesiredEcho> = HashMap::new();
-    let mut straddles: HashMap<Entity, (Entity, Vec4, f32)> = HashMap::new();
+    for &body in &*dirty {
+        let Ok(body_global) = globals.get(body) else {
+            continue;
+        };
+        let radius = subtree_radius(body, body_global, &children, &aabbs);
+        if let Ok(mut r) = radii.get_mut(body) {
+            r.0 = radius;
+        }
+    }
+}
 
-    for (seam, seam_transform, size, destination, state) in &seams {
-        if *state != SeamState::Open {
+/// Maintains mirrored clones of bodies overlapping a portal plane.
+pub fn maintain_echoes(
+    mut commands: Commands,
+    bodies: Query<(Entity, &Transform, &EchoRadius), (With<EchoBody>, Without<PortalEcho>)>,
+    portals: Query<
+        (
+            Entity,
+            &GlobalTransform,
+            &PortalFrame,
+            &Destination,
+            &PortalState,
+        ),
+        (With<Portal>, Without<PortalEcho>),
+    >,
+    destinations: Query<&GlobalTransform, Without<PortalEcho>>,
+    parents: Query<&ChildOf>,
+    clipped_bodies: Query<(Entity, &ClippedBody)>,
+    mut echo_roots: Query<(Entity, &PortalEcho, &mut Transform), Without<PortalBody>>,
+    mut desired: Local<HashMap<(Entity, Entity), DesiredEcho>>,
+    mut straddles: Local<HashMap<Entity, (Entity, Vec4, f32)>>,
+) {
+    desired.clear();
+    straddles.clear();
+
+    for (portal, portal_transform, frame, destination, state) in &portals {
+        if *state != PortalState::Open {
             continue;
         }
         let Ok(dest_transform) = destinations.get(destination.0) else {
             continue;
         };
 
-        let transfer = seam_transfer(seam_transform, dest_transform);
-        let seam_from_world = seam_transform.affine().inverse();
+        let transfer = portal_transfer(portal_transform, dest_transform);
 
-        for (body, body_transform, _) in &bodies {
-            let Some(&radius) = radii.get(&body) else {
+        for (body, body_transform, radius) in &bodies {
+            let radius = radius.0;
+            if radius <= 0.0 {
                 continue;
-            };
-            // Seams live in world space, so the body must too; a body parented
-            // under an offset space anchor would otherwise echo in the wrong
-            // cell.
+            }
+
+            // Portals live in world space, so the body must too; a body
+            // parented under an offset space anchor would otherwise echo in
+            // the wrong cell. Composed fresh from the parent's propagated
+            // global and the body's current local transform, not the body's
+            // own (possibly one-frame-stale, e.g. just after a crossing)
+            // `GlobalTransform`.
             let body_affine = world_affine(body, body_transform, &parents, &destinations);
-            let local = seam_from_world.transform_point3(Vec3::from(body_affine.translation));
+            let body_world_pos = Vec3::from(body_affine.translation);
+
+            // A body farther than its own radius from the portal's plane
+            // cannot be straddling it; skip the exact local-space test.
+            if body_world_pos.distance_squared(portal_transform.translation())
+                > (frame.bounding_radius + radius).powi(2)
+            {
+                continue;
+            }
+
+            let local = frame.local_from_world.transform_point3(body_world_pos);
             if local.z.abs() > radius
-                || local.x.abs() > size.width / 2.0 + radius
-                || local.y.abs() > size.height / 2.0 + radius
+                || local.x.abs() > frame.half_size.x + radius
+                || local.y.abs() > frame.half_size.y + radius
             {
                 continue;
             }
@@ -107,7 +200,7 @@ pub fn maintain_seam_echoes(
             let (scale, rotation, translation) = affine.to_scale_rotation_translation();
 
             desired.insert(
-                (body, seam),
+                (body, portal),
                 DesiredEcho {
                     pose:  Transform {
                         translation,
@@ -118,22 +211,22 @@ pub fn maintain_seam_echoes(
                 },
             );
 
-            let body_plane = clip_plane(seam_transform, side);
+            let body_plane = clip_plane(portal_transform, side);
             straddles
                 .entry(body)
                 .and_modify(|(closest, plane, depth)| {
                     if local.z.abs() < *depth {
-                        *closest = seam;
+                        *closest = portal;
                         *plane = body_plane;
                         *depth = local.z.abs();
                     }
                 })
-                .or_insert((seam, body_plane, local.z.abs()));
+                .or_insert((portal, body_plane, local.z.abs()));
         }
     }
 
     for (entity, echo, mut transform) in &mut echo_roots {
-        if let Some(d) = desired.remove(&(echo.body, echo.seam)) {
+        if let Some(d) = desired.remove(&(echo.body, echo.portal)) {
             transform.set_if_neq(d.pose);
         } else {
             debug!(echo = ?entity, body = ?echo.body, "despawning echo");
@@ -141,38 +234,37 @@ pub fn maintain_seam_echoes(
         }
     }
 
-    for ((body, seam), d) in desired {
-        debug!(?body, ?seam, pos = ?d.pose.translation, "spawning echo");
+    for ((body, portal), d) in desired.drain() {
+        debug!(?body, ?portal, pos = ?d.pose.translation, "spawning echo");
         commands.queue(move |world: &mut World| {
-            spawn_echo_subtree(world, body, seam, d.pose, d.plane);
+            spawn_echo_subtree(world, body, portal, d.pose, d.plane);
         });
     }
 
     for (body, clipped) in &clipped_bodies {
         match straddles.get(&body) {
             None => commands.queue(move |world: &mut World| unclip_body(world, body)),
-            Some(&(seam, plane, _)) if plane != clipped.plane || seam != clipped.seam => {
+            Some(&(portal, plane, _)) if plane != clipped.plane || portal != clipped.portal => {
                 commands.queue(move |world: &mut World| {
-                    update_body_clip_plane(world, body, seam, plane);
+                    update_body_clip_plane(world, body, portal, plane);
                 });
             }
             Some(_) => {}
         }
     }
-    for (&body, &(seam, plane, _)) in &straddles {
+    for (&body, &(portal, plane, _)) in &straddles {
         if !clipped_bodies.contains(body) {
-            commands.queue(move |world: &mut World| clip_body(world, body, seam, plane));
+            commands.queue(move |world: &mut World| clip_body(world, body, portal, plane));
         }
     }
 }
 
 /// Copies source node transforms and morph weights onto echo clones, carrying
-/// animation through the seam. Echo roots are posed by
-/// [`maintain_seam_echoes`].
+/// animation through the portal. Echo roots are posed by [`maintain_echoes`].
 pub fn sync_echo_nodes(
     mut clones: Query<
         (&EchoNode, &mut Transform, Option<&mut MeshMorphWeights>),
-        Without<SeamEcho>,
+        Without<PortalEcho>,
     >,
     sources: Query<(&Transform, Option<&MeshMorphWeights>), Without<EchoNode>>,
 ) {
@@ -202,7 +294,7 @@ fn world_affine(
     body: Entity,
     local: &Transform,
     parents: &Query<&ChildOf>,
-    globals: &Query<&GlobalTransform, Without<SeamEcho>>,
+    globals: &Query<&GlobalTransform, Without<PortalEcho>>,
 ) -> Affine3A {
     let parent = parents
         .get(body)
@@ -237,7 +329,13 @@ fn subtree_radius(
     radius
 }
 
-fn spawn_echo_subtree(world: &mut World, body: Entity, seam: Entity, pose: Transform, plane: Vec4) {
+fn spawn_echo_subtree(
+    world: &mut World,
+    body: Entity,
+    portal: Entity,
+    pose: Transform,
+    plane: Vec4,
+) {
     if world.get_entity(body).is_err() {
         return;
     }
@@ -269,7 +367,8 @@ fn spawn_echo_subtree(world: &mut World, body: Entity, seam: Entity, pose: Trans
             world.entity_mut(clone).insert(v);
         }
         // Layers copy verbatim: a directly viewed echo respects first-person
-        // mode like its body; seam cameras render third-person layers instead.
+        // mode like its body; view cameras render third-person layers
+        // instead.
         if let Some(v) = world.get::<RenderLayers>(source).cloned() {
             world.entity_mut(clone).insert(v);
         }
@@ -293,12 +392,13 @@ fn spawn_echo_subtree(world: &mut World, body: Entity, seam: Entity, pose: Trans
                     *joint = mapped;
                 }
             }
-            // Skinned bounds follow the source skeleton, not the clone's pose.
+            // Skinned bounds follow the source skeleton, not the clone's
+            // pose.
             world.entity_mut(clone).insert((skin, NoFrustumCulling));
         }
 
         if source == body {
-            world.entity_mut(clone).insert(SeamEcho { body, seam });
+            world.entity_mut(clone).insert(PortalEcho { body, portal });
             if let Some(collider) = world.get::<Collider>(source).cloned() {
                 world
                     .entity_mut(clone)
@@ -313,357 +413,4 @@ fn spawn_echo_subtree(world: &mut World, body: Entity, seam: Entity, pose: Trans
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::f32::consts::PI;
-
-    use bevy::{
-        camera::primitives::Aabb,
-        prelude::*,
-        transform::TransformPlugin,
-    };
-    use bevy_vrm::mtoon::MtoonMaterial;
-
-    use crate::{
-        EchoBody,
-        EchoNode,
-        GluedTo,
-        PortalBody,
-        PrevTranslation,
-        Seam,
-        SeamEcho,
-        SeamSize,
-        SeamState,
-        clip::{
-            ClippedBody,
-            ClippedMtoonMaterial,
-            ClippedStandardMaterial,
-        },
-        seam_transfer,
-    };
-
-    fn setup() -> (App, Entity, Entity) {
-        let mut app = App::new();
-        app.add_plugins((
-            bevy::app::TaskPoolPlugin::default(),
-            bevy::asset::AssetPlugin::default(),
-            TransformPlugin,
-        ))
-        .init_asset::<StandardMaterial>()
-        .init_asset::<ClippedStandardMaterial>()
-        .init_asset::<MtoonMaterial>()
-        .init_asset::<ClippedMtoonMaterial>()
-        .add_systems(
-            PostUpdate,
-            (
-                crate::transition::apply_seam_crossings,
-                super::maintain_seam_echoes,
-                super::sync_echo_nodes,
-            )
-                .chain()
-                .before(TransformSystems::Propagate),
-        );
-
-        let seam_a = Transform::IDENTITY;
-        let seam_b = Transform::from_xyz(10.0, 0.0, 0.0).with_rotation(Quat::from_rotation_y(PI));
-
-        let dest = app
-            .world_mut()
-            .spawn((Seam, SeamState::Open, seam_b, GlobalTransform::from(seam_b)))
-            .id();
-        let source = app
-            .world_mut()
-            .spawn((
-                Seam,
-                SeamState::Open,
-                SeamSize {
-                    width:  2.0,
-                    height: 2.0,
-                },
-                seam_a,
-                GlobalTransform::from(seam_a),
-                GluedTo(dest),
-            ))
-            .id();
-        app.world_mut().entity_mut(dest).insert(GluedTo(source));
-
-        let material = app
-            .world_mut()
-            .resource_mut::<Assets<StandardMaterial>>()
-            .add(StandardMaterial::default());
-        let body_pose = Transform::from_xyz(0.0, 0.0, 0.2);
-        let body = app
-            .world_mut()
-            .spawn((
-                PortalBody,
-                Mesh3d(Handle::default()),
-                MeshMaterial3d(material),
-                Aabb::from_min_max(Vec3::splat(-0.5), Vec3::splat(0.5)),
-                body_pose,
-                GlobalTransform::from(body_pose),
-            ))
-            .id();
-
-        (app, body, source)
-    }
-
-    fn echo_material_count(app: &mut App) -> usize {
-        app.world_mut()
-            .query_filtered::<&MeshMaterial3d<ClippedStandardMaterial>, With<SeamEcho>>()
-            .iter(app.world())
-            .count()
-    }
-
-    fn echo_pose(app: &mut App) -> Option<(Entity, GlobalTransform)> {
-        app.world_mut()
-            .query::<(Entity, &SeamEcho, &GlobalTransform)>()
-            .iter(app.world())
-            .map(|(e, _, t)| (e, *t))
-            .next()
-    }
-
-    #[test]
-    fn echo_spawns_while_straddling_and_despawns_after() {
-        let (mut app, body, source) = setup();
-        app.update();
-        app.update();
-
-        let (echo, pose) = echo_pose(&mut app).expect("echo spawned");
-        let source_tf = *app
-            .world()
-            .get::<GlobalTransform>(source)
-            .expect("source transform");
-        let dest_tf = *app
-            .world()
-            .get::<GlobalTransform>(app.world().get::<GluedTo>(source).expect("glued").0)
-            .expect("dest transform");
-        let body_tf = *app
-            .world()
-            .get::<GlobalTransform>(body)
-            .expect("body transform");
-        let expected = seam_transfer(&source_tf, &dest_tf) * body_tf.affine();
-        assert!(pose.affine().abs_diff_eq(expected, 1.0e-5));
-        assert!(app.world().get::<ClippedBody>(body).is_some());
-
-        let far = Transform::from_xyz(0.0, 0.0, 5.0);
-        app.world_mut().entity_mut(body).insert(far);
-        app.update();
-
-        assert!(echo_pose(&mut app).is_none());
-        assert!(app.world().get_entity(echo).is_err());
-        assert!(app.world().get::<ClippedBody>(body).is_none());
-    }
-
-    #[test]
-    fn echo_tracks_body_movement() {
-        let (mut app, body, _) = setup();
-        app.update();
-        let (echo, first) = echo_pose(&mut app).expect("echo spawned");
-
-        app.world_mut()
-            .entity_mut(body)
-            .insert(Transform::from_xyz(0.3, 0.1, 0.05));
-        app.update();
-
-        let (echo_after, second) = echo_pose(&mut app).expect("echo kept");
-        assert_eq!(echo, echo_after);
-        assert!(first.translation().distance(second.translation()) > 0.1);
-    }
-
-    #[test]
-    fn near_side_echo_survives_crossing() {
-        let (mut app, body, source) = setup();
-        let dest = app.world().get::<GluedTo>(source).expect("glued").0;
-        app.update();
-
-        let crossing = Transform::from_xyz(0.0, 0.0, -0.05);
-        app.world_mut().entity_mut(body).insert(crossing);
-        app.update();
-
-        let body_pos = app
-            .world()
-            .get::<Transform>(body)
-            .expect("body transform")
-            .translation;
-        assert!(
-            body_pos.distance(Vec3::new(10.0, 0.0, -0.05)) < 1.0e-4,
-            "body teleported to {body_pos}"
-        );
-
-        let echoes = app
-            .world_mut()
-            .query::<(&SeamEcho, &GlobalTransform)>()
-            .iter(app.world())
-            .map(|(e, t)| (e.seam, t.translation()))
-            .collect::<Vec<_>>();
-        assert_eq!(echoes.len(), 1, "echoes: {echoes:?}");
-        assert_eq!(echoes[0].0, dest);
-        assert!(
-            echoes[0].1.distance(Vec3::new(0.0, 0.0, -0.05)) < 1.0e-4,
-            "echo at {}",
-            echoes[0].1
-        );
-        assert_eq!(
-            echo_material_count(&mut app),
-            1,
-            "near-side echo is missing its material"
-        );
-    }
-
-    #[test]
-    fn echo_clones_child_meshes() {
-        let (mut app, body, _) = setup();
-        let child_pose = Transform::from_xyz(0.0, 0.4, 0.0);
-        let child = app
-            .world_mut()
-            .spawn((
-                Mesh3d(Handle::default()),
-                Aabb::from_min_max(Vec3::splat(-0.1), Vec3::splat(0.1)),
-                child_pose,
-                ChildOf(body),
-            ))
-            .id();
-        app.update();
-        app.update();
-
-        let clone = app
-            .world_mut()
-            .query::<(&EchoNode, &Transform, Has<SeamEcho>)>()
-            .iter(app.world())
-            .find(|(node, ..)| node.source == child)
-            .map(|(_, t, root)| (*t, root))
-            .expect("child mesh cloned");
-        assert!(!clone.1);
-        assert_eq!(clone.0, child_pose);
-    }
-
-    #[test]
-    fn echo_clips_mtoon_materials() {
-        let (mut app, body, _) = setup();
-        let mtoon = app
-            .world_mut()
-            .resource_mut::<Assets<MtoonMaterial>>()
-            .add(MtoonMaterial::default());
-        let child = app
-            .world_mut()
-            .spawn((
-                Mesh3d(Handle::default()),
-                MeshMaterial3d(mtoon),
-                Aabb::from_min_max(Vec3::splat(-0.1), Vec3::splat(0.1)),
-                Transform::from_xyz(0.0, 0.3, 0.0),
-                ChildOf(body),
-            ))
-            .id();
-        app.update();
-        app.update();
-
-        assert!(
-            app.world()
-                .get::<MeshMaterial3d<ClippedMtoonMaterial>>(child)
-                .is_some(),
-            "mtoon body node not clipped"
-        );
-        assert!(
-            app.world()
-                .get::<MeshMaterial3d<MtoonMaterial>>(child)
-                .is_none()
-        );
-
-        let cloned = app
-            .world_mut()
-            .query_filtered::<&EchoNode, With<MeshMaterial3d<ClippedMtoonMaterial>>>()
-            .iter(app.world())
-            .any(|node| node.source == child);
-        assert!(cloned, "echo mtoon node missing clipped material");
-    }
-
-    #[test]
-    fn echo_body_under_offset_anchor_echoes_in_world_space() {
-        let (mut app, ..) = setup();
-        let offset = Vec3::new(100.0, 0.0, 0.0);
-        let anchor = app
-            .world_mut()
-            .spawn((
-                Transform::from_translation(offset),
-                GlobalTransform::from(Transform::from_translation(offset)),
-            ))
-            .id();
-
-        let material = app
-            .world_mut()
-            .resource_mut::<Assets<StandardMaterial>>()
-            .add(StandardMaterial::default());
-        // World pose (0, 0, 0.2) straddles seam A.
-        let world = Vec3::new(0.0, 0.0, 0.2);
-        let body = app
-            .world_mut()
-            .spawn((
-                EchoBody,
-                Mesh3d(Handle::default()),
-                MeshMaterial3d(material),
-                Aabb::from_min_max(Vec3::splat(-0.5), Vec3::splat(0.5)),
-                Transform::from_translation(world - offset),
-                GlobalTransform::from(Transform::from_translation(world)),
-                ChildOf(anchor),
-            ))
-            .id();
-        app.update();
-        app.update();
-
-        let echo = app
-            .world_mut()
-            .query::<(&SeamEcho, &EchoNode, &GlobalTransform)>()
-            .iter(app.world())
-            .find(|(_, node, _)| node.source == body)
-            .map(|(_, _, t)| t.translation())
-            .expect("offset body cast no echo");
-        // Transfer through seam A lands the echo at world (10, 0, 0.2).
-        assert!(
-            echo.distance(Vec3::new(10.0, 0.0, 0.2)) < 1.0e-4,
-            "echo at {echo}, expected world-space destination"
-        );
-    }
-
-    #[test]
-    fn echo_body_casts_echo_but_never_crosses() {
-        let (mut app, ..) = setup();
-        let material = app
-            .world_mut()
-            .resource_mut::<Assets<StandardMaterial>>()
-            .add(StandardMaterial::default());
-        let pose = Transform::from_xyz(0.0, 0.0, 0.2);
-        let remote = app
-            .world_mut()
-            .spawn((
-                EchoBody,
-                Mesh3d(Handle::default()),
-                MeshMaterial3d(material),
-                Aabb::from_min_max(Vec3::splat(-0.5), Vec3::splat(0.5)),
-                pose,
-                GlobalTransform::from(pose),
-            ))
-            .id();
-        app.update();
-        app.update();
-
-        let has_echo = app
-            .world_mut()
-            .query::<(&SeamEcho, &EchoNode)>()
-            .iter(app.world())
-            .any(|(_, node)| node.source == remote);
-        assert!(has_echo, "echo-only body cast no echo");
-
-        // Crossing state is exclusive to teleporting bodies; an echo body must
-        // never be dragged through a seam by the local simulation.
-        assert!(app.world().get::<PrevTranslation>(remote).is_none());
-        assert!(app.world().get::<ClippedBody>(remote).is_some());
-    }
-
-    #[test]
-    fn closed_seam_spawns_no_echo() {
-        let (mut app, _, source) = setup();
-        app.world_mut().entity_mut(source).insert(SeamState::Closed);
-        app.update();
-        assert!(echo_pose(&mut app).is_none());
-    }
-}
+#[cfg(test)] mod tests;

@@ -7,7 +7,7 @@ use bevy::{
     post_process::bloom::Bloom,
     prelude::*,
 };
-use unavi_portal::DevelopCamera;
+use unavi_portal::view::camera::PortalViewCamera;
 
 mod sky;
 
@@ -27,7 +27,7 @@ impl Plugin for CameraPlugin {
 
 pub fn apply_camera_effects(
     mut commands: Commands,
-    new_cameras: Query<Entity, (Added<Camera3d>, Without<DevelopCamera>)>,
+    new_cameras: Query<Entity, (Added<Camera3d>, Without<PortalViewCamera>)>,
 ) {
     for entity in new_cameras {
         commands.entity(entity).insert((

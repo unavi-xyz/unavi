@@ -4,33 +4,41 @@ use bevy::{
 };
 
 use crate::{
-    DevelopCamera,
-    DevelopmentHorizon,
-    GluedTo,
-    PortalViewer,
-    Seam,
-    SeamActiveRender,
-    SeamState,
+    body::PortalViewer,
+    destination::Destination,
+    portal::{
+        Portal,
+        PortalState,
+    },
+    view::{
+        ViewBudget,
+        Viewed,
+        camera::PortalViewCamera,
+    },
 };
 
 const HYSTERESIS_FACTOR: f32 = 1.1;
 
-pub fn select_developed_seams(
-    budget: Res<DevelopmentHorizon>,
+pub fn select_viewed_portals(
+    budget: Res<ViewBudget>,
     viewers: Query<
         Ref<GlobalTransform>,
-        (With<PortalViewer>, With<Camera3d>, Without<DevelopCamera>),
+        (
+            With<PortalViewer>,
+            With<Camera3d>,
+            Without<PortalViewCamera>,
+        ),
     >,
-    seams: Query<
+    portals: Query<
         (
             Entity,
-            Ref<SeamState>,
+            Ref<PortalState>,
             Ref<GlobalTransform>,
-            Option<&GluedTo>,
+            Option<&Destination>,
         ),
-        With<Seam>,
+        With<Portal>,
     >,
-    actives: Query<Entity, (With<Seam>, With<SeamActiveRender>)>,
+    actives: Query<Entity, (With<Portal>, With<Viewed>)>,
     mut commands: Commands,
 ) {
     let Ok(viewer) = viewers.single() else {
@@ -39,7 +47,7 @@ pub fn select_developed_seams(
 
     let inputs_changed = budget.is_changed()
         || viewer.is_changed()
-        || seams
+        || portals
             .iter()
             .any(|(_, s, t, ..)| s.is_changed() || t.is_changed());
     if !inputs_changed {
@@ -50,15 +58,15 @@ pub fn select_developed_seams(
     let max_d2 = budget.max_distance * budget.max_distance;
     let release_d2 = (budget.max_distance * HYSTERESIS_FACTOR).powi(2);
 
-    let mut candidates: Vec<(Entity, f32)> = seams
+    let mut candidates: Vec<(Entity, f32)> = portals
         .iter()
-        .filter_map(|(e, state, t, glued)| {
-            if *state != SeamState::Open {
+        .filter_map(|(e, state, t, destination)| {
+            if *state != PortalState::Open {
                 return None;
             }
-            // A seam glued to a document root rather than to another seam is
-            // opaque, and never developed.
-            if !glued.is_some_and(|g| seams.contains(g.0)) {
+            // A portal glued to a document root rather than to another
+            // portal is opaque, and never viewed live.
+            if !destination.is_some_and(|d| portals.contains(d.0)) {
                 return None;
             }
             let d2 = t.translation().distance_squared(origin);
@@ -70,18 +78,18 @@ pub fn select_developed_seams(
             (d2 <= cutoff).then_some((e, d2))
         })
         .collect();
-    candidates.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+    candidates.sort_by(|a, b| a.1.total_cmp(&b.1));
     candidates.truncate(budget.max_active);
 
     let chosen: HashSet<Entity> = candidates.iter().map(|(e, _)| *e).collect();
 
-    for (entity, ..) in &seams {
+    for (entity, ..) in &portals {
         let want = chosen.contains(&entity);
         let has = actives.contains(entity);
         if want && !has {
-            commands.entity(entity).insert(SeamActiveRender);
+            commands.entity(entity).insert(Viewed);
         } else if !want && has {
-            commands.entity(entity).remove::<SeamActiveRender>();
+            commands.entity(entity).remove::<Viewed>();
         }
     }
 }

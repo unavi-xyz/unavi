@@ -12,15 +12,19 @@ use bevy_panorbit_camera::{
     PanOrbitCameraPlugin,
 };
 use unavi_portal::{
-    GluedTo,
-    PortalBody,
     PortalPlugin,
-    PortalViewer,
-    PrevTranslation,
-    Seam,
-    SeamSize,
-    transition::CrossedSeam,
-    visuals::SEAM_RENDER_LAYER,
+    body::{
+        PortalBody,
+        PortalViewer,
+        PrevTranslation,
+    },
+    crossing::Crossed,
+    destination::Destination,
+    portal::{
+        Portal,
+        PortalSize,
+    },
+    render_layers::PORTAL_RENDER_LAYER,
 };
 
 #[derive(Component)]
@@ -33,9 +37,9 @@ const RESPAWN_DELAY: f32 = 2.5;
 const BALL_RADIUS: f32 = 0.4;
 const BALL_START: Vec3 = Vec3::new(12.0, 3.0, 0.0);
 
-const SEAM_X: f32 = 3.0;
-const SEAM_WIDTH: f32 = 2.5;
-const SEAM_HEIGHT: f32 = 3.5;
+const PORTAL_X: f32 = 3.0;
+const PORTAL_WIDTH: f32 = 2.5;
+const PORTAL_HEIGHT: f32 = 3.5;
 
 fn main() {
     App::new()
@@ -70,7 +74,7 @@ fn main() {
         .run();
 }
 
-fn schedule_respawn(event: On<CrossedSeam>, time: Res<Time>, mut balls: Query<&mut RollingBall>) {
+fn schedule_respawn(event: On<Crossed>, time: Res<Time>, mut balls: Query<&mut RollingBall>) {
     if let Ok(mut ball) = balls.get_mut(event.entity)
         && ball.respawn_at.is_none()
     {
@@ -97,7 +101,7 @@ fn respawn_ball(
             angular.0 = Vec3::ZERO;
             // Reset the body's previous translation so the jump back to the
             // ramp top is not mistaken for a portal crossing.
-            prev.0 = ball.start;
+            prev.0 = Some(ball.start);
             ball.respawn_at = None;
         }
     }
@@ -118,7 +122,7 @@ fn setup_scene(
             pitch: Some(0.42),
             ..default()
         },
-        RenderLayers::from_layers(&[0, SEAM_RENDER_LAYER]),
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
         PortalViewer,
     ));
 
@@ -150,43 +154,43 @@ fn setup_scene(
     ));
 
     spawn_ramp(&mut commands, &mut meshes, &mut materials);
-    spawn_seams(&mut commands, &mut meshes, &mut materials);
+    spawn_portals(&mut commands, &mut meshes, &mut materials);
     spawn_landmarks(&mut commands, &mut meshes, &mut materials);
     spawn_ball(&mut commands, &mut meshes, &mut materials);
 }
 
-fn spawn_seams(
+fn spawn_portals(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-    let seam_size = SeamSize {
-        width:  SEAM_WIDTH,
-        height: SEAM_HEIGHT,
+    let portal_size = PortalSize {
+        width:  PORTAL_WIDTH,
+        height: PORTAL_HEIGHT,
     };
     // Bottom edge sits on the ground (centre at half-height).
-    let seam_a = Transform::from_xyz(SEAM_X, SEAM_HEIGHT / 2.0, 0.0)
+    let portal_a = Transform::from_xyz(PORTAL_X, PORTAL_HEIGHT / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(FRAC_PI_2));
-    let seam_b = Transform::from_xyz(-SEAM_X, SEAM_HEIGHT / 2.0, 0.0)
+    let portal_b = Transform::from_xyz(-PORTAL_X, PORTAL_HEIGHT / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
 
-    let id_a = commands.spawn((Seam, seam_size, seam_a)).id();
-    let id_b = commands.spawn((Seam, seam_size, seam_b)).id();
-    commands.entity(id_a).insert(GluedTo(id_b));
-    commands.entity(id_b).insert(GluedTo(id_a));
+    let id_a = commands.spawn((Portal, portal_size, portal_a)).id();
+    let id_b = commands.spawn((Portal, portal_size, portal_b)).id();
+    commands.entity(id_a).insert(Destination(id_b));
+    commands.entity(id_b).insert(Destination(id_a));
 
-    spawn_seam_frame(
+    spawn_portal_frame(
         commands,
         meshes,
         materials,
-        seam_a,
+        portal_a,
         Color::srgb(1.0, 0.55, 0.1),
     );
-    spawn_seam_frame(
+    spawn_portal_frame(
         commands,
         meshes,
         materials,
-        seam_b,
+        portal_b,
         Color::srgb(0.2, 0.65, 1.0),
     );
 }
@@ -292,17 +296,17 @@ fn spawn_ramp(
     ));
 }
 
-fn spawn_seam_frame(
+fn spawn_portal_frame(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    seam_transform: Transform,
+    portal_transform: Transform,
     color: Color,
 ) {
     let thickness = 0.12;
     let depth = 0.08;
-    let width = SEAM_WIDTH;
-    let height = SEAM_HEIGHT;
+    let width = PORTAL_WIDTH;
+    let height = PORTAL_HEIGHT;
 
     let frame_material = materials.add(StandardMaterial {
         base_color: color,
@@ -311,8 +315,9 @@ fn spawn_seam_frame(
     });
 
     let bar = |offset: Vec3| {
-        seam_transform
-            .with_translation(seam_transform.translation + seam_transform.rotation.mul_vec3(offset))
+        portal_transform.with_translation(
+            portal_transform.translation + portal_transform.rotation.mul_vec3(offset),
+        )
     };
 
     let top_bar = meshes.add(Cuboid::new(

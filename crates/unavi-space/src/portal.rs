@@ -1,5 +1,5 @@
-//! Portals into spaces: loading each destination, and placing linked seams in
-//! the space their document belongs to.
+//! Portals into spaces: loading each destination, and placing linked portals
+//! in the space their document belongs to.
 
 use bevy::{
     platform::collections::HashSet,
@@ -17,9 +17,9 @@ use unavi_policy::{
     Policy,
     permissions::HostApi,
 };
-use unavi_portal::{
-    SeamHome,
-    SeamLink,
+use unavi_portal::portal::{
+    PortalHome,
+    PortalLink,
 };
 
 use crate::{
@@ -120,10 +120,10 @@ pub fn enter_peeked_space(
     }
 }
 
-/// Keeps each linked seam's [`SeamHome`] on the space its document is in,
-/// which is unknown until the document registers.
-pub fn sync_seam_home(
-    seams: Query<(Entity, &PrimOf, Option<&SeamHome>), With<SeamLink>>,
+/// Keeps each linked portal's [`PortalHome`] on the space its document is
+/// in, which is unknown until the document registers.
+pub fn sync_portal_home(
+    portals: Query<(Entity, &PrimOf, Option<&PortalHome>), With<PortalLink>>,
     docs: Query<&HsdDocId>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
@@ -131,7 +131,7 @@ pub fn sync_seam_home(
     let Some(view) = view else {
         return;
     };
-    for (seam, child, current) in &seams {
+    for (portal, child, current) in &portals {
         let home = docs
             .get(child.0)
             .ok()
@@ -140,10 +140,10 @@ pub fn sync_seam_home(
         match (home, current) {
             (Some(home), Some(cur)) if cur.0 == home => {}
             (Some(home), _) => {
-                commands.entity(seam).insert(SeamHome(home));
+                commands.entity(portal).insert(PortalHome(home));
             }
             (None, Some(_)) => {
-                commands.entity(seam).remove::<SeamHome>();
+                commands.entity(portal).remove::<PortalHome>();
             }
             (None, None) => {}
         }

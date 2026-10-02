@@ -11364,13 +11364,8 @@ version = "0.0.16"
 dependencies = [
  "avian3d",
  "bevy",
- "bevy-hsd",
- "hsd",
- "iroh-docs",
  "unavi-input",
  "unavi-physics",
- "unavi-policy",
- "unavi-space",
 ]
 
 [[package]]
@@ -11598,6 +11593,7 @@ dependencies = [
  "tracing",
  "unavi-agent",
  "unavi-avatar",
+ "unavi-grab",
  "unavi-identity",
  "unavi-local",
  "unavi-policy",

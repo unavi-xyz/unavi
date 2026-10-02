@@ -95,6 +95,7 @@ impl Plugin for InputPlugin {
             .add_systems(
                 Update,
                 (
+                    crosshair::set_crosshair_mode,
                     crosshair::show_crosshair,
                     crosshair::apply_crosshair_mode,
                     cursor_lock::cursor_grab,

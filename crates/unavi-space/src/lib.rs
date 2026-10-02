@@ -21,6 +21,7 @@ use unavi_portal::{
 pub mod authority;
 pub mod avatar_sync;
 pub mod discovery;
+pub mod grab;
 pub mod grid;
 pub mod identity;
 pub mod index;
@@ -69,6 +70,7 @@ impl Plugin for SpacePlugin {
             .init_resource::<discovery::HeardPresence>()
             .init_resource::<discovery::PeerPresence>()
             .init_resource::<discovery::gossip::ActiveSpaceSignal>()
+            .init_resource::<grab::TakenHolds>()
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)
             .add_observer(grid::release_anchor)
@@ -83,6 +85,8 @@ impl Plugin for SpacePlugin {
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
             .add_observer(pinned::adopt_pinned_docs)
+            .add_observer(grab::take_hold_on_grab)
+            .add_observer(grab::release_hold_on_release)
             .add_systems(
                 PostUpdate,
                 (grid::recenter_active_space, grid::apply_anchor_offsets)

@@ -1,4 +1,5 @@
 use bevy::{
+    picking::pointer::PointerInteraction,
     prelude::*,
     ui::Val,
 };
@@ -8,6 +9,7 @@ use crate::{
     pointer::{
         PointerAnchor,
         PointerKind,
+        nearest_hit,
     },
 };
 
@@ -32,6 +34,15 @@ pub enum CrosshairMode {
     #[default]
     Inactive,
 }
+
+/// Marks an entity as worth taking hold of, so the screen pointer's hit
+/// ring shows over it.
+///
+/// Attached by whatever decides what counts as grabbable — `unavi-grab`,
+/// for a dynamic rigid body — so this crate can show the ring without
+/// knowing what a grab is.
+#[derive(Component)]
+pub struct Grabbable;
 
 /// Fixed at the centre of the screen: the screen pointer always aims there,
 /// so the mark needs no world position to be read correctly.
@@ -124,4 +135,29 @@ pub(crate) fn apply_crosshair_mode(
     if *visibility != wanted {
         *visibility = wanted;
     }
+}
+
+/// Reads the screen pointer's hit against [`Grabbable`], so a dropped frame
+/// at most delays the ring by one tick rather than skipping or doubling it
+/// the way running this in `FixedUpdate` would.
+pub(crate) fn set_crosshair_mode(
+    mut crosshair: Query<&mut CrosshairMode>,
+    pointers: Query<(&PointerAnchor, &PointerInteraction)>,
+    grabbable: Query<(), With<Grabbable>>,
+) {
+    let Ok(mut mode) = crosshair.single_mut() else {
+        return;
+    };
+
+    let over_grabbable = pointers
+        .iter()
+        .find(|(anchor, _)| anchor.0 == PointerKind::Screen)
+        .and_then(|(_, interaction)| nearest_hit(interaction))
+        .is_some_and(|hit| grabbable.contains(hit.entity));
+
+    *mode = if over_grabbable {
+        CrosshairMode::Active
+    } else {
+        CrosshairMode::Inactive
+    };
 }

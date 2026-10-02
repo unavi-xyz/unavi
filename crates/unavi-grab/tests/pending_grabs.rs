@@ -37,11 +37,11 @@ fn app() -> App {
     .add_message::<GripPressed>()
     .add_message::<GripReleased>()
     .add_message::<PointerPressed>()
+    .init_resource::<unavi_input::action::ActionState>()
     // A grab is recognized by the `GravityScale` the grab itself adds, which
     // would fight real gravity on a falling body.
     .insert_resource(Gravity(Vec3::ZERO))
-    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP))
-    .init_resource::<unavi_space::replication::Replicas>();
+    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP));
     app.finish();
     app.cleanup();
     app

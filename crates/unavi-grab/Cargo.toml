@@ -10,14 +10,7 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-avian3d.workspace   = true
-bevy.workspace      = true
-bevy-hsd.path       = "../bevy-hsd"
-hsd.path            = "../hsd"
-iroh-docs.workspace = true
-unavi-input.path    = "../unavi-input"
-unavi-policy.path   = "../unavi-policy"
-unavi-space.path    = "../unavi-space"
-
-[dev-dependencies]
-unavi-physics = { path = "../unavi-physics" }
+avian3d.workspace  = true
+bevy.workspace     = true
+unavi-input.path   = "../unavi-input"
+unavi-physics.path = "../unavi-physics"

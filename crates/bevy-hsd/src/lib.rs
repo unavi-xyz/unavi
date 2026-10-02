@@ -36,6 +36,11 @@ impl Plugin for HsdPlugin {
             MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
         ))
+            // Scene attributes insert `RigidBody`/`Collider` whether or not
+            // `unavi_physics::PhysicsPlugin` (which owns this resource too)
+            // is in the same app, so the limit it enforces must not depend
+            // on that plugin being present.
+            .init_resource::<unavi_physics::PhysicsLimits>()
             .init_resource::<document::DocIndex>()
             .init_asset::<package::PackageAsset>()
             .init_resource::<attributes::shader::cache::ShaderGraphCache>()
@@ -52,6 +57,7 @@ impl Plugin for HsdPlugin {
                         scene_events::discard_unplaced_events,
                         scene_events::drain_scene_events,
                         attributes::xform::apply_xform,
+                        attributes::rigid_body::enforce_rigid_body_limit,
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
                         attributes::image::apply_sampler,

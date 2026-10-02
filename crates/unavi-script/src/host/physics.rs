@@ -86,7 +86,7 @@ pub async fn raycast(
     let origin = checked(origin)?;
     let direction = Dir3::new(checked(direction)?)
         .map_err(|_| ScriptError::invalid("a ray direction must not be zero"))?;
-    if !finite::nonneg(max_distance) {
+    if !finite::nonnegative_length(max_distance) {
         return Err(ScriptError::invalid(
             "a distance must be finite and not negative",
         ));

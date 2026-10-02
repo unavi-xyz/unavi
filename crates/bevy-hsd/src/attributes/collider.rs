@@ -12,11 +12,12 @@ use hsd::{
     },
 };
 use unavi_physics::{
-    body::{
-        DisabledCollider,
+    PhysicsLimits,
+    degenerate::Parked,
+    shape::{
+        self,
         insert_collider,
     },
-    shape,
 };
 
 use crate::{
@@ -25,6 +26,7 @@ use crate::{
         update_data,
     },
     hierarchy::global_transform,
+    prim::Prim,
 };
 
 /// Assembled from the `collider/kind`, `collider/vertices` and
@@ -51,7 +53,7 @@ pub(crate) fn apply(
             None => {
                 commands
                     .entity(prim)
-                    .remove::<(ColliderData, Collider, DisabledCollider)>();
+                    .remove::<(ColliderData, Collider, Parked)>();
             }
         },
         Some("vertices") => {
@@ -67,18 +69,41 @@ pub(crate) fn apply(
     Ok(())
 }
 
+/// Rebuilds a prim's collider from its [`ColliderData`], refusing to insert
+/// one once the scene has reached [`PhysicsLimits::max_colliders`]: the only
+/// place `bevy-hsd` turns scene data into a live `Collider`. Counts only
+/// prims (`With<Prim>`) — a local agent's rig, a portal body, or anything
+/// else Rust code spawns directly must not shrink a scene's own budget.
+/// Only ever touches prims whose `ColliderData` changed this frame; which of
+/// several such prims gets refused once the cap is reached follows query
+/// iteration order, not insertion order.
 pub(crate) fn rebuild_collider(
     changed: Query<(Entity, &ColliderData), Changed<ColliderData>>,
+    had_collider: Query<Has<Collider>>,
+    all_colliders: Query<(), (With<Collider>, With<Prim>)>,
+    limits: Res<PhysicsLimits>,
     locals: Query<&Transform>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
+    let mut collider_count = all_colliders.iter().count();
     for (prim, data) in &changed {
+        let had_one = had_collider.get(prim).unwrap_or(false);
         commands.entity(prim).remove::<Collider>();
+        if had_one {
+            collider_count -= 1;
+        }
 
         let Some(kind) = data.kind else {
             continue;
         };
+        if collider_count >= limits.max_colliders {
+            warn!(
+                max = limits.max_colliders,
+                "collider: scene exceeded the collider limit; refusing"
+            );
+            continue;
+        }
         let seed = global_transform(prim, &locals, &parents);
 
         let collider = match kind {
@@ -106,6 +131,7 @@ pub(crate) fn rebuild_collider(
 
         if let Some(c) = collider {
             insert_collider(&mut commands, prim, c, &seed);
+            collider_count += 1;
         }
     }
 }

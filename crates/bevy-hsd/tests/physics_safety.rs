@@ -23,7 +23,7 @@ use hsd::{
 };
 use rstest::rstest;
 use tracing_test::traced_test;
-use unavi_physics::body::DisabledCollider;
+use unavi_physics::degenerate::Parked;
 
 use crate::common::*;
 
@@ -83,7 +83,7 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
     ctx_physics.app.update();
 
     let world = ctx_physics.app.world_mut();
-    let mut parked = world.query::<&DisabledCollider>();
+    let mut parked = world.query::<&Parked>();
     assert!(
         parked.iter(world).next().is_some(),
         "Collider should be parked while scale=0"
@@ -310,7 +310,7 @@ fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: Tes
     ctx_physics.app.update();
 
     let world = ctx_physics.app.world_mut();
-    let mut q = world.query::<(&DisabledCollider, &Transform)>();
+    let mut q = world.query::<(&Parked, &Transform)>();
     let (_, transform) = q.iter(world).next().expect("collider parked");
     assert!(
         transform.translation.is_finite()

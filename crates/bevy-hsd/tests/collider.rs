@@ -93,3 +93,65 @@ fn test_collider_trimesh(#[from(ctx)] mut ctx: TestContext) {
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
 }
+
+/// A scene cannot grow the solver's collider count past
+/// [`unavi_physics::PhysicsLimits::max_colliders`]: once two prims ask for a
+/// collider in the same frame and the cap only has room for one, one of the
+/// two is refused (which one is unspecified).
+#[traced_test]
+#[rstest]
+fn test_collider_limit_refuses_excess_colliders(mut ctx: TestContext) {
+    ctx.app.insert_resource(unavi_physics::PhysicsLimits {
+        max_bodies:    usize::MAX,
+        max_colliders: 1,
+    });
+
+    let first = ctx.create_prim();
+    ctx.set_attr(first, &ColliderKind::Sphere(0.5));
+    let second = ctx.create_prim();
+    ctx.set_attr(second, &ColliderKind::Sphere(0.5));
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut q = world.query::<&Collider>();
+    assert_eq!(
+        q.iter(world).count(),
+        1,
+        "the scene's second collider should have been refused"
+    );
+
+    assert!(logs_contain("scene exceeded the collider limit"));
+}
+
+/// A collider Rust code spawns directly (a local agent's rig, a portal
+/// sensor) has no [`bevy_hsd::prim::Prim`] marker. It must not count against
+/// a scene's own collider budget.
+#[traced_test]
+#[rstest]
+fn test_collider_limit_ignores_non_prim_colliders(mut ctx: TestContext) {
+    ctx.app.insert_resource(unavi_physics::PhysicsLimits {
+        max_bodies:    usize::MAX,
+        max_colliders: 1,
+    });
+
+    // Fills the entire budget with a collider that is not a scene prim.
+    let non_prim = ctx.app.world_mut().spawn(Collider::sphere(0.5)).id();
+
+    let prim = ctx.create_prim();
+    ctx.set_attr(prim, &ColliderKind::Sphere(0.5));
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    assert!(
+        world.get::<Collider>(non_prim).is_some(),
+        "a non-prim collider must never be refused on the scene's behalf"
+    );
+    let mut q = world.query::<(&Collider, &bevy_hsd::prim::Prim)>();
+    assert_eq!(
+        q.iter(world).count(),
+        1,
+        "the scene's own prim must not be refused because of a collider that is not a prim"
+    );
+}

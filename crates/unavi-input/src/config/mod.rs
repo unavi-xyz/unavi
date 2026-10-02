@@ -9,6 +9,7 @@ use serde::{
 pub mod bindings;
 pub mod file;
 pub mod patch;
+pub mod platform;
 
 /// The bindings and tuning in force, a config file resolved over the defaults.
 #[derive(Resource, Clone, Debug, Default)]

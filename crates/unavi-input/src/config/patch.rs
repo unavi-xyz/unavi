@@ -52,8 +52,10 @@ pub struct BindingsPatch {
     #[serde(rename = "move")]
     pub movement: AxisPatch,
     pub look:     AxisPatch,
+    pub reach:    AxisPatch,
     pub jump:     ButtonPatch,
     pub sprint:   ButtonPatch,
+    pub release:  ButtonPatch,
     pub trigger:  PerPointer<ButtonPatch>,
     pub grip:     PerPointer<ButtonPatch>,
     pub menu:     PerPointer<ButtonPatch>,
@@ -64,8 +66,10 @@ impl BindingsPatch {
         Bindings {
             movement: self.movement.apply(base.movement),
             look:     self.look.apply(base.look),
+            reach:    self.reach.apply(base.reach),
             jump:     self.jump.apply(base.jump),
             sprint:   self.sprint.apply(base.sprint),
+            release:  self.release.apply(base.release),
             trigger:  apply_per_pointer(self.trigger, base.trigger),
             grip:     apply_per_pointer(self.grip, base.grip),
             menu:     apply_per_pointer(self.menu, base.menu),
@@ -78,8 +82,10 @@ impl From<&Bindings> for BindingsPatch {
         Self {
             movement: (&bindings.movement).into(),
             look:     (&bindings.look).into(),
+            reach:    (&bindings.reach).into(),
             jump:     (&bindings.jump).into(),
             sprint:   (&bindings.sprint).into(),
+            release:  (&bindings.release).into(),
             trigger:  per_pointer_patch(&bindings.trigger),
             grip:     per_pointer_patch(&bindings.grip),
             menu:     per_pointer_patch(&bindings.menu),
@@ -112,6 +118,7 @@ pub struct AxisPatch {
     pub dpads:        Option<Vec<Dpad>>,
     pub sticks:       Option<Vec<Stick>>,
     pub mouse_motion: Option<bool>,
+    pub mouse_wheel:  Option<bool>,
     pub xr:           Option<Vec<XrBinding>>,
 }
 
@@ -121,6 +128,7 @@ impl AxisPatch {
             dpads:        self.dpads.unwrap_or(base.dpads),
             sticks:       self.sticks.unwrap_or(base.sticks),
             mouse_motion: self.mouse_motion.unwrap_or(base.mouse_motion),
+            mouse_wheel:  self.mouse_wheel.unwrap_or(base.mouse_wheel),
             xr:           self.xr.unwrap_or(base.xr),
         }
     }
@@ -132,6 +140,7 @@ impl From<&AxisBinding> for AxisPatch {
             dpads:        Some(binding.dpads.clone()),
             sticks:       Some(binding.sticks.clone()),
             mouse_motion: Some(binding.mouse_motion),
+            mouse_wheel:  Some(binding.mouse_wheel),
             xr:           Some(binding.xr.clone()),
         }
     }

@@ -1,3 +1,6 @@
+//! Desktop, gamepad and `OpenXR` input as one [`action::ActionState`], plus
+//! the pointers that aim from it.
+
 use bevy::{
     input::InputSystems,
     picking::{

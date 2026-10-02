@@ -154,3 +154,94 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
         assert!(logs_contain("mass must be finite and > 0"));
     }
 }
+
+/// A scene cannot grow the solver's body count past
+/// [`unavi_physics::PhysicsLimits::max_bodies`]: once two prims ask for a
+/// body in the same frame and the cap only has room for one, one of the two
+/// is refused (which one is unspecified).
+#[traced_test]
+#[rstest]
+fn test_rigid_body_limit_refuses_excess_bodies(mut ctx: TestContext) {
+    ctx.app.insert_resource(unavi_physics::PhysicsLimits {
+        max_bodies:    1,
+        max_colliders: usize::MAX,
+    });
+
+    let first = ctx.create_prim();
+    ctx.set_attr(
+        first,
+        &RigidBodyAttr {
+            kind: Some(RigidBodyKind::Dynamic),
+            mass: Some(2.0),
+            ..Default::default()
+        },
+    );
+    let second = ctx.create_prim();
+    ctx.set_attr(
+        second,
+        &RigidBodyAttr {
+            kind: Some(RigidBodyKind::Dynamic),
+            mass: Some(2.0),
+            ..Default::default()
+        },
+    );
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut q = world.query::<&RigidBody>();
+    assert_eq!(
+        q.iter(world).count(),
+        1,
+        "the scene's second body should have been refused"
+    );
+
+    // A refusal must roll back everything the attribute would otherwise
+    // have left behind, not just the `RigidBody` marker.
+    let mut q_mass = world.query::<&Mass>();
+    assert_eq!(
+        q_mass.iter(world).count(),
+        1,
+        "the refused prim's Mass should have been removed along with its RigidBody"
+    );
+
+    assert!(logs_contain("scene exceeded the body limit"));
+}
+
+/// A body Rust code spawns directly (a local agent's rig, a portal body) has
+/// no [`bevy_hsd::prim::Prim`] marker. It must not count against a scene's
+/// own body budget, and the limit must never touch it.
+#[traced_test]
+#[rstest]
+fn test_rigid_body_limit_ignores_non_prim_bodies(mut ctx: TestContext) {
+    ctx.app.insert_resource(unavi_physics::PhysicsLimits {
+        max_bodies:    1,
+        max_colliders: usize::MAX,
+    });
+
+    // Fills the entire budget with a body that is not a scene prim.
+    let non_prim = ctx.app.world_mut().spawn(RigidBody::Dynamic).id();
+
+    let prim = ctx.create_prim();
+    ctx.set_attr(
+        prim,
+        &RigidBodyAttr {
+            kind: Some(RigidBodyKind::Dynamic),
+            ..Default::default()
+        },
+    );
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    assert!(
+        world.get::<RigidBody>(non_prim).is_some(),
+        "a non-prim body must never be refused on the scene's behalf"
+    );
+    let mut q = world.query::<(&RigidBody, &bevy_hsd::prim::Prim)>();
+    assert_eq!(
+        q.iter(world).count(),
+        1,
+        "the scene's own prim must not be refused because of a body that is not a prim"
+    );
+}

@@ -113,7 +113,7 @@ fn bus_scope(host: &ScriptHost, scope: Scope) -> Result<BusScope, ScriptError> {
     match scope {
         Scope::Global => Ok(BusScope::Global),
         Scope::Spatial { doc, prim, radius } => {
-            if !finite::nonneg(radius) {
+            if !finite::nonnegative_length(radius) {
                 return Err(ScriptError::invalid(
                     "a radius must be finite and not negative",
                 ));

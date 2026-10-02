@@ -19,19 +19,26 @@ use crate::{
 pub enum Action {
     Move,
     Look,
+    /// Pulling a held object closer or pushing it away. An axis rather than a
+    /// button: a scroll wheel reports it as notches, not a hold.
+    Reach,
     Jump,
     Sprint,
+    /// Letting go of whatever is holding the input, such as a locked cursor.
+    Release,
     Trigger(PointerKind),
     Grip(PointerKind),
     Menu(PointerKind),
 }
 
 impl Action {
-    pub const ALL: [Self; Self::COUNT] = [
+    pub const ALL: [Self; 15] = [
         Self::Move,
         Self::Look,
+        Self::Reach,
         Self::Jump,
         Self::Sprint,
+        Self::Release,
         Self::Trigger(PointerKind::Screen),
         Self::Trigger(PointerKind::LeftHand),
         Self::Trigger(PointerKind::RightHand),
@@ -42,24 +49,47 @@ impl Action {
         Self::Menu(PointerKind::LeftHand),
         Self::Menu(PointerKind::RightHand),
     ];
-    pub const COUNT: usize = 4 + 3 * PointerKind::COUNT;
+    /// Derived from [`Self::ALL`] rather than hand-counted, so it cannot
+    /// silently fall out of step with it the way a `4 + 3 * N` formula can.
+    pub const COUNT: usize = Self::ALL.len();
 
+    /// `self`'s slot: its position in [`Self::ALL`], found by scanning it
+    /// rather than a hand-maintained offset formula, so a variant added here
+    /// and to the enum cannot land on the wrong slot or collide with another.
+    /// `every_action_has_its_own_slot` still checks the result has no
+    /// collisions.
     const fn index(self) -> usize {
-        match self {
-            Self::Move => 0,
-            Self::Look => 1,
-            Self::Jump => 2,
-            Self::Sprint => 3,
-            Self::Trigger(kind) => 4 + kind.index(),
-            Self::Grip(kind) => 4 + PointerKind::COUNT + kind.index(),
-            Self::Menu(kind) => 4 + 2 * PointerKind::COUNT + kind.index(),
+        let mut i = 0;
+        while i < Self::ALL.len() {
+            if self.same(Self::ALL[i]) {
+                return i;
+            }
+            i += 1;
+        }
+        panic!("every Action is a member of Action::ALL")
+    }
+
+    /// Structural equality, usable from the `const fn` [`Self::index`]: a
+    /// derived `PartialEq::eq` is not callable there.
+    const fn same(self, other: Self) -> bool {
+        match (self, other) {
+            (Self::Move, Self::Move)
+            | (Self::Look, Self::Look)
+            | (Self::Reach, Self::Reach)
+            | (Self::Jump, Self::Jump)
+            | (Self::Sprint, Self::Sprint)
+            | (Self::Release, Self::Release) => true,
+            (Self::Trigger(a), Self::Trigger(b))
+            | (Self::Grip(a), Self::Grip(b))
+            | (Self::Menu(a), Self::Menu(b)) => a.index() == b.index(),
+            _ => false,
         }
     }
 
-    /// Whether the action carries a direction rather than a strength. An axis
-    /// action's `pressed` is never read.
+    /// Whether the action carries a direction/strength rather than a press.
+    /// An axis action's `pressed` is never read.
     const fn is_axis(self) -> bool {
-        matches!(self, Self::Move | Self::Look)
+        matches!(self, Self::Move | Self::Look | Self::Reach)
     }
 }
 
@@ -313,5 +343,40 @@ mod tests {
         assert!(!state.pressed(grip));
         assert_eq!(state.axis(Action::Move), Vec2::ZERO);
         assert_eq!(state.delta(Action::Look), Vec2::ZERO);
+    }
+
+    /// `Reach` is an axis: a wheel notch is a one-frame travel like a mouse
+    /// delta, so it must not be clamped away or read as a press.
+    #[test]
+    fn reach_is_an_axis_fed_by_delta_and_never_a_press() {
+        let mut state = ActionState::default();
+        state.begin_frame();
+        state.accumulate_delta(Action::Reach, Vec2::new(0.0, 3.0));
+        state.end_frame(&Tuning::default());
+
+        assert_eq!(state.delta(Action::Reach), Vec2::new(0.0, 3.0));
+        assert!(!state.pressed(Action::Reach));
+    }
+
+    /// `Release` is an ordinary button, silenced like everything else once
+    /// something else captures the input.
+    #[test]
+    fn release_is_a_button_silenced_under_capture() {
+        let mut state = ActionState::default();
+        let tuning = Tuning::default();
+
+        state.begin_frame();
+        state.press(Action::Release, 1.0);
+        state.end_frame(&tuning);
+        assert!(state.just_pressed(Action::Release));
+
+        state.begin_frame();
+        state.press(Action::Release, 1.0);
+        state.silence();
+        state.end_frame(&tuning);
+        assert!(
+            state.just_released(Action::Release),
+            "capture must let go of Release rather than hold it pressed"
+        );
     }
 }

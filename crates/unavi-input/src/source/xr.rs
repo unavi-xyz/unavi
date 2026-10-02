@@ -100,6 +100,11 @@ fn name_of(action: Action) -> String {
     match action {
         Action::Move => "move".to_owned(),
         Action::Look => "look".to_owned(),
+        // Neither has an `OpenXR` binding (see `bindings::reach`/`release`'s
+        // doc comments), so `spawn_action` never reaches these arms; they
+        // exist to keep this match exhaustive as the enum grows.
+        Action::Reach => "reach".to_owned(),
+        Action::Release => "release".to_owned(),
         Action::Jump => "jump".to_owned(),
         Action::Sprint => "sprint".to_owned(),
         Action::Trigger(kind) => format!("trigger_{}", kind.name()),

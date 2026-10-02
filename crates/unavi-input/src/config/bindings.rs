@@ -21,8 +21,10 @@ const WMR_PROFILE: &str = "/interaction_profiles/microsoft/motion_controller";
 pub struct Bindings {
     pub movement: AxisBinding,
     pub look:     AxisBinding,
+    pub reach:    AxisBinding,
     pub jump:     ButtonBinding,
     pub sprint:   ButtonBinding,
+    pub release:  ButtonBinding,
     pub trigger:  PerPointer<ButtonBinding>,
     pub grip:     PerPointer<ButtonBinding>,
     pub menu:     PerPointer<ButtonBinding>,
@@ -30,27 +32,36 @@ pub struct Bindings {
 
 impl Bindings {
     pub fn axes(&self) -> impl Iterator<Item = (Action, &AxisBinding)> {
-        [(Action::Move, &self.movement), (Action::Look, &self.look)].into_iter()
+        [
+            (Action::Move, &self.movement),
+            (Action::Look, &self.look),
+            (Action::Reach, &self.reach),
+        ]
+        .into_iter()
     }
 
     pub fn buttons(&self) -> impl Iterator<Item = (Action, &ButtonBinding)> {
-        [(Action::Jump, &self.jump), (Action::Sprint, &self.sprint)]
-            .into_iter()
-            .chain(
-                PointerKind::ALL
-                    .into_iter()
-                    .map(|kind| (Action::Trigger(kind), self.trigger.get(kind))),
-            )
-            .chain(
-                PointerKind::ALL
-                    .into_iter()
-                    .map(|kind| (Action::Grip(kind), self.grip.get(kind))),
-            )
-            .chain(
-                PointerKind::ALL
-                    .into_iter()
-                    .map(|kind| (Action::Menu(kind), self.menu.get(kind))),
-            )
+        [
+            (Action::Jump, &self.jump),
+            (Action::Sprint, &self.sprint),
+            (Action::Release, &self.release),
+        ]
+        .into_iter()
+        .chain(
+            PointerKind::ALL
+                .into_iter()
+                .map(|kind| (Action::Trigger(kind), self.trigger.get(kind))),
+        )
+        .chain(
+            PointerKind::ALL
+                .into_iter()
+                .map(|kind| (Action::Grip(kind), self.grip.get(kind))),
+        )
+        .chain(
+            PointerKind::ALL
+                .into_iter()
+                .map(|kind| (Action::Menu(kind), self.menu.get(kind))),
+        )
     }
 }
 
@@ -77,6 +88,10 @@ pub struct AxisBinding {
     pub dpads:        Vec<Dpad>,
     pub sticks:       Vec<Stick>,
     pub mouse_motion: bool,
+    /// Scroll-wheel notches, read into the axis's `y` component. Unlike
+    /// [`Self::mouse_motion`] this is a discrete travel (one step per notch),
+    /// not a continuous pointer-lock delta.
+    pub mouse_wheel:  bool,
     pub xr:           Vec<XrBinding>,
 }
 
@@ -207,6 +222,16 @@ fn look() -> AxisBinding {
     }
 }
 
+/// Scroll to pull a held object closer or push it away. No `OpenXR` binding:
+/// both thumbsticks are already spoken for by [`movement`] and [`look`], and
+/// there is no third analogue stick to give reach an obvious one of its own.
+fn reach() -> AxisBinding {
+    AxisBinding {
+        mouse_wheel: true,
+        ..default()
+    }
+}
+
 fn jump() -> ButtonBinding {
     ButtonBinding {
         keys: vec![KeyCode::Space],
@@ -221,6 +246,15 @@ fn sprint() -> ButtonBinding {
         keys: vec![KeyCode::ShiftLeft],
         pad: vec![GamepadButton::LeftThumb],
         xr: xr(LEFT, &SPRINT),
+        ..default()
+    }
+}
+
+/// Letting go of whatever is holding the input, such as a locked cursor.
+/// Desktop-only: VR has nothing analogous to escape out of.
+fn release() -> ButtonBinding {
+    ButtonBinding {
+        keys: vec![KeyCode::Escape],
         ..default()
     }
 }
@@ -299,8 +333,10 @@ impl Default for Bindings {
         Self {
             movement: movement(),
             look:     look(),
+            reach:    reach(),
             jump:     jump(),
             sprint:   sprint(),
+            release:  release(),
             trigger:  trigger(),
             grip:     grip(),
             menu:     menu(),
@@ -408,12 +444,14 @@ mod tests {
         for profile in PROFILES.into_iter().filter(|p| *p != SIMPLE_PROFILE) {
             for (action, binding) in bindings.buttons() {
                 let skip = match action {
-                    // Covered by its own test, and the desktop pointer has no
-                    // headset binding to find.
-                    Action::Menu(_) | Action::Trigger(_) => true,
                     Action::Grip(kind) => kind == PointerKind::Screen,
                     // Sprint is the one thing a wand has no button left for.
                     Action::Sprint => profile == VIVE_PROFILE,
+                    // Menu and trigger are covered by their own tests; the
+                    // desktop pointer has no headset binding to find; and
+                    // release is desktop-only, nothing to escape out of in
+                    // VR.
+                    Action::Menu(_) | Action::Trigger(_) | Action::Release => true,
                     _ => false,
                 };
                 if skip {
@@ -425,6 +463,11 @@ mod tests {
                 );
             }
             for (action, binding) in bindings.axes() {
+                // Both sticks are already spoken for; reach has no headset
+                // binding of its own (see `reach`'s doc comment).
+                if action == Action::Reach {
+                    continue;
+                }
                 assert!(
                     binding.xr.iter().any(|b| b.profile == profile),
                     "{profile} has no {action:?}"

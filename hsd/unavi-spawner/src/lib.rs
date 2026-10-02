@@ -2,7 +2,10 @@
 
 use std::cell::Cell;
 
-use wired_guest::math::Color;
+use wired_guest::{
+    math::Color,
+    xform::ARTIFACT_OFFSET,
+};
 
 use crate::{
     preview::Preview,
@@ -18,7 +21,6 @@ mod spawn;
 
 wired_guest::generate_script!(Script);
 
-const ARTIFACT_OFFSET: wired_guest::math::Vec3 = wired_guest::math::Vec3::new(0.22, -0.18, -0.5);
 const ART_SPEED: f32 = 5.0;
 
 struct Script {
@@ -48,7 +50,7 @@ impl ScriptBehavior for Script {
     ) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
-                ToolEvent::Activate(_) => self.active.set(true),
+                ToolEvent::Activate => self.active.set(true),
                 ToolEvent::Deactivate => {
                     self.active.set(false);
                     self.pressed.set(false);

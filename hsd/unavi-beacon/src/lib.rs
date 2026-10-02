@@ -1,3 +1,9 @@
+//! A beacon: a small pulsing marker planted by halo's `Nav` that announces
+//! the space it was copied for over [`CHANNEL`] so a gate nearby can open to
+//! it. The authored template prim does nothing; a real beacon is a document
+//! of its own, minted by copying the template and naming a prim for its
+//! space.
+
 use std::{
     f32::consts::TAU,
     str::FromStr,
@@ -46,7 +52,6 @@ use crate::{
 
 wired_guest::generate_script!(Script);
 
-const CHANNEL: &str = "unavi:beacon/id";
 const EMIT_INTERVAL: f32 = 3.0;
 
 const SIZE: f32 = 0.095;
@@ -229,7 +234,7 @@ impl Beacon {
             return Ok(());
         }
 
-        self.pulse();
+        self.pulse()?;
 
         self.emit_elapsed += dt;
         if self.emit_elapsed < EMIT_INTERVAL {
@@ -238,7 +243,7 @@ impl Beacon {
         self.emit_elapsed = 0.0;
 
         wired::event::messaging::emit(
-            CHANNEL,
+            wired_guest::beacon::CHANNEL,
             self.id.as_bytes(),
             None,
             Scope::Spatial(Spatial {
@@ -252,13 +257,13 @@ impl Beacon {
         Ok(())
     }
 
-    fn pulse(&mut self) {
+    fn pulse(&mut self) -> anyhow::Result<()> {
         self.tick = self.tick.wrapping_add(1);
         let phase = (self.tick % PULSE_TICKS) as f32 / PULSE_TICKS as f32;
         let level = (phase * TAU).sin().mul_add(0.5, 0.5);
         let step = (level * PULSE_LEVELS as f32).round() as u32;
         if step == self.pulse_step {
-            return;
+            return Ok(());
         }
         self.pulse_step = step;
 
@@ -270,7 +275,7 @@ impl Beacon {
                 self.core,
                 Property::Material(material(self.color, emissive)),
             )
-            .flush()
-            .ok();
+            .flush()?;
+        Ok(())
     }
 }

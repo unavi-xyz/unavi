@@ -4,11 +4,7 @@
 //! lit and the rest are dark, and there is nothing to keep in step with what
 //! the user can see. One at a time is halo's rule rather than VUI's.
 
-use wired_guest::math::{
-    Color,
-    Transform,
-    Vec3,
-};
+use wired_guest::math::Color;
 
 use crate::{
     icon,
@@ -25,9 +21,6 @@ use crate::{
     },
     wired::scene::document::script_document,
 };
-
-/// Metres ahead of the viewer an equipped tool is put.
-const PLACE_DIST: f32 = 1.2;
 
 const RESTING: Color = Color {
     r: 0.72,
@@ -53,20 +46,20 @@ struct Tool {
     iconed: bool,
 }
 
-pub struct Hand {
+pub struct Toolbelt {
     registry: ToolRegistry,
     tools:    Vec<Tool>,
     /// What is in the hand.
     held:     Option<(u64, u64, u64, u64)>,
 }
 
-impl Default for Hand {
+impl Default for Toolbelt {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Hand {
+impl Toolbelt {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -143,7 +136,7 @@ impl Hand {
     ///
     /// Choosing the tool already in hand puts it away, so one gesture both
     /// equips and unequips and there is no separate way to stop.
-    pub fn equip(&mut self, mote: &Mote, eye: &Transform) -> bool {
+    pub fn equip(&mut self, mote: &Mote) -> bool {
         let Some(tool) = self.tools.iter().find(|tool| tool.mote.is(mote)) else {
             return false;
         };
@@ -157,15 +150,7 @@ impl Hand {
         self.unequip();
 
         println!("halo: holding '{name}'");
-        let forward = eye.forward();
-        self.registry.activate(
-            doc,
-            Transform {
-                translation: eye.translation + forward * PLACE_DIST,
-                rotation:    eye.rotation,
-                scale:       Vec3::ONE,
-            },
-        );
+        self.registry.activate(doc);
         self.registry.set_state(doc, state(HELD));
         self.held = Some(doc);
         self.mark();
@@ -222,8 +207,5 @@ impl Hand {
 }
 
 const fn state(color: Color) -> ToolState {
-    ToolState {
-        color,
-        in_use: false,
-    }
+    ToolState { color }
 }

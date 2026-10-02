@@ -1,3 +1,7 @@
+//! Attaches a cube to the local agent's camera and a bone in turn, to show
+//! `wired:agent/local.attach` carrying a document instead of a script
+//! copying a tracked transform every frame.
+
 use wired_guest::math::{
     Color,
     Transform,

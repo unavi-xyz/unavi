@@ -18,7 +18,10 @@ use wired_guest::{
         Transform,
         Vec3,
     },
-    xform::hidden,
+    xform::{
+        hidden,
+        yaw,
+    },
 };
 
 use crate::{
@@ -185,7 +188,7 @@ fn tools_pieces() -> Vec<Piece> {
         pieces.push(Piece {
             shape: Shape::Cube(Vec3::new(tooth * 2.0, height, R * 0.2)),
             at:    Vec3::new(angle.cos(), 0.0, angle.sin()) * (hub + tooth),
-            turn:  Quat::new(0.0, (angle * 0.5).sin(), 0.0, (angle * 0.5).cos()),
+            turn:  yaw(angle),
         });
     }
     // A gear shows its face, not its edge: the hub's axis points at the

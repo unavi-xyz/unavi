@@ -75,7 +75,7 @@ impl Held {
                 return None;
             }
             Err(err) => {
-                println!("physgun: raycast error {err:?}");
+                eprintln!("physgun: raycast error {err:?}");
                 return None;
             }
         };
@@ -87,7 +87,7 @@ impl Held {
                 return None;
             }
             Err(err) => {
-                println!("physgun: open_document error {err:?}");
+                eprintln!("physgun: open_document error {err:?}");
                 return None;
             }
         };
@@ -99,13 +99,13 @@ impl Held {
         let body = match doc.world_transform(prim) {
             Ok(body) => body,
             Err(err) => {
-                println!("physgun: world_transform error {err:?}");
+                eprintln!("physgun: world_transform error {err:?}");
                 return None;
             }
         };
 
         if let Err(err) = take_hold(&doc) {
-            println!("physgun: take_hold failed (holding anyway): {err:?}");
+            eprintln!("physgun: take_hold failed (holding anyway): {err:?}");
         }
 
         // Writing `gravity-scale` only succeeds on a document this script

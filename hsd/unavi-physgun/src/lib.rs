@@ -6,9 +6,9 @@ use std::cell::{
     RefCell,
 };
 
-use wired_guest::math::{
-    Color,
-    Vec3,
+use wired_guest::{
+    math::Color,
+    xform::ARTIFACT_OFFSET,
 };
 
 use crate::{
@@ -28,7 +28,6 @@ mod palette;
 
 wired_guest::generate_script!(Script);
 
-const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);
 /// Metres of hold-distance change per scroll notch.
 const SCROLL_STEP: f32 = 0.4;
 
@@ -70,7 +69,7 @@ impl ScriptBehavior for Script {
     ) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
-                ToolEvent::Activate(_) => self.active.set(true),
+                ToolEvent::Activate => self.active.set(true),
                 ToolEvent::Deactivate => {
                     self.active.set(false);
                     self.pressed.set(false);

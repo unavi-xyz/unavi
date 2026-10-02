@@ -21,6 +21,7 @@
 //! plain data shared by every guest through the `with:` mapping, so it is a
 //! real, inherent part of this crate's public API.
 
+pub mod beacon;
 pub mod color;
 pub mod math;
 pub mod xform;

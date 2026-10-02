@@ -15,7 +15,7 @@ use wired_guest::math::Transform;
 use crate::{
     artifact::Artifact,
     branch::{
-        hand::Hand,
+        hand::Toolbelt,
         home::Home,
         nav::Nav,
     },
@@ -50,7 +50,7 @@ wired_guest::generate_script!(Script);
 
 struct Script {
     root:     Root,
-    hand:     Hand,
+    hand:     Toolbelt,
     home:     Home,
     nav:      Nav,
     summon:   Summon,
@@ -63,26 +63,26 @@ struct Script {
 }
 
 impl Script {
-    fn apply(&self, command: Command) -> anyhow::Result<()> {
+    fn apply(&self, command: Option<Command>) -> anyhow::Result<()> {
         match command {
             // Whatever is in hand stays in hand: a tool is put away by
             // choosing it again or choosing another, never by looking at the
             // halo. Opening a menu is not a decision about what you are
             // holding.
-            Command::Summon => self.root.orbit.summon()?,
-            Command::Dismiss => self.root.orbit.dismiss()?,
-            Command::None => {}
+            Some(Command::Summon) => self.root.orbit.summon()?,
+            Some(Command::Dismiss) => self.root.orbit.dismiss()?,
+            None => {}
         }
         Ok(())
     }
 
     /// Routes one thing a surface did, by the mote it happened to. Never by a
     /// label: two motes with the same name are still two motes.
-    fn route(&mut self, event: &Event, eye: &Transform) -> anyhow::Result<()> {
+    fn route(&mut self, event: &Event) -> anyhow::Result<()> {
         match event {
             Event::Opened(mote) => self.opened(mote),
             Event::Cast(mote) => self.cast(mote),
-            Event::Activated(mote) => self.activated(mote, eye)?,
+            Event::Activated(mote) => self.activated(mote)?,
             Event::Planted((mote, landing)) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
@@ -115,8 +115,8 @@ impl Script {
         }
     }
 
-    fn activated(&mut self, mote: &Mote, eye: &Transform) -> anyhow::Result<()> {
-        if !self.hand.equip(mote, eye) {
+    fn activated(&mut self, mote: &Mote) -> anyhow::Result<()> {
+        if !self.hand.equip(mote) {
             return Ok(());
         }
         if let Some(color) = self.hand.held_color() {
@@ -154,7 +154,7 @@ impl Script {
         Ok(())
     }
 
-    fn forward(&self, to_hand: impl FnOnce(&Hand)) {
+    fn forward(&self, to_hand: impl FnOnce(&Toolbelt)) {
         if !self.summon.is_up() {
             to_hand(&self.hand);
         }
@@ -165,7 +165,7 @@ impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
             root:     Root::new()?,
-            hand:     Hand::new(),
+            hand:     Toolbelt::new(),
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
@@ -199,7 +199,7 @@ impl ScriptBehavior for Script {
             return Ok(());
         };
         for event in self.root.orbit.events() {
-            self.route(&event, &eye)?;
+            self.route(&event)?;
         }
         self.artifact.update(&eye, self.hand.is_holding(), tick.dt)
     }

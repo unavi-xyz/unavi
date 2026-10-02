@@ -5,10 +5,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use wired_guest::math::{
-    Color,
-    Transform,
-};
+use wired_guest::math::Color;
 
 pub const CH_DISCOVER: &str = "unavi:tool/discover";
 pub const CH_REGISTER: &str = "unavi:tool/register";
@@ -32,14 +29,8 @@ pub struct RegisterPayload {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ActivatePayload {
-    pub transform: Transform,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct ToolStatePayload {
-    pub color:  Color,
-    pub in_use: bool,
+    pub color: Color,
 }
 
 #[derive(Serialize, Deserialize)]

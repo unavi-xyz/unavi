@@ -24,7 +24,6 @@ const RESUMMON_TURN_COS: f32 = 0.95;
 pub enum Command {
     Summon,
     Dismiss,
-    None,
 }
 
 /// Where the halo was called up, so walking away from it can close it.
@@ -43,20 +42,20 @@ impl Summon {
 
     /// The menu button went down. Up and standing still puts the halo away;
     /// up and somewhere else brings it here, so repositioning is one press.
-    pub fn press(&mut self, eye: &Transform) -> Command {
+    pub fn press(&mut self, eye: &Transform) -> Option<Command> {
         if self.pressed {
-            return Command::None;
+            return None;
         }
         self.pressed = true;
 
         match self.at {
             Some(at) if !moved(&at, eye) => {
                 self.at = None;
-                Command::Dismiss
+                Some(Command::Dismiss)
             }
             _ => {
                 self.at = Some(*eye);
-                Command::Summon
+                Some(Command::Summon)
             }
         }
     }
@@ -67,26 +66,21 @@ impl Summon {
 
     /// Walking away closes it, so the halo never becomes something you have to
     /// tidy up after.
-    pub fn step(&mut self, eye: &Transform) -> Command {
-        let Some(at) = self.at else {
-            return Command::None;
-        };
+    pub fn step(&mut self, eye: &Transform) -> Option<Command> {
+        let at = self.at?;
         let delta = eye.translation - at.translation;
         if delta.dot(delta) <= CLOSE_MOVE_SQ {
-            return Command::None;
+            return None;
         }
         self.at = None;
-        Command::Dismiss
+        Some(Command::Dismiss)
     }
 
     /// Planting something from the halo puts it away: attention has moved to
     /// the thing that was just placed.
-    pub const fn taken(&mut self) -> Command {
-        if self.at.is_none() {
-            return Command::None;
-        }
-        self.at = None;
-        Command::Dismiss
+    pub fn taken(&mut self) -> Option<Command> {
+        self.at.take()?;
+        Some(Command::Dismiss)
     }
 }
 

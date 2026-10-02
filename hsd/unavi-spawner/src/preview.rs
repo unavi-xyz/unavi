@@ -4,11 +4,14 @@
 
 use std::cell::Cell;
 
-use wired_guest::math::{
-    Color,
-    Quat,
-    Transform,
-    Vec3,
+use wired_guest::{
+    math::{
+        Color,
+        Quat,
+        Transform,
+        Vec3,
+    },
+    xform::yaw,
 };
 
 use crate::{
@@ -85,7 +88,7 @@ impl Preview {
                 self.cube,
                 Property::Transform(Transform {
                     translation: Vec3::new(0.0, ABOVE, 0.0),
-                    rotation:    Quat::new(0.0, (spin * 0.5).sin(), 0.0, (spin * 0.5).cos()),
+                    rotation:    yaw(spin),
                     scale:       Vec3::ONE,
                 }),
             )

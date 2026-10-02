@@ -1,3 +1,7 @@
+//! A gate: a portal frame that opens to whichever space a nearby beacon last
+//! announced on [`CHANNEL`], or to whoever paired with it through
+//! `wired:portal/portals` intents.
+
 use std::f32::consts::GOLDEN_RATIO;
 
 use wired_guest::math::{
@@ -32,7 +36,6 @@ use crate::{
 
 wired_guest::generate_script!(Script);
 
-const CHANNEL: &str = "unavi:beacon/id";
 const PORTAL_PRIM_NAME: &str = "portal";
 const RECEPTOR_PRIM_NAME: &str = "receptor";
 
@@ -111,7 +114,7 @@ impl ScriptBehavior for Script {
         batch.flush()?;
 
         let beacon_rx = wired::event::messaging::listen(
-            &[CHANNEL.to_owned()],
+            &[wired_guest::beacon::CHANNEL.to_owned()],
             None,
             Scope::Spatial(Spatial {
                 origin: wired::core::ids::PrimRef {

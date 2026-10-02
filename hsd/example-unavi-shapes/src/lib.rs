@@ -1,3 +1,5 @@
+//! Lines up one of every `unavi:shapes` primitive, to eyeball them together.
+
 use wired_guest::math::{
     Color,
     Quat,

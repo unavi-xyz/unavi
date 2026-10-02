@@ -3,8 +3,6 @@
 
 use std::cell::Cell;
 
-use wired_guest::math::Transform;
-
 use crate::{
     exports::unavi::tool::api::{
         GuestToolRegistry,
@@ -13,7 +11,6 @@ use crate::{
     },
     protocol::{
         self,
-        ActivatePayload,
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
@@ -37,17 +34,16 @@ use crate::{
 
 const DRAIN_MAX: u32 = 16;
 
-/// Ticks before the belt asks every loaded tool to announce itself.
-/// `tool`s loaded after this fire are never discovered; see the WIT pain
-/// points in the step 5c handoff.
-const DISCOVER_DELAY_TICKS: u32 = 60;
+/// How often the belt asks every loaded tool to announce itself. Repeating
+/// rather than firing once means a `tool` that finishes loading after an
+/// earlier announcement is still found, within one interval.
+const DISCOVER_INTERVAL_TICKS: u32 = 60;
 
 pub struct ToolRegistry {
     /// `None` when opening the listener failed; the belt then never
     /// discovers a tool, instead of trapping the whole script.
     register_rx: Option<MessageSubscription>,
     ticks:       Cell<u32>,
-    discovered:  Cell<bool>,
 }
 
 impl GuestToolRegistry for ToolRegistry {
@@ -62,20 +58,16 @@ impl GuestToolRegistry for ToolRegistry {
         Self {
             register_rx,
             ticks: Cell::new(0),
-            discovered: Cell::new(false),
         }
     }
 
     fn poll(&self) -> Vec<RegisteredTool> {
-        if !self.discovered.get() {
-            let ticks = self.ticks.get() + 1;
-            self.ticks.set(ticks);
-            if ticks >= DISCOVER_DELAY_TICKS {
-                self.discovered.set(true);
-                if let Err(err) = messaging::emit(CH_DISCOVER, &[], None, Scope::Global) {
-                    eprintln!("tool-registry: emit discover: {err:?}");
-                }
-            }
+        let ticks = self.ticks.get() + 1;
+        self.ticks.set(ticks);
+        if ticks.is_multiple_of(DISCOVER_INTERVAL_TICKS)
+            && let Err(err) = messaging::emit(CH_DISCOVER, &[], None, Scope::Global)
+        {
+            eprintln!("tool-registry: emit discover: {err:?}");
         }
 
         let Some(register_rx) = &self.register_rx else {
@@ -99,8 +91,10 @@ impl GuestToolRegistry for ToolRegistry {
             .collect()
     }
 
-    fn activate(&self, document: (u64, u64, u64, u64), transform: Transform) {
-        emit_to(document, CH_ACTIVATE, &ActivatePayload { transform });
+    fn activate(&self, document: (u64, u64, u64, u64)) {
+        if let Err(err) = messaging::emit(CH_ACTIVATE, &[], Some(&[document]), Scope::Global) {
+            eprintln!("tool-registry: emit activate: {err:?}");
+        }
     }
 
     fn deactivate(&self, document: (u64, u64, u64, u64)) {
@@ -113,10 +107,7 @@ impl GuestToolRegistry for ToolRegistry {
         emit_to(
             document,
             CH_SET_STATE,
-            &ToolStatePayload {
-                color:  state.color,
-                in_use: state.in_use,
-            },
+            &ToolStatePayload { color: state.color },
         );
     }
 

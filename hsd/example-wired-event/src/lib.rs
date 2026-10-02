@@ -1,3 +1,6 @@
+//! Emits and listens for a message on its own global channel, to show
+//! `wired:event/messaging` round-tripping to itself.
+
 use crate::wired::event::messaging::{
     MessageSubscription,
     Scope,

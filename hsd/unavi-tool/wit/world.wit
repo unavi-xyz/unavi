@@ -7,19 +7,17 @@ world guest {
 
 /// A shell-hosted tool, built by a tool crate.
 interface api {
-  use wired:core/math@0.1.0.{color, transform};
+  use wired:core/math@0.1.0.{color};
   use wired:core/ids@0.1.0.{document-id};
   use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{prim-id};
 
   /// Visual state the shell pushes onto a tool.
   record tool-state {
-    color:  color,
-    in-use: bool,
+    color: color,
   }
 
   variant tool-event {
-    activate(transform),
+    activate,
     deactivate,
     set-state(tool-state),
     /// Primary action forwarded by the shell while its menu is down.
@@ -45,7 +43,7 @@ interface api {
   resource tool-registry {
     constructor();
     poll: func() -> list<registered-tool>;
-    activate: func(document: document-id, transform: transform);
+    activate: func(document: document-id);
     deactivate: func(document: document-id);
     set-state: func(document: document-id, state: tool-state);
     trigger: func(document: document-id, pressed: bool);

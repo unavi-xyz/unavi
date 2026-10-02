@@ -5,8 +5,8 @@
 //! colour, shown only while something is held.
 //!
 //! It is also load-bearing rather than decorative. A tool fires from
-//! [`OFFSET`] — the physgun's muzzle *is* this body — so without it a beam
-//! starts in empty air and nothing says a tool is running at all.
+//! [`ARTIFACT_OFFSET`] — the physgun's muzzle *is* this body — so without it a
+//! beam starts in empty air and nothing says a tool is running at all.
 //!
 //! It retires when a tracked hand can hold the tool itself.
 
@@ -19,7 +19,11 @@ use wired_guest::{
         Transform,
         Vec3,
     },
-    xform::hidden,
+    xform::{
+        ARTIFACT_OFFSET,
+        hidden,
+        yaw,
+    },
 };
 
 use crate::{
@@ -36,10 +40,6 @@ use crate::{
         },
     },
 };
-
-/// Where the held body rides, in the viewer's own frame. The physgun's muzzle
-/// is measured from the same place.
-pub const OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);
 
 const CORE_SIZE: f32 = 0.045;
 const ORBITER_SIZE: f32 = 0.018;
@@ -123,7 +123,7 @@ impl Artifact {
             .set(
                 self.root,
                 Property::Transform(Transform {
-                    translation: eye.translation + eye.rotation * OFFSET,
+                    translation: eye.translation + eye.rotation * ARTIFACT_OFFSET,
                     rotation:    eye.rotation,
                     scale:       Vec3::splat(self.out),
                 }),
@@ -141,7 +141,7 @@ impl Artifact {
             self.core,
             Property::Transform(Transform {
                 translation: Vec3::ZERO,
-                rotation:    spun(self.spin),
+                rotation:    yaw(self.spin),
                 scale:       Vec3::ONE,
             }),
         );
@@ -163,10 +163,6 @@ impl Artifact {
         batch.flush()?;
         Ok(())
     }
-}
-
-fn spun(angle: f32) -> Quat {
-    Quat::new(0.0, (angle * 0.5).sin(), 0.0, (angle * 0.5).cos())
 }
 
 const fn lit(color: Color, glow: f32) -> Material {

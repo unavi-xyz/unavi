@@ -20,3 +20,10 @@ pub const fn hidden() -> Transform {
 pub fn yaw(radians: f32) -> Quat {
     Quat::from_rotation_y(radians)
 }
+
+/// Where a held tool or artifact rides, in the viewer's own frame.
+///
+/// Forward and slightly down-right, clear of the body. Shared by halo,
+/// physgun and spawner so the physgun's muzzle and every tool's visible body
+/// agree on where "in hand" is.
+pub const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);

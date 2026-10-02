@@ -1,3 +1,5 @@
+//! Logs every device input event, to show `wired:input/device` listening.
+
 use crate::wired::input::types::InputSubscription;
 
 wired_guest::generate_script!(Script);

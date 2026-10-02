@@ -1,3 +1,6 @@
+//! The default home space: a ground plane tinted by the document's own id,
+//! so every space reads as itself without an author having to pick a colour.
+
 use wired_guest::{
     color::{
         desaturate,

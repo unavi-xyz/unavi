@@ -13,7 +13,6 @@ use crate::{
         ToolState,
     },
     protocol::{
-        ActivatePayload,
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
@@ -109,18 +108,11 @@ impl GuestTool for Tool {
         let mut pending = self.pending.borrow_mut();
         for message in self.control_rx.drain(DRAIN_MAX) {
             let event = match message.channel.as_str() {
-                CH_ACTIVATE => postcard::from_bytes::<ActivatePayload>(&message.payload)
-                    .ok()
-                    .map(|p| ToolEvent::Activate(p.transform)),
+                CH_ACTIVATE => Some(ToolEvent::Activate),
                 CH_DEACTIVATE => Some(ToolEvent::Deactivate),
                 CH_SET_STATE => postcard::from_bytes::<ToolStatePayload>(&message.payload)
                     .ok()
-                    .map(|p| {
-                        ToolEvent::SetState(ToolState {
-                            color:  p.color,
-                            in_use: p.in_use,
-                        })
-                    }),
+                    .map(|p| ToolEvent::SetState(ToolState { color: p.color })),
                 CH_TRIGGER => postcard::from_bytes::<TriggerPayload>(&message.payload)
                     .ok()
                     .map(|p| ToolEvent::Trigger(p.pressed)),

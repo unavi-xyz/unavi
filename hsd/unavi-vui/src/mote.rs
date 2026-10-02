@@ -1,5 +1,5 @@
 use smol_str::SmolStr;
-use wired_scene::types::Color;
+use wired_guest::math::Color;
 
 use crate::{
     attention::{

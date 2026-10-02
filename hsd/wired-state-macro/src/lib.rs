@@ -20,7 +20,7 @@ use syn::{
 /// with no annotation is ordinary memory and is left alone.
 ///
 /// ```ignore
-/// #[wired_prelude::state]
+/// #[wired_guest::state]
 /// #[derive(Default)]
 /// struct GateState {
 ///     #[state(session)]

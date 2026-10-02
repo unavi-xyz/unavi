@@ -1,14 +1,22 @@
-//! The handful of prim writes every VUI surface shares.
+//! The handful of edits every VUI surface shares.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Color,
+    Quat,
+    Transform,
+    Vec3,
+};
 
 use crate::{
     mesh::MeshData,
     view::Style,
-    wired::scene::types::{
+    wired::scene::properties::{
         AlphaMode,
         Material,
-        Prim,
+        Property,
+        Topology,
+        VertexAttribute,
+        VertexStream,
     },
 };
 
@@ -37,14 +45,25 @@ pub const fn hidden() -> Transform {
     placed(Vec3::ZERO, 0.0)
 }
 
-/// Every stream costs a blob upload whatever its size, so this is four per
-/// body, paid once when a slot is first built.
-pub fn mesh(prim: &Prim, data: &MeshData) -> anyhow::Result<()> {
-    prim.set_mesh_stream("POSITION", Some(&data.positions))?;
-    prim.set_mesh_stream("NORMAL", Some(&data.normals))?;
-    prim.set_mesh_stream("UV_0", Some(&data.uvs))?;
-    prim.set_mesh_indices_u32(Some(&data.indices))?;
-    Ok(())
+/// Every edit writing a mesh's topology and its three streams, queued
+/// together so a body's geometry costs one batch rather than five.
+pub fn mesh(data: &MeshData) -> [Property; 5] {
+    [
+        Property::MeshTopology(Topology::TriangleList),
+        Property::MeshVertices(VertexStream {
+            attribute: VertexAttribute::Position,
+            values:    data.positions.clone(),
+        }),
+        Property::MeshVertices(VertexStream {
+            attribute: VertexAttribute::Normal,
+            values:    data.normals.clone(),
+        }),
+        Property::MeshVertices(VertexStream {
+            attribute: VertexAttribute::Uv0,
+            values:    data.uvs.clone(),
+        }),
+        Property::MeshIndices(data.indices.clone()),
+    ]
 }
 
 pub const fn with_alpha(color: Color, a: f32) -> Color {

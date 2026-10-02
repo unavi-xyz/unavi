@@ -1,88 +1,94 @@
-use blake3::Hash;
-use wired_prelude::prelude::*;
+use wired_guest::{
+    color::{
+        desaturate,
+        generate_color,
+    },
+    math::{
+        Transform,
+        Vec3,
+    },
+};
 
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
-        api::self_document,
-        types::{
+        document::script_document,
+        properties::{
             Material,
-            Prim,
+            Property,
+            PropertyKey,
+            Relation,
             RigidBody,
-            RigidBodyKind,
         },
     },
 };
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
 const GROUND_SIZE: f32 = 30.0;
 const GROUND_THICK: f32 = 0.5;
 
 const MATERIAL_BINDING: &str = "material/binding";
 
-const IDENTITY_QUAT: Quat = Quat::IDENTITY;
-
-fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(Transform {
-        translation,
-        rotation: IDENTITY_QUAT,
-        scale: Vec3::ONE,
-    }))
-    .ok();
+/// The document id's bytes, little-endian word by word, as `blake3::Hash`
+/// wants for [`generate_color`].
+fn document_color_seed(id: (u64, u64, u64, u64)) -> blake3::Hash {
+    let mut bytes = [0u8; 32];
+    bytes[0..8].copy_from_slice(&id.0.to_le_bytes());
+    bytes[8..16].copy_from_slice(&id.1.to_le_bytes());
+    bytes[16..24].copy_from_slice(&id.2.to_le_bytes());
+    bytes[24..32].copy_from_slice(&id.3.to_le_bytes());
+    blake3::Hash::from_bytes(bytes)
 }
 
 struct Script;
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let doc = self_document()?;
+        let doc = script_document()?;
 
         let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
+        let prim = shape.mesh()?;
 
-        let prim = shape.mesh();
-        prim.set_collider(Some(shape.collider()))?;
-        prim.set_rigid_body(Some(RigidBody {
-            kind:            RigidBodyKind::Static,
-            angular_damping: None,
-            friction:        None,
-            linear_damping:  None,
-            mass:            None,
-            restitution:     None,
-        }))?;
-        set_translation(&prim, Vec3::new(0.0, -GROUND_THICK / 2.0, 0.0));
+        let mut batch = doc
+            .local()
+            .set(prim, Property::Collider(shape.collider()))
+            .set(prim, Property::RigidBody(RigidBody::static_body()))
+            .set(
+                prim,
+                Property::Transform(Transform::from_translation(Vec3::new(
+                    0.0,
+                    -GROUND_THICK / 2.0,
+                    0.0,
+                ))),
+            );
 
-        let id = Hash::from_slice(&doc.id()).expect("document id");
-        let base_color =
-            unavi_script_util::color::desaturate(unavi_script_util::color::generate_color(id), 0.6);
+        let base_color = desaturate(generate_color(document_color_seed(doc.id())), 0.6);
 
-        let ground_root = doc
-            .roots()
-            .into_iter()
-            .find(|p| p.name().as_deref() == Some("ground"));
-        let mut mat = ground_root
-            .as_ref()
-            .and_then(Prim::material)
-            .unwrap_or(Material {
-                alpha_cutoff: None,
-                alpha_mode:   None,
-                base_color:   None,
-                double_sided: None,
-                emissive:     None,
-                metallic:     Some(0.1),
-                roughness:    Some(0.85),
+        let ground_root = doc.find_by_name("ground").into_iter().next();
+        let mut material = ground_root
+            .and_then(|p| match doc.get(p, &PropertyKey::Material) {
+                Some(Property::Material(m)) => Some(m),
+                _ => None,
+            })
+            .unwrap_or_else(|| Material {
+                metallic: Some(0.1),
+                roughness: Some(0.85),
+                ..Material::default()
             });
-        mat.base_color = Some(base_color);
+        material.base_color = Some(base_color);
 
         // Material payloads cannot carry texture relationships, so the mesh
         // binds to the authored prim instead.
-        match &ground_root {
-            Some(ground) => {
-                ground.set_material(Some(mat))?;
-                prim.set_relationship(MATERIAL_BINDING, Some(&ground.id()))?;
-            }
-            None => prim.set_material(Some(mat))?,
-        }
+        batch = match ground_root {
+            Some(ground) => batch.set(ground, Property::Material(material)).set(
+                prim,
+                Property::Relation((Relation::Custom(MATERIAL_BINDING.to_owned()), ground)),
+            ),
+            None => batch.set(prim, Property::Material(material)),
+        };
+
+        batch.flush()?;
 
         println!("Welcome home! =)");
 

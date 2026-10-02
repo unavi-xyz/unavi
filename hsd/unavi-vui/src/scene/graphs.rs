@@ -1,32 +1,34 @@
-//! The shading VUI draws with, built once and bound by every body that wants
-//! it.
+//! The shading VUI draws with.
 //!
-//! A graph is submitted to one hidden template prim and reached by
-//! `material/binding`, rather than written onto each body: binding costs
-//! nothing, where submitting costs an upload, and the renderer shares one
-//! compiled program across everything pointing at it. What differs between two
-//! motes is their overrides.
+//! `wired:shading` compiles a graph once per distinct value and shares the
+//! program across every prim that submits the same one, so a body just
+//! submits [`shell`] to itself at creation time rather than being bound to a
+//! hidden template prim. What differs between two motes is their overrides.
 
-use std::cell::RefCell;
+use wired_guest::math::{
+    Color,
+    Vec2,
+    Vec3,
+};
 
-use wired_prelude::prelude::*;
-
-use crate::wired::scene::{
-    api::self_document,
-    types::{
+use crate::wired::{
+    scene::document::{
+        Document,
+        Layer,
+    },
+    shading::graph::{
+        BinaryOp,
         BlendMode,
         Combine3Op,
         Combine4Op,
         ConvertOp,
         CullMode,
-        Document,
         ExtractOp,
         GraphValue,
         LerpOp,
         Node,
         Port,
         PowOp,
-        Prim,
         RemapOp,
         ShaderGraph,
         SmoothstepOp,
@@ -34,6 +36,7 @@ use crate::wired::scene::{
         SurfaceOutput,
         UnlitOutput,
         ValueKind,
+        set_graph,
     },
 };
 
@@ -316,8 +319,8 @@ const fn cf(v: f32) -> Port {
     Port::Const(GraphValue::Float(v))
 }
 
-const fn binary(a: Port, b: Port) -> crate::wired::scene::types::BinaryOp {
-    crate::wired::scene::types::BinaryOp { a, b }
+const fn binary(a: Port, b: Port) -> BinaryOp {
+    BinaryOp { a, b }
 }
 
 /// Splits a colour into channels and puts it back with `alpha`, which is the
@@ -356,7 +359,7 @@ fn with_alpha(net: &mut Net, color: Port, alpha: Port) -> Port {
 /// The material is opaque because that is what reaches the transmissive
 /// phase: a blended one lands in the transparent phase, where the texture
 /// `SceneColor` samples is never filled.
-fn shell() -> ShaderGraph {
+pub fn shell() -> ShaderGraph {
     let mut net = Net::default();
     let screen = net.push(Node::ScreenUv);
     let normal = net.push(Node::WorldNormal);
@@ -489,7 +492,7 @@ fn shell() -> ShaderGraph {
 ///
 /// Growing conflates how far along a cast is with how big it is; a sweep says
 /// only the first, and the burning head says which way it is going.
-fn ring() -> ShaderGraph {
+pub fn ring() -> ShaderGraph {
     let mut net = Net::default();
     let progress = Port::Input(RING_PROGRESS);
 
@@ -575,61 +578,16 @@ fn ring() -> ShaderGraph {
     }
 }
 
-/// The prims carrying VUI's compiled graphs, minted once for the document
-/// every surface draws into.
-struct Templates {
-    shell: Prim,
-    ring:  Prim,
-}
-
-thread_local! {
-    static TEMPLATES: RefCell<Option<Templates>> = const { RefCell::new(None) };
-}
-
-fn template(doc: &Document, name: &str, graph: &ShaderGraph) -> anyhow::Result<Prim> {
-    let prim = doc.create_prim()?;
-    // Carries a graph and nothing else: with no mesh there is nothing to draw,
-    // and the hidden xform keeps it from being mistaken for content.
-    prim.set_xform(Some(Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
-    }))?;
-    // Reported rather than propagated: the host names the node it rejected,
-    // and a surface that comes up unshaded with that on the log is far easier
-    // to place than one that refuses to come up at all.
-    if let Err(err) = prim.set_material_graph(Some(graph)) {
-        eprintln!("vui: the {name} graph was rejected, so it draws unshaded: {err}");
-    }
-    Ok(prim)
-}
-
-fn with_templates<T>(f: impl FnOnce(&Templates) -> T) -> anyhow::Result<T> {
-    TEMPLATES.with(|cell| {
-        let mut slot = cell.borrow_mut();
-        if slot.is_none() {
-            let doc = self_document()?;
-            *slot = Some(Templates {
-                shell: template(&doc, "shell", &shell())?,
-                ring:  template(&doc, "ring", &ring())?,
-            });
-        }
-        let templates = slot.as_ref().expect("just filled");
-        Ok(f(templates))
-    })
-}
-
-/// Points `prim` at the shell graph. Cheap and repeatable: a binding names a
-/// prim, and every body naming this one shares its compiled program.
-pub fn bind_shell(prim: &Prim) -> anyhow::Result<()> {
-    let id = with_templates(|t| t.shell.id())?;
-    prim.set_relationship("material/binding", Some(&id))?;
+/// Submits [`shell`] to `prim`. Cheap and repeatable: the host shares one
+/// compiled program across every prim submitting the same graph, so this is
+/// paid once per slot rather than built into a hidden template.
+pub fn set_shell(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
+    set_graph(doc, prim, Layer::Local, Some(&shell()))?;
     Ok(())
 }
 
-pub fn bind_ring(prim: &Prim) -> anyhow::Result<()> {
-    let id = with_templates(|t| t.ring.id())?;
-    prim.set_relationship("material/binding", Some(&id))?;
+pub fn set_ring(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
+    set_graph(doc, prim, Layer::Local, Some(&ring()))?;
     Ok(())
 }
 
@@ -705,7 +663,7 @@ mod tests {
 
     /// The two rules a graph is refused for that a guest can check on its own.
     /// Kind agreement it cannot: only the host holds the type rules, and a
-    /// mismatch shows up as the rejection message `template` prints.
+    /// mismatch shows up as the rejection the host returns.
     fn assert_well_formed(graph: &ShaderGraph, name: &str) {
         assert!(
             graph.public_inputs.len() <= MAX_PUBLIC_INPUTS,

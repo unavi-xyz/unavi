@@ -24,7 +24,7 @@ pub mod tree;
 pub mod tuning;
 pub mod view;
 
-wired_prelude::generate!();
+wired_guest::generate!();
 
 struct World;
 

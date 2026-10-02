@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "wired-prelude"
+name                 = "wired-guest"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace       = true
-wired-math.path        = "../wired-math"
-wired-scene.path       = "../wired-scene"
+blake3.workspace       = true
+glam                   = { features = ["serde"], workspace = true }
+serde                  = { features = ["derive"], workspace = true }
 wired-state-macro.path = "../wired-state-macro"

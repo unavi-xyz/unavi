@@ -14,7 +14,7 @@ use crate::{
         Vui,
     },
     tuning::Tuning,
-    wired::error::types::Error,
+    wired::core::error::Error,
 };
 
 mod convert;
@@ -35,8 +35,8 @@ impl Guest for World {
         drive(Vui::fixed_update)
     }
 
-    fn update() -> Result<(), Error> {
-        drive(Vui::update)
+    fn update(dt: f32) -> Result<(), Error> {
+        drive(|vui| vui.update(dt))
     }
 }
 
@@ -54,7 +54,8 @@ fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<S
 fn drain(surface: SurfaceId) -> Vec<Event> {
     VUI.with_borrow_mut(|vui| {
         vui.as_mut()
-            .map_or_default(|vui| vui.drain(surface))
+            .map(|vui| vui.drain(surface))
+            .unwrap_or_default()
             .into_iter()
             .map(convert::event)
             .collect()
@@ -67,6 +68,14 @@ fn summon(surface: SurfaceId) -> Result<(), Error> {
 
 fn dismiss(surface: SurfaceId) -> Result<(), Error> {
     drive(|vui| vui.dismiss(surface))
+}
+
+/// Frees a surface's prims. Called when the `orbit`/`grid` handle drawing it
+/// is dropped, so nothing the script let go of keeps costing frames.
+fn remove(surface: SurfaceId) {
+    if let Err(err) = drive(|vui| vui.remove(surface)) {
+        eprintln!("vui: could not free a dropped surface: {err:?}");
+    }
 }
 
 fn shown(surface: SurfaceId) -> bool {
@@ -83,5 +92,5 @@ fn drive(step: impl FnOnce(&mut Vui) -> anyhow::Result<()>) -> Result<(), Error>
 }
 
 fn failed(err: &anyhow::Error) -> Error {
-    Error::Other(format!("{err:?}"))
+    Error::Internal(format!("{err:?}"))
 }

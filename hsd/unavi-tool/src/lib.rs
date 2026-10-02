@@ -1,8 +1,11 @@
+//! A shell-hosted tool belt, shared by every tool crate and the shell that
+//! holds them. `tool` is the tool side; `tool-registry` is the shell's.
+
 mod protocol;
 mod registry;
 mod tool;
 
-wired_prelude::generate!();
+wired_guest::generate!();
 
 struct World;
 

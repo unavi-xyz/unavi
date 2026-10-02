@@ -1,3 +1,5 @@
+//! A subdivided icosahedron, projected onto a sphere.
+
 use std::{
     cell::{
         Cell,
@@ -6,31 +8,35 @@ use std::{
     collections::HashMap,
 };
 
-use glam::Vec3;
+use wired_guest::math::Vec3;
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestSphere,
-    wired::scene::types::{
-        Collider,
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::{
+            document::Document,
+            properties::Collider,
+        },
     },
 };
 
-#[derive(Default)]
-pub struct SphereWrapped {
+/// `20 * 4^subdivisions` triangles, already 81,920 at the limit.
+const MAX_SUBDIVISIONS: u32 = 6;
+
+pub struct Sphere {
     doc:          RefCell<Option<Document>>,
     radius:       f32,
     subdivisions: Cell<u32>,
 }
 
-impl GuestSphere for SphereWrapped {
+impl GuestSphere for Sphere {
     fn new(radius: f32) -> Self {
         Self {
+            doc: RefCell::new(None),
             radius,
             subdivisions: Cell::new(5),
-            ..Default::default()
         }
     }
 
@@ -38,11 +44,8 @@ impl GuestSphere for SphereWrapped {
         Collider::Sphere(self.radius)
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(
-            self.doc.borrow().as_ref(),
-            &build(self.radius, self.subdivisions.get()),
-        )
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(&self.doc, &build(self.radius, self.subdivisions.get()))
     }
 
     fn set_doc(&self, doc: Document) {
@@ -53,8 +56,14 @@ impl GuestSphere for SphereWrapped {
         self.subdivisions.get()
     }
 
-    fn set_subdivisions(&self, value: u32) {
+    fn set_subdivisions(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_SUBDIVISIONS {
+            return Err(Error::InvalidArgument(format!(
+                "subdivisions must be at most {MAX_SUBDIVISIONS}"
+            )));
+        }
         self.subdivisions.set(value);
+        Ok(())
     }
 }
 

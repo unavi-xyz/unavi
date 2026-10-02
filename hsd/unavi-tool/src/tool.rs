@@ -1,3 +1,11 @@
+//! The tool side of `unavi:tool/api`: a tool crate builds one `tool` and
+//! polls it for what the shell asks of it.
+
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+};
+
 use crate::{
     exports::unavi::tool::api::{
         GuestTool,
@@ -13,118 +21,120 @@ use crate::{
         CH_SCROLL,
         CH_SET_STATE,
         CH_TRIGGER,
+        MAX_DESCRIPTION_BYTES,
+        MAX_NAME_BYTES,
         RegisterPayload,
         ScrollPayload,
         ToolStatePayload,
         TriggerPayload,
     },
     wired::{
-        event::{
-            api::{
-                emit,
-                listen,
-            },
-            types::{
-                EventFilter,
-                EventReceptor,
-                EventScope,
-            },
+        core::error::Error,
+        event::messaging::{
+            self,
+            MessageSubscription,
+            Scope,
         },
-        scene::types::Prim,
     },
 };
 
+/// Messages drained from the network each `poll`, queued so a tick with
+/// several arrivals does not drop any.
+const DRAIN_MAX: u32 = 16;
+
 pub struct Tool {
-    name:              String,
-    description:       String,
-    icon_prim_id:      String,
-    request_receptor:  EventReceptor,
-    activate_receptor: EventReceptor,
+    name:        String,
+    description: String,
+    discover_rx: MessageSubscription,
+    control_rx:  MessageSubscription,
+    pending:     RefCell<VecDeque<ToolEvent>>,
 }
 
 impl GuestTool for Tool {
-    fn new(name: String, description: String, icon: &Prim) -> Self {
-        let icon_prim_id = icon.id();
-        let request_receptor = listen(
-            &[CH_DISCOVER.to_string()],
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )
-        .expect("listen");
-        let activate_receptor = listen(
+    fn new(name: String, description: String) -> Result<Self, Error> {
+        if name.len() > MAX_NAME_BYTES {
+            return Err(Error::InvalidArgument(format!(
+                "name must be at most {MAX_NAME_BYTES} bytes"
+            )));
+        }
+        if description.len() > MAX_DESCRIPTION_BYTES {
+            return Err(Error::InvalidArgument(format!(
+                "description must be at most {MAX_DESCRIPTION_BYTES} bytes"
+            )));
+        }
+
+        let discover_rx = messaging::listen(&[CH_DISCOVER.to_owned()], None, Scope::Global)?;
+        let control_rx = messaging::listen(
             &[
-                CH_ACTIVATE.to_string(),
-                CH_DEACTIVATE.to_string(),
-                CH_SET_STATE.to_string(),
-                CH_TRIGGER.to_string(),
-                CH_SCROLL.to_string(),
+                CH_ACTIVATE.to_owned(),
+                CH_DEACTIVATE.to_owned(),
+                CH_SET_STATE.to_owned(),
+                CH_TRIGGER.to_owned(),
+                CH_SCROLL.to_owned(),
             ],
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )
-        .expect("listen");
-        Self {
+            None,
+            Scope::Global,
+        )?;
+
+        Ok(Self {
             name,
             description,
-            icon_prim_id,
-            request_receptor,
-            activate_receptor,
-        }
+            discover_rx,
+            control_rx,
+            pending: RefCell::new(VecDeque::new()),
+        })
     }
 
     fn poll(&self) -> Option<ToolEvent> {
-        while let Some(event) = self.request_receptor.poll() {
-            let payload = postcard::to_allocvec(&RegisterPayload {
-                name:         self.name.clone(),
-                description:  self.description.clone(),
-                icon_prim_id: self.icon_prim_id.clone(),
-            })
-            .expect("encode register");
-            emit(
-                CH_REGISTER,
-                &payload,
-                EventFilter {
-                    documents: Some(vec![event.sender().document]),
-                    scope:     EventScope::Global,
-                },
-            )
-            .ok();
-        }
-
-        while let Some(event) = self.activate_receptor.poll() {
-            match event.channel().as_str() {
-                CH_ACTIVATE => {
-                    if let Ok(p) = postcard::from_bytes::<ActivatePayload>(&event.payload()) {
-                        return Some(ToolEvent::Activate(p.transform));
-                    }
+        for message in self.discover_rx.drain(DRAIN_MAX) {
+            let Some(sender) = message.sender else {
+                continue;
+            };
+            let payload = match postcard::to_allocvec(&RegisterPayload {
+                name:        self.name.clone(),
+                description: self.description.clone(),
+            }) {
+                Ok(payload) => payload,
+                Err(err) => {
+                    eprintln!("tool: encode register: {err}");
+                    continue;
                 }
-                CH_DEACTIVATE => return Some(ToolEvent::Deactivate),
-                CH_SET_STATE => {
-                    if let Ok(p) = postcard::from_bytes::<ToolStatePayload>(&event.payload()) {
-                        return Some(ToolEvent::SetState(ToolState {
-                            color:  p.color,
-                            in_use: p.in_use,
-                        }));
-                    }
-                }
-                CH_TRIGGER => {
-                    if let Ok(p) = postcard::from_bytes::<TriggerPayload>(&event.payload()) {
-                        return Some(ToolEvent::Trigger(p.pressed));
-                    }
-                }
-                CH_SCROLL => {
-                    if let Ok(p) = postcard::from_bytes::<ScrollPayload>(&event.payload()) {
-                        return Some(ToolEvent::Scroll(p.delta));
-                    }
-                }
-                _ => {}
+            };
+            if let Err(err) = messaging::emit(CH_REGISTER, &payload, Some(&[sender]), Scope::Global)
+            {
+                eprintln!("tool: emit register: {err:?}");
             }
         }
 
-        None
+        let mut pending = self.pending.borrow_mut();
+        for message in self.control_rx.drain(DRAIN_MAX) {
+            let event = match message.channel.as_str() {
+                CH_ACTIVATE => postcard::from_bytes::<ActivatePayload>(&message.payload)
+                    .ok()
+                    .map(|p| ToolEvent::Activate(p.transform)),
+                CH_DEACTIVATE => Some(ToolEvent::Deactivate),
+                CH_SET_STATE => postcard::from_bytes::<ToolStatePayload>(&message.payload)
+                    .ok()
+                    .map(|p| {
+                        ToolEvent::SetState(ToolState {
+                            color:  p.color,
+                            in_use: p.in_use,
+                        })
+                    }),
+                CH_TRIGGER => postcard::from_bytes::<TriggerPayload>(&message.payload)
+                    .ok()
+                    .map(|p| ToolEvent::Trigger(p.pressed)),
+                CH_SCROLL => postcard::from_bytes::<ScrollPayload>(&message.payload)
+                    .ok()
+                    .map(|p| ToolEvent::Scroll(p.delta)),
+                _ => None,
+            };
+            match event {
+                Some(event) => pending.push_back(event),
+                None => eprintln!("tool: malformed message on {}", message.channel),
+            }
+        }
+
+        pending.pop_front()
     }
 }

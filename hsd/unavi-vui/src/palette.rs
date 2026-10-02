@@ -1,4 +1,4 @@
-use wired_scene::types::Color;
+use wired_guest::math::Color;
 
 use crate::attention::Attention;
 

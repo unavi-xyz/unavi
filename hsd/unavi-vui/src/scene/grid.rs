@@ -1,11 +1,11 @@
 //! A self-contained grid: a destination that accepts filings, with real
 //! extents and pagination past its cells.
 
-use wired_math::types::{
+use wired_guest::math::{
+    Transform,
     Vec2,
     Vec3,
 };
-use wired_prelude::prelude::*;
 
 use crate::{
     grasp::Outcome,
@@ -41,7 +41,7 @@ use crate::{
     },
     tuning::Tuning,
     view::Frame,
-    wired::scene::types::Document,
+    wired::scene::document::Document,
 };
 
 /// A bounded grid of a mote's children, and a destination a carried mote can
@@ -100,24 +100,34 @@ impl Mounted for Grid {
         self.mount
     }
 
-    fn place(&mut self, anchor: &Transform) -> anyhow::Result<()> {
-        self.bodies.place(anchor)
+    fn place(&mut self, doc: &Document, anchor: &Transform) -> anyhow::Result<()> {
+        self.bodies.place(doc, anchor)
     }
 
     fn field_lift(&self) -> f32 {
         self.surface.tuning().field_lift
     }
 
-    fn show(&mut self, shown: bool) -> anyhow::Result<()> {
+    fn root(&self) -> (u64, u64) {
+        self.bodies.root()
+    }
+
+    fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()> {
         self.surface.set_open(shown);
-        self.bodies.show(shown)
+        self.bodies.show(doc, shown)
     }
 
     fn is_visible(&self) -> bool {
         self.surface.is_visible()
     }
 
-    fn update(&mut self, gaze: &Gaze, anchor: Transform, delta: f32) -> anyhow::Result<Vec<Event>> {
+    fn update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+        delta: f32,
+    ) -> anyhow::Result<Vec<Event>> {
         let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
         let frame = Frame {
             eye: gaze.eye.translation,
@@ -132,6 +142,7 @@ impl Mounted for Grid {
         self.surface.update(&specs, self.layout, 0, &frame);
 
         self.bodies.icons(
+            doc,
             &motes,
             &specs,
             self.surface.views(),
@@ -139,6 +150,7 @@ impl Mounted for Grid {
             delta,
         )?;
         self.bodies.apply(
+            doc,
             self.surface.views(),
             &specs,
             self.surface.drawn(),
@@ -150,24 +162,30 @@ impl Mounted for Grid {
         let mut events = Vec::new();
         self.report_page(&mut events);
         drive_cast(
+            doc,
             &mut self.casting,
             &self.surface,
             &self.site,
             delta,
             &mut events,
         )?;
-        self.hand_over()?;
+        self.hand_over(doc)?;
         Ok(events)
     }
 
-    fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate> {
+    fn fixed_update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+    ) -> anyhow::Result<FixedUpdate> {
         let mut events = Vec::new();
         let mut released = None;
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
                 (Signal::Act(true), false) => self.press(gaze, anchor, false, &mut events),
                 (Signal::Take(true), false) => self.press(gaze, anchor, true, &mut events),
-                (Signal::Act(false) | Signal::Take(false), _) => released = self.release()?,
+                (Signal::Act(false) | Signal::Take(false), _) => released = self.release(doc)?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
                 (Signal::Act(true) | Signal::Take(true) | Signal::Turn(_), true) => {}
             }
@@ -226,17 +244,20 @@ impl Grid {
             .cloned()
     }
 
-    fn release(&mut self) -> anyhow::Result<Option<Released>> {
+    fn release(&mut self, doc: &Document) -> anyhow::Result<Option<Released>> {
         self.depth = None;
         let outcome = self.surface.release();
 
         let carried = self.held.take();
         let landed = carried.and_then(|slot| {
             let bodies = &self.bodies;
-            Some((bodies.pose(slot)?.translation, bodies.velocity(slot)))
+            Some((
+                bodies.pose(doc, slot)?.translation,
+                bodies.velocity(doc, slot),
+            ))
         });
         if let Some(slot) = carried {
-            self.bodies.clear_dynamic(slot)?;
+            self.bodies.clear_dynamic(doc, slot)?;
         }
 
         // A grid holds no tree to navigate, so the only thing a release still
@@ -246,14 +267,14 @@ impl Grid {
             Some(Outcome::Place(slot)) => {
                 Ok(landed.and_then(|(at, velocity)| self.build_released(slot, at, velocity)))
             }
-            Some(Outcome::Tap(slot)) => Ok(self.delivered(slot)),
+            Some(Outcome::Tap(slot)) => Ok(self.delivered(doc, slot)),
             None => Ok(None),
         }
     }
 
     /// The item drawn in `slot`, landing where it stands. An item fired where
     /// it sits lands too; the grip only chooses where.
-    fn delivered(&self, slot: usize) -> Option<Released> {
+    fn delivered(&self, doc: &Document, slot: usize) -> Option<Released> {
         let index = self.surface.spec_index(slot)?;
         let mote = self
             .contents()
@@ -263,7 +284,7 @@ impl Grid {
         Some(Released {
             mote,
             landing: Landing {
-                at:       self.bodies.pose(slot)?.translation,
+                at:       self.bodies.pose(doc, slot)?.translation,
                 velocity: Vec3::ZERO,
             },
         })
@@ -286,7 +307,7 @@ impl Grid {
         });
     }
 
-    fn hand_over(&mut self) -> anyhow::Result<()> {
+    fn hand_over(&mut self, doc: &Document) -> anyhow::Result<()> {
         if self.held.is_some() {
             return Ok(());
         }
@@ -297,7 +318,7 @@ impl Grid {
             return Ok(());
         };
         self.held = Some(slot);
-        self.bodies.make_dynamic(slot, radius)
+        self.bodies.make_dynamic(doc, slot, radius)
     }
 
     fn build_released(&self, slot: usize, at: Vec3, velocity: Vec3) -> Option<Released> {

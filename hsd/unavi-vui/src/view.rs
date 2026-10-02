@@ -1,9 +1,9 @@
-use wired_math::types::{
+use wired_guest::math::{
+    Color,
     Transform,
     Vec2,
     Vec3,
 };
-use wired_scene::types::Color;
 
 use crate::{
     attention::Attention,

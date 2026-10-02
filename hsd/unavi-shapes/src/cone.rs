@@ -1,3 +1,5 @@
+//! A cone, flat base and a single apex.
+
 use std::{
     cell::{
         Cell,
@@ -9,33 +11,34 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCone,
-    wired::scene::types::{
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::document::Document,
     },
 };
 
-#[derive(Default)]
-pub struct ConeWrapped {
+const MAX_RESOLUTION: u32 = 128;
+
+pub struct Cone {
     doc:        RefCell<Option<Document>>,
     radius:     f32,
     height:     f32,
     resolution: Cell<u32>,
 }
 
-impl GuestCone for ConeWrapped {
+impl GuestCone for Cone {
     fn new(radius: f32, height: f32) -> Self {
         Self {
+            doc: RefCell::new(None),
             radius,
             height,
             resolution: Cell::new(32),
-            ..Default::default()
         }
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(
-            self.doc.borrow().as_ref(),
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(
+            &self.doc,
             &build(self.radius, self.height, self.resolution.get()),
         )
     }
@@ -48,8 +51,14 @@ impl GuestCone for ConeWrapped {
         self.resolution.get()
     }
 
-    fn set_resolution(&self, value: u32) {
+    fn set_resolution(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_RESOLUTION {
+            return Err(Error::InvalidArgument(format!(
+                "resolution must be at most {MAX_RESOLUTION}"
+            )));
+        }
         self.resolution.set(value);
+        Ok(())
     }
 }
 

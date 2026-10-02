@@ -13,9 +13,6 @@ name = "arrayvec"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "atomic-polyfill"
@@ -144,7 +141,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "postcard",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -153,7 +150,7 @@ name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -162,7 +159,7 @@ name = "example-unavi-vui"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -171,7 +168,7 @@ name = "example-wired-agent"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -180,7 +177,7 @@ name = "example-wired-event"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -189,7 +186,7 @@ name = "example-wired-input"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -532,8 +529,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "blake3",
- "unavi-script-util",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -543,8 +539,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "blake3",
- "unavi-script-util",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -553,9 +548,7 @@ name = "unavi-gate"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "postcard",
- "unavi-portal-protocol",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -566,8 +559,7 @@ dependencies = [
  "anyhow",
  "blake3",
  "postcard",
- "unavi-script-util",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -576,31 +568,15 @@ name = "unavi-physgun"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
-]
-
-[[package]]
-name = "unavi-portal-protocol"
-version = "0.0.16"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "unavi-script-util"
-version = "0.0.16"
-dependencies = [
- "blake3",
- "wired-prelude",
 ]
 
 [[package]]
 name = "unavi-shapes"
 version = "0.0.16"
 dependencies = [
- "glam",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -609,7 +585,7 @@ name = "unavi-spawner"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -619,7 +595,7 @@ version = "0.0.16"
 dependencies = [
  "postcard",
  "serde",
- "wired-prelude",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -629,11 +605,8 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "arrayvec",
- "serde",
  "smol_str",
- "wired-math",
- "wired-prelude",
- "wired-scene",
+ "wired-guest",
  "wit-bindgen",
 ]
 
@@ -684,28 +657,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-math"
-version = "0.0.16"
-dependencies = [
- "glam",
- "serde",
-]
-
-[[package]]
-name = "wired-prelude"
+name = "wired-guest"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "wired-math",
- "wired-scene",
- "wired-state-macro",
-]
-
-[[package]]
-name = "wired-scene"
-version = "0.0.16"
-dependencies = [
+ "blake3",
+ "glam",
  "serde",
+ "wired-state-macro",
 ]
 
 [[package]]

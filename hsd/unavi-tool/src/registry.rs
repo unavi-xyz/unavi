@@ -1,9 +1,9 @@
+//! The shell side of `unavi:tool/api`: the belt a halo-like shell polls for
+//! announced tools and pushes state onto.
+
 use std::cell::Cell;
 
-use wired_prelude::{
-    wired_math::types::Transform,
-    wired_scene::types::Color,
-};
+use wired_guest::math::Transform;
 
 use crate::{
     exports::unavi::tool::api::{
@@ -12,6 +12,7 @@ use crate::{
         ToolState,
     },
     protocol::{
+        self,
         ActivatePayload,
         CH_ACTIVATE,
         CH_DEACTIVATE,
@@ -20,161 +21,123 @@ use crate::{
         CH_SCROLL,
         CH_SET_STATE,
         CH_TRIGGER,
+        MAX_DESCRIPTION_BYTES,
+        MAX_NAME_BYTES,
         RegisterPayload,
         ScrollPayload,
         ToolStatePayload,
         TriggerPayload,
     },
-    wired::event::{
-        api::{
-            emit,
-            listen,
-        },
-        types::{
-            EventFilter,
-            EventReceptor,
-            EventScope,
-        },
+    wired::event::messaging::{
+        self,
+        MessageSubscription,
+        Scope,
     },
 };
 
-// TODO: re-discover on an interval, or some other non-time-based method
-/// Discovery delay, to let other scripts load.
+const DRAIN_MAX: u32 = 16;
+
+/// Ticks before the belt asks every loaded tool to announce itself.
+/// `tool`s loaded after this fire are never discovered; see the WIT pain
+/// points in the step 5c handoff.
 const DISCOVER_DELAY_TICKS: u32 = 60;
 
 pub struct ToolRegistry {
-    register_receptor: EventReceptor,
-    ticks:             Cell<u32>,
-    fired:             Cell<bool>,
+    /// `None` when opening the listener failed; the belt then never
+    /// discovers a tool, instead of trapping the whole script.
+    register_rx: Option<MessageSubscription>,
+    ticks:       Cell<u32>,
+    discovered:  Cell<bool>,
 }
 
 impl GuestToolRegistry for ToolRegistry {
     fn new() -> Self {
-        let register_receptor = listen(
-            &[CH_REGISTER.to_string()],
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )
-        .expect("listen");
+        let register_rx = match messaging::listen(&[CH_REGISTER.to_owned()], None, Scope::Global) {
+            Ok(rx) => Some(rx),
+            Err(err) => {
+                eprintln!("tool-registry: listen: {err:?}");
+                None
+            }
+        };
         Self {
-            register_receptor,
+            register_rx,
             ticks: Cell::new(0),
-            fired: Cell::new(false),
+            discovered: Cell::new(false),
         }
     }
 
     fn poll(&self) -> Vec<RegisteredTool> {
-        if !self.fired.get() {
-            let t = self.ticks.get() + 1;
-            self.ticks.set(t);
-
-            if t >= DISCOVER_DELAY_TICKS {
-                emit(
-                    CH_DISCOVER,
-                    &[],
-                    EventFilter {
-                        documents: None,
-                        scope:     EventScope::Global,
-                    },
-                )
-                .ok();
-                self.fired.set(true);
+        if !self.discovered.get() {
+            let ticks = self.ticks.get() + 1;
+            self.ticks.set(ticks);
+            if ticks >= DISCOVER_DELAY_TICKS {
+                self.discovered.set(true);
+                if let Err(err) = messaging::emit(CH_DISCOVER, &[], None, Scope::Global) {
+                    eprintln!("tool-registry: emit discover: {err:?}");
+                }
             }
         }
 
-        let mut results = Vec::new();
-        while let Some(event) = self.register_receptor.poll() {
-            if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload()) {
-                results.push(RegisteredTool {
-                    doc_id:       event.sender().document,
-                    name:         p.name,
-                    description:  p.description,
-                    icon_prim_id: p.icon_prim_id,
-                });
-            } else {
-                eprintln!("Received invalid event payload");
-            }
+        let Some(register_rx) = &self.register_rx else {
+            return Vec::new();
+        };
+
+        register_rx
+            .drain(DRAIN_MAX)
+            .into_iter()
+            .filter_map(|message| {
+                let document = message.sender?;
+                let mut p = postcard::from_bytes::<RegisterPayload>(&message.payload).ok()?;
+                protocol::truncate(&mut p.name, MAX_NAME_BYTES);
+                protocol::truncate(&mut p.description, MAX_DESCRIPTION_BYTES);
+                Some(RegisteredTool {
+                    document,
+                    name: p.name,
+                    description: p.description,
+                })
+            })
+            .collect()
+    }
+
+    fn activate(&self, document: (u64, u64, u64, u64), transform: Transform) {
+        emit_to(document, CH_ACTIVATE, &ActivatePayload { transform });
+    }
+
+    fn deactivate(&self, document: (u64, u64, u64, u64)) {
+        if let Err(err) = messaging::emit(CH_DEACTIVATE, &[], Some(&[document]), Scope::Global) {
+            eprintln!("tool-registry: emit deactivate: {err:?}");
         }
-        results
     }
 
-    fn activate(&self, doc_id: Vec<u8>, transform: Transform) {
-        let payload =
-            postcard::to_allocvec(&ActivatePayload { transform }).expect("encode activate");
-        emit(
-            CH_ACTIVATE,
-            &payload,
-            EventFilter {
-                documents: Some(vec![doc_id]),
-                scope:     EventScope::Global,
-            },
-        )
-        .ok();
-    }
-
-    fn deactivate(&self, doc_id: Vec<u8>) {
-        emit(
-            CH_DEACTIVATE,
-            &[],
-            EventFilter {
-                documents: Some(vec![doc_id]),
-                scope:     EventScope::Global,
-            },
-        )
-        .ok();
-    }
-
-    fn set_state(&self, doc_id: Vec<u8>, state: ToolState) {
-        let payload = postcard::to_allocvec(&ToolStatePayload {
-            color:  state.color,
-            in_use: state.in_use,
-        })
-        .expect("encode set state");
-        emit(
+    fn set_state(&self, document: (u64, u64, u64, u64), state: ToolState) {
+        emit_to(
+            document,
             CH_SET_STATE,
-            &payload,
-            EventFilter {
-                documents: Some(vec![doc_id]),
-                scope:     EventScope::Global,
+            &ToolStatePayload {
+                color:  state.color,
+                in_use: state.in_use,
             },
-        )
-        .ok();
+        );
     }
 
-    fn trigger(&self, doc_id: Vec<u8>, pressed: bool) {
-        let payload = postcard::to_allocvec(&TriggerPayload { pressed }).expect("encode trigger");
-        emit(
-            CH_TRIGGER,
-            &payload,
-            EventFilter {
-                documents: Some(vec![doc_id]),
-                scope:     EventScope::Global,
-            },
-        )
-        .ok();
+    fn trigger(&self, document: (u64, u64, u64, u64), pressed: bool) {
+        emit_to(document, CH_TRIGGER, &TriggerPayload { pressed });
     }
 
-    fn scroll(&self, doc_id: Vec<u8>, delta: f32) {
-        let payload = postcard::to_allocvec(&ScrollPayload { delta }).expect("encode scroll");
-        emit(
-            CH_SCROLL,
-            &payload,
-            EventFilter {
-                documents: Some(vec![doc_id]),
-                scope:     EventScope::Global,
-            },
-        )
-        .ok();
+    fn scroll(&self, document: (u64, u64, u64, u64), delta: f32) {
+        emit_to(document, CH_SCROLL, &ScrollPayload { delta });
     }
 }
 
-impl From<Color> for ToolState {
-    fn from(color: Color) -> Self {
-        Self {
-            color,
-            in_use: false,
+fn emit_to(document: (u64, u64, u64, u64), channel: &str, payload: &impl serde::Serialize) {
+    let payload = match postcard::to_allocvec(payload) {
+        Ok(payload) => payload,
+        Err(err) => {
+            eprintln!("tool-registry: encode {channel}: {err}");
+            return;
         }
+    };
+    if let Err(err) = messaging::emit(channel, &payload, Some(&[document]), Scope::Global) {
+        eprintln!("tool-registry: emit {channel}: {err:?}");
     }
 }

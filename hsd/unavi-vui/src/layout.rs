@@ -1,6 +1,6 @@
 use std::f32::consts::TAU;
 
-use wired_math::types::Vec2;
+use wired_guest::math::Vec2;
 
 use crate::tuning::Tuning;
 

@@ -19,7 +19,10 @@ use unavi::vui::api::{
     Mount,
     Orbit,
 };
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Color,
+    Vec2,
+};
 
 use crate::fruit::{
     Fruit,
@@ -31,7 +34,7 @@ use crate::fruit::{
 
 mod fruit;
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
 /// Motes the orbit draws at once; anything past this paginates.
 const CAPACITY: u32 = 16;
@@ -50,12 +53,12 @@ struct Script {
     thrown: Vec<Throw>,
 }
 
-fn mote(kind: Kind, label: &str, description: &str) -> Mote {
-    let mote = Mote::new(kind, label);
+fn mote(kind: Kind, label: &str, description: &str) -> anyhow::Result<Mote> {
+    let mote = Mote::new(kind, label)?;
     if !description.is_empty() {
-        mote.describe(description);
+        mote.describe(description)?;
     }
-    mote
+    Ok(mote)
 }
 
 /// A crate of them: dropping one leaves a new fruit and the crate is no
@@ -171,51 +174,56 @@ const TREE_FRUIT: [Variety; 3] = [
     ),
 ];
 
-fn grove(label: &str, description: &str, varieties: &[Variety], fruit: &mut Vec<Fruit>) -> Mote {
-    let group = mote(Kind::Group, label, description);
+fn grove(
+    label: &str,
+    description: &str,
+    varieties: &[Variety],
+    fruit: &mut Vec<Fruit>,
+) -> anyhow::Result<Mote> {
+    let group = mote(Kind::Group, label, description)?;
     for variety in varieties {
-        let grown = Fruit::grow(variety);
+        let grown = Fruit::grow(variety)?;
         group.add_child(&grown.mote);
         fruit.push(grown);
     }
-    group
+    Ok(group)
 }
 
 /// Deliberately uneven: group sizes differ, one group overflows the pip cap,
 /// one outruns its grid and has to paginate, and the depth is unbounded.
-fn produce(fruit: &mut Vec<Fruit>) -> Mote {
-    let root = Mote::new(Kind::Group, "Produce");
+fn produce(fruit: &mut Vec<Fruit>) -> anyhow::Result<Mote> {
+    let root = Mote::new(Kind::Group, "Produce")?;
 
     let orchard = grove(
         "Orchard",
         "Tree fruit, and the deepest level here.",
         &TREE_FRUIT,
         fruit,
-    );
+    )?;
 
     // Stock, every one of it a source: the shop is not down to its last Gala.
-    let apples = grove("Apples", "The same group, opened as a grid.", &[], fruit);
+    let apples = grove("Apples", "The same group, opened as a grid.", &[], fruit)?;
     apples.set_arrange(Arrange::Grid);
     for (variety, [r, g, b]) in VARIETIES {
-        let grown = Fruit::grow(&source(variety, "", Shape::Cube, rgb(r, g, b), 0.055));
+        let grown = Fruit::grow(&source(variety, "", Shape::Cube, rgb(r, g, b), 0.055))?;
         apples.add_child(&grown.mote);
         fruit.push(grown);
     }
     orchard.add_child(&apples);
 
     for group in [
-        grove("Citrus", "Sharp fruit with a thick rind.", &CITRUS, fruit),
+        grove("Citrus", "Sharp fruit with a thick rind.", &CITRUS, fruit)?,
         grove(
             "Berries",
             "Small, soft, and quick to spoil.",
             &BERRIES,
             fruit,
-        ),
+        )?,
         orchard,
     ] {
         root.add_child(&group);
     }
-    root
+    Ok(root)
 }
 
 /// More than the grid's twelve cells, so it pages.
@@ -273,7 +281,7 @@ impl ScriptBehavior for Script {
         println!("  cool ones there is only one of, and dropping one moves it");
 
         let mut fruit = Vec::new();
-        let orbit = Orbit::new(&produce(&mut fruit), MOUNT, CAPACITY)?;
+        let orbit = Orbit::new(&produce(&mut fruit)?, MOUNT, CAPACITY)?;
 
         Ok(Self {
             orbit,
@@ -282,13 +290,16 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(
+        &mut self,
+        _tick: exports::wired::script::lifecycle::Tick,
+    ) -> anyhow::Result<()> {
         api::fixed_update()?;
         Ok(())
     }
 
-    fn update(&mut self) -> anyhow::Result<()> {
-        api::update()?;
+    fn update(&mut self, tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+        api::update(tick.dt)?;
         self.thrown.retain_mut(Throw::apply);
 
         for event in self.orbit.events() {

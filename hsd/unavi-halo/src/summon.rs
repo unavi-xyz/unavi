@@ -5,7 +5,7 @@
 //! hand-parented ring jitters with tracking noise and cannot be aimed at by
 //! the hand carrying it.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::Transform;
 
 /// Metres from the summon point, squared, past which the halo closes itself.
 const CLOSE_MOVE_SQ: f32 = 0.09;
@@ -97,7 +97,7 @@ fn moved(at: &Transform, eye: &Transform) -> bool {
     if delta.dot(delta) > RESUMMON_MOVE_SQ {
         return true;
     }
-    let was = at.rotation * Vec3::new(0.0, 0.0, -1.0);
-    let now = eye.rotation * Vec3::new(0.0, 0.0, -1.0);
+    let was = at.forward();
+    let now = eye.forward();
     was.dot(now) < RESUMMON_TURN_COS
 }

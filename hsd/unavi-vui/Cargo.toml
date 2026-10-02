@@ -14,10 +14,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow.workspace      = true
-arrayvec              = { features = ["serde"], workspace = true }
-serde.workspace       = true
+arrayvec.workspace    = true
 smol_str.workspace    = true
-wired-math.path       = "../wired-math"
-wired-prelude.path    = "../wired-prelude"
-wired-scene.path      = "../wired-scene"
+wired-guest.path      = "../wired-guest"
 wit-bindgen.workspace = true

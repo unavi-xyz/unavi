@@ -7,16 +7,17 @@ use std::{
 };
 
 use smol_str::SmolStr;
-use wired_scene::types::Color;
+use wired_guest::math::Color;
 
-use crate::{
-    mote::{
-        Arrange,
-        MoteSpec,
-        Role,
-    },
-    wired::scene::types::Prim,
+use crate::mote::{
+    Arrange,
+    MoteSpec,
+    Role,
 };
+
+/// A prim in the document VUI draws into, naming its place in the scene
+/// rather than any behaviour of its own.
+pub type PrimId = (u64, u64);
 
 /// What a mote is: how it draws, and what selecting it does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,9 +60,11 @@ struct Data {
     kind:        Kind,
     label:       SmolStr,
     description: Option<SmolStr>,
-    /// What the mote is, drawn inside its shell. Owned rather than borrowed
-    /// so a surface can keep drawing it after the consumer's handle is gone.
-    icon:        Option<Prim>,
+    /// What the mote is, drawn inside its shell: a prim in the document VUI
+    /// draws into. A plain id rather than a handle, so holding one costs
+    /// nothing and a surface can keep drawing it after the consumer's own
+    /// handle is gone.
+    icon:        Option<PrimId>,
     /// Whether this mote stands for the one of its thing rather than for a
     /// source of them. Meaningless on anything but an item.
     unique:      bool,
@@ -125,7 +128,7 @@ impl Mote {
         self.0.borrow_mut().description = Some(SmolStr::new(text));
     }
 
-    pub fn set_icon(&self, icon: Option<Prim>) {
+    pub fn set_icon(&self, icon: Option<PrimId>) {
         self.0.borrow_mut().icon = icon;
     }
 
@@ -138,10 +141,9 @@ impl Mote {
         self.0.borrow().unique
     }
 
-    /// Reads the icon in place: a handle is only cloned by a host call, so
-    /// nothing borrows one per frame.
-    pub fn with_icon<T>(&self, read: impl FnOnce(&Prim) -> T) -> Option<T> {
-        self.0.borrow().icon.as_ref().map(read)
+    #[must_use]
+    pub fn icon(&self) -> Option<PrimId> {
+        self.0.borrow().icon
     }
 
     #[must_use]

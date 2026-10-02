@@ -1,8 +1,8 @@
 //! The body of whatever is in hand, carried in front of the viewer.
 //!
-//! Law 7 wants a held tool to be visible, and on desktop there is no tracked
-//! hand to put one in. This stands in for it: a glowing core with orbiters,
-//! wearing the held tool's own colour, shown only while something is held.
+//! On desktop there is no tracked hand to put a held tool in, so this stands
+//! in for it: a glowing core with orbiters, wearing the held tool's own
+//! colour, shown only while something is held.
 //!
 //! It is also load-bearing rather than decorative. A tool fires from
 //! [`OFFSET`] — the physgun's muzzle *is* this body — so without it a beam
@@ -10,15 +10,29 @@
 //!
 //! It retires when a tracked hand can hold the tool itself.
 
-use wired_prelude::prelude::*;
+use std::f32::consts::TAU;
+
+use wired_guest::{
+    math::{
+        Color,
+        Quat,
+        Transform,
+        Vec3,
+    },
+    xform::hidden,
+};
 
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
-        api::self_document,
-        types::{
+        document::{
+            Document,
+            Layer,
+            script_document,
+        },
+        properties::{
             Material,
-            Prim,
+            Property,
         },
     },
 };
@@ -38,9 +52,10 @@ const TILT: f32 = 0.35;
 const SPEED: f32 = 5.0;
 
 pub struct Artifact {
-    root:     Prim,
-    core:     Prim,
-    orbiters: Vec<Prim>,
+    doc:      Document,
+    root:     (u64, u64),
+    core:     (u64, u64),
+    orbiters: Vec<(u64, u64)>,
     spin:     f32,
     /// How far out it is, 0 to 1, so appearing and going away are the same
     /// motion run in opposite directions.
@@ -49,23 +64,28 @@ pub struct Artifact {
 
 impl Artifact {
     pub fn new() -> anyhow::Result<Self> {
-        let doc = self_document()?;
-        let root = doc.create_prim()?;
-        root.set_xform(Some(hidden()))?;
+        let doc = script_document()?;
+        let root = doc.create_prim(Layer::Local, None)?;
+        let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh()?;
 
-        let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh();
-        core.set_xform(Some(hidden()))?;
-        root.add_child(&core)?;
+        let mut batch = doc
+            .local()
+            .set(root, Property::Transform(hidden()))
+            .set(core, Property::Parent(Some(root)))
+            .set(core, Property::Transform(hidden()));
 
         let mut orbiters = Vec::with_capacity(ORBITERS);
         for _ in 0..ORBITERS {
-            let orbiter = Cuboid::new(Vec3::splat(ORBITER_SIZE)).mesh();
-            orbiter.set_xform(Some(hidden()))?;
-            root.add_child(&orbiter)?;
+            let orbiter = Cuboid::new(Vec3::splat(ORBITER_SIZE)).mesh()?;
+            batch = batch
+                .set(orbiter, Property::Parent(Some(root)))
+                .set(orbiter, Property::Transform(hidden()));
             orbiters.push(orbiter);
         }
+        batch.flush()?;
 
         Ok(Self {
+            doc,
             root,
             core,
             orbiters,
@@ -77,9 +97,15 @@ impl Artifact {
     /// Dresses it in the held tool's colour. Materials are written only when
     /// the tool changes, never per frame.
     pub fn wear(&self, color: Color) {
-        self.core.set_material(Some(lit(color, 0.6))).ok();
-        for orbiter in &self.orbiters {
-            orbiter.set_material(Some(lit(color, 0.75))).ok();
+        let mut batch = self
+            .doc
+            .local()
+            .set(self.core, Property::Material(lit(color, 0.6)));
+        for &orbiter in &self.orbiters {
+            batch = batch.set(orbiter, Property::Material(lit(color, 0.75)));
+        }
+        if let Err(err) = batch.flush() {
+            eprintln!("halo: wear artifact: {err:?}");
         }
     }
 
@@ -92,11 +118,17 @@ impl Artifact {
             (self.out - step).max(0.0)
         };
 
-        self.root.set_xform(Some(Transform {
-            translation: eye.translation + eye.rotation * OFFSET,
-            rotation:    eye.rotation,
-            scale:       Vec3::splat(self.out),
-        }))?;
+        self.doc
+            .local()
+            .set(
+                self.root,
+                Property::Transform(Transform {
+                    translation: eye.translation + eye.rotation * OFFSET,
+                    rotation:    eye.rotation,
+                    scale:       Vec3::splat(self.out),
+                }),
+            )
+            .flush()?;
         if self.out <= 0.0 {
             return Ok(());
         }
@@ -105,33 +137,31 @@ impl Artifact {
             self.out.mul_add(SPIN_ACTIVE - SPIN_IDLE, SPIN_IDLE),
             self.spin,
         );
-        self.core.set_xform(Some(Transform {
-            translation: Vec3::ZERO,
-            rotation:    spun(self.spin),
-            scale:       Vec3::ONE,
-        }))?;
-
-        for (index, orbiter) in self.orbiters.iter().enumerate() {
-            let phase = self.spin + index as f32 * std::f32::consts::TAU / ORBITERS as f32;
-            orbiter.set_xform(Some(Transform {
-                translation: Vec3::new(
-                    ORBIT_RADIUS * phase.cos(),
-                    ORBIT_RADIUS * TILT * (phase * 2.0).sin(),
-                    ORBIT_RADIUS * phase.sin(),
-                ),
-                rotation:    Quat::IDENTITY,
+        let mut batch = self.doc.local().set(
+            self.core,
+            Property::Transform(Transform {
+                translation: Vec3::ZERO,
+                rotation:    spun(self.spin),
                 scale:       Vec3::ONE,
-            }))?;
+            }),
+        );
+        for (index, &orbiter) in self.orbiters.iter().enumerate() {
+            let phase = self.spin + index as f32 * TAU / ORBITERS as f32;
+            batch = batch.set(
+                orbiter,
+                Property::Transform(Transform {
+                    translation: Vec3::new(
+                        ORBIT_RADIUS * phase.cos(),
+                        ORBIT_RADIUS * TILT * (phase * 2.0).sin(),
+                        ORBIT_RADIUS * phase.sin(),
+                    ),
+                    rotation:    Quat::IDENTITY,
+                    scale:       Vec3::ONE,
+                }),
+            );
         }
+        batch.flush()?;
         Ok(())
-    }
-}
-
-const fn hidden() -> Transform {
-    Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
     }
 }
 
@@ -141,10 +171,7 @@ fn spun(angle: f32) -> Quat {
 
 const fn lit(color: Color, glow: f32) -> Material {
     Material {
-        alpha_cutoff: None,
-        alpha_mode:   None,
         base_color:   Some(color),
-        double_sided: None,
         emissive:     Some(Color {
             r: color.r * glow,
             g: color.g * glow,
@@ -153,5 +180,8 @@ const fn lit(color: Color, glow: f32) -> Material {
         }),
         metallic:     Some(0.0),
         roughness:    Some(0.5),
+        alpha_mode:   None,
+        alpha_cutoff: None,
+        double_sided: None,
     }
 }

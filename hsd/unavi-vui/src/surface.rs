@@ -1,5 +1,7 @@
-use wired_math::types::Vec3;
-use wired_scene::types::Color;
+use wired_guest::math::{
+    Color,
+    Vec3,
+};
 
 use crate::{
     assist,
@@ -475,7 +477,7 @@ impl Surface {
 #[cfg(test)]
 mod tests {
     use smol_str::SmolStr;
-    use wired_math::types::{
+    use wired_guest::math::{
         Quat,
         Transform,
         Vec2,

@@ -5,7 +5,7 @@
 //! is where a slot gets to look like itself. Per-slot colour is most of what
 //! makes a ring readable at a glance.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::Color;
 
 pub const HOME: Color = rgb(0.86, 0.10, 0.08);
 pub const NAV: Color = rgb(0.06, 0.50, 0.22);
@@ -13,7 +13,7 @@ pub const TOOLS: Color = rgb(0.04, 0.30, 0.75);
 
 /// What every glyph wears. A cool off-white reads as a glyph against the bold
 /// shell and against the bright room alike, the way a light accent sits on a
-/// coloured wall in Mirror's Edge — bold surface, light mark.
+/// coloured wall — bold surface, light mark.
 pub const GLYPH: Color = rgb(0.88, 0.90, 0.94);
 
 /// A colour per tool, so two tools are told apart before either is read.

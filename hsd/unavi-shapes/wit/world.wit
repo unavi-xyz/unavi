@@ -1,48 +1,61 @@
-package unavi:shapes;
+package unavi:shapes@0.1.0;
 
+/// Primitive mesh builders, composed into a consumer at build time.
+///
+/// Each resource holds its own tessellation parameters; `mesh` and
+/// `collider` read them when called. `mesh` builds into the calling script's
+/// own document unless `set-doc` names another one first. Tessellation
+/// counts are clamped at the bounds documented on each setter, returning
+/// `invalid-argument` over the limit.
 world guest {
-  include wired:prelude/lib;
+  include wired:worlds/library@0.1.0;
   export api;
 }
 
 interface api {
-  use wired:math/types.{vec3};
-  use wired:scene/types.{collider, document, prim};
+  use wired:core/math@0.1.0.{vec3};
+  use wired:core/error@0.1.0.{error};
+  use wired:scene/properties@0.1.0.{collider};
+  use wired:scene/document@0.1.0.{document, prim-id};
 
   resource capsule {
     constructor(radius: f32, height: f32);
 
     collider: func() -> collider;
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
 
     rings: func() -> u32;
-    set-rings: func(value: u32);
+    /// At most 32.
+    set-rings: func(value: u32) -> result<_, error>;
 
     latitudes: func() -> u32;
-    set-latitudes: func(value: u32);
+    /// At most 64.
+    set-latitudes: func(value: u32) -> result<_, error>;
 
     longitudes: func() -> u32;
-    set-longitudes: func(value: u32);
+    /// At most 128.
+    set-longitudes: func(value: u32) -> result<_, error>;
   }
 
   resource cone {
     constructor(radius: f32, height: f32);
 
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
 
     resolution: func() -> u32;
-    set-resolution: func(value: u32);
+    /// At most 128.
+    set-resolution: func(value: u32) -> result<_, error>;
   }
 
   resource cuboid {
     constructor(size: vec3);
 
     collider: func() -> collider;
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
   }
@@ -51,40 +64,46 @@ interface api {
     constructor(radius: f32, height: f32);
 
     collider: func() -> collider;
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
 
     resolution: func() -> u32;
-    set-resolution: func(value: u32);
+    /// At most 128.
+    set-resolution: func(value: u32) -> result<_, error>;
 
     segments: func() -> u32;
-    set-segments: func(value: u32);
+    /// At most 64.
+    set-segments: func(value: u32) -> result<_, error>;
   }
 
   resource sphere {
     constructor(radius: f32);
 
     collider: func() -> collider;
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
 
     subdivisions: func() -> u32;
-    set-subdivisions: func(value: u32);
+    /// At most 6: `20 * 4^subdivisions` triangles, already 81,920 at the
+    /// limit.
+    set-subdivisions: func(value: u32) -> result<_, error>;
   }
 
   resource torus {
     constructor(minor-radius: f32, major-radius: f32);
 
-    mesh: func() -> prim;
+    mesh: func() -> result<prim-id, error>;
 
     set-doc: func(doc: document);
 
     minor-resolution: func() -> u32;
-    set-minor-resolution: func(value: u32);
+    /// At most 64.
+    set-minor-resolution: func(value: u32) -> result<_, error>;
 
     major-resolution: func() -> u32;
-    set-major-resolution: func(value: u32);
+    /// At most 128.
+    set-major-resolution: func(value: u32) -> result<_, error>;
   }
 }

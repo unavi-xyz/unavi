@@ -5,9 +5,11 @@
 //! paging and drawing. A consumer supplies motes and reads back [`Event`]s; no
 //! prim and no pointer crosses that line.
 
-use std::time::SystemTime;
-
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Transform,
+    Vec2,
+    Vec3,
+};
 
 use crate::{
     cast::{
@@ -35,10 +37,7 @@ use crate::{
     surface::Surface,
     tree::Mote,
     tuning::Tuning,
-    wired::scene::{
-        api::self_document,
-        types::Document,
-    },
+    wired::scene::document::Document,
 };
 
 mod bodies;
@@ -60,11 +59,16 @@ const EVENT_CAPACITY: usize = 64;
 /// input and its cast site, and the host drives it through this.
 pub(crate) trait Mounted {
     fn mount(&self) -> Mount;
-    fn place(&mut self, anchor: &Transform) -> anyhow::Result<()>;
+    fn place(&mut self, doc: &Document, anchor: &Transform) -> anyhow::Result<()>;
     fn field_lift(&self) -> f32;
 
+    /// The prim everything this surface drew hangs from. Removing it takes
+    /// the whole surface — bodies, placard and cast site alike — out of the
+    /// scene in one edit.
+    fn root(&self) -> (u64, u64);
+
     /// Puts the surface up or takes it down, keeping its prims either way.
-    fn show(&mut self, shown: bool) -> anyhow::Result<()>;
+    fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()>;
 
     /// Whether anything of it is still drawn. A surface sent away keeps being
     /// stepped until it has finished leaving.
@@ -72,11 +76,22 @@ pub(crate) trait Mounted {
 
     /// Steps and draws. Call from the script's `update`, where animation
     /// belongs — pinning it to the fixed rate makes motion step.
-    fn update(&mut self, gaze: &Gaze, anchor: Transform, delta: f32) -> anyhow::Result<Vec<Event>>;
+    fn update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+        delta: f32,
+    ) -> anyhow::Result<Vec<Event>>;
 
     /// Reads input and resolves what it did. Call from the script's
     /// `fixed_update`, where state belongs.
-    fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate>;
+    fn fixed_update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+    ) -> anyhow::Result<FixedUpdate>;
 
     /// Whether a release at `local` — in this surface's own plane — files into
     /// it. Only a grid is a destination; an orbit has no extents to land in.
@@ -103,31 +118,30 @@ pub struct SurfaceId(pub(crate) usize);
 
 /// Every VUI surface a script is showing, and the machinery that runs them.
 pub struct Vui {
-    doc:      Document,
-    viewer:   viewer::Viewer,
-    tuning:   Tuning,
-    palette:  Palette,
-    shapes:   Vec<Box<dyn Mounted>>,
-    anchors:  Vec<Option<Transform>>,
+    doc:     Document,
+    tuning:  Tuning,
+    palette: Palette,
+    /// `None` once [`Vui::remove`] has taken the surface's prims out of the
+    /// scene; the slot itself stays so every [`SurfaceId`] handed out keeps
+    /// naming the same index.
+    shapes:  Vec<Option<Box<dyn Mounted>>>,
+    anchors: Vec<Option<Transform>>,
     /// Whether each surface is up. A summon clears the anchor beside it, so
     /// the surface re-measures from where the viewer is standing now.
-    shown:    Vec<bool>,
-    events:   Vec<Vec<Event>>,
-    drawn_at: SystemTime,
+    shown:   Vec<bool>,
+    events:  Vec<Vec<Event>>,
 }
 
 impl Vui {
     pub fn new(tuning: Tuning, palette: Palette) -> anyhow::Result<Self> {
         Ok(Self {
-            doc: self_document()?,
-            viewer: viewer::Viewer::new(),
+            doc: crate::wired::scene::document::script_document()?,
             tuning,
             palette,
             shapes: Vec::new(),
             anchors: Vec::new(),
             shown: Vec::new(),
             events: Vec::new(),
-            drawn_at: SystemTime::now(),
         })
     }
 
@@ -158,7 +172,7 @@ impl Vui {
     }
 
     fn push(&mut self, shape: Box<dyn Mounted>) -> SurfaceId {
-        self.shapes.push(shape);
+        self.shapes.push(Some(shape));
         self.anchors.push(None);
         self.shown.push(true);
         self.events.push(Vec::new());
@@ -171,10 +185,10 @@ impl Vui {
     /// up: every body it draws is already uploaded, and a mesh write costs a
     /// `Flow::BlobUpload` whatever its size.
     pub fn summon(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
-        let Some(shape) = self.shapes.get_mut(surface.0) else {
+        let Some(Some(shape)) = self.shapes.get_mut(surface.0) else {
             return Ok(());
         };
-        shape.show(true)?;
+        shape.show(&self.doc, true)?;
         self.anchors[surface.0] = None;
         self.shown[surface.0] = true;
         Ok(())
@@ -182,11 +196,28 @@ impl Vui {
 
     /// Takes a surface down, keeping its prims.
     pub fn dismiss(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
-        let Some(shape) = self.shapes.get_mut(surface.0) else {
+        let Some(Some(shape)) = self.shapes.get_mut(surface.0) else {
             return Ok(());
         };
-        shape.show(false)?;
+        shape.show(&self.doc, false)?;
         self.shown[surface.0] = false;
+        Ok(())
+    }
+
+    /// Drops a surface, freeing every prim it drew in one edit. Called when
+    /// the script drops its `orbit`/`grid` handle, so a surface nothing
+    /// references any longer does not keep costing frames or draw calls.
+    pub fn remove(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
+        let Some(slot) = self.shapes.get_mut(surface.0) else {
+            return Ok(());
+        };
+        let Some(shape) = slot.take() else {
+            return Ok(());
+        };
+        self.doc.local().remove(shape.root()).flush()?;
+        self.anchors[surface.0] = None;
+        self.shown[surface.0] = false;
+        self.events[surface.0] = Vec::new();
         Ok(())
     }
 
@@ -199,7 +230,8 @@ impl Vui {
     pub fn drain(&mut self, surface: SurfaceId) -> Vec<Event> {
         self.events
             .get_mut(surface.0)
-            .map_or_default(std::mem::take)
+            .map(std::mem::take)
+            .unwrap_or_default()
     }
 
     fn report(&mut self, surface: usize, events: impl IntoIterator<Item = Event>) {
@@ -214,18 +246,24 @@ impl Vui {
     /// Reads input and resolves what it did. Call from the script's
     /// `fixed_update`, where state belongs.
     pub fn fixed_update(&mut self) -> anyhow::Result<()> {
-        let Some(eye) = self.viewer.pose() else {
+        let Some(eye) = crate::camera_pose() else {
             return Ok(());
         };
         let gaze = Gaze::read(&eye);
 
         for index in 0..self.shapes.len() {
+            let Some(shape) = &self.shapes[index] else {
+                continue;
+            };
             // A surface sent away is stepped until it has finished leaving.
-            if !self.shown[index] && !self.shapes[index].is_visible() {
+            if !self.shown[index] && !shape.is_visible() {
                 continue;
             }
             let anchor = self.anchor(index, &gaze)?;
-            let result = self.shapes[index].fixed_update(&gaze, anchor)?;
+            let Some(shape) = &mut self.shapes[index] else {
+                continue;
+            };
+            let result = shape.fixed_update(&self.doc, &gaze, anchor)?;
             self.report(index, result.events);
             if let Some(released) = result.released {
                 self.place(index, released, result.opens_at, &gaze)?;
@@ -236,22 +274,25 @@ impl Vui {
 
     /// Steps and draws every surface. Call from the script's `update`, where
     /// animation belongs — pinning it to the fixed rate makes motion step.
-    pub fn update(&mut self) -> anyhow::Result<()> {
-        let delta = self.drawn_at.elapsed().unwrap_or_default().as_secs_f32();
-        self.drawn_at = SystemTime::now();
-
-        let Some(eye) = self.viewer.pose() else {
+    pub fn update(&mut self, delta: f32) -> anyhow::Result<()> {
+        let Some(eye) = crate::camera_pose() else {
             return Ok(());
         };
         let gaze = Gaze::read(&eye);
 
         for index in 0..self.shapes.len() {
+            let Some(shape) = &self.shapes[index] else {
+                continue;
+            };
             // A surface sent away is stepped until it has finished leaving.
-            if !self.shown[index] && !self.shapes[index].is_visible() {
+            if !self.shown[index] && !shape.is_visible() {
                 continue;
             }
             let anchor = self.anchor(index, &gaze)?;
-            let events = self.shapes[index].update(&gaze, anchor, delta)?;
+            let Some(shape) = &mut self.shapes[index] else {
+                continue;
+            };
+            let events = shape.update(&self.doc, &gaze, anchor, delta)?;
             self.report(index, events);
         }
         Ok(())
@@ -263,8 +304,11 @@ impl Vui {
         if let Some(anchor) = self.anchors[index] {
             return Ok(anchor);
         }
-        let anchor = self.shapes[index].mount().anchor(&gaze.eye);
-        self.shapes[index].place(&anchor)?;
+        let Some(shape) = &mut self.shapes[index] else {
+            return Ok(Transform::IDENTITY);
+        };
+        let anchor = shape.mount().anchor(&gaze.eye);
+        shape.place(&self.doc, &anchor)?;
         self.anchors[index] = Some(anchor);
         Ok(anchor)
     }
@@ -275,8 +319,11 @@ impl Vui {
     /// move a summon makes: the level opens around the drop rather than back
     /// where the surface happened to be standing.
     fn settle(&mut self, index: usize, at: Vec3, gaze: &Gaze) -> anyhow::Result<()> {
+        let Some(shape) = &mut self.shapes[index] else {
+            return Ok(());
+        };
         let anchor = mount::landed(at, &gaze.eye, &self.tuning);
-        self.shapes[index].place(&anchor)?;
+        shape.place(&self.doc, &anchor)?;
         self.anchors[index] = Some(anchor);
         Ok(())
     }
@@ -295,14 +342,16 @@ impl Vui {
         gaze: &Gaze,
     ) -> anyhow::Result<()> {
         if let Some(target) = self.filed_into(gaze)
-            && self.shapes[target].stow(&released.mote)
+            && let Some(shape) = &mut self.shapes[target]
+            && shape.stow(&released.mote)
         {
             self.report(index, [Event::Filed(released.mote)]);
             return Ok(());
         }
 
         if let Some(at) = opens_at
-            && let Some(event) = self.shapes[index].open(&released.mote)
+            && let Some(shape) = &mut self.shapes[index]
+            && let Some(event) = shape.open(&released.mote)
         {
             self.settle(index, at, gaze)?;
             self.report(index, [event]);
@@ -316,6 +365,7 @@ impl Vui {
     /// The grid the pointer is over, which files rather than plants.
     fn filed_into(&self, gaze: &Gaze) -> Option<usize> {
         self.shapes.iter().enumerate().find_map(|(index, shape)| {
+            let shape = shape.as_ref()?;
             let anchor = self.shown[index].then(|| self.anchors[index])??;
             pointer::aim(&gaze.ray, &anchor, shape.field_lift())
                 .filter(|aim| shape.accepts(aim.local))
@@ -341,6 +391,7 @@ pub(crate) fn open_cast(casting: &mut Option<Casting>, slot: usize, mote: Mote, 
 /// the pointer is still on the mote it just pressed, so the ring filled with
 /// no further input and the hold was decorative.
 pub(crate) fn drive_cast(
+    doc: &Document,
     casting: &mut Option<Casting>,
     surface: &Surface,
     site: &Site,
@@ -349,7 +400,7 @@ pub(crate) fn drive_cast(
 ) -> anyhow::Result<()> {
     // Before the guard: an abandoned ring is unwinding precisely when there is
     // no cast left to drive.
-    site.step(delta)?;
+    site.step(doc, delta)?;
 
     let Some(active) = casting else {
         return Ok(());
@@ -361,7 +412,7 @@ pub(crate) fn drive_cast(
         .views()
         .get(active.slot)
         .map_or(Vec3::ZERO, |view| view.position);
-    site.apply(at, state)?;
+    site.apply(doc, at, state)?;
 
     if !state.is_settled() {
         return Ok(());

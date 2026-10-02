@@ -1,6 +1,9 @@
 //! Fitting an icon's real geometry into the shell that draws it.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Transform,
+    Vec3,
+};
 
 /// Two xforms in a chain: `local` posed beneath `parent`.
 #[must_use]
@@ -39,6 +42,8 @@ pub fn fit(min: Vec3, max: Vec3, fraction: f32) -> Fit {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::math::Quat;
+
     use super::*;
 
     #[test]

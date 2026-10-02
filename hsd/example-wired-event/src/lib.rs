@@ -1,42 +1,35 @@
-use crate::wired::event::types::{
-    EventFilter,
-    EventReceptor,
-    EventScope,
+use crate::wired::event::messaging::{
+    MessageSubscription,
+    Scope,
 };
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
-const CHANNEL: &str = "my-event";
+const CHANNEL: &str = "example:wired-event/my-event";
 
 struct Script {
-    receptor: EventReceptor,
+    subscription: MessageSubscription,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let receptor = wired::event::api::listen(
-            &[CHANNEL.to_string()],
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )?;
+        let subscription =
+            wired::event::messaging::listen(&[CHANNEL.to_owned()], None, Scope::Global)?;
 
-        wired::event::api::emit(
-            CHANNEL,
-            b"hello, world!",
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Global,
-            },
-        )?;
+        wired::event::messaging::emit(CHANNEL, b"hello, world!", None, Scope::Global)?;
 
-        Ok(Self { receptor })
+        Ok(Self { subscription })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
-        while let Some(event) = self.receptor.poll() {
-            println!("-> Got event on {}: {:?}", event.channel(), event.payload());
+    fn fixed_update(
+        &mut self,
+        _tick: exports::wired::script::lifecycle::Tick,
+    ) -> anyhow::Result<()> {
+        for message in self.subscription.drain(32) {
+            println!(
+                "-> Got message on {}: {:?}",
+                message.channel, message.payload
+            );
         }
         Ok(())
     }

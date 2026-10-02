@@ -1,42 +1,41 @@
+//! A box, built from six quads.
+
 use std::cell::RefCell;
 
-use glam::Vec3;
-use wired_prelude::wired_math::types::Vec3 as WVec3;
+use wired_guest::math::Vec3;
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCuboid,
-    wired::scene::types::{
-        Collider,
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::{
+            document::Document,
+            properties::Collider,
+        },
     },
 };
 
-#[derive(Default)]
-pub struct CuboidWrapped {
+/// `size` is the full extent along each axis.
+pub struct Cuboid {
     doc:  RefCell<Option<Document>>,
-    half: Vec3,
+    size: Vec3,
 }
 
-impl GuestCuboid for CuboidWrapped {
-    fn new(size: WVec3) -> Self {
+impl GuestCuboid for Cuboid {
+    fn new(size: Vec3) -> Self {
         Self {
-            half: Vec3::new(size.x * 0.5, size.y * 0.5, size.z * 0.5),
-            ..Default::default()
+            doc: RefCell::new(None),
+            size,
         }
     }
 
     fn collider(&self) -> Collider {
-        Collider::Cuboid(WVec3::new(
-            self.half.x * 2.0,
-            self.half.y * 2.0,
-            self.half.z * 2.0,
-        ))
+        Collider::Cuboid(self.size)
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(self.doc.borrow().as_ref(), &build(self.half))
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(&self.doc, &build(self.size * 0.5))
     }
 
     fn set_doc(&self, doc: Document) {

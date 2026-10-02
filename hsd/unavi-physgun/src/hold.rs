@@ -1,18 +1,32 @@
-use wired_prelude::prelude::*;
+//! The prop a physgun has grabbed: its offset from the camera, and the
+//! velocity controller that drags it toward that offset.
+
+use wired_guest::math::{
+    Quat,
+    Ray,
+    Transform,
+    Vec3,
+};
 
 use crate::wired::{
-    physics::api::{
-        raycast,
+    peer::authority::{
         release_hold,
-        set_angular_velocity,
-        set_linear_velocity,
         take_hold,
     },
+    physics::simulation::{
+        RayFilter,
+        raycast,
+        set_velocity,
+    },
     scene::{
-        api::get_document,
-        types::{
+        document::{
+            Document,
+            open_document,
+        },
+        properties::{
             Collider,
-            Prim,
+            Property,
+            PropertyKey,
         },
     },
 };
@@ -24,27 +38,37 @@ const FOLLOW: f32 = 5.5;
 const MAX_SPEED: f32 = 30.0;
 const SETTLE: f32 = 0.01;
 const ROTATE_SETTLE: f32 = 0.01;
-const RAY_START: f32 = 0.4;
 const MIN_DIST: f32 = 1.0;
 
 /// A dynamic body dragged by the physgun; grab point and orientation are
 /// stored in camera-local space.
 pub struct Held {
-    doc:        Vec<u8>,
-    prim:       Prim,
+    doc:        Document,
+    prim:       (u64, u64),
     offset:     Vec3,
     offset_rot: Quat,
-    gravity:    f32,
+    /// The gravity scale to restore on release; `none` when the prop is not
+    /// owned by this script, so there was nothing to zero.
+    gravity:    Option<f32>,
     /// Where the ray landed, in body-local space; the beam attaches here, so
     /// grabbing a corner drags that corner.
     grab_local: Vec3,
 }
 
 impl Held {
+    #[must_use]
     pub fn grab(cam: &Transform) -> Option<Self> {
-        let dir = cam.forward();
-        let origin = cam.translation + dir * RAY_START;
-        let hit = match raycast(origin, dir, RAY_MAX) {
+        let hit = match raycast(
+            Ray {
+                origin:    cam.translation,
+                direction: cam.forward(),
+            },
+            RAY_MAX,
+            &RayFilter {
+                exclude_local_agent: true,
+                exclude_documents:   Vec::new(),
+            },
+        ) {
             Ok(Some(hit)) => hit,
             Ok(None) => {
                 println!("physgun: raycast miss");
@@ -56,37 +80,53 @@ impl Held {
             }
         };
 
-        let document = match get_document(&hit.document) {
+        let doc = match open_document(hit.target.document) {
             Ok(Some(doc)) => doc,
             Ok(None) => {
-                println!("physgun: hit document not found");
+                println!("physgun: hit document not loaded");
                 return None;
             }
             Err(err) => {
-                println!("physgun: get_document error {err:?}");
+                println!("physgun: open_document error {err:?}");
                 return None;
             }
         };
-        let Some(prim) = document.get_prim(&hit.prim) else {
-            println!("physgun: prim {} not present in document", hit.prim);
-            return None;
+        let prim = hit.target.prim;
+
+        // Read before taking the hold or zeroing gravity: a failure here
+        // must leave nothing to undo, rather than leaking a hold that was
+        // never released and a gravity-scale write that was never restored.
+        let body = match doc.world_transform(prim) {
+            Ok(body) => body,
+            Err(err) => {
+                println!("physgun: world_transform error {err:?}");
+                return None;
+            }
         };
 
-        if let Err(err) = take_hold(&hit.document) {
+        if let Err(err) = take_hold(&doc) {
             println!("physgun: take_hold failed (holding anyway): {err:?}");
         }
 
-        let gravity = prim.gravity_scale();
-        if let Err(err) = prim.set_gravity_scale(0.0) {
-            // Swallowing this leaves the prop falling while the controller
-            // fights to lift it, which looks like a tuning problem rather
-            // than a failed write.
-            eprintln!("physgun: could not disable gravity on the held prop: {err:?}");
-        }
-        let body = prim.global_xform();
+        // Writing `gravity-scale` only succeeds on a document this script
+        // owns; grabbing someone else's prop leaves gravity alone, so it
+        // still falls while the controller fights to hold its position.
+        let gravity = match doc.get(prim, &PropertyKey::GravityScale) {
+            Some(Property::GravityScale(g)) => g,
+            _ => 1.0,
+        };
+        let gravity = match doc.local().set(prim, Property::GravityScale(0.0)).flush() {
+            Ok(()) => Some(gravity),
+            Err(err) => {
+                eprintln!("physgun: could not disable gravity on the held prop: {err:?}");
+                None
+            }
+        };
+
         let grab_local = body.rotation.inverse() * (hit.point - body.translation);
+
         Some(Self {
-            doc: hit.document,
+            doc,
             prim,
             offset: cam.rotation.inverse() * (hit.point - cam.translation),
             offset_rot: cam.rotation.inverse() * body.rotation,
@@ -98,24 +138,29 @@ impl Held {
     /// The prop's collider, for building a highlight shell around it.
     #[must_use]
     pub fn collider(&self) -> Option<Collider> {
-        self.prim.collider()
+        match self.doc.get(self.prim, &PropertyKey::Collider) {
+            Some(Property::Collider(collider)) => Some(collider),
+            _ => None,
+        }
     }
 
     #[must_use]
     pub fn body(&self) -> Transform {
-        self.prim.global_xform()
+        self.doc
+            .world_transform(self.prim)
+            .unwrap_or(Transform::IDENTITY)
     }
 
     /// The clicked point's current world position; read at render rate by the
     /// beam, as the body only steps at the fixed rate.
     #[must_use]
     pub fn grab_point(&self) -> Vec3 {
-        let body = self.prim.global_xform();
+        let body = self.body();
         body.translation + body.rotation * self.grab_local
     }
 
     pub fn update(&self, cam: &Transform) {
-        let body = self.prim.global_xform();
+        let body = self.body();
         let target = cam.transform_point(self.offset);
 
         // Aim the body's centre at the grab point's target: measuring error
@@ -132,7 +177,6 @@ impl Held {
         if speed > MAX_SPEED {
             vel *= MAX_SPEED / speed;
         }
-        set_linear_velocity(&self.prim, vel).ok();
 
         let target_rotation = cam.rotation * self.offset_rot;
         let mut rotation_diff = target_rotation * body.rotation.inverse();
@@ -147,7 +191,10 @@ impl Held {
         } else {
             axis * angle * FOLLOW
         };
-        set_angular_velocity(&self.prim, ang_vel).ok();
+
+        if let Err(err) = set_velocity(&self.doc, self.prim, Some(vel), Some(ang_vel)) {
+            eprintln!("physgun: set_velocity: {err:?}");
+        }
     }
 
     pub fn nudge_distance(&mut self, delta: f32) {
@@ -157,7 +204,17 @@ impl Held {
     /// Restores gravity and releases, keeping the body's velocity so a fast
     /// sweep throws it.
     pub fn release(&self) {
-        self.prim.set_gravity_scale(self.gravity).ok();
-        release_hold(&self.doc).ok();
+        if let Some(gravity) = self.gravity
+            && let Err(err) = self
+                .doc
+                .local()
+                .set(self.prim, Property::GravityScale(gravity))
+                .flush()
+        {
+            eprintln!("physgun: could not restore gravity on the held prop: {err:?}");
+        }
+        if let Err(err) = release_hold(&self.doc, None) {
+            eprintln!("physgun: release_hold: {err:?}");
+        }
     }
 }

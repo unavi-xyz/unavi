@@ -1,38 +1,10 @@
-//! The local agent's eye, and where a surface stands relative to it.
+//! Where a surface stands relative to the local agent's eye.
 
-use std::cell::RefCell;
-
-use wired_prelude::prelude::*;
-
-use crate::wired::{
-    agent::api::local_camera,
-    scene::types::Prim,
+use wired_guest::math::{
+    Quat,
+    Transform,
+    Vec3,
 };
-
-/// The pose every surface is aimed from.
-///
-/// The camera proxy appears once the local agent's avatar has loaded, so the
-/// lookup retries rather than failing for the run.
-pub struct Viewer(RefCell<Option<Prim>>);
-
-impl Viewer {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self(RefCell::new(None))
-    }
-
-    #[must_use]
-    pub fn pose(&self) -> Option<Transform> {
-        let mut camera = self.0.borrow_mut();
-        if camera.is_none() {
-            *camera = local_camera().ok();
-        }
-        let pose = camera.as_ref()?.global_xform();
-        // A proxy whose transform snapshot has not been captured yet reads as
-        // identity; anchoring a surface to that would plant it in the ground.
-        (pose != Transform::IDENTITY).then_some(pose)
-    }
-}
 
 /// Yaw-only rotation facing `forward`, so a surface stands upright regardless
 /// of where the viewer was looking when it was placed.

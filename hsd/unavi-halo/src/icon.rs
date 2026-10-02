@@ -11,7 +11,15 @@
 
 use std::f32::consts::TAU;
 
-use wired_prelude::prelude::*;
+use wired_guest::{
+    math::{
+        Color,
+        Quat,
+        Transform,
+        Vec3,
+    },
+    xform::hidden,
+};
 
 use crate::{
     unavi::shapes::api::{
@@ -20,10 +28,13 @@ use crate::{
         Cylinder,
     },
     wired::scene::{
-        api::self_document,
-        types::{
+        document::{
+            Layer,
+            script_document,
+        },
+        properties::{
             Material,
-            Prim,
+            Property,
         },
     },
 };
@@ -56,54 +67,62 @@ enum Shape {
 /// once it has a mote to sit in. The surface measures the whole tree when it
 /// places it, so every piece stands at scale one and the fit rides the root
 /// alone.
-fn form(pieces: &[Piece], color: Color) -> anyhow::Result<Prim> {
-    let root = self_document()?.create_prim()?;
+fn form(pieces: &[Piece], color: Color) -> anyhow::Result<(u64, u64)> {
+    let doc = script_document()?;
+    let root = doc.create_prim(Layer::Local, None)?;
     for piece in pieces {
         let shape = match piece.shape {
             Shape::Cube(size) => Cuboid::new(size).mesh(),
             Shape::Cone { radius, height } => Cone::new(radius, height).mesh(),
             Shape::Pyramid { radius, height } => {
                 let cone = Cone::new(radius, height);
-                cone.set_resolution(4);
+                cone.set_resolution(4)?;
                 cone.mesh()
             }
             Shape::Cylinder { radius, height } => Cylinder::new(radius, height).mesh(),
-        };
-        dress(&shape, color)?;
-        shape.set_xform(Some(Transform {
-            translation: piece.at,
-            rotation:    piece.turn,
-            scale:       Vec3::ONE,
-        }))?;
-        root.add_child(&shape)?;
+        }?;
+        doc.local()
+            .set(shape, Property::Material(dress(color)))
+            .set(shape, Property::Parent(Some(root)))
+            .set(
+                shape,
+                Property::Transform(Transform {
+                    translation: piece.at,
+                    rotation:    piece.turn,
+                    scale:       Vec3::ONE,
+                }),
+            )
+            .flush()?;
     }
-    hide(&root)?;
+    doc.local()
+        .set(root, Property::Transform(hidden()))
+        .flush()?;
     Ok(root)
 }
 
 /// A real cube for the motes that are one.
-pub fn cube(color: Color) -> anyhow::Result<Prim> {
+pub fn cube(color: Color) -> anyhow::Result<(u64, u64)> {
     form(&cube_pieces(), color)
 }
 
 /// A house: return, the fixed point.
-pub fn home(color: Color) -> anyhow::Result<Prim> {
+pub fn home(color: Color) -> anyhow::Result<(u64, u64)> {
     form(&home_pieces(), color)
 }
 
 /// A cog: the tools.
-pub fn tools(color: Color) -> anyhow::Result<Prim> {
+pub fn tools(color: Color) -> anyhow::Result<(u64, u64)> {
     form(&tools_pieces(), color)
 }
 
 /// A diamond: one tool among them.
-pub fn tool(color: Color) -> anyhow::Result<Prim> {
+pub fn tool(color: Color) -> anyhow::Result<(u64, u64)> {
     form(&tool_pieces(), color)
 }
 
 /// The beacon as a form: the cube of corners around a recessed core that the
 /// real beacon is.
-pub fn beacon(color: Color) -> anyhow::Result<Prim> {
+pub fn beacon(color: Color) -> anyhow::Result<(u64, u64)> {
     form(&beacon_pieces(), color)
 }
 
@@ -225,33 +244,23 @@ fn beacon_pieces() -> Vec<Piece> {
     pieces
 }
 
-fn dress(prim: &Prim, color: Color) -> anyhow::Result<()> {
-    prim.set_material(Some(Material {
-        alpha_cutoff: None,
-        alpha_mode:   None,
+/// Lit rather than lit-by-the-room: a mote hangs in mid-air, where there is
+/// nothing to bounce light off.
+fn dress(color: Color) -> Material {
+    Material {
         base_color:   Some(color),
-        // Lit rather than lit-by-the-room: a mote hangs in mid-air, where
-        // there is nothing to bounce light off.
         emissive:     Some(Color {
             r: color.r * 0.45,
             g: color.g * 0.45,
             b: color.b * 0.45,
             a: 1.0,
         }),
-        double_sided: Some(true),
         metallic:     Some(0.0),
         roughness:    Some(0.6),
-    }))?;
-    Ok(())
-}
-
-fn hide(prim: &Prim) -> anyhow::Result<()> {
-    prim.set_xform(Some(Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
-    }))?;
-    Ok(())
+        alpha_mode:   None,
+        alpha_cutoff: None,
+        double_sided: Some(true),
+    }
 }
 
 #[cfg(test)]

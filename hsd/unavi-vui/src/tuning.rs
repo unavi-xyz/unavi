@@ -1,11 +1,5 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
-
 /// Every feel constant in one place.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tuning {
     pub orbit_radius: f32,
     pub mote_radius:  f32,
@@ -54,12 +48,6 @@ pub struct Tuning {
     pub label_gap:  f32,
     /// How far in front of its mote a label sits.
     pub label_lift: f32,
-
-    /// Spacing between trail beads, out of the plane toward the viewer.
-    pub trail_pitch: f32,
-    /// How much each further bead shrinks and fades, so the stack recedes
-    /// rather than competing with the level.
-    pub trail_taper: f32,
 
     /// Seconds a consequential action fills for before it fires.
     pub cast_duration: f32,
@@ -148,9 +136,6 @@ impl Tuning {
         label_size: 0.011,
         label_gap:  0.007,
         label_lift: 0.004,
-
-        trail_pitch: 0.055,
-        trail_taper: 0.82,
 
         cast_duration: 0.9,
         cast_recoil:   4.0,

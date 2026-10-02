@@ -6,29 +6,44 @@
 use std::str::FromStr;
 
 use blake3::Hash;
-use unavi_script_util::color::generate_color;
-use wired_prelude::prelude::*;
+use wired_guest::{
+    color::generate_color,
+    math::{
+        Transform,
+        Vec3,
+    },
+};
 
 use crate::{
     icon,
     palette,
-    unavi::vui::api::{
-        Kind,
-        Landing,
-        Mote,
+    unavi::{
+        host::node_storage::{
+            self,
+            Entry,
+            PendingEntries,
+        },
+        vui::api::{
+            Kind,
+            Landing,
+            Mote,
+        },
     },
     wired::{
-        portal::api::travel,
+        portal::portals::travel,
         scene::{
-            api::{
+            document::{
+                Anchor,
+                Document,
+                Layer,
                 copy_document,
-                self_document,
+                open_document,
+                script_document,
             },
-            types::Document,
-        },
-        storage::{
-            api::get_storage,
-            types::ListFuture,
+            properties::{
+                Property,
+                PropertyKey,
+            },
         },
     },
 };
@@ -37,6 +52,8 @@ use crate::{
 /// and ignores the rest. The other views a registry publishes share the
 /// namespace list and answer this prefix with nothing.
 const ACTIVE_PREFIX: &str = "active/";
+/// The documented bound on `list-entries`.
+const LIST_LIMIT: u32 = 256;
 
 /// The authored prim referencing the document every beacon is copied from,
 /// kept at zero scale so the template itself never shows.
@@ -44,8 +61,8 @@ const TEMPLATE_PRIM_NAME: &str = "beacon_template";
 
 /// A space the registries say has people in it.
 struct Space {
-    /// The 32-byte namespace, for travelling.
-    ns:     Vec<u8>,
+    /// For travelling, and the beacon's own colour seed.
+    ns:     (u64, u64, u64, u64),
     /// The same, as the registry wrote it, which is what a beacon is named.
     hex:    String,
     group:  Mote,
@@ -56,7 +73,7 @@ struct Space {
 /// Lists the spaces currently occupied per the registries this client follows.
 #[derive(Default)]
 pub struct Nav {
-    lists:   Vec<ListFuture>,
+    lists:   Vec<PendingEntries>,
     spaces:  Vec<Space>,
     beacons: Vec<Document>,
 }
@@ -65,13 +82,20 @@ impl Nav {
     /// Asks every registry what is live. Called when the branch opens, so a
     /// halo that is never opened costs nothing.
     pub fn refresh(&mut self) {
-        let Ok(storage) = get_storage() else {
-            return;
+        let registries = match node_storage::registries() {
+            Ok(registries) => registries,
+            Err(err) => {
+                eprintln!("halo: registries: {err:?}");
+                return;
+            }
         };
-        self.lists = storage
-            .registries()
-            .iter()
-            .map(|registry| storage.list(registry, ACTIVE_PREFIX))
+        self.lists = registries
+            .into_iter()
+            .filter_map(|registry| {
+                node_storage::list_entries(registry, ACTIVE_PREFIX, LIST_LIMIT)
+                    .inspect_err(|err| eprintln!("halo: list_entries: {err:?}"))
+                    .ok()
+            })
             .collect();
     }
 
@@ -89,7 +113,7 @@ impl Nav {
             self.lists.remove(index);
             match result {
                 Ok(entries) => found.extend(entries.iter().filter_map(entry)),
-                Err(()) => eprintln!("halo: registry active-space list error"),
+                Err(err) => eprintln!("halo: registry active-space list error: {err:?}"),
             }
         }
         if found.is_empty() {
@@ -114,7 +138,7 @@ impl Nav {
         let Some(space) = self.spaces.iter().find(|space| space.travel.is(mote)) else {
             return false;
         };
-        if let Err(err) = travel(&space.ns) {
+        if let Err(err) = travel(space.ns) {
             eprintln!("halo: travel failed: {err:?}");
         }
         true
@@ -141,7 +165,7 @@ impl Nav {
 struct Listing {
     rank:      u32,
     hex:       String,
-    ns:        Vec<u8>,
+    ns:        (u64, u64, u64, u64),
     occupants: u32,
     idle_secs: u64,
 }
@@ -152,7 +176,7 @@ struct Listing {
 /// lives in the registry's other views behind a payload a guest cannot decode
 /// — so a space is named by the head of its namespace, and the placard says
 /// only what is actually known.
-fn entry(entry: &crate::wired::storage::types::Entry) -> Option<Listing> {
+fn entry(entry: &Entry) -> Option<Listing> {
     let mut parts = entry.key.strip_prefix(ACTIVE_PREFIX)?.split('/');
     let rank = parts.next()?.parse().ok()?;
     let space = parts.next().filter(|space| !space.is_empty())?;
@@ -160,8 +184,8 @@ fn entry(entry: &crate::wired::storage::types::Entry) -> Option<Listing> {
 
     Some(Listing {
         rank,
-        ns: from_hex(space)?,
-        hex: space.to_string(),
+        ns: document_id_from_hex(space)?,
+        hex: space.to_owned(),
         occupants,
         idle_secs,
     })
@@ -180,30 +204,38 @@ fn entry(entry: &crate::wired::storage::types::Entry) -> Option<Listing> {
 fn build(listing: &Listing) -> Option<Space> {
     let color = generate_color(Hash::from_str(&listing.hex).ok()?);
 
-    let group = Mote::new(Kind::Group, listing.hex.get(..8)?);
-    group.describe(&describe(listing));
+    let group = Mote::new(Kind::Group, listing.hex.get(..8)?).ok()?;
+    group.describe(&describe(listing)).ok()?;
     group.set_tint(Some(color));
     // The space wears its beacon's form: in the grid it reads as the marker
     // it is, and opening it still shows the travel and beacon motes beneath.
-    group.set_icon(icon::beacon(palette::GLYPH).ok().as_ref());
+    if let Ok(doc) = script_document()
+        && let Ok(glyph) = icon::beacon(palette::GLYPH)
+    {
+        group.set_icon(&doc, Some(glyph));
+    }
 
-    let travel = Mote::new(Kind::Cast, "Travel");
-    travel.describe("Go to this space.");
+    let travel = Mote::new(Kind::Cast, "Travel").ok()?;
+    travel.describe("Go to this space.").ok()?;
     travel.set_tint(Some(color));
 
-    let beacon = Mote::new(Kind::Item, "Beacon");
-    beacon.describe("A marker you can drop here.");
+    let beacon = Mote::new(Kind::Item, "Beacon").ok()?;
+    beacon.describe("A marker you can drop here.").ok()?;
     beacon.set_tint(Some(color));
     // The beacon itself is a cube of corners around a pulsing core, so its
     // glyph is the same form. A missing glyph is not a reason to lose the
     // whole space.
-    beacon.set_icon(icon::beacon(palette::GLYPH).ok().as_ref());
+    if let Ok(doc) = script_document()
+        && let Ok(glyph) = icon::beacon(palette::GLYPH)
+    {
+        beacon.set_icon(&doc, Some(glyph));
+    }
 
     group.add_child(&travel);
     group.add_child(&beacon);
 
     Some(Space {
-        ns: listing.ns.clone(),
+        ns: listing.ns,
         hex: listing.hex.clone(),
         group,
         travel,
@@ -215,7 +247,7 @@ fn build(listing: &Listing) -> Option<Space> {
 /// and the halo never offers to make another copy of one.
 fn describe(listing: &Listing) -> String {
     let people = match listing.occupants {
-        1 => "1 person here".to_string(),
+        1 => "1 person here".to_owned(),
         count => format!("{count} people here"),
     };
     if listing.idle_secs < 60 {
@@ -225,44 +257,51 @@ fn describe(listing: &Listing) -> String {
 }
 
 fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
-    let doc = self_document()?;
-    let template = doc
-        .prims()
-        .into_iter()
-        .find(|prim| prim.name().is_some_and(|name| name == TEMPLATE_PRIM_NAME))
-        .and_then(|prim| prim.reference())
-        .ok_or_else(|| anyhow::anyhow!("halo HSD is missing its {TEMPLATE_PRIM_NAME} prim"))?;
+    let doc = script_document()?;
+    let template_prim = crate::find_one(&doc, TEMPLATE_PRIM_NAME)?;
+    let Some(Property::Reference(referenced)) = doc.get(template_prim, &PropertyKey::Reference)
+    else {
+        anyhow::bail!("halo HSD's {TEMPLATE_PRIM_NAME} prim has no reference");
+    };
+    let template = open_document(referenced)?.ok_or_else(|| {
+        anyhow::anyhow!("halo HSD's {TEMPLATE_PRIM_NAME} reference is not loaded")
+    })?;
 
     // Built in full while the document is still parked, so the room sees a
-    // beacon appear where it was let go rather than one arriving at the origin
-    // and moving.
+    // beacon appear where it was let go rather than one arriving at the
+    // origin and moving.
     // A copy rather than a reference: the beacon's script looks for a prim
     // named for its space, and a referenced document realizes as a child, so
     // the script would be looking in the wrong document.
     let beacon = copy_document(&template)?;
-    let prim = beacon.create_prim()?;
+    let prim = beacon.create_prim(Layer::Local, None)?;
     // The beacon script finds itself by a prim named for its space.
-    prim.set_name(Some(hex))?;
-    prim.set_xform(Some(placed(at)))?;
-    beacon.set_offset(placed(Vec3::ZERO))?;
+    beacon
+        .local()
+        .set(prim, Property::Name(hex.to_owned()))
+        .set(prim, Property::Transform(Transform::from_translation(at)))
+        .flush()?;
+    // Planting runs on this peer alone, so the prim must be committed for
+    // anyone else's copy of the beacon to find itself.
+    let keys: Vec<_> = beacon
+        .keys(prim)
+        .into_iter()
+        .map(|key| (prim, key))
+        .collect();
+    beacon.commit(&keys)?;
+    beacon.place(Anchor::Space, Transform::IDENTITY)?;
 
     Ok(beacon)
 }
 
-const fn placed(translation: Vec3) -> Transform {
-    Transform {
-        translation,
-        rotation: Quat::IDENTITY,
-        scale: Vec3::ONE,
-    }
-}
-
-/// The registry writes a namespace as hex; travelling wants the bytes.
-fn from_hex(hex: &str) -> Option<Vec<u8>> {
+/// The registry writes a namespace as hex; a `document-id` is its bytes as
+/// four little-endian words.
+fn document_id_from_hex(hex: &str) -> Option<(u64, u64, u64, u64)> {
     if !hex.len().is_multiple_of(2) {
         return None;
     }
-    hex.as_bytes()
+    let bytes: Vec<u8> = hex
+        .as_bytes()
         .as_chunks::<2>()
         .0
         .iter()
@@ -270,5 +309,12 @@ fn from_hex(hex: &str) -> Option<Vec<u8>> {
             let digits = std::str::from_utf8(pair).ok()?;
             u8::from_str_radix(digits, 16).ok()
         })
-        .collect()
+        .collect::<Option<_>>()?;
+    let bytes: &[u8; 32] = bytes.as_slice().try_into().ok()?;
+    Some((
+        u64::from_le_bytes(bytes[0..8].try_into().ok()?),
+        u64::from_le_bytes(bytes[8..16].try_into().ok()?),
+        u64::from_le_bytes(bytes[16..24].try_into().ok()?),
+        u64::from_le_bytes(bytes[24..32].try_into().ok()?),
+    ))
 }

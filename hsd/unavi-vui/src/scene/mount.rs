@@ -1,4 +1,8 @@
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Transform,
+    Vec2,
+    Vec3,
+};
 
 use crate::{
     scene::viewer,
@@ -100,6 +104,8 @@ pub(crate) fn landed(at: Vec3, eye: &Transform, tuning: &Tuning) -> Transform {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::math::Quat;
+
     use super::*;
 
     const DISTANCE: f32 = 1.0;

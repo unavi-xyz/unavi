@@ -1,7 +1,8 @@
+use wired_guest::math::Color;
+
 use crate::{
     exports::unavi::vui::api::{
         Arrange,
-        Color,
         GuestMote,
         Kind,
         Mote as Handle,
@@ -10,15 +11,27 @@ use crate::{
     mote,
     scene::draw,
     tree,
-    wired::scene::types::Prim,
+    wired::{
+        core::error::Error,
+        scene::{
+            document::Document,
+            properties::Property,
+        },
+    },
 };
+
+/// `mote.set-label`: at most 256 bytes.
+const MAX_LABEL_BYTES: usize = 256;
+/// `mote.describe`: at most 1024 bytes.
+const MAX_DESCRIPTION_BYTES: usize = 1024;
 
 /// The `mote` resource: a handle onto a mote in some tree.
 pub struct Mote(pub tree::Mote);
 
 impl GuestMote for Mote {
-    fn new(kind: Kind, label: String) -> Self {
-        Self(tree::Mote::new(held(kind), &label))
+    fn new(kind: Kind, label: String) -> Result<Self, Error> {
+        bounded(&label, MAX_LABEL_BYTES, "label")?;
+        Ok(Self(tree::Mote::new(held(kind), &label)))
     }
 
     fn is(&self, other: MoteBorrow<'_>) -> bool {
@@ -29,29 +42,36 @@ impl GuestMote for Mote {
         self.0.label().to_string()
     }
 
-    fn set_label(&self, value: String) {
+    fn set_label(&self, value: String) -> Result<(), Error> {
+        bounded(&value, MAX_LABEL_BYTES, "label")?;
         self.0.set_label(&value);
+        Ok(())
     }
 
-    fn describe(&self, text: String) {
+    fn describe(&self, text: String) -> Result<(), Error> {
+        bounded(&text, MAX_DESCRIPTION_BYTES, "description")?;
         self.0.describe(&text);
+        Ok(())
     }
 
-    /// The handle is cloned, so the consumer keeps its own and the icon stays
-    /// drawable after that one is dropped.
-    ///
     /// Hidden on the way in: a prim nothing has parented is a root of the
     /// document, and would otherwise stand at the document's origin at its
     /// authored size until some surface happens to draw it.
-    fn set_icon(&self, value: Option<&Prim>) {
+    fn set_icon(&self, doc: &Document, value: Option<(u64, u64)>) {
         if let Some(prim) = value
-            && let Err(err) = prim.set_xform(Some(draw::hidden()))
+            && let Err(err) = doc
+                .local()
+                .set(prim, Property::Transform(draw::hidden()))
+                .flush()
         {
             // Not fatal, and visibly wrong: the icon stands at the document's
             // origin, at its authored size, until a surface draws it.
-            eprintln!("vui: could not hide the icon for '{}': {err}", self.label());
+            eprintln!(
+                "vui: could not hide the icon for '{}': {err}",
+                self.0.label()
+            );
         }
-        self.0.set_icon(value.map(Prim::clone));
+        self.0.set_icon(value);
     }
 
     fn unique(&self) -> bool {
@@ -131,4 +151,15 @@ const fn held(kind: Kind) -> tree::Kind {
         Kind::Cast => tree::Kind::Cast,
         Kind::Group => tree::Kind::Group,
     }
+}
+
+/// Refuses `value` once it is over `max` bytes, naming `what` for the caller.
+fn bounded(value: &str, max: usize, what: &str) -> Result<(), Error> {
+    if value.len() > max {
+        return Err(Error::InvalidArgument(format!(
+            "{what} is {} bytes, over the limit of {max}",
+            value.len()
+        )));
+    }
+    Ok(())
 }

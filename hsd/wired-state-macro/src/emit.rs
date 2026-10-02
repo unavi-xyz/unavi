@@ -181,19 +181,30 @@ fn codegen(item: &ItemStruct, parsed: &[ParsedField]) -> TokenStream {
         let flush = session_flush(&session_fields);
         let commit = document_flush(&document_fields);
         let adopt_tokens = adopt(&session_fields);
+        let needs_document = !session_fields.is_empty() || !document_fields.is_empty();
+        let document_binding = if needs_document {
+            quote! {
+                let document = crate::wired::scene::document::script_document()?;
+            }
+        } else {
+            quote!()
+        };
         quote! {
             /// Flushes the dirty set and adopts what present peers stated, one
             /// batch per destination and nothing per key. A flush that fails
             /// keeps its field dirty, so the next call retries it rather than
             /// reporting the value as written.
             ///
-            /// `document` fields are promoted with `commit`, which is a no-op
-            /// unless this peer holds the document, and are not adopted back:
-            /// there is no generic document read.
+            /// `session` fields write the `shared` layer directly. `document`
+            /// fields write `local` first, so the value exists to commit, then
+            /// `commit` promotes it — a no-op unless this peer holds the
+            /// document — and are not adopted back: there is no generic
+            /// document read.
             pub fn sync(
                 &mut self,
-                prim: &crate::wired::scene::types::Prim,
+                prim: (u64, u64),
             ) -> ::anyhow::Result<()> {
+                #document_binding
                 #flush
                 #commit
                 #adopt_tokens
@@ -265,7 +276,8 @@ fn field_key(ident: &Ident) -> Literal {
     Literal::string(&format!("state/{ident}"))
 }
 
-/// Encode the dirty session fields and hand them to the host as one batch.
+/// Encodes the dirty session fields as `custom` properties and applies them
+/// to the `shared` layer in one batch.
 fn session_flush(session_fields: &[&Ident]) -> TokenStream {
     if session_fields.is_empty() {
         return quote!();
@@ -275,23 +287,28 @@ fn session_flush(session_fields: &[&Ident]) -> TokenStream {
         .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
-        let mut session_writes: Vec<(String, Option<Vec<u8>>)> = Vec::new();
+        let mut shared_writes: Vec<crate::wired::scene::document::Edit> = Vec::new();
         #(
             if self.__dirty.#session_fields {
-                session_writes.push((
-                    #keys.to_owned(),
-                    Some(::postcard::to_allocvec(&self.#session_fields)?),
-                ));
+                shared_writes.push(crate::wired::scene::document::Edit::Set((
+                    prim,
+                    crate::wired::scene::properties::Property::Custom((
+                        #keys.to_owned(),
+                        ::postcard::to_allocvec(&self.#session_fields)?,
+                    )),
+                )));
             }
         )*
 
-        if !session_writes.is_empty() {
-            prim.set_session(&session_writes)?;
+        if !shared_writes.is_empty() {
+            document.apply(crate::wired::scene::document::Layer::Shared, &shared_writes)?;
         }
     }
 }
 
-/// Promote the dirty document fields with `commit`, one call for the batch.
+/// Writes the dirty document fields to the `local` layer, then promotes
+/// them with `commit`, so the value exists before `commit` is asked to keep
+/// it.
 fn document_flush(document_fields: &[&Ident]) -> TokenStream {
     if document_fields.is_empty() {
         return quote!();
@@ -301,22 +318,33 @@ fn document_flush(document_fields: &[&Ident]) -> TokenStream {
         .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
-        let prim_id = prim.id();
-        let mut document_commits: Vec<(String, String)> = Vec::new();
+        let mut local_writes: Vec<crate::wired::scene::document::Edit> = Vec::new();
+        let mut commit_keys: Vec<((u64, u64), crate::wired::scene::properties::PropertyKey)> =
+            Vec::new();
         #(
             if self.__dirty.#document_fields {
-                document_commits.push((prim_id.clone(), #keys.to_owned()));
+                local_writes.push(crate::wired::scene::document::Edit::Set((
+                    prim,
+                    crate::wired::scene::properties::Property::Custom((
+                        #keys.to_owned(),
+                        ::postcard::to_allocvec(&self.#document_fields)?,
+                    )),
+                )));
+                commit_keys.push((
+                    prim,
+                    crate::wired::scene::properties::PropertyKey::Custom(#keys.to_owned()),
+                ));
             }
         )*
 
-        if !document_commits.is_empty() {
-            let document = crate::wired::scene::api::self_document()?;
-            document.commit(&document_commits)?;
+        if !local_writes.is_empty() {
+            document.apply(crate::wired::scene::document::Layer::Local, &local_writes)?;
+            document.commit(&commit_keys)?;
         }
     }
 }
 
-/// Adopt what the session record states, key by key.
+/// Reads back every session field's composed value, key by key.
 fn adopt(session_fields: &[&Ident]) -> TokenStream {
     if session_fields.is_empty() {
         return quote!();
@@ -326,18 +354,20 @@ fn adopt(session_fields: &[&Ident]) -> TokenStream {
         .map(|ident| field_key(ident))
         .collect::<Vec<_>>();
     quote! {
-        for (name, bytes) in prim.session() {
-            match name.as_str() {
-                #(
-                    #keys => {
-                        if let Ok(value) = ::postcard::from_bytes(&bytes) {
-                            self.#session_fields = value;
-                        }
-                    }
-                )*
-                _ => {}
+        let values = document.get_many(&[
+            #(
+                (prim, crate::wired::scene::properties::PropertyKey::Custom(#keys.to_owned())),
+            )*
+        ]);
+        let mut values = values.into_iter();
+        #(
+            if let Some(crate::wired::scene::properties::Property::Custom((_, bytes))) =
+                values.next().flatten()
+                && let Ok(value) = ::postcard::from_bytes(&bytes)
+            {
+                self.#session_fields = value;
             }
-        }
+        )*
     }
 }
 
@@ -363,7 +393,7 @@ mod tests {
     fn session_field_flushes_and_adopts() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             #[derive(Default)]
             struct Counter {
                 #[state(session)]
@@ -373,14 +403,16 @@ mod tests {
         );
 
         assert!(rendered.contains("pub fn sync"));
-        assert!(rendered.contains("prim.set_session(&session_writes)?"));
+        assert!(rendered.contains("Layer::Shared, &shared_writes"));
         assert!(rendered.contains(r#""state/ticks".to_owned()"#));
         assert!(rendered.contains("::postcard::to_allocvec(&self.ticks)?"));
-        assert!(rendered.contains("for (name, bytes) in prim.session()"));
+        assert!(rendered.contains(".get_many("));
         assert!(rendered.contains("::postcard::from_bytes(&bytes)"));
         assert!(rendered.contains("self.__dirty.ticks = true"));
         assert!(rendered.contains("struct __CounterDirty"));
-        assert!(!rendered.contains("self_document"));
+        assert!(
+            rendered.contains("let document = crate::wired::scene::document::script_document()?;")
+        );
         assert!(!rendered.contains("document.commit("));
     }
 
@@ -388,7 +420,7 @@ mod tests {
     fn document_field_commits_after_the_flush() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Bookmark {
                 #[state(document)]
                 page: u32,
@@ -396,12 +428,14 @@ mod tests {
             ",
         );
 
-        assert!(!rendered.contains("set_session"));
-        assert!(rendered.contains("let document = crate::wired::scene::api::self_document()?;"));
-        assert!(rendered.contains("document.commit(&document_commits)?"));
+        assert!(!rendered.contains("Layer::Shared"));
+        assert!(
+            rendered.contains("let document = crate::wired::scene::document::script_document()?;")
+        );
+        assert!(rendered.contains("Layer::Local, &local_writes"));
+        assert!(rendered.contains("document.commit(&commit_keys)?"));
         assert!(rendered.contains(r#""state/page".to_owned()"#));
-        assert!(rendered.contains("let prim_id = prim.id();"));
-        assert!(!rendered.contains("prim.session()"));
+        assert!(!rendered.contains("get_many("));
         assert!(!rendered.contains("from_bytes"));
     }
 
@@ -409,7 +443,7 @@ mod tests {
     fn both_destinations_flush_session_then_document() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Mixed {
                 #[state(session)]
                 live: u8,
@@ -419,7 +453,7 @@ mod tests {
             ",
         );
 
-        let session = rendered.find("prim.set_session").expect("session flush");
+        let session = rendered.find("Layer::Shared").expect("session flush");
         let commit = rendered.find("document.commit").expect("document flush");
         assert!(
             session < commit,
@@ -434,7 +468,7 @@ mod tests {
     fn an_unannotated_field_is_left_out_of_sync() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Quiet {
                 notes: String,
             }
@@ -451,7 +485,7 @@ mod tests {
     fn accessors_are_generated_for_every_field() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             #[derive(Default)]
             struct Gate {
                 #[state(session)]
@@ -471,7 +505,7 @@ mod tests {
     fn the_hidden_dirty_field_is_private() {
         let rendered = render(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Keep {
                 #[state(session)]
                 value: u8,
@@ -486,7 +520,7 @@ mod tests {
     fn device_is_rejected() {
         let error = error_of(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Local {
                 #[state(device)]
                 volume: u8,
@@ -500,7 +534,7 @@ mod tests {
     fn an_unknown_destination_is_rejected() {
         let error = error_of(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Unknown {
                 #[state(elsewhere)]
                 value: u8,
@@ -514,7 +548,7 @@ mod tests {
     fn a_state_attribute_without_a_destination_is_rejected() {
         let error = error_of(
             r"
-            #[wired_prelude::state]
+            #[wired_guest::state]
             struct Bare {
                 #[state]
                 value: u8,

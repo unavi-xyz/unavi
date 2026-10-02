@@ -1,11 +1,11 @@
 //! A self-contained navigable orbit: owns its motes, its machinery, its prims,
 //! its input and its cast site.
 
-use wired_math::types::{
+use wired_guest::math::{
+    Transform,
     Vec2,
     Vec3,
 };
-use wired_prelude::prelude::*;
 
 use crate::{
     grasp::Outcome,
@@ -47,7 +47,7 @@ use crate::{
     },
     tuning::Tuning,
     view::Frame,
-    wired::scene::types::Document,
+    wired::scene::document::Document,
 };
 
 /// A level of motes arranged around an anchor, selected by direction.
@@ -102,24 +102,34 @@ impl Mounted for Orbit {
         self.mount
     }
 
-    fn place(&mut self, anchor: &Transform) -> anyhow::Result<()> {
-        self.bodies.place(anchor)
+    fn place(&mut self, doc: &Document, anchor: &Transform) -> anyhow::Result<()> {
+        self.bodies.place(doc, anchor)
     }
 
     fn field_lift(&self) -> f32 {
         self.surface.tuning().field_lift
     }
 
-    fn show(&mut self, shown: bool) -> anyhow::Result<()> {
+    fn root(&self) -> (u64, u64) {
+        self.bodies.root()
+    }
+
+    fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()> {
         self.surface.set_open(shown);
-        self.bodies.show(shown)
+        self.bodies.show(doc, shown)
     }
 
     fn is_visible(&self) -> bool {
         self.surface.is_visible()
     }
 
-    fn update(&mut self, gaze: &Gaze, anchor: Transform, delta: f32) -> anyhow::Result<Vec<Event>> {
+    fn update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+        delta: f32,
+    ) -> anyhow::Result<Vec<Event>> {
         let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
         let frame = Frame {
             eye: gaze.eye.translation,
@@ -158,6 +168,7 @@ impl Mounted for Orbit {
         self.surface.update(&specs, layout, pinned, &frame);
 
         self.bodies.icons(
+            doc,
             &motes,
             &specs,
             self.surface.views(),
@@ -165,6 +176,7 @@ impl Mounted for Orbit {
             delta,
         )?;
         self.bodies.apply(
+            doc,
             self.surface.views(),
             &specs,
             self.surface.drawn(),
@@ -175,13 +187,14 @@ impl Mounted for Orbit {
         let mut events = Vec::new();
         self.report_page(&mut events);
         drive_cast(
+            doc,
             &mut self.casting,
             &self.surface,
             &self.site,
             delta,
             &mut events,
         )?;
-        self.hand_over()?;
+        self.hand_over(doc)?;
         Ok(events)
     }
 
@@ -196,7 +209,12 @@ impl Mounted for Orbit {
         self.select_at(index)
     }
 
-    fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate> {
+    fn fixed_update(
+        &mut self,
+        doc: &Document,
+        gaze: &Gaze,
+        anchor: Transform,
+    ) -> anyhow::Result<FixedUpdate> {
         let mut done = FixedUpdate {
             events:   Vec::new(),
             released: None,
@@ -206,7 +224,7 @@ impl Mounted for Orbit {
             match (signal, self.surface.is_seized()) {
                 (Signal::Act(true), false) => self.press(gaze, anchor, false, &mut done.events),
                 (Signal::Take(true), false) => self.press(gaze, anchor, true, &mut done.events),
-                (Signal::Act(false) | Signal::Take(false), _) => self.release(&mut done)?,
+                (Signal::Act(false) | Signal::Take(false), _) => self.release(doc, &mut done)?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
                 (Signal::Act(true) | Signal::Take(true) | Signal::Turn(_), true) => {}
             }
@@ -256,22 +274,25 @@ impl Orbit {
     ///
     /// An item fired where it sits lands too, at the slot it was drawn in.
     /// Both buttons deliver the item; the grip only chooses where.
-    fn release(&mut self, done: &mut FixedUpdate) -> anyhow::Result<()> {
+    fn release(&mut self, doc: &Document, done: &mut FixedUpdate) -> anyhow::Result<()> {
         self.depth = None;
         let outcome = self.surface.release();
 
         let carried = self.held.take();
         let landed = carried.and_then(|slot| {
             let bodies = &self.bodies;
-            Some((bodies.pose(slot)?.translation, bodies.velocity(slot)))
+            Some((
+                bodies.pose(doc, slot)?.translation,
+                bodies.velocity(doc, slot),
+            ))
         });
         if let Some(slot) = carried {
-            self.bodies.clear_dynamic(slot)?;
+            self.bodies.clear_dynamic(doc, slot)?;
         }
 
         match outcome {
             Some(Outcome::Tap(slot)) => {
-                if let Some(released) = self.delivered(slot) {
+                if let Some(released) = self.delivered(doc, slot) {
                     done.released = Some(released);
                 } else if let Some(event) = self.select(slot) {
                     done.events.push(event);
@@ -289,7 +310,7 @@ impl Orbit {
     }
 
     /// The item drawn in `slot`, landing where it stands.
-    fn delivered(&mut self, slot: usize) -> Option<Released> {
+    fn delivered(&mut self, doc: &Document, slot: usize) -> Option<Released> {
         let index = self.surface.spec_index(slot)?;
         let mote = self
             .tree
@@ -298,7 +319,7 @@ impl Orbit {
         Some(Released {
             mote,
             landing: Landing {
-                at:       self.bodies.pose(slot)?.translation,
+                at:       self.bodies.pose(doc, slot)?.translation,
                 velocity: Vec3::ZERO,
             },
         })
@@ -352,7 +373,7 @@ impl Orbit {
 
     /// Hands a mote that has left its slot to the engine's grab, which owns
     /// carrying from there.
-    fn hand_over(&mut self) -> anyhow::Result<()> {
+    fn hand_over(&mut self, doc: &Document) -> anyhow::Result<()> {
         if self.held.is_some() {
             return Ok(());
         }
@@ -365,7 +386,7 @@ impl Orbit {
         // Tracked before the promotion, so a mote that only half made it is
         // still stripped back on release.
         self.held = Some(slot);
-        self.bodies.make_dynamic(slot, radius)
+        self.bodies.make_dynamic(doc, slot, radius)
     }
 
     fn build_released(&mut self, slot: usize, at: Vec3, velocity: Vec3) -> Option<Released> {

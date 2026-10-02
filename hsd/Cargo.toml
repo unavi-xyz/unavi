@@ -1,5 +1,23 @@
 [workspace]
-members  = ["example-*", "unavi-*", "wired-*"]
+members = [
+  "example-session",
+  "example-unavi-shapes",
+  "example-unavi-vui",
+  "example-wired-agent",
+  "example-wired-event",
+  "example-wired-input",
+  "unavi-beacon",
+  "unavi-default-home",
+  "unavi-gate",
+  "unavi-halo",
+  "unavi-physgun",
+  "unavi-shapes",
+  "unavi-spawner",
+  "unavi-tool",
+  "unavi-vui",
+  "wired-guest",
+  "wired-state-macro",
+]
 resolver = "3"
 
 [workspace.package]

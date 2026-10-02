@@ -1,8 +1,9 @@
 package unavi:halo;
 
 world guest {
-  import unavi:tool/api;
-  import unavi:shapes/api;
-  import unavi:vui/api;
-  include wired:prelude/script-privileged;
+  import unavi:host/node-storage@0.1.0;
+  import unavi:shapes/api@0.1.0;
+  import unavi:tool/api@0.1.0;
+  import unavi:vui/api@0.1.0;
+  include wired:worlds/script@0.1.0;
 }

@@ -4,7 +4,11 @@
 //! lit and the rest are dark, and there is nothing to keep in step with what
 //! the user can see. One at a time is halo's rule rather than VUI's.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Color,
+    Transform,
+    Vec3,
+};
 
 use crate::{
     icon,
@@ -19,6 +23,7 @@ use crate::{
             Mote,
         },
     },
+    wired::scene::document::script_document,
 };
 
 /// Metres ahead of the viewer an equipped tool is put.
@@ -39,16 +44,20 @@ const HELD: Color = Color {
 };
 
 struct Tool {
-    doc:  Vec<u8>,
-    name: String,
-    mote: Mote,
+    doc:    (u64, u64, u64, u64),
+    name:   String,
+    mote:   Mote,
+    /// Whether an icon has already been minted and bound; an icon is built
+    /// once per tool rather than every time any tool announces itself, so a
+    /// long-lived halo does not leak icon prims.
+    iconed: bool,
 }
 
 pub struct Hand {
     registry: ToolRegistry,
     tools:    Vec<Tool>,
     /// What is in the hand.
-    held:     Option<Vec<u8>>,
+    held:     Option<(u64, u64, u64, u64)>,
 }
 
 impl Default for Hand {
@@ -74,10 +83,10 @@ impl Hand {
     pub fn fixed_update(&mut self, parent: &Mote) {
         let mut found = false;
         for tool in self.registry.poll() {
-            if self.tools.iter().any(|held| held.doc == tool.doc_id) {
+            if self.tools.iter().any(|held| held.doc == tool.document) {
                 continue;
             }
-            self.registry.set_state(&tool.doc_id, state(RESTING));
+            self.registry.set_state(tool.document, state(RESTING));
 
             // A toggle rather than something to carry out of the halo: with no
             // tracked hand to put a tool in, one that left its slot would be a
@@ -85,13 +94,22 @@ impl Hand {
             // until there is a hand to hold it in.
             // The tool says what it does; how to hold one is the same for all
             // of them, and the mote's own kind already says it is a switch.
-            let mote = Mote::new(Kind::Toggle, &tool.name);
-            mote.describe(&tool.description);
+            let mote = match Mote::new(Kind::Toggle, &tool.name) {
+                Ok(mote) => mote,
+                Err(err) => {
+                    eprintln!("halo: tool mote for '{}': {err:?}", tool.name);
+                    continue;
+                }
+            };
+            if let Err(err) = mote.describe(&tool.description) {
+                eprintln!("halo: tool description for '{}': {err:?}", tool.name);
+            }
 
             self.tools.push(Tool {
-                doc: tool.doc_id,
+                doc: tool.document,
                 name: tool.name,
                 mote,
+                iconed: false,
             });
             found = true;
         }
@@ -103,11 +121,19 @@ impl Hand {
             .sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.doc.cmp(&b.doc)));
         // Re-coloured after every sort rather than at construction: a tool's
         // colour is its place in the set, and the set is what just changed.
-        for (index, tool) in self.tools.iter().enumerate() {
+        let Ok(doc) = script_document() else {
+            return;
+        };
+        for (index, tool) in self.tools.iter_mut().enumerate() {
             tool.mote.set_tint(Some(palette::tool(index)));
-            match icon::tool(palette::GLYPH) {
-                Ok(glyph) => tool.mote.set_icon(Some(&glyph)),
-                Err(err) => eprintln!("halo: no glyph for '{}': {err:?}", tool.name),
+            if !tool.iconed {
+                match icon::tool(palette::GLYPH) {
+                    Ok(glyph) => {
+                        tool.mote.set_icon(&doc, Some(glyph));
+                        tool.iconed = true;
+                    }
+                    Err(err) => eprintln!("halo: no glyph for '{}': {err:?}", tool.name),
+                }
             }
             parent.add_child(&tool.mote);
         }
@@ -121,26 +147,26 @@ impl Hand {
         let Some(tool) = self.tools.iter().find(|tool| tool.mote.is(mote)) else {
             return false;
         };
-        let doc = tool.doc.clone();
+        let doc = tool.doc;
         let name = tool.name.clone();
 
-        if self.held.as_ref() == Some(&doc) {
+        if self.held == Some(doc) {
             self.unequip();
             return true;
         }
         self.unequip();
 
         println!("halo: holding '{name}'");
-        let forward = eye.rotation * Vec3::new(0.0, 0.0, -1.0);
+        let forward = eye.forward();
         self.registry.activate(
-            &doc,
+            doc,
             Transform {
                 translation: eye.translation + forward * PLACE_DIST,
                 rotation:    eye.rotation,
                 scale:       Vec3::ONE,
             },
         );
-        self.registry.set_state(&doc, state(HELD));
+        self.registry.set_state(doc, state(HELD));
         self.held = Some(doc);
         self.mark();
         true
@@ -151,8 +177,8 @@ impl Hand {
         let Some(doc) = self.held.take() else {
             return;
         };
-        self.registry.deactivate(&doc);
-        self.registry.set_state(&doc, state(RESTING));
+        self.registry.deactivate(doc);
+        self.registry.set_state(doc, state(RESTING));
         self.mark();
     }
 
@@ -165,8 +191,8 @@ impl Hand {
     /// the tool it belongs to.
     #[must_use]
     pub fn held_color(&self) -> Option<Color> {
-        let doc = self.held.as_ref()?;
-        let index = self.tools.iter().position(|tool| &tool.doc == doc)?;
+        let doc = self.held?;
+        let index = self.tools.iter().position(|tool| tool.doc == doc)?;
         Some(palette::tool(index))
     }
 
@@ -176,20 +202,20 @@ impl Hand {
     /// rule, so the rest are cleared here.
     fn mark(&self) {
         for tool in &self.tools {
-            tool.mote.set_active(self.held.as_ref() == Some(&tool.doc));
+            tool.mote.set_active(self.held == Some(tool.doc));
         }
     }
 
     /// The primary action, while the halo is down. Only what is in the hand
     /// hears it.
     pub fn trigger(&self, pressed: bool) {
-        if let Some(doc) = &self.held {
+        if let Some(doc) = self.held {
             self.registry.trigger(doc, pressed);
         }
     }
 
     pub fn scroll(&self, delta: f32) {
-        if let Some(doc) = &self.held {
+        if let Some(doc) = self.held {
             self.registry.scroll(doc, delta);
         }
     }

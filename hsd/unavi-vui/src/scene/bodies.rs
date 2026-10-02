@@ -9,7 +9,13 @@ use std::{
 };
 
 use smol_str::SmolStr;
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Color,
+    Quat,
+    Transform,
+    Vec2,
+    Vec3,
+};
 
 use crate::{
     attention::Attention,
@@ -39,24 +45,35 @@ use crate::{
     },
     wired::{
         input::{
-            api::register_input_listener,
+            targeted::listen,
             types::{
-                InputAction,
-                InputListener,
+                Action,
+                Button,
+                InputSubscription,
             },
         },
-        physics::api::get_linear_velocity,
-        scene::types::{
-            Collider,
-            ColliderCylinder,
-            Document,
+        physics::simulation::velocity as physics_velocity,
+        scene::{
+            document::{
+                Document,
+                Layer,
+            },
+            properties::{
+                Collider,
+                ColliderCylinder,
+                Property,
+                PropertyKey,
+                RigidBody,
+                RigidBodyKind,
+                Text,
+                TextAlign,
+                TextAnchor,
+                VertexAttribute,
+            },
+        },
+        shading::graph::{
             GraphValue,
-            Prim,
-            RigidBody,
-            RigidBodyKind,
-            Text,
-            TextAlign,
-            TextAnchor,
+            set_overrides,
         },
     },
 };
@@ -144,21 +161,21 @@ struct Shell {
 }
 
 struct SlotPrims {
-    root:     Prim,
-    body:     Prim,
+    root:     (u64, u64),
+    body:     (u64, u64),
     /// Container children, drawn see-through.
-    nested:   Prim,
+    nested:   (u64, u64),
     /// Leaf children, or depth marks, drawn solid.
-    plain:    Prim,
-    overflow: Prim,
+    plain:    (u64, u64),
+    overflow: (u64, u64),
     /// Whether `overflow` has had its mesh written yet.
     marked:   Cell<bool>,
     /// The way back's own mark, which no other role wears.
-    back:     Prim,
+    back:     (u64, u64),
     /// Whether `back` has had its mesh written yet.
     carved:   Cell<bool>,
     /// The mote's name, drawn always rather than on attention.
-    label:    Prim,
+    label:    (u64, u64),
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
     icon:     RefCell<Option<Mote>>,
@@ -175,19 +192,18 @@ struct SlotPrims {
 /// grown to what is actually shown, and the placard riding whichever of them
 /// holds attention.
 pub struct Bodies {
-    doc:       Document,
-    root:      Prim,
+    root:      (u64, u64),
     /// The surface's face and its only resting collider. A mote is a drawing
     /// until it is taken, so only this can be hit.
-    field:     Prim,
+    field:     (u64, u64),
     surface:   Collider,
     /// Grabs against this surface; anything landing elsewhere belongs to
     /// whatever it hit.
-    input:     InputListener,
+    input:     InputSubscription,
     /// Where an icon waits while the mote holding it is not drawn. Scale zero
     /// rather than unparented: `wired:scene` has no detached prim, and a
     /// removed child would reappear at the document root.
-    park:      Prim,
+    park:      (u64, u64),
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
     slots:     RefCell<Vec<SlotPrims>>,
@@ -201,7 +217,7 @@ pub struct Bodies {
     /// An icon's measured fit, keyed by its prim, so a mote that moves between
     /// slots is not measured again. Measuring reads every piece's stream back
     /// over the interface, which is cheap once and not something to repeat.
-    icon_fits: RefCell<HashMap<String, Fit>>,
+    icon_fits: RefCell<HashMap<(u64, u64), Fit>>,
     /// Whether the surface is up. A dismissed one keeps every prim — the
     /// meshes are paid for once, and a summon that re-uploaded them would
     /// spend a `Flow::BlobUpload` per body every time.
@@ -210,28 +226,38 @@ pub struct Bodies {
 
 impl Bodies {
     pub fn new(doc: &Document, capacity: usize, tuning: &Tuning, hit: Hit) -> anyhow::Result<Self> {
-        let root = doc.create_prim()?;
-        root.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
+        let root = doc.create_prim(Layer::Local, None)?;
+        doc.local()
+            .set(root, Property::Transform(draw::placed(Vec3::ZERO, 1.0)))
+            .flush()?;
 
-        let field = doc.create_prim()?;
-        field.set_xform(Some(Transform {
-            translation: Vec3::new(0.0, 0.0, FIELD_THICKNESS.mul_add(-0.5, tuning.field_lift)),
-            rotation:    hit.rotation(),
-            scale:       Vec3::ONE,
-        }))?;
+        let field = doc.create_prim(Layer::Local, Some(root))?;
         let surface = hit.collider();
-        field.set_collider(Some(surface))?;
-        root.add_child(&field)?;
-        let input = register_input_listener(&field)?;
+        doc.local()
+            .set(
+                field,
+                Property::Transform(Transform {
+                    translation: Vec3::new(
+                        0.0,
+                        0.0,
+                        FIELD_THICKNESS.mul_add(-0.5, tuning.field_lift),
+                    ),
+                    rotation:    hit.rotation(),
+                    scale:       Vec3::ONE,
+                }),
+            )
+            .set(field, Property::Collider(surface))
+            .flush()?;
+        let input = listen(doc, field)?;
 
-        let placard = Placard::new(doc, &root)?;
+        let placard = Placard::new(doc, root)?;
 
-        let park = doc.create_prim()?;
-        park.set_xform(Some(draw::hidden()))?;
-        root.add_child(&park)?;
+        let park = doc.create_prim(Layer::Local, Some(root))?;
+        doc.local()
+            .set(park, Property::Transform(draw::hidden()))
+            .flush()?;
 
         Ok(Self {
-            doc: doc.clone(),
             root,
             field,
             surface,
@@ -251,43 +277,40 @@ impl Bodies {
     /// Builds up to `count` slots, which is where a surface's geometry cost is
     /// actually paid. A mesh write costs a `BlobUpload` whatever its size, so
     /// this is charged for what is drawn rather than for what might be.
-    fn ensure(&self, count: usize) -> anyhow::Result<()> {
+    fn ensure(&self, doc: &Document, count: usize) -> anyhow::Result<()> {
         let mut slots = self.slots.borrow_mut();
         for _ in slots.len()..count.min(self.capacity) {
-            let slot_root = self.doc.create_prim()?;
-            slot_root.set_xform(Some(draw::hidden()))?;
-            self.root.add_child(&slot_root)?;
+            let slot_root = doc.create_prim(Layer::Local, Some(self.root))?;
+            doc.local()
+                .set(slot_root, Property::Transform(draw::hidden()))
+                .flush()?;
 
-            let body = self.doc.create_prim()?;
-            draw::mesh(&body, &self.unit)?;
-            body.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
-            graphs::bind_shell(&body)?;
-            slot_root.add_child(&body)?;
+            let body = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let batch = draw::mesh(&self.unit)
+                .into_iter()
+                .fold(doc.local(), |batch, property| batch.set(body, property));
+            batch
+                .set(body, Property::Transform(draw::placed(Vec3::ZERO, 1.0)))
+                .flush()?;
+            graphs::set_shell(doc, body)?;
 
-            let nested = self.doc.create_prim()?;
-            nested.set_xform(Some(draw::hidden()))?;
-            slot_root.add_child(&nested)?;
-
-            let plain = self.doc.create_prim()?;
-            plain.set_xform(Some(draw::hidden()))?;
-            slot_root.add_child(&plain)?;
-
+            let nested = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let plain = doc.create_prim(Layer::Local, Some(slot_root))?;
             // An overflow marker is the exception rather than the rule, so it
             // waits for a slot that has one.
-            let overflow = self.doc.create_prim()?;
-            overflow.set_xform(Some(draw::hidden()))?;
-            slot_root.add_child(&overflow)?;
-
+            let overflow = doc.create_prim(Layer::Local, Some(slot_root))?;
             // Likewise the way back, which at most one slot of a level is.
-            let back = self.doc.create_prim()?;
-            back.set_xform(Some(draw::hidden()))?;
-            slot_root.add_child(&back)?;
-
+            let back = doc.create_prim(Layer::Local, Some(slot_root))?;
             // A label rides the slot, not the body, which scales with
             // attention.
-            let label = self.doc.create_prim()?;
-            label.set_xform(Some(draw::hidden()))?;
-            slot_root.add_child(&label)?;
+            let label = doc.create_prim(Layer::Local, Some(slot_root))?;
+            doc.local()
+                .set(nested, Property::Transform(draw::hidden()))
+                .set(plain, Property::Transform(draw::hidden()))
+                .set(overflow, Property::Transform(draw::hidden()))
+                .set(back, Property::Transform(draw::hidden()))
+                .set(label, Property::Transform(draw::hidden()))
+                .flush()?;
 
             slots.push(SlotPrims {
                 root: slot_root,
@@ -308,18 +331,23 @@ impl Bodies {
         Ok(())
     }
 
-    pub fn place(&self, transform: &Transform) -> anyhow::Result<()> {
-        self.root.set_xform(Some(Transform {
-            translation: transform.translation,
-            rotation:    transform.rotation,
-            scale:       transform.scale,
-        }))?;
+    pub fn place(&self, doc: &Document, transform: &Transform) -> anyhow::Result<()> {
+        doc.local()
+            .set(
+                self.root,
+                Property::Transform(Transform {
+                    translation: transform.translation,
+                    rotation:    transform.rotation,
+                    scale:       transform.scale,
+                }),
+            )
+            .flush()?;
         Ok(())
     }
 
     #[must_use]
-    pub const fn root(&self) -> &Prim {
-        &self.root
+    pub const fn root(&self) -> (u64, u64) {
+        self.root
     }
 
     /// Puts the surface up or takes it down.
@@ -328,11 +356,17 @@ impl Bodies {
     /// finishes leaving: a surface on its way out is not a wall you cannot
     /// see, and a press landing on one that is already going is a press
     /// nobody meant. The bodies keep animating out on their own.
-    pub fn show(&self, shown: bool) -> anyhow::Result<()> {
+    pub fn show(&self, doc: &Document, shown: bool) -> anyhow::Result<()> {
         if self.shown.replace(shown) == shown {
             return Ok(());
         }
-        self.field.set_collider(shown.then_some(self.surface))?;
+        let mut batch = doc.local();
+        batch = if shown {
+            batch.set(self.field, Property::Collider(self.surface))
+        } else {
+            batch.clear(self.field, PropertyKey::Collider)
+        };
+        batch.flush()?;
         Ok(())
     }
 
@@ -340,13 +374,13 @@ impl Bodies {
     /// pointer ends up, because the host sends one to whoever heard the press.
     pub fn poll(&self) -> Vec<Signal> {
         let mut signals = Vec::new();
-        while let Some(event) = self.input.poll() {
+        for event in self.input.drain(64) {
             match event.action {
-                InputAction::Press => signals.push(Signal::Act(true)),
-                InputAction::Release => signals.push(Signal::Act(false)),
-                InputAction::GripPress => signals.push(Signal::Take(true)),
-                InputAction::GripRelease => signals.push(Signal::Take(false)),
-                InputAction::Scroll(delta) if delta.y != 0.0 => {
+                Action::Pressed(Button::Trigger) => signals.push(Signal::Act(true)),
+                Action::Released(Button::Trigger) => signals.push(Signal::Act(false)),
+                Action::Pressed(Button::Grip) => signals.push(Signal::Take(true)),
+                Action::Released(Button::Grip) => signals.push(Signal::Take(false)),
+                Action::Scroll(delta) if delta.y != 0.0 => {
                     signals.push(Signal::Turn(if delta.y > 0.0 { -1 } else { 1 }));
                 }
                 _ => {}
@@ -358,56 +392,66 @@ impl Bodies {
     /// Turns a mote into a dynamic body the engine's grab can take. The
     /// surface's collider stands down while anything is held, so it cannot
     /// intercept the grab's ray.
-    pub fn make_dynamic(&self, slot: usize, radius: f32) -> anyhow::Result<()> {
+    pub fn make_dynamic(&self, doc: &Document, slot: usize, radius: f32) -> anyhow::Result<()> {
         let slots = self.slots.borrow();
         let Some(prims) = slots.get(slot) else {
             return Ok(());
         };
-        prims.root.set_collider(Some(Collider::Sphere(radius)))?;
-        // Weightless from promotion: the engine zeroes gravity only once its
-        // grab takes the mote, and nothing else holds it up in the gap.
-        prims.root.set_gravity_scale(0.0)?;
-        prims.root.set_rigid_body(Some(RigidBody {
-            kind:            RigidBodyKind::Dynamic,
-            angular_damping: None,
-            friction:        None,
-            linear_damping:  None,
-            mass:            None,
-            restitution:     None,
-        }))?;
-        self.field.set_collider(None)?;
+        doc.local()
+            .set(prims.root, Property::Collider(Collider::Sphere(radius)))
+            // Weightless from promotion: the engine zeroes gravity only once
+            // its grab takes the mote, and nothing else holds it up in the
+            // gap.
+            .set(prims.root, Property::GravityScale(0.0))
+            .set(
+                prims.root,
+                Property::RigidBody(RigidBody {
+                    kind:            RigidBodyKind::Dynamic,
+                    angular_damping: None,
+                    friction:        None,
+                    linear_damping:  None,
+                    mass:            None,
+                    restitution:     None,
+                }),
+            )
+            .clear(self.field, PropertyKey::Collider)
+            .flush()?;
         Ok(())
     }
 
-    pub fn clear_dynamic(&self, slot: usize) -> anyhow::Result<()> {
+    pub fn clear_dynamic(&self, doc: &Document, slot: usize) -> anyhow::Result<()> {
+        let mut batch = doc.local();
         if let Some(prims) = self.slots.borrow().get(slot) {
-            prims.root.set_rigid_body(None)?;
-            prims.root.set_collider(None)?;
-            // Restored so the next promotion is a real attribute change: the
-            // engine resets gravity when it lets go, and an unchanged value
-            // would never re-apply ours.
-            prims.root.set_gravity_scale(1.0)?;
+            batch = batch
+                .clear(prims.root, PropertyKey::RigidBody)
+                .clear(prims.root, PropertyKey::Collider)
+                // Restored so the next promotion is a real attribute change:
+                // the engine resets gravity when it lets go, and an unchanged
+                // value would never re-apply ours.
+                .set(prims.root, Property::GravityScale(1.0));
         }
-        self.field
-            .set_collider(self.shown.get().then_some(self.surface))?;
+        batch = if self.shown.get() {
+            batch.set(self.field, Property::Collider(self.surface))
+        } else {
+            batch.clear(self.field, PropertyKey::Collider)
+        };
+        batch.flush()?;
         Ok(())
     }
 
     #[must_use]
-    pub fn pose(&self, slot: usize) -> Option<Transform> {
-        self.slots
-            .borrow()
-            .get(slot)
-            .map(|prims| prims.root.global_xform())
+    pub fn pose(&self, doc: &Document, slot: usize) -> Option<Transform> {
+        let prim = self.slots.borrow().get(slot)?.root;
+        doc.world_transform(prim).ok()
     }
 
     #[must_use]
-    pub fn velocity(&self, slot: usize) -> Vec3 {
+    pub fn velocity(&self, doc: &Document, slot: usize) -> Vec3 {
         self.slots
             .borrow()
             .get(slot)
-            .and_then(|prims| get_linear_velocity(&prims.root).ok())
-            .unwrap_or(Vec3::ZERO)
+            .and_then(|prims| physics_velocity(doc, prims.root).ok())
+            .map_or(Vec3::ZERO, |velocity| velocity.linear)
     }
 
     /// Puts each drawn mote's icon inside its shell and parks the rest.
@@ -416,13 +460,14 @@ impl Bodies {
     /// holding to decide whether its shell is glass.
     pub fn icons(
         &self,
+        doc: &Document,
         motes: &[Mote],
         specs: &[MoteSpec],
         views: &[SlotView],
         drawn: &[usize],
         delta: f32,
     ) -> anyhow::Result<()> {
-        self.ensure(views.len())?;
+        self.ensure(doc, views.len())?;
         // A gentle turn so the icons read as things rather than pictures;
         // zero keeps every icon still.
         self.spin
@@ -453,11 +498,12 @@ impl Bodies {
             if keep || held.is_none() {
                 continue;
             }
-            if let Some(result) = held
-                .as_ref()
-                .and_then(|h| h.with_icon(|p| self.park.add_child(p)))
+            if let Some(mote) = held.as_ref()
+                && let Some(icon) = mote.icon()
             {
-                result?;
+                doc.local()
+                    .set(icon, Property::Parent(Some(self.park)))
+                    .flush()?;
             }
             drop(held);
             *slot.icon.borrow_mut() = None;
@@ -467,45 +513,46 @@ impl Bodies {
             let Some(mote) = wanted(index) else {
                 continue;
             };
+            let Some(icon) = mote.icon() else {
+                continue;
+            };
             let radius = views.get(index).map_or(0.0, |view| view.radius);
-            let fit = self.icon_fit(mote)?;
+            let fit = self.icon_fit(doc, icon)?;
             if slot.icon.borrow().is_none() {
-                if let Some(result) = mote.with_icon(|prim| slot.root.add_child(prim)) {
-                    result?;
-                }
+                doc.local()
+                    .set(icon, Property::Parent(Some(slot.root)))
+                    .flush()?;
                 *slot.icon.borrow_mut() = Some(mote.clone());
             }
-            if let Some(result) = mote.with_icon(|prim| {
-                prim.set_xform(Some(draw::fitted(fit.center, radius * fit.scale, spin)))
-            }) {
-                result?;
-            }
+            doc.local()
+                .set(
+                    icon,
+                    Property::Transform(draw::fitted(fit.center, radius * fit.scale, spin)),
+                )
+                .flush()?;
         }
         Ok(())
     }
 
     /// The fit a mote's icon wears, measured once and remembered for as long
     /// as the icon does.
-    fn icon_fit(&self, mote: &Mote) -> anyhow::Result<Fit> {
-        let key = mote
-            .with_icon(Prim::id)
-            .ok_or_else(|| anyhow::anyhow!("mote has no icon"))?;
-        if let Some(fit) = self.icon_fits.borrow().get(&key) {
+    fn icon_fit(&self, doc: &Document, icon: (u64, u64)) -> anyhow::Result<Fit> {
+        if let Some(fit) = self.icon_fits.borrow().get(&icon) {
             return Ok(*fit);
         }
-        let (min, max) = mote
-            .with_icon(icon_box)
-            .ok_or_else(|| anyhow::anyhow!("mote has no icon"))??;
+        let (min, max) = icon_box(doc, icon)?;
         let fit = fit::fit(min, max, self.tuning.icon_fill);
-        self.icon_fits.borrow_mut().insert(key, fit);
+        self.icon_fits.borrow_mut().insert(icon, fit);
         Ok(fit)
     }
 
     /// `drawn` maps each view back to its spec, which pagination makes a real
     /// translation rather than an identity. `held` is the slot the engine is
     /// carrying, whose transform belongs to the solver rather than to us.
+    #[expect(clippy::too_many_arguments)]
     pub fn apply(
         &self,
+        doc: &Document,
         views: &[SlotView],
         specs: &[MoteSpec],
         drawn: &[usize],
@@ -514,24 +561,29 @@ impl Bodies {
         held: Option<usize>,
     ) -> anyhow::Result<()> {
         match placard {
-            Some(view) => self.placard.apply(view, palette)?,
-            None => self.placard.hide()?,
+            Some(view) => self.placard.apply(doc, view, palette)?,
+            None => self.placard.hide(doc)?,
         }
 
-        self.ensure(views.len())?;
+        self.ensure(doc, views.len())?;
         let slots = self.slots.borrow();
 
         for (index, (slot, view)) in slots.iter().zip(views).enumerate() {
+            let mut batch = doc.local();
             if held != Some(index) {
-                slot.root
-                    .set_xform(Some(draw::placed(view.position, view.bloom)))?;
+                batch = batch.set(
+                    slot.root,
+                    Property::Transform(draw::placed(view.position, view.bloom)),
+                );
             }
-            slot.body
-                .set_xform(Some(draw::placed(Vec3::ZERO, view.radius)))?;
+            batch = batch.set(
+                slot.body,
+                Property::Transform(draw::placed(Vec3::ZERO, view.radius)),
+            );
 
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
             if let Some(spec) = spec {
-                Self::apply_label(slot, view, spec, palette)?;
+                batch = Self::apply_label(batch, slot, view, spec, palette);
             }
 
             let shell = Shell {
@@ -541,25 +593,35 @@ impl Bodies {
                 frost: spec.map_or(0.0, |spec| spec.frost),
                 bloom: view.bloom,
             };
-            if slot.shell.get() != Some(shell) {
+            let overrides = if slot.shell.get() == Some(shell) {
+                None
+            } else {
                 slot.shell.set(Some(shell));
-                Self::apply_shell(slot, view, index, shell, palette)?;
-                slot.nested
-                    .set_material(Some(draw::pip(view.style, true)))?;
-                slot.plain
-                    .set_material(Some(draw::pip(view.style, false)))?;
-                slot.overflow
-                    .set_material(Some(draw::pip(view.style, false)))?;
-                slot.back.set_material(Some(draw::pip(view.style, false)))?;
+                batch = batch
+                    .set(slot.nested, Property::Material(draw::pip(view.style, true)))
+                    .set(slot.plain, Property::Material(draw::pip(view.style, false)))
+                    .set(
+                        slot.overflow,
+                        Property::Material(draw::pip(view.style, false)),
+                    )
+                    .set(slot.back, Property::Material(draw::pip(view.style, false)));
+                Some((index, shell))
+            };
+
+            batch = Self::apply_pips(batch, slot, view);
+            batch = Self::apply_back(batch, slot, view);
+            batch.flush()?;
+
+            if let Some((index, shell)) = overrides {
+                Self::apply_shell(doc, slot, view, index, shell, palette)?;
             }
-
-            Self::apply_pips(slot, view)?;
-            Self::apply_back(slot, view)?;
         }
 
+        let mut batch = doc.local();
         for slot in slots.iter().skip(views.len()) {
-            slot.root.set_xform(Some(draw::hidden()))?;
+            batch = batch.set(slot.root, Property::Transform(draw::hidden()));
         }
+        batch.flush()?;
         Ok(())
     }
 
@@ -571,6 +633,7 @@ impl Bodies {
     /// Heat goes over only because a rim is per-fragment and cannot be
     /// computed here.
     fn apply_shell(
+        doc: &Document,
         slot: &SlotPrims,
         view: &SlotView,
         index: usize,
@@ -586,84 +649,106 @@ impl Bodies {
             shell.style.alpha
         };
 
-        slot.body.set_graph_overrides(&[
-            (
-                graphs::SHELL_TINT,
-                GraphValue::Color(draw::with_alpha(shell.style.color, alpha)),
-            ),
-            (
-                graphs::SHELL_EMISSIVE,
-                GraphValue::Float(shell.style.emissive),
-            ),
-            (graphs::SHELL_HEAT, GraphValue::Float(view.heat)),
-            (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
-            (graphs::SHELL_FILM, GraphValue::Float(shell.film)),
-            (graphs::SHELL_FROST, GraphValue::Float(shell.frost)),
-            (graphs::SHELL_BLOOM, GraphValue::Float(shell.bloom)),
-        ])?;
+        set_overrides(
+            doc,
+            slot.body,
+            Layer::Local,
+            &[
+                (
+                    graphs::SHELL_TINT,
+                    GraphValue::Color(draw::with_alpha(shell.style.color, alpha)),
+                ),
+                (
+                    graphs::SHELL_EMISSIVE,
+                    GraphValue::Float(shell.style.emissive),
+                ),
+                (graphs::SHELL_HEAT, GraphValue::Float(view.heat)),
+                (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
+                (graphs::SHELL_FILM, GraphValue::Float(shell.film)),
+                (graphs::SHELL_FROST, GraphValue::Float(shell.frost)),
+                (graphs::SHELL_BLOOM, GraphValue::Float(shell.bloom)),
+            ],
+        )?;
         Ok(())
     }
 
     /// Drawn always; only the attended name's brightness changes with
     /// attention.
-    fn apply_label(
+    fn apply_label<'a>(
+        mut batch: crate::Batch<'a>,
         slot: &SlotPrims,
         view: &SlotView,
         spec: &MoteSpec,
         palette: &Palette,
-    ) -> anyhow::Result<()> {
-        slot.label
-            .set_xform(Some(draw::placed(view.label_offset, 1.0)))?;
+    ) -> crate::Batch<'a> {
+        batch = batch.set(
+            slot.label,
+            Property::Transform(draw::placed(view.label_offset, 1.0)),
+        );
 
         let key = (spec.label.clone(), view.attention);
         let mut written = slot.written.borrow_mut();
         if written.as_ref() == Some(&key) {
-            return Ok(());
+            return batch;
         }
         let color = palette.tint(view.attention);
         *written = Some(key);
 
-        slot.label.set_text(Some(&Text {
-            value:         spec.label.to_string(),
-            size:          Some(view.label_size),
-            align:         Some(TextAlign::Center),
-            anchor:        Some(TextAnchor::Top),
-            wrap:          None,
-            line_height:   None,
-            color:         Some(color),
-            // A surface does not control its surroundings, so its names carry
-            // their own contrast.
-            outline:       Some(Color {
-                r: 0.0,
-                g: 0.0,
-                b: 0.0,
-                a: 0.85,
+        batch.set(
+            slot.label,
+            Property::Text(Text {
+                value:         spec.label.to_string(),
+                size:          Some(view.label_size),
+                align:         Some(TextAlign::Center),
+                anchor:        Some(TextAnchor::Top),
+                wrap:          None,
+                line_height:   None,
+                color:         Some(color),
+                // A surface does not control its surroundings, so its names
+                // carry their own contrast.
+                outline:       Some(Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 0.85,
+                }),
+                outline_width: Some(0.22),
+                emissive:      Some(if view.attention.is_active() { 0.5 } else { 0.1 }),
+                billboard:     None,
             }),
-            outline_width: Some(0.22),
-            emissive:      Some(if view.attention.is_active() { 0.5 } else { 0.1 }),
-            billboard:     None,
-        }))?;
-        Ok(())
+        )
     }
 
     /// The way back wears a mark of its own, so a glance tells it from the
     /// level it climbs out of.
-    fn apply_back(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
+    fn apply_back<'a>(
+        mut batch: crate::Batch<'a>,
+        slot: &SlotPrims,
+        view: &SlotView,
+    ) -> crate::Batch<'a> {
         let leaving = matches!(view.role, Role::Parent { .. });
         if leaving && !slot.carved.get() {
             slot.carved.set(true);
-            draw::mesh(&slot.back, &mesh::chevron())?;
+            batch = draw::mesh(&mesh::chevron())
+                .into_iter()
+                .fold(batch, |batch, property| batch.set(slot.back, property));
         }
-        slot.back.set_xform(Some(if leaving {
-            draw::placed(Vec3::ZERO, view.radius)
-        } else {
-            draw::hidden()
-        }))?;
-        Ok(())
+        batch.set(
+            slot.back,
+            Property::Transform(if leaving {
+                draw::placed(Vec3::ZERO, view.radius)
+            } else {
+                draw::hidden()
+            }),
+        )
     }
 
     /// Drawn unconditionally: how much a container holds is structural.
-    fn apply_pips(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
+    fn apply_pips<'a>(
+        mut batch: crate::Batch<'a>,
+        slot: &SlotPrims,
+        view: &SlotView,
+    ) -> crate::Batch<'a> {
         let groups = view.pips.groups();
         let shape = PipShape {
             count: view.pips.count,
@@ -682,21 +767,33 @@ impl Bodies {
 
         if slot.shape.get() != Some(shape) {
             slot.shape.set(Some(shape));
-            apply_run(&slot.nested, 0, groups, total, arrange, spread, radius)?;
-            apply_run(
-                &slot.plain,
+            batch = apply_run(
+                batch,
+                slot.nested,
+                0,
+                groups,
+                total,
+                arrange,
+                spread,
+                radius,
+            );
+            batch = apply_run(
+                batch,
+                slot.plain,
                 groups,
                 total - groups,
                 total,
                 arrange,
                 spread,
                 radius,
-            )?;
+            );
         }
 
         if view.pips.overflow && !slot.marked.get() {
             slot.marked.set(true);
-            draw::mesh(&slot.overflow, &mesh::overflow_marker(OVERFLOW_RADIUS))?;
+            batch = draw::mesh(&mesh::overflow_marker(OVERFLOW_RADIUS))
+                .into_iter()
+                .fold(batch, |batch, property| batch.set(slot.overflow, property));
         }
 
         let visible = draw::placed(Vec3::ZERO, view.radius);
@@ -710,13 +807,16 @@ impl Bodies {
         });
 
         for (prim, placed) in [
-            (&slot.nested, (groups > 0).then_some(visible)),
-            (&slot.plain, (view.pips.count > groups).then_some(visible)),
-            (&slot.overflow, marker),
+            (slot.nested, (groups > 0).then_some(visible)),
+            (slot.plain, (view.pips.count > groups).then_some(visible)),
+            (slot.overflow, marker),
         ] {
-            prim.set_xform(Some(placed.unwrap_or_else(draw::hidden)))?;
+            batch = batch.set(
+                prim,
+                Property::Transform(placed.unwrap_or_else(draw::hidden)),
+            );
         }
-        Ok(())
+        batch
     }
 }
 
@@ -726,28 +826,29 @@ fn phase(slot: usize) -> f32 {
     slot as f32 * 2.399_963
 }
 
+#[expect(clippy::too_many_arguments)]
 fn apply_run(
-    prim: &Prim,
+    batch: crate::Batch<'_>,
+    prim: (u64, u64),
     start: usize,
     len: usize,
     total: usize,
     arrange: Arrange,
     spread: f32,
     radius: f32,
-) -> anyhow::Result<()> {
+) -> crate::Batch<'_> {
     if len == 0 {
-        return Ok(());
+        return batch;
     }
-    draw::mesh(
-        prim,
-        &mesh::cluster(start, len, total, arrange, spread, radius),
-    )
+    draw::mesh(&mesh::cluster(start, len, total, arrange, spread, radius))
+        .into_iter()
+        .fold(batch, |batch, property| batch.set(prim, property))
 }
 
 /// The box an icon's whole tree fills, in its root's own frame. The root's
 /// xform is skipped, because the surface replaces it when it places the icon;
 /// every piece beneath it is walked and posed in turn.
-fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
+fn icon_box(doc: &Document, root: (u64, u64)) -> anyhow::Result<(Vec3, Vec3)> {
     let identity = Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
@@ -755,28 +856,39 @@ fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
     };
     let mut min = Vec3::splat(f32::MAX);
     let mut max = Vec3::splat(f32::MIN);
-    gather(root, &identity, &mut min, &mut max)?;
+    gather(doc, root, &identity, &mut min, &mut max)?;
     if min.x > max.x {
         return Ok((Vec3::ZERO, Vec3::ZERO));
     }
     Ok((min, max))
 }
 
-fn gather(prim: &Prim, parent: &Transform, min: &mut Vec3, max: &mut Vec3) -> anyhow::Result<()> {
-    if let Some(positions) = prim.mesh_stream("POSITION") {
-        for vertex in positions.as_chunks::<3>().0 {
+fn gather(
+    doc: &Document,
+    prim: (u64, u64),
+    parent: &Transform,
+    min: &mut Vec3,
+    max: &mut Vec3,
+) -> anyhow::Result<()> {
+    if let Some(Property::MeshVertices(positions)) =
+        doc.get(prim, &PropertyKey::MeshVertices(VertexAttribute::Position))
+    {
+        for vertex in positions.values.as_chunks::<3>().0 {
             let point = parent.transform_point(Vec3::new(vertex[0], vertex[1], vertex[2]));
             *min = min.min(point);
             *max = max.max(point);
         }
     }
-    for child in prim.children() {
-        let local = child.xform().unwrap_or(Transform {
-            translation: Vec3::ZERO,
-            rotation:    Quat::IDENTITY,
-            scale:       Vec3::ONE,
-        });
-        gather(&child, &fit::chain(parent, &local), min, max)?;
+    for child in doc.children(prim) {
+        let local = match doc.get(child, &PropertyKey::Transform) {
+            Some(Property::Transform(transform)) => transform,
+            _ => Transform {
+                translation: Vec3::ZERO,
+                rotation:    Quat::IDENTITY,
+                scale:       Vec3::ONE,
+            },
+        };
+        gather(doc, child, &fit::chain(parent, &local), min, max)?;
     }
     Ok(())
 }

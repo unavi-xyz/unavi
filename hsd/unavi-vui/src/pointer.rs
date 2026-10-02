@@ -1,4 +1,5 @@
-use wired_math::types::{
+use wired_guest::math::{
+    Ray,
     Transform,
     Vec2,
     Vec3,
@@ -7,11 +8,10 @@ use wired_math::types::{
 use crate::{
     view::Aim,
     wired::input::{
-        context::pointers,
+        device::pointers,
         types::{
             Pointer,
             PointerKind,
-            Ray,
         },
     },
 };
@@ -68,8 +68,8 @@ fn leading(pointers: &[Pointer]) -> Option<Ray> {
 
 fn eye_ray(eye: &Transform) -> Ray {
     Ray {
-        origin: eye.translation,
-        dir:    eye.rotation * Vec3::new(0.0, 0.0, -1.0),
+        origin:    eye.translation,
+        direction: eye.rotation * Vec3::new(0.0, 0.0, -1.0),
     }
 }
 
@@ -81,7 +81,7 @@ pub fn aim(ray: &Ray, anchor: &Transform, lift: f32) -> Option<Aim> {
     let normal = anchor.rotation * Vec3::Z;
     let origin = anchor.translation + normal * lift;
 
-    let denominator = ray.dir.dot(normal);
+    let denominator = ray.direction.dot(normal);
     if denominator.abs() < 1.0e-6 {
         return None;
     }
@@ -91,7 +91,7 @@ pub fn aim(ray: &Ray, anchor: &Transform, lift: f32) -> Option<Aim> {
         return None;
     }
 
-    let world = ray.origin + ray.dir * distance;
+    let world = ray.origin + ray.direction * distance;
     let relative = world - origin;
     Some(Aim {
         local: Vec2::new(
@@ -106,14 +106,14 @@ pub fn aim(ray: &Ray, anchor: &Transform, lift: f32) -> Option<Aim> {
 /// this rather than the aim plane.
 #[must_use]
 pub fn hand(ray: &Ray, depth: f32) -> Vec3 {
-    ray.origin + ray.dir * depth
+    ray.origin + ray.direction * depth
 }
 
 #[cfg(test)]
 mod tests {
     use std::f32::consts::PI;
 
-    use wired_math::types::Quat;
+    use wired_guest::math::Quat;
 
     use super::*;
 
@@ -121,8 +121,8 @@ mod tests {
     /// facing back at it.
     fn ray() -> Ray {
         Ray {
-            origin: Vec3::ZERO,
-            dir:    Vec3::new(0.0, 0.0, -1.0),
+            origin:    Vec3::ZERO,
+            direction: Vec3::new(0.0, 0.0, -1.0),
         }
     }
 
@@ -137,8 +137,8 @@ mod tests {
     fn turned(radians: f32) -> Ray {
         let rotation = Quat::new(0.0, (radians * 0.5).sin(), 0.0, (radians * 0.5).cos());
         Ray {
-            origin: Vec3::ZERO,
-            dir:    rotation * Vec3::new(0.0, 0.0, -1.0),
+            origin:    Vec3::ZERO,
+            direction: rotation * Vec3::new(0.0, 0.0, -1.0),
         }
     }
 
@@ -213,8 +213,8 @@ mod tests {
             kind,
             active: true,
             ray: Ray {
-                origin: Vec3::new(x, 0.0, 0.0),
-                dir:    Vec3::new(0.0, 0.0, -1.0),
+                origin:    Vec3::new(x, 0.0, 0.0),
+                direction: Vec3::new(0.0, 0.0, -1.0),
             },
             trigger: 0.0,
             grip,

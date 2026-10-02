@@ -12,7 +12,7 @@
 //! eyes-free use, and it is why the order below is written once and left
 //! alone.
 
-use wired_prelude::prelude::*;
+use wired_guest::math::Vec2;
 
 use crate::{
     icon,
@@ -25,6 +25,7 @@ use crate::{
         Mount,
         Orbit,
     },
+    wired::scene::document::script_document,
 };
 
 /// Metres along the line of sight the halo appears.
@@ -55,23 +56,24 @@ pub struct Root {
 
 impl Root {
     pub fn new() -> anyhow::Result<Self> {
-        let level = Mote::new(Kind::Group, "Halo");
+        let doc = script_document()?;
+        let level = Mote::new(Kind::Group, "Halo")?;
 
-        let home = Mote::new(Kind::Cast, "Home");
-        home.describe("Travel to your home space.");
+        let home = Mote::new(Kind::Cast, "Home")?;
+        home.describe("Travel to your home space.")?;
         home.set_tint(Some(palette::HOME));
-        home.set_icon(Some(&icon::home(palette::GLYPH)?));
+        home.set_icon(&doc, Some(icon::home(palette::GLYPH)?));
 
-        let nav = Mote::new(Kind::Group, "Nav");
-        nav.describe("Spaces with people in them.");
+        let nav = Mote::new(Kind::Group, "Nav")?;
+        nav.describe("Spaces with people in them.")?;
         nav.set_arrange(Arrange::Grid);
         nav.set_tint(Some(palette::NAV));
-        nav.set_icon(Some(&icon::cube(palette::GLYPH)?));
+        nav.set_icon(&doc, Some(icon::cube(palette::GLYPH)?));
 
-        let tools = Mote::new(Kind::Group, "Tools");
-        tools.describe("Things you can use.");
+        let tools = Mote::new(Kind::Group, "Tools")?;
+        tools.describe("Things you can use.")?;
         tools.set_tint(Some(palette::TOOLS));
-        tools.set_icon(Some(&icon::tools(palette::GLYPH)?));
+        tools.set_icon(&doc, Some(icon::tools(palette::GLYPH)?));
 
         for slot in [&home, &nav, &tools] {
             level.add_child(slot);

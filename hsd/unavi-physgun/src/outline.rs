@@ -1,21 +1,41 @@
+//! An additive rim shell tracking the grabbed prop, minted per grab because
+//! its mesh depends on the prop's shape.
+
 use std::cell::RefCell;
 
-use wired_prelude::prelude::*;
+use wired_guest::{
+    math::{
+        Color,
+        Transform,
+        Vec3,
+    },
+    xform::hidden,
+};
 
 use crate::{
-    palette,
+    find_one,
     unavi::shapes::api::{
         Capsule,
         Cuboid,
         Cylinder,
         Sphere,
     },
-    wired::scene::{
-        api::self_document,
-        types::{
-            Collider,
+    wired::{
+        scene::{
+            document::{
+                Document,
+                Layer,
+                script_document,
+            },
+            properties::{
+                Collider,
+                Property,
+                Relation,
+            },
+        },
+        shading::graph::{
             GraphValue,
-            Prim,
+            set_overrides,
         },
     },
 };
@@ -30,56 +50,41 @@ const TEMPLATE_PRIM_NAME: &str = "glow_template";
 /// Tint input index.
 const TINT_INPUT: u16 = 0;
 
-const fn hidden() -> Transform {
-    Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
-    }
-}
-
 /// Builds a mesh matching `collider`, grown by [`MARGIN`]. `ConvexHull` and
 /// `Trimesh` keep their geometry where a script cannot read it, so those
 /// props get no highlight.
-fn shell_mesh(collider: &Collider) -> Option<Prim> {
-    let doc = self_document().ok()?;
-    match collider {
-        Collider::Cuboid(size) => {
-            let grown = Vec3::new(
-                size.x + EXTENT_MARGIN,
-                size.y + EXTENT_MARGIN,
-                size.z + EXTENT_MARGIN,
-            );
-            let shape = Cuboid::new(grown);
-            shape.set_doc(doc);
-            Some(shape.mesh())
+fn shell_mesh(collider: &Collider) -> Option<(u64, u64)> {
+    let mesh = match collider {
+        Collider::Cuboid(size) => Cuboid::new(*size + Vec3::splat(EXTENT_MARGIN)).mesh(),
+        Collider::Sphere(radius) => Sphere::new(radius + MARGIN).mesh(),
+        Collider::Capsule(c) => Capsule::new(c.radius + MARGIN, c.height + EXTENT_MARGIN).mesh(),
+        Collider::Cylinder(c) => Cylinder::new(c.radius + MARGIN, c.height + EXTENT_MARGIN).mesh(),
+        Collider::ConvexHull | Collider::Trimesh => return None,
+    };
+    match mesh {
+        Ok(prim) => Some(prim),
+        Err(err) => {
+            eprintln!("physgun: outline mesh: {err:?}");
+            None
         }
-        Collider::Sphere(radius) => {
-            let shape = Sphere::new(radius + MARGIN);
-            shape.set_doc(doc);
-            Some(shape.mesh())
-        }
-        Collider::Capsule(c) => {
-            let shape = Capsule::new(c.radius + MARGIN, c.height + EXTENT_MARGIN);
-            shape.set_doc(doc);
-            Some(shape.mesh())
-        }
-        Collider::Cylinder(c) => {
-            let shape = Cylinder::new(c.radius + MARGIN, c.height + EXTENT_MARGIN);
-            shape.set_doc(doc);
-            Some(shape.mesh())
-        }
-        Collider::ConvexHull | Collider::Trimesh => None,
     }
 }
 
 /// An additive rim shell tracking the held prop, owned by this script so the
-/// prop's own material is never touched; minted per grab because its mesh
-/// depends on the prop's shape.
-#[derive(Default)]
-pub struct Outline(RefCell<Option<Prim>>);
+/// prop's own material is never touched.
+pub struct Outline {
+    doc:  Document,
+    prim: RefCell<Option<(u64, u64)>>,
+}
 
 impl Outline {
+    pub fn new() -> anyhow::Result<Self> {
+        Ok(Self {
+            doc:  script_document()?,
+            prim: RefCell::new(None),
+        })
+    }
+
     /// Mints a shell for `collider`. A prop whose shape cannot be read gets
     /// no shell, and [`Self::track`] then does nothing.
     pub fn attach(&self, collider: &Collider, color: Color) {
@@ -88,52 +93,82 @@ impl Outline {
         let Some(prim) = shell_mesh(collider) else {
             return;
         };
-        prim.set_xform(Some(hidden())).ok();
-
-        match self_document()
-            .ok()
-            .map(|doc| doc.prims())
-            .and_then(|prims| {
-                prims
-                    .into_iter()
-                    .find(|p| p.name().is_some_and(|n| n == TEMPLATE_PRIM_NAME))
-            }) {
-            Some(template) => {
-                prim.set_relationship("material/binding", Some(&template.id()))
-                    .ok();
-                prim.set_graph_overrides(&[(
-                    TINT_INPUT,
-                    GraphValue::Color(palette::beam_tint(color)),
-                )])
-                .ok();
-            }
-            None => eprintln!("physgun: HSD missing {TEMPLATE_PRIM_NAME} prim; prop unhighlighted"),
+        if let Err(err) = self
+            .doc
+            .local()
+            .set(prim, Property::Transform(hidden()))
+            .flush()
+        {
+            eprintln!("physgun: hide outline: {err:?}");
         }
 
-        *self.0.borrow_mut() = Some(prim);
+        match find_one(&self.doc, TEMPLATE_PRIM_NAME) {
+            Ok(template) => {
+                if let Err(err) = self
+                    .doc
+                    .local()
+                    .set(
+                        prim,
+                        Property::Relation((Relation::ShaderBinding, template)),
+                    )
+                    .flush()
+                {
+                    eprintln!("physgun: bind outline material: {err:?}");
+                }
+                // The glow graph multiplies its output by this tint;
+                // brightness lives in the graph's own intensity input, so
+                // alpha is always 1.
+                let tint = Color { a: 1.0, ..color };
+                if let Err(err) = set_overrides(
+                    &self.doc,
+                    prim,
+                    Layer::Local,
+                    &[(TINT_INPUT, GraphValue::Color(tint))],
+                ) {
+                    eprintln!("physgun: set_overrides: {err:?}");
+                }
+            }
+            Err(err) => {
+                eprintln!(
+                    "physgun: HSD missing {TEMPLATE_PRIM_NAME} prim; prop unhighlighted: {err:?}"
+                );
+            }
+        }
+
+        *self.prim.borrow_mut() = Some(prim);
     }
 
     /// Matches the prop's pose at render rate; a shell lagging a frame behind
     /// reads as sliding off the object.
     pub fn track(&self, body: &Transform) {
-        if let Some(prim) = self.0.borrow().as_ref() {
-            prim.set_xform(Some(Transform {
-                translation: body.translation,
-                rotation:    body.rotation,
-                scale:       Vec3::ONE,
-            }))
-            .ok();
+        let Some(prim) = *self.prim.borrow() else {
+            return;
+        };
+        if let Err(err) = self
+            .doc
+            .local()
+            .set(
+                prim,
+                Property::Transform(Transform {
+                    translation: body.translation,
+                    rotation:    body.rotation,
+                    scale:       Vec3::ONE,
+                }),
+            )
+            .flush()
+        {
+            eprintln!("physgun: track outline: {err:?}");
         }
     }
 
     /// Removes the shell prim outright rather than hiding it: its mesh only
     /// fits the prop it was minted for, and the next grab mints its own.
     pub fn clear(&self) {
-        let Some(prim) = self.0.borrow_mut().take() else {
+        let Some(prim) = self.prim.borrow_mut().take() else {
             return;
         };
-        if let Ok(doc) = self_document() {
-            doc.remove_prim(&prim).ok();
+        if let Err(err) = self.doc.local().remove(prim).flush() {
+            eprintln!("physgun: remove outline: {err:?}");
         }
     }
 }

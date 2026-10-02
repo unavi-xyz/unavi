@@ -1,27 +1,23 @@
+//! A tool that grabs a prop at a distance and drags it around, held taut on
+//! a beam from the camera.
+
 use std::cell::{
     Cell,
     RefCell,
 };
 
-use wired_prelude::prelude::*;
+use wired_guest::math::{
+    Color,
+    Vec3,
+};
 
 use crate::{
     hold::Held,
     laser::Laser,
     outline::Outline,
-    unavi::{
-        shapes::api::Cuboid,
-        tool::api::{
-            Tool,
-            ToolEvent,
-        },
-    },
-    wired::{
-        agent::api::local_camera,
-        scene::{
-            api::self_document,
-            types::Prim,
-        },
+    unavi::tool::api::{
+        Tool,
+        ToolEvent,
     },
 };
 
@@ -30,17 +26,15 @@ mod laser;
 mod outline;
 mod palette;
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
 const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);
-const ICON_SIZE: f32 = 0.05;
 /// Metres of hold-distance change per scroll notch.
 const SCROLL_STEP: f32 = 0.4;
 
 struct Script {
     tool:    Tool,
     laser:   Laser,
-    camera:  RefCell<Option<Prim>>,
     active:  Cell<bool>,
     color:   Cell<Color>,
     pressed: Cell<bool>,
@@ -49,14 +43,6 @@ struct Script {
 }
 
 impl Script {
-    fn camera(&self) -> Option<Transform> {
-        let mut cam = self.camera.borrow_mut();
-        if cam.is_none() {
-            *cam = local_camera().ok();
-        }
-        cam.as_ref().map(Prim::global_xform)
-    }
-
     fn release(&self) {
         if let Some(held) = self.held.borrow_mut().take() {
             held.release();
@@ -67,32 +53,21 @@ impl Script {
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let cuboid = Cuboid::new(Vec3::splat(ICON_SIZE));
-        cuboid.set_doc(self_document()?);
-        let icon = cuboid.mesh();
-        icon.set_xform(Some(Transform {
-            translation: Vec3::ZERO,
-            rotation:    Quat::IDENTITY,
-            scale:       Vec3::ZERO,
-        }))?;
-
         Ok(Self {
-            tool:    Tool::new(
-                "Physgun",
-                "Grabs a prop at a distance and drags it around.",
-                &icon,
-            ),
-            laser:   Laser::new(),
-            camera:  RefCell::new(None),
+            tool:    Tool::new("Physgun", "Grabs a prop at a distance and drags it around.")?,
+            laser:   Laser::new()?,
             active:  Cell::new(false),
             color:   Cell::new(palette::DEFAULT),
             pressed: Cell::new(false),
             held:    RefCell::new(None),
-            outline: Outline::default(),
+            outline: Outline::new()?,
         })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(
+        &mut self,
+        _tick: exports::wired::script::lifecycle::Tick,
+    ) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
                 ToolEvent::Activate(_) => self.active.set(true),
@@ -108,9 +83,8 @@ impl ScriptBehavior for Script {
                     }
                 }
                 ToolEvent::Trigger(pressed) => {
-                    println!("physgun: trigger {pressed} (active={})", self.active.get());
                     if pressed && !self.pressed.get() && self.active.get() {
-                        if let Some(cam) = self.camera() {
+                        if let Some(cam) = camera_pose() {
                             let held = Held::grab(&cam);
                             if let Some(held) = &held
                                 && let Some(collider) = held.collider()
@@ -129,7 +103,7 @@ impl ScriptBehavior for Script {
             }
         }
 
-        if let Some(cam) = self.camera()
+        if let Some(cam) = camera_pose()
             && let Some(held) = &*self.held.borrow()
         {
             held.update(&cam);
@@ -137,8 +111,8 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn update(&mut self) -> anyhow::Result<()> {
-        let Some(cam) = self.camera() else {
+    fn update(&mut self, _tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+        let Some(cam) = camera_pose() else {
             return Ok(());
         };
         // Re-read at render rate: reusing the fixed-rate grab point made the

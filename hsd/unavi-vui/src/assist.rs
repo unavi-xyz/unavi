@@ -1,4 +1,4 @@
-use wired_math::types::Vec3;
+use wired_guest::math::Vec3;
 
 use crate::{
     attention::Attention,

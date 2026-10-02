@@ -1,5 +1,5 @@
-//! Per-glyph multi-channel distance field generation, shared by the bake and
-//! the runtime atlas.
+//! Per-glyph multi-channel distance field generation, shared by every caller
+//! that grows an [`crate::atlas::Atlas`].
 
 use fdsm::{
     bezier::scanline::FillRule,
@@ -14,16 +14,14 @@ use nalgebra::{
     Similarity2,
     Vector2,
 };
-use ttf_parser::{
-    Face,
-    GlyphId,
-};
+use ttf_parser::GlyphId;
 
 use crate::{
-    atlas::Rect,
+    font::Font,
+    glyph::Rect,
     outline::{
         self,
-        Limits,
+        OutlineLimits,
     },
 };
 
@@ -45,7 +43,13 @@ pub struct GenerateOpts {
     /// bounding box thousands of ems wide; without this the field it asks for
     /// is an allocation nothing can serve.
     pub max_field:       u32,
-    pub outline:         Limits,
+    /// Hard cap on `segments * width * height`: the number of distance
+    /// evaluations one glyph may cost. `max_field` and
+    /// [`OutlineLimits::segments`] each bound one factor independently; a
+    /// glyph that maxes out both still costs this product, so it is the one
+    /// that actually bounds generation time.
+    pub max_cost:        u64,
+    pub outline:         OutlineLimits,
 }
 
 impl Default for GenerateOpts {
@@ -55,13 +59,16 @@ impl Default for GenerateOpts {
             range:           6.0,
             angle_threshold: 0.03,
             max_field:       256,
-            outline:         Limits::default(),
+            max_cost:        5_000_000,
+            outline:         OutlineLimits::default(),
         }
     }
 }
 
-pub struct Rendered {
-    pub ch:      char,
+/// A generated field and the metrics needed to place it: the plane a mesh
+/// should draw it against, the advance to move the pen by, and whether
+/// anything was actually drawn.
+pub struct GlyphField {
     pub plane:   Rect,
     pub advance: f32,
     pub field:   Option<RgbaImage>,
@@ -71,15 +78,19 @@ pub struct Rendered {
     pub refused: bool,
 }
 
+/// Renders the field for glyph `id` from `font`'s outline. `id` is a
+/// parameter rather than looked up from a character because a face's
+/// `.notdef` (glyph 0) has no character of its own that maps to it.
 #[must_use]
-pub fn render(face: &Face, id: GlyphId, ch: char, upem: f64, opts: &GenerateOpts) -> Rendered {
+pub fn generate(font: &Font, id: GlyphId, opts: &GenerateOpts) -> GlyphField {
+    let face = font.face();
+    let upem = f64::from(font.units_per_em());
     let shrinkage = upem / f64::from(opts.px_per_em.max(1));
     let advance = f64::from(face.glyph_hor_advance(id).unwrap_or_default()) / upem;
-    let blank = Rendered {
-        ch,
-        plane: Rect::ZERO,
+    let blank = GlyphField {
+        plane:   Rect::ZERO,
         advance: advance as f32,
-        field: None,
+        field:   None,
         refused: false,
     };
 
@@ -89,7 +100,7 @@ pub fn render(face: &Face, id: GlyphId, ch: char, upem: f64, opts: &GenerateOpts
         return blank;
     };
     let Some(mut shape) = outline::load(face, id, opts.outline) else {
-        return Rendered {
+        return GlyphField {
             refused: true,
             ..blank
         };
@@ -111,11 +122,24 @@ pub fn render(face: &Face, id: GlyphId, ch: char, upem: f64, opts: &GenerateOpts
         extent(span(bounds.x_min, bounds.x_max)),
         extent(span(bounds.y_min, bounds.y_max)),
     ) else {
-        return Rendered {
+        return GlyphField {
             refused: true,
             ..blank
         };
     };
+
+    let segments = shape
+        .contours
+        .iter()
+        .map(|contour| contour.segments.len())
+        .sum::<usize>();
+    let cost = segments as u64 * u64::from(width) * u64::from(height);
+    if cost > opts.max_cost {
+        return GlyphField {
+            refused: true,
+            ..blank
+        };
+    }
 
     let transformation = nalgebra::convert::<_, Affine2<f64>>(Similarity2::new(
         Vector2::new(
@@ -143,7 +167,7 @@ pub fn render(face: &Face, id: GlyphId, ch: char, upem: f64, opts: &GenerateOpts
     let [left, right] = edge(x_min, width);
     let [bottom, top] = edge(y_min, height);
 
-    Rendered {
+    GlyphField {
         plane: Rect {
             min: [left as f32, bottom as f32],
             max: [right as f32, top as f32],
@@ -164,10 +188,10 @@ mod tests {
         Font::parse(Arc::<[u8]>::from(notosans::REGULAR_TTF)).expect("parse")
     }
 
-    fn rendered(ch: char, opts: &GenerateOpts) -> Rendered {
+    fn rendered(ch: char, opts: &GenerateOpts) -> GlyphField {
         let font = font();
         let id = font.glyph_index(ch).expect("glyph");
-        render(font.face(), id, ch, f64::from(font.units_per_em()), opts)
+        generate(&font, id, opts)
     }
 
     #[test]
@@ -198,12 +222,28 @@ mod tests {
         let rendered = rendered(
             '@',
             &GenerateOpts {
-                outline: Limits { segments: 2 },
+                outline: OutlineLimits { segments: 2 },
                 ..Default::default()
             },
         );
         assert!(rendered.field.is_none());
         assert!(rendered.refused);
+    }
+
+    #[test]
+    fn a_glyph_past_the_cost_cap_is_refused_even_under_the_segment_and_field_caps() {
+        let rendered = rendered(
+            '@',
+            &GenerateOpts {
+                max_cost: 1,
+                ..Default::default()
+            },
+        );
+        assert!(rendered.field.is_none());
+        assert!(
+            rendered.refused,
+            "the product of segments and texels is over budget"
+        );
     }
 
     #[test]

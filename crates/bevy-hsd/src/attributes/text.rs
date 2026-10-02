@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_msdf::{
-    billboard::Billboard,
     mesh::Anchor,
     text::{
         MsdfStyle,
@@ -23,9 +22,12 @@ use msdf::layout::{
 };
 use smol_str::SmolStr;
 
-use crate::attributes::values::{
-    clamped,
-    from_color_vec,
+use crate::{
+    attributes::values::{
+        clamped,
+        from_color_vec,
+    },
+    billboard::Billboard,
 };
 
 /// Em height in metres, body text at arm's length.
@@ -34,7 +36,10 @@ const DEFAULT_SIZE: f32 = 0.02;
 /// Largest em height, in metres.
 const MAX_SIZE: f32 = 100.0;
 
-/// Longer text is truncated, since layout refuses more.
+/// A cheap pre-trim on the raw character count, before a peer-controlled
+/// string is even allocated into a [`SmolStr`]. `msdf::layout::layout` owns
+/// the authoritative cap and reports `truncated` after tab expansion; this
+/// only keeps an attacker's string from being held in full by the component.
 const MAX_CHARS: usize = MAX_GLYPHS;
 
 pub fn apply(

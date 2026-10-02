@@ -1,5 +1,5 @@
 //! A distance field grown at runtime: a closed budget of pages that generates
-//! glyphs on demand.
+//! glyphs on demand, off the main thread.
 
 use std::{
     collections::HashSet,
@@ -15,7 +15,10 @@ use std::{
 };
 
 use bevy::{
-    asset::RenderAssetUsages,
+    asset::{
+        AssetId,
+        RenderAssetUsages,
+    },
     image::{
         ImageAddressMode,
         ImageFilterMode,
@@ -29,25 +32,35 @@ use bevy::{
         TextureFormat,
     },
     tasks::{
-        ComputeTaskPool,
+        AsyncComputeTaskPool,
+        Task,
         TaskPool,
+        futures_lite::future::{
+            block_on,
+            poll_once,
+        },
     },
 };
+use image::RgbaImage;
 use msdf::{
     atlas::{
-        Glyph,
-        GlyphSource,
-        VerticalMetrics,
+        Atlas,
+        AtlasOpts,
+        AtlasStats,
+        DirtyRect,
+    },
+    field::{
+        self,
+        GlyphField,
     },
     font::{
         Font,
         FontError,
     },
-    generate::render,
-    runtime::{
-        self,
-        Atlas,
-        RuntimeOpts,
+    glyph::{
+        Glyph,
+        GlyphSource,
+        VerticalMetrics,
     },
 };
 
@@ -59,29 +72,48 @@ pub mod asset;
 /// character a text draws walks the stack.
 pub const MAX_FONTS: usize = 8;
 
+/// Glyph landings committed per [`MsdfFont::pump`] call. Generation itself
+/// runs off-thread; this only bounds how many finished fields are blitted
+/// into a page on the main thread in one frame.
+const MAX_COMMITS_PER_PUMP: usize = 16;
+
+pub(crate) struct FontState {
+    atlas:      Atlas,
+    /// One image per page, in page order.
+    pages:      Vec<Handle<Image>>,
+    /// The distance range over one page. Uniform across pages because every
+    /// page is the same size.
+    unit_range: Vec2,
+    /// Characters pinned against eviction because text draws them.
+    pinned:     HashSet<char>,
+    /// Glyph generations handed to the compute pool, polled each
+    /// [`MsdfFont::pump`] and committed once finished.
+    jobs:       Vec<Task<(char, GlyphField)>>,
+}
+
+/// Recovers from a poisoned lock by logging and taking the guard anyway,
+/// rather than panicking the caller: a prior panic already lost whatever
+/// state it was mutating, and the atlas is a cache that tolerates a torn
+/// update far better than a cascading panic across every text in the scene.
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|poisoned| {
+        error!("a font's lock was poisoned by a prior panic; recovering");
+        poisoned.into_inner()
+    })
+}
+
 /// A shared dynamic atlas and the GPU pages it has been copied into.
 pub struct MsdfFont {
     state: Mutex<FontState>,
-}
-
-pub struct FontState {
-    pub atlas:      runtime::Atlas,
-    /// One image per page, in page order.
-    pub pages:      Vec<Handle<Image>>,
-    /// The distance range over one page. Uniform across pages because every
-    /// page is the same size.
-    pub unit_range: Vec2,
-    /// Characters pinned against eviction because text draws them.
-    live:           HashSet<char>,
 }
 
 impl MsdfFont {
     /// Creates an image per page so the GPU has the atlas before any text
     /// requests a glyph. Every glyph generates on demand; nothing is
     /// pre-rendered.
-    pub fn new(font: Arc<Font>, opts: RuntimeOpts, images: &mut Assets<Image>) -> Self {
+    pub fn new(font: Arc<Font>, opts: AtlasOpts, images: &mut Assets<Image>) -> Self {
         let atlas = Atlas::new(font, opts);
-        let unit_range = unit_range(atlas.generate_opts().range as f32, atlas.budget().page_size);
+        let unit_range = unit_range(atlas.generate_opts().range as f32, atlas.stats().page_size);
 
         let pages = (0..atlas.page_count())
             .map(|index| images.add(page_image(&atlas, index as u32)))
@@ -92,13 +124,14 @@ impl MsdfFont {
                 atlas,
                 pages,
                 unit_range,
-                live: HashSet::new(),
+                pinned: HashSet::new(),
+                jobs: Vec::new(),
             }),
         }
     }
 
-    pub fn state(&self) -> MutexGuard<'_, FontState> {
-        self.state.lock().expect("font")
+    pub(crate) fn state(&self) -> MutexGuard<'_, FontState> {
+        lock(&self.state)
     }
 
     /// Queues whatever the live texts lack, then pins residents and unpins the
@@ -111,25 +144,180 @@ impl MsdfFont {
         let want = text_chars.iter().copied().collect::<HashSet<_>>();
         let _ = state.atlas.request(text_chars);
 
-        let pinned = want
+        let newly_pinned = want
             .iter()
-            .filter(|ch| !state.live.contains(ch) && state.atlas.resident(**ch))
+            .filter(|ch| !state.pinned.contains(ch) && state.atlas.resident(**ch))
             .copied()
             .collect::<Vec<_>>();
-        state.atlas.acquire(&pinned);
-        state.live.extend(pinned);
+        state.atlas.acquire(&newly_pinned);
+        state.pinned.extend(newly_pinned);
 
         let released = state
-            .live
+            .pinned
             .iter()
             .filter(|ch| !want.contains(ch))
             .copied()
             .collect::<Vec<_>>();
         state.atlas.release(&released);
         for ch in &released {
-            state.live.remove(ch);
+            state.pinned.remove(ch);
         }
         drop(guard);
+    }
+
+    /// Advances the atlas's idle-eviction clock.
+    pub fn tick(&self, dt: f32) {
+        self.state().atlas.tick(dt);
+    }
+
+    /// Spawns generation for whatever the atlas is ready to hand out, polls
+    /// jobs already in flight, and commits up to [`MAX_COMMITS_PER_PUMP`] of
+    /// the ones that finished. Returns whether anything landed this call.
+    ///
+    /// Each job owns an `Arc<Font>` and runs on
+    /// [`AsyncComputeTaskPool`], so a cold run of CJK text costs worker-thread
+    /// time rather than a main-thread hitch. On wasm the pool is a
+    /// single-threaded executor that still yields to the browser between
+    /// polls.
+    pub fn pump(&self) -> bool {
+        let mut guard = self.state();
+        let state = &mut *guard;
+
+        while let Some(job) = state.atlas.next_job() {
+            let opts = *state.atlas.generate_opts();
+            let task = AsyncComputeTaskPool::get_or_init(TaskPool::default)
+                .spawn(async move { (job.ch, field::generate(&job.font, job.id, &opts)) });
+            state.jobs.push(task);
+        }
+
+        let mut landed = false;
+        let mut commits = 0;
+        let mut index = 0;
+        while index < state.jobs.len() {
+            if commits >= MAX_COMMITS_PER_PUMP {
+                break;
+            }
+            match block_on(poll_once(&mut state.jobs[index])) {
+                Some((ch, field)) => {
+                    let task = state.jobs.remove(index);
+                    task.detach();
+                    state.atlas.commit(ch, &field);
+                    landed = true;
+                    commits += 1;
+                }
+                None => index += 1,
+            }
+        }
+        drop(guard);
+        landed
+    }
+
+    #[must_use]
+    pub fn can_render(&self, ch: char) -> bool {
+        self.state().atlas.can_render(ch)
+    }
+
+    #[must_use]
+    pub fn resident(&self, ch: char) -> bool {
+        self.state().atlas.resident(ch)
+    }
+
+    #[must_use]
+    pub fn unit_range(&self) -> Vec2 {
+        self.state().unit_range
+    }
+
+    #[must_use]
+    pub fn page(&self, index: u32) -> Option<Handle<Image>> {
+        self.state().pages.get(index as usize).cloned()
+    }
+
+    #[must_use]
+    pub fn stats(&self) -> AtlasStats {
+        self.state().atlas.stats()
+    }
+
+    /// Grows the page images to match the atlas, applies every dirty rect to
+    /// them, and returns the sub-rects a render-world upload should copy.
+    pub(crate) fn drain_dirty(&self, images: &mut Assets<Image>) -> Vec<PageUpload> {
+        let mut guard = self.state();
+        let state = &mut *guard;
+        let dirty = state.atlas.take_dirty();
+        if dirty.is_empty() {
+            drop(guard);
+            return Vec::new();
+        }
+        while state.pages.len() < state.atlas.page_count() {
+            let index = state.pages.len() as u32;
+            let image = page_image(&state.atlas, index);
+            state.pages.push(images.add(image));
+        }
+
+        let mut uploads = Vec::with_capacity(dirty.len());
+        for rect in dirty {
+            let Some(handle) = state.pages.get(rect.page as usize) else {
+                continue;
+            };
+            let Some(image) = images.get_mut_untracked(handle) else {
+                continue;
+            };
+            let Some(page) = state.atlas.page_image(rect.page as usize) else {
+                continue;
+            };
+            let Some(data) = rows(page, rect) else {
+                continue;
+            };
+            if image.width() == page.width()
+                && let Some(target) = image.data.as_mut()
+            {
+                blit_region(target, page.width(), &data, rect);
+            }
+            uploads.push(PageUpload {
+                image: handle.id(),
+                rect,
+                data,
+            });
+        }
+        drop(guard);
+        uploads
+    }
+}
+
+/// One page sub-rect ready for the render world to copy to the GPU.
+pub(crate) struct PageUpload {
+    pub image: AssetId<Image>,
+    pub rect:  DirtyRect,
+    pub data:  Vec<u8>,
+}
+
+/// The rect's texels, row by row. `None` when the rect is not inside the page,
+/// which no atlas produces but no slice should trust either.
+fn rows(page: &RgbaImage, rect: DirtyRect) -> Option<Vec<u8>> {
+    if rect.x + rect.w > page.width() || rect.y + rect.h > page.height() {
+        return None;
+    }
+    let row_bytes = page.width() as usize * 4;
+    let width = rect.w as usize * 4;
+    let mut data = Vec::with_capacity(width * rect.h as usize);
+    for row in 0..rect.h {
+        let start = (rect.y + row) as usize * row_bytes + rect.x as usize * 4;
+        data.extend_from_slice(page.as_raw().get(start..start + width)?);
+    }
+    Some(data)
+}
+
+fn blit_region(target: &mut [u8], width: u32, data: &[u8], rect: DirtyRect) {
+    let image_row = width as usize * 4;
+    let rect_row = rect.w as usize * 4;
+    for row in 0..rect.h as usize {
+        let start = (rect.y as usize + row) * image_row + rect.x as usize * 4;
+        let (Some(dst), Some(src)) = (
+            target.get_mut(start..start + rect_row),
+            data.get(row * rect_row..(row + 1) * rect_row),
+        ) else {
+            return;
+        };
+        dst.copy_from_slice(src);
     }
 }
 
@@ -138,39 +326,9 @@ impl Debug for MsdfFont {
         let state = self.state();
         f.debug_struct("MsdfFont")
             .field("pages", &state.pages.len())
-            .field("budget", &state.atlas.budget())
+            .field("stats", &state.atlas.stats())
             .finish()
     }
-}
-
-/// Renders every job the atlas will hand out this round and commits the
-/// results. Returns whether anything was generated, so a caller draining a
-/// queue knows when to stop.
-///
-/// Runs across the compute pool; a field is sampled per texel against every
-/// segment of the outline.
-pub fn generate(atlas: &mut Atlas) -> bool {
-    let mut jobs = Vec::new();
-    while let Some(job) = atlas.next_job() {
-        jobs.push(job);
-    }
-    if jobs.is_empty() {
-        return false;
-    }
-
-    let rendered = {
-        let face = atlas.font().face();
-        let opts = atlas.generate_opts();
-        ComputeTaskPool::get_or_init(TaskPool::default).scope(|scope| {
-            for job in &jobs {
-                scope.spawn(async move { (job.ch, render(face, job.id, job.ch, job.upem, opts)) });
-            }
-        })
-    };
-    for (ch, rendered) in rendered {
-        atlas.commit(ch, &rendered);
-    }
-    true
 }
 
 /// What a [`crate::text::MsdfText`] draws with when it names no font: an
@@ -181,10 +339,13 @@ pub struct DefaultFontStack(pub Vec<Arc<MsdfFont>>);
 
 /// A fallback chain, used as the layout's [`GlyphSource`].
 ///
-/// Each character resolves to the first font with a resident glyph for it,
-/// then to the first face that could serve one, which advances the pen by the
-/// width the landing glyph will have. A character no face covers draws the
-/// primary font's `.notdef`.
+/// Each character resolves to the first face that can serve it, and that
+/// font alone decides what draws: its resident glyph if it has generated
+/// one, otherwise a blank advance while it is pending, or `.notdef` if no
+/// face covers the character at all. A different font having the character
+/// resident (because some other text drew it) is never consulted — the pin
+/// set and the draw set must name the same font or an eviction in the other
+/// one could corrupt a live mesh.
 pub struct FontStack {
     fonts: Vec<Arc<MsdfFont>>,
 }
@@ -198,9 +359,7 @@ impl FontStack {
     /// The first font whose face can serve `ch`, if any.
     #[must_use]
     pub fn serving(&self, ch: char) -> Option<usize> {
-        self.fonts
-            .iter()
-            .position(|font| font.state().atlas.can_render(ch))
+        self.fonts.iter().position(|font| font.can_render(ch))
     }
 
     /// Whether any face in the chain covers `ch`. A character no face covers
@@ -230,11 +389,7 @@ impl GlyphSource for FontStack {
     }
 
     fn glyph(&self, ch: char) -> Option<Glyph> {
-        let resident = self
-            .fonts
-            .iter()
-            .position(|font| font.state().atlas.resident(ch));
-        self.stamped(resident.or_else(|| self.serving(ch)).unwrap_or(0), ch)
+        self.stamped(self.serving(ch).unwrap_or(0), ch)
     }
 
     fn kern(&self, left: char, right: char) -> f32 {
@@ -249,9 +404,8 @@ impl GlyphSource for FontStack {
     }
 
     fn missing(&self, ch: char) -> bool {
-        self.fonts
-            .iter()
-            .all(|font| !font.state().atlas.resident(ch))
+        self.serving(ch)
+            .is_none_or(|index| !self.fonts[index].resident(ch))
     }
 }
 
@@ -259,7 +413,7 @@ impl GlyphSource for FontStack {
 /// [`DefaultFontStack`].
 pub fn register_font(
     bytes: Arc<[u8]>,
-    opts: RuntimeOpts,
+    opts: AtlasOpts,
     images: &mut Assets<Image>,
 ) -> Result<Arc<MsdfFont>, FontError> {
     let font = Font::parse(bytes)?;
@@ -284,7 +438,7 @@ pub(crate) fn on_register_font(
         return;
     }
     let bytes = Arc::clone(&trigger.event().0);
-    match register_font(bytes, RuntimeOpts::default(), &mut images) {
+    match register_font(bytes, AtlasOpts::default(), &mut images) {
         Ok(font) => stack.0.push(font),
         Err(err) => error!("failed to register font: {err}"),
     }
@@ -294,7 +448,7 @@ pub(crate) fn on_register_font(
 /// signed distances, and gamma-decoding them bends every edge the shader is
 /// about to measure.
 #[must_use]
-pub fn page_image(atlas: &runtime::Atlas, index: u32) -> Image {
+pub fn page_image(atlas: &Atlas, index: u32) -> Image {
     let rgba = atlas.page_image(index as usize).expect("page");
     let mut image = Image::new(
         Extent3d {
@@ -328,7 +482,7 @@ mod tests {
         image::Image,
     };
     use msdf::{
-        atlas::GlyphSource,
+        glyph::GlyphSource,
         layout::{
             Align,
             LayoutOpts,
@@ -343,19 +497,23 @@ mod tests {
         let mut images = Assets::<Image>::default();
         Arc::new(MsdfFont::new(
             Arc::new(font),
-            RuntimeOpts::default(),
+            AtlasOpts::default(),
             &mut images,
         ))
     }
 
     /// A font holding `text` resident, as one a frame of drawing has warmed.
+    /// Runs the pump synchronously to completion: the test asserts on the
+    /// landed state, not on timing.
     fn drawing(text: &str) -> Arc<MsdfFont> {
         let font = font();
         let chars = text.chars().collect::<Vec<_>>();
         font.sync(&chars);
-        {
-            let mut state = font.state();
-            while generate(&mut state.atlas) {}
+        for _ in 0..200 {
+            if !font.pump() && font.state().jobs.is_empty() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
         font.sync(&chars);
         font
@@ -364,13 +522,11 @@ mod tests {
     #[test]
     fn a_new_font_holds_nothing_until_it_is_asked() {
         let font = font();
-        let state = font.state();
         assert!(
-            !state.atlas.resident('a'),
+            !font.resident('a'),
             "a face draws only what text asks it for"
         );
-        assert!(state.atlas.can_render('a'), "and can serve that when asked");
-        drop(state);
+        assert!(font.can_render('a'), "and can serve that when asked");
     }
 
     /// Centring uses advance widths including side bearings, but the reader
@@ -388,8 +544,7 @@ mod tests {
                     align: Align::Center,
                     ..Default::default()
                 },
-            )
-            .expect("layout");
+            );
             let drift = f32::midpoint(laid.ink.min[0], laid.ink.max[0]);
             let width = laid.ink.max[0] - laid.ink.min[0];
             assert!(
@@ -404,24 +559,32 @@ mod tests {
     #[test]
     fn a_requested_glyph_generates_on_demand() {
         let font = font();
-        let mut state = font.state();
-        let _ = state.atlas.request(&['α']);
-        assert!(generate(&mut state.atlas));
-        assert!(state.atlas.resident('α'));
-        assert!(!state.atlas.glyph('α').expect("glyph").plane.is_empty());
+        let _ = font.state().atlas.request(&['α']);
+        for _ in 0..200 {
+            if font.resident('α') {
+                break;
+            }
+            font.pump();
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(font.resident('α'));
         assert!(
-            !generate(&mut state.atlas),
-            "an empty queue generates nothing"
+            !font
+                .state()
+                .atlas
+                .glyph('α')
+                .expect("glyph")
+                .plane
+                .is_empty()
         );
-        drop(state);
     }
 
     #[test]
-    fn a_stack_resolves_characters_to_the_first_resident_font() {
+    fn a_stack_resolves_characters_to_the_first_font_that_can_serve_them() {
         let stack = FontStack::new(vec![drawing("a"), drawing("a")]);
 
         let glyph = stack.glyph('a').expect("glyph");
-        assert_eq!(glyph.font, 0, "both fonts drew 'a', the primary wins");
+        assert_eq!(glyph.font, 0, "both fonts can serve 'a', the primary wins");
         assert!(!stack.missing('a'));
         assert!(
             stack.glyph('漢').is_some(),
@@ -431,13 +594,29 @@ mod tests {
         assert!(!stack.can_render('漢'));
     }
 
+    /// The bug this guards: a glyph only a fallback font has drawn must not
+    /// be borrowed to draw a character the primary font is the one serving.
+    /// If it were, evicting the fallback's copy while the primary is still
+    /// "missing" it would corrupt a live mesh, because the pin tracked by
+    /// `sync_fonts` lives on the primary, not the fallback.
     #[test]
-    fn a_character_only_a_fallback_has_drawn_is_measured_by_that_fallback() {
+    fn a_character_the_primary_serves_is_measured_by_the_primary_even_if_a_fallback_drew_it() {
         let stack = FontStack::new(vec![font(), drawing("a")]);
         assert_eq!(stack.serving('a'), Some(0), "the primary face covers it");
+
         let glyph = stack.glyph('a').expect("glyph");
-        assert_eq!(glyph.font, 1, "only the second font has drawn it");
-        assert!(glyph.advance > 0.0);
+        assert_eq!(
+            glyph.font, 0,
+            "the serving font draws it, not a resident glyph borrowed from elsewhere in the stack"
+        );
+        assert!(
+            glyph.plane.is_empty(),
+            "the primary has not generated its own copy yet"
+        );
+        assert!(
+            stack.missing('a'),
+            "the font that will draw it has not drawn it yet"
+        );
     }
 
     #[test]
@@ -475,7 +654,7 @@ mod tests {
 
         let stack = app.world().resource::<DefaultFontStack>();
         assert_eq!(stack.0.len(), 1, "the parsed face joins the chain");
-        assert!(stack.0[0].state().atlas.can_render('a'));
+        assert!(stack.0[0].can_render('a'));
     }
 
     #[test]
@@ -500,21 +679,42 @@ mod tests {
     fn syncing_a_font_no_text_draws_releases_what_it_had_pinned() {
         let font = font();
         font.sync(&['a']);
-        {
-            let mut state = font.state();
-            assert!(generate(&mut state.atlas));
-            drop(state);
+        for _ in 0..200 {
+            if font.resident('a') {
+                break;
+            }
+            font.pump();
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
         font.sync(&['a']);
         assert!(
-            font.state().live.contains(&'a'),
+            font.state().pinned.contains(&'a'),
             "a live character is pinned"
         );
 
         font.sync(&[]);
         assert!(
-            font.state().live.is_empty(),
+            font.state().pinned.is_empty(),
             "a font nothing draws holds nothing against eviction"
         );
+    }
+
+    /// Generation runs off-thread; the glyph is not resident on the same call
+    /// that queued it, but repeated pumping eventually lands it.
+    #[test]
+    fn a_glyph_arrives_eventually_through_the_async_path() {
+        let font = font();
+        let _ = font.state().atlas.request(&['Q']);
+        assert!(!font.resident('Q'), "generation has not run yet");
+
+        let mut landed = false;
+        for _ in 0..200 {
+            if font.pump() && font.resident('Q') {
+                landed = true;
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(landed, "the glyph never arrived through the async path");
     }
 }

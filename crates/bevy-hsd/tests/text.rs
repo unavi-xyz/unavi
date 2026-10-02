@@ -1,6 +1,6 @@
 use bevy::prelude::*;
+use bevy_hsd::billboard::Billboard;
 use bevy_msdf::{
-    billboard::Billboard,
     mesh::Anchor,
     text::{
         MissingGlyphs,
@@ -62,8 +62,23 @@ fn test_text_lifecycle(mut ctx: TestContext) {
 fn test_text_becomes_a_mesh(mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(root, &label("Hello"));
-    ctx.app.update();
-    ctx.app.update();
+    // Glyph generation runs off-thread now, so a character's quad lands a
+    // frame or more after the text itself is laid out.
+    ctx.tick_until(|world| {
+        let mut parents = world.query::<(&MsdfText, &Children)>();
+        let Some((_, children)) = parents.query(world).into_iter().next() else {
+            return false;
+        };
+        let children = children.iter().collect::<Vec<_>>();
+        let meshes = world.resource::<Assets<Mesh>>();
+        let vertices = children
+            .iter()
+            .filter_map(|child| world.get::<Mesh3d>(*child))
+            .filter_map(|mesh| meshes.get(&mesh.0))
+            .map(bevy::mesh::Mesh::count_vertices)
+            .sum::<usize>();
+        vertices == "Hello".len() * 4
+    });
 
     let world = ctx.app.world_mut();
     let mut query = world.query::<&MissingGlyphs>();

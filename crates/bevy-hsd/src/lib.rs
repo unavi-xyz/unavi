@@ -12,6 +12,7 @@ use bevy::{
 
 pub mod anchor;
 pub mod attributes;
+pub mod billboard;
 pub mod document;
 pub mod feed;
 pub mod hierarchy;
@@ -35,6 +36,7 @@ impl Plugin for HsdPlugin {
         app.add_plugins((
             MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
+            billboard::plugin,
         ))
             // Scene attributes insert `RigidBody`/`Collider` whether or not
             // `unavi_physics::PhysicsPlugin` (which owns this resource too)
@@ -79,7 +81,7 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdSystems),
             )
-            .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdSystems))
+            .configure_sets(Update, bevy_msdf::MsdfSystems.after(HsdSystems))
             // `apply_xform` seeds physics positions from the anchored transform.
             .add_systems(Update, anchor::apply_anchors.before(HsdSystems))
             .add_systems(

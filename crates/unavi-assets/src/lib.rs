@@ -12,7 +12,7 @@ use bevy_iroh::assets::{
 };
 use bevy_msdf::font::asset::{
     FontBytes,
-    FontFace,
+    FontRequest,
 };
 
 /// Every asset must be hosted by a reachable unavi-server (or other provider).
@@ -80,7 +80,7 @@ fn load_font_stack(mut commands: Commands, assets: Res<AssetServer>) {
     for (order, spec) in FONT_STACK.iter().enumerate() {
         commands.spawn((
             Name::new(format!("font {}", spec.rel_path)),
-            FontFace::new(assets.load::<FontBytes>(path(spec)), order as u32),
+            FontRequest::new(assets.load::<FontBytes>(path(spec)), order as u32),
         ));
     }
 }

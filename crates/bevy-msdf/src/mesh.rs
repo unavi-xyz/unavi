@@ -9,7 +9,7 @@ use bevy::{
     prelude::*,
 };
 use msdf::layout::{
-    Laid,
+    Layout,
     Quad,
 };
 
@@ -29,7 +29,7 @@ pub enum Anchor {
 impl Anchor {
     /// How far to lift the block so the anchor lands on the origin.
     #[must_use]
-    pub fn offset(self, laid: &Laid) -> f32 {
+    pub fn offset(self, laid: &Layout) -> f32 {
         match self {
             Self::Baseline => 0.0,
             Self::Top => -laid.bounds.max[1],
@@ -39,16 +39,10 @@ impl Anchor {
     }
 }
 
-/// Builds one quad per glyph in the XY plane, facing +Z.
-#[must_use]
-pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
-    build_quads(&laid.quads, anchor.offset(laid))
-}
-
 /// One mesh per `(font, page)`, since quads sharing a plane may sample
 /// different textures.
 #[must_use]
-pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<((u32, u32), Mesh)> {
+pub fn page_meshes(laid: &Layout, anchor: Anchor) -> Vec<((u32, u32), Mesh)> {
     let raise = anchor.offset(laid);
     let mut grouped: BTreeMap<(u32, u32), Vec<Quad>> = BTreeMap::new();
     for quad in &laid.quads {
@@ -108,7 +102,7 @@ fn build_quads(quads: &[Quad], raise: f32) -> Mesh {
 mod tests {
     use bevy::mesh::VertexAttributeValues;
     use msdf::{
-        atlas::{
+        glyph::{
             Glyph,
             GlyphSource,
             Rect,
@@ -168,8 +162,17 @@ mod tests {
         }
     }
 
+    /// The fixtures only ever draw one font and one page, so `page_meshes`
+    /// returns at most one mesh; an empty string draws none, so that case
+    /// builds an empty mesh directly.
     fn mesh(text: &str, anchor: Anchor) -> Mesh {
-        build(&layout(text, &atlas(), &opts()).expect("layout"), anchor)
+        let laid = layout(text, &atlas(), &opts());
+        let mut meshes = page_meshes(&laid, anchor);
+        match meshes.len() {
+            0 => build_quads(&[], anchor.offset(&laid)),
+            1 => meshes.remove(0).1,
+            _ => panic!("the fixture font draws a single page"),
+        }
     }
 
     fn positions(mesh: &Mesh) -> Vec<[f32; 3]> {
@@ -200,12 +203,13 @@ mod tests {
             page,
             font,
         };
-        let laid = Laid {
-            quads:   vec![quad(0, 0), quad(0, 1), quad(1, 0), quad(0, 1)],
-            bounds:  Rect::ZERO,
-            ink:     Rect::ZERO,
-            lines:   1,
-            missing: Vec::new(),
+        let laid = Layout {
+            quads:     vec![quad(0, 0), quad(0, 1), quad(1, 0), quad(0, 1)],
+            bounds:    Rect::ZERO,
+            ink:       Rect::ZERO,
+            lines:     1,
+            missing:   Vec::new(),
+            truncated: false,
         };
         let meshes = page_meshes(&laid, Anchor::Baseline);
         assert_eq!(meshes.len(), 3, "font and page both split meshes");
@@ -274,7 +278,7 @@ mod tests {
 
     #[test]
     fn a_middle_anchored_block_straddles_the_origin() {
-        let laid = layout("ab\ncd", &atlas(), &opts()).expect("layout");
+        let laid = layout("ab\ncd", &atlas(), &opts());
         let lift = Anchor::Middle.offset(&laid);
         assert!(
             (laid.bounds.min[1] + lift + (laid.bounds.max[1] + lift)).abs() < 1.0e-5,

@@ -15,7 +15,7 @@ thiserror.workspace = true
 etagere    = { version = "0.3.0" }
 fdsm       = { version = "0.8.0" }
 harfrust   = { version = "0.7.0" }
-image      = { features = ["png"], workspace = true }
+image      = { workspace = true }
 nalgebra   = { version = "0.34.2" }
 self_cell  = { version = "1.3.0" }
 ttf-parser = { version = "0.25.1" }

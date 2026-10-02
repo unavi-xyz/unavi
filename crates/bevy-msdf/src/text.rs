@@ -1,17 +1,17 @@
-//! Turns [`MsdfText`] into one mesh per atlas page.
+//! Turns [`MsdfText`] into one mesh per `(font, page)`.
 //!
 //! The parent entity carries the style and transform; each page it draws
 //! becomes a child mesh so every page samples the image that holds it. Glyphs
 //! the atlas still has to generate are requested first; one that has not landed
 //! yet holds its width open rather than drawing a placeholder that would flash.
+//!
+//! Nothing here walks every text every frame: [`sync_fonts`] and
+//! [`rebuild_text`] both gate on Bevy's own change detection, so an idle scene
+//! full of labels costs a handful of cheap "did anything change" checks
+//! rather than a re-layout.
 
 use std::{
     collections::HashSet,
-    hash::{
-        DefaultHasher,
-        Hash,
-        Hasher,
-    },
     sync::Arc,
 };
 
@@ -19,6 +19,7 @@ use bevy::{
     asset::AssetId,
     image::Image,
     light::NotShadowCaster,
+    platform::collections::HashMap,
     prelude::*,
     render::{
         extract_resource::ExtractResource,
@@ -34,16 +35,11 @@ use bevy::{
         texture::GpuImage,
     },
 };
-use image::RgbaImage;
-use msdf::{
-    atlas::Rect,
-    layout::{
-        Align,
-        Laid,
-        LayoutOpts,
-        layout,
-    },
-    runtime::DirtyRect,
+use msdf::layout::{
+    Align,
+    Layout,
+    LayoutOpts,
+    layout,
 };
 use smol_str::SmolStr;
 
@@ -52,9 +48,7 @@ use crate::{
         DefaultFontStack,
         FontStack,
         MsdfFont,
-        asset::FontFace,
-        generate,
-        page_image,
+        asset::FontRequest,
     },
     material::{
         MsdfMaterial,
@@ -97,29 +91,29 @@ impl Default for MsdfText {
     }
 }
 
-/// What the mesh for a text currently draws, and where its page children are.
-/// Rebuilt in place whenever the layout inputs or the atlas change; a missing
-/// runtime means the text was just added.
-#[derive(Component, Debug)]
-pub(crate) struct TextRuntime {
-    /// The fallback chain the text was laid out against; any change to it
-    /// invalidates the layout.
-    stack:      Vec<Arc<MsdfFont>>,
-    /// True while some of the text's glyphs are still pending.
-    pending:    bool,
-    /// The characters that were missing at the last layout.
-    missing:    Vec<char>,
-    /// Hash of everything a layout depends on; a match means the geometry is
-    /// still current.
-    layout_key: u64,
-    /// One child mesh per page the text draws.
-    pages:      Vec<Entity>,
+/// One child mesh sampling one `(font, page)` of the text's layout, kept
+/// across a rebuild so an unrelated glyph landing does not churn every page's
+/// mesh and material.
+#[derive(Debug)]
+struct PageChild {
+    entity:   Entity,
+    mesh:     Handle<Mesh>,
+    material: Handle<MsdfMaterial>,
 }
 
-/// The distance range baked into a child's page, captured at build time so a
-/// restyle never re-reads the font's atlas.
-#[derive(Component, Debug, Clone, Copy)]
-pub(crate) struct MsdfUnitRange(Vec2);
+/// What the mesh for a text currently draws. Rebuilt in place whenever the
+/// layout inputs or the atlas change; a missing build means the text was just
+/// added.
+#[derive(Component, Debug, Default)]
+pub(crate) struct TextBuild {
+    /// True while some of the text's glyphs are still pending.
+    pending: bool,
+    /// The characters that were missing at the last layout.
+    missing: Vec<char>,
+    /// One entry per page the text currently draws, keyed by `(font, page)`
+    /// so a rebuild can tell which pages are the same page as before.
+    pages:   HashMap<(u32, u32), PageChild>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Outline {
@@ -172,88 +166,6 @@ pub(crate) struct QueuedUpload {
 /// by [`update_pages`] so the render world never replays stale rects.
 #[derive(Resource, Debug, Default, Clone, ExtractResource)]
 pub(crate) struct QueuedUploads(pub(crate) Vec<QueuedUpload>);
-
-/// Applies [`msdf::runtime::DirtyRect`]s to the page images and queues them
-/// for the render world.
-pub(crate) fn update_pages(
-    texts: Query<&MsdfText>,
-    default: Option<Res<DefaultFontStack>>,
-    mut images: ResMut<Assets<Image>>,
-    mut queue: ResMut<QueuedUploads>,
-) {
-    queue.0.clear();
-    for font in fonts(&texts, default.as_deref()) {
-        let mut state = font.state();
-        let dirty = state.atlas.take_dirty();
-        if dirty.is_empty() {
-            continue;
-        }
-        while state.pages.len() < state.atlas.page_count() {
-            let index = state.pages.len() as u32;
-            let image = page_image(&state.atlas, index);
-            state.pages.push(images.add(image));
-        }
-        for rect in dirty {
-            let Some(handle) = state.pages.get(rect.page as usize) else {
-                continue;
-            };
-            let Some(image) = images.get_mut_untracked(handle) else {
-                continue;
-            };
-            let Some(page) = state.atlas.page_image(rect.page as usize) else {
-                continue;
-            };
-            let Some(data) = rows(page, rect) else {
-                continue;
-            };
-            if image.width() == page.width()
-                && let Some(target) = image.data.as_mut()
-            {
-                blit_region(target, page.width(), &data, rect);
-            }
-            queue.0.push(QueuedUpload {
-                image: handle.id(),
-                x: rect.x,
-                y: rect.y,
-                w: rect.w,
-                h: rect.h,
-                data,
-            });
-        }
-        drop(state);
-    }
-}
-
-/// The rect's texels, row by row. `None` when the rect is not inside the page,
-/// which no atlas produces but no slice should trust either.
-fn rows(page: &RgbaImage, rect: DirtyRect) -> Option<Vec<u8>> {
-    if rect.x + rect.w > page.width() || rect.y + rect.h > page.height() {
-        return None;
-    }
-    let row_bytes = page.width() as usize * 4;
-    let width = rect.w as usize * 4;
-    let mut data = Vec::with_capacity(width * rect.h as usize);
-    for row in 0..rect.h {
-        let start = (rect.y + row) as usize * row_bytes + rect.x as usize * 4;
-        data.extend_from_slice(page.as_raw().get(start..start + width)?);
-    }
-    Some(data)
-}
-
-fn blit_region(target: &mut [u8], width: u32, data: &[u8], rect: DirtyRect) {
-    let image_row = width as usize * 4;
-    let rect_row = rect.w as usize * 4;
-    for row in 0..rect.h as usize {
-        let start = (rect.y as usize + row) * image_row + rect.x as usize * 4;
-        let (Some(dst), Some(src)) = (
-            target.get_mut(start..start + rect_row),
-            data.get(row * rect_row..(row + 1) * rect_row),
-        ) else {
-            return;
-        };
-        dst.copy_from_slice(src);
-    }
-}
 
 fn settings(style: &MsdfStyle, unit_range: Vec2) -> MsdfSettings {
     let outline = style.outline.unwrap_or(Outline {
@@ -328,222 +240,303 @@ fn wanted(
         .collect()
 }
 
+/// What [`sync_fonts`] computed last time anything changed, kept so a frame
+/// with no text change costs a handful of "did anything change" checks
+/// instead of a walk of every character of every text.
+#[derive(Default)]
+pub(crate) struct SyncFontsCache {
+    fonts:  Vec<Arc<MsdfFont>>,
+    wanted: Vec<(Arc<MsdfFont>, Vec<char>)>,
+    ready:  bool,
+}
+
 /// Queues glyphs the live texts lack, pins every resident glyph a mesh is
-/// drawing against eviction, and generates what was queued. Runs before
-/// [`rebuild_text`], so a string whose glyphs fit the frame's generation budget
-/// draws the frame it appears.
+/// drawing against eviction, and pumps generation for what was queued. Runs
+/// before [`rebuild_text`], so a string whose glyphs fit the frame's
+/// generation budget draws the frame it appears.
+///
+/// The character scan that drives this only reruns when some text changed,
+/// was removed, or the default stack grew; otherwise the last computed
+/// per-font want list is reused. Pumping itself still runs every frame for
+/// every known font, since generation is asynchronous and may land several
+/// frames after it was queued.
 pub(crate) fn sync_fonts(
     texts: Query<&MsdfText>,
+    changed: Query<(), Changed<MsdfText>>,
+    mut removed: RemovedComponents<MsdfText>,
     default: Option<Res<DefaultFontStack>>,
     time: Res<Time>,
+    mut cache: Local<SyncFontsCache>,
 ) {
-    let wanted = wanted(&texts, default.as_deref());
-    for font in fonts(&texts, default.as_deref()) {
-        let chars = wanted
-            .iter()
-            .find(|(other, _)| Arc::ptr_eq(other, &font))
-            .map_or_default(|(_, chars)| chars.as_slice());
-        font.sync(chars);
+    let stack_changed = default.as_ref().is_some_and(DetectChanges::is_changed);
+    let dirty =
+        !cache.ready || !changed.is_empty() || stack_changed || removed.read().next().is_some();
 
-        let mut state = font.state();
-        state.atlas.advance(time.delta_secs());
-        generate(&mut state.atlas);
-        drop(state);
+    if dirty {
+        cache.fonts = fonts(&texts, default.as_deref());
+        cache.wanted = wanted(&texts, default.as_deref());
+        cache.ready = true;
+    }
+
+    for font in &cache.fonts {
+        let chars = cache
+            .wanted
+            .iter()
+            .find(|(other, _)| Arc::ptr_eq(other, font))
+            .map_or(&[][..], |(_, chars)| chars.as_slice());
+        font.sync(chars);
+        font.tick(time.delta_secs());
+        font.pump();
     }
 }
 
-/// Lays out every text whose inputs changed or whose missing glyphs landed,
-/// and swaps its page children.
+/// Lays out every text whose inputs changed, whose stack changed, or whose
+/// missing glyphs landed, and reuses its existing page meshes and materials
+/// where the rebuild still wants the same `(font, page)`.
 pub(crate) fn rebuild_text(
-    mut texts: Query<(Entity, &MsdfText, &MsdfStyle, Option<&mut TextRuntime>)>,
+    mut texts: Query<(Entity, Ref<MsdfText>, &MsdfStyle, Option<&mut TextBuild>)>,
     default: Option<Res<DefaultFontStack>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<MsdfMaterial>>,
     mut commands: Commands,
 ) {
-    for (entity, text, style, runtime) in &mut texts {
-        let Some(stack) = resolve_stack(text, default.as_deref()) else {
-            continue;
+    let stack_changed = default.as_ref().is_some_and(DetectChanges::is_changed);
+
+    for (entity, text, style, build) in &mut texts {
+        let relayout = text.is_changed() || (text.font.is_none() && stack_changed);
+        let stack = match &build {
+            None => {
+                let Some(stack) = resolve_stack(&text, default.as_deref()) else {
+                    continue;
+                };
+                stack
+            }
+            Some(build) if relayout || build.pending => {
+                let Some(stack) = resolve_stack(&text, default.as_deref()) else {
+                    continue;
+                };
+                // Only pending, not a real input change; skip the rebuild
+                // unless something it was waiting on actually landed.
+                if !relayout
+                    && !build
+                        .missing
+                        .iter()
+                        .any(|ch| stack.iter().any(|font| font.resident(*ch)))
+                {
+                    continue;
+                }
+                stack
+            }
+            Some(_) => continue,
         };
 
-        let (changed, pending, missing, pages) = runtime.as_ref().map_or_else(
-            || (true, false, Vec::new(), Vec::new()),
-            |runtime| {
-                (
-                    layout_key(text, &runtime.stack) != runtime.layout_key,
-                    runtime.pending,
-                    runtime.missing.clone(),
-                    runtime.pages.clone(),
-                )
-            },
-        );
-        let landed = pending
-            && missing
-                .iter()
-                .any(|ch| stack.iter().any(|font| font.state().atlas.resident(*ch)));
-        if !changed && !landed {
-            continue;
-        }
-
         let source = FontStack::new(stack.clone());
-        let value = layout(
+        let laid = layout(
             &text.value,
             &source,
             &LayoutOpts {
-                size: text.size,
-                wrap: text.wrap,
-                align: text.align,
+                size:        text.size,
+                wrap:        text.wrap,
+                align:       text.align,
                 line_height: text.line_height,
-                ..Default::default()
             },
         );
-        // A layout that cannot be built is still recorded, so the same string
-        // is not retried — and its error re-logged — every frame.
-        let laid = match value {
-            Ok(laid) => laid,
-            Err(err) => {
-                error!("{entity}: {err}");
-                Laid {
-                    quads:   Vec::new(),
-                    bounds:  Rect::ZERO,
-                    ink:     Rect::ZERO,
-                    lines:   0,
-                    missing: Vec::new(),
-                }
-            }
-        };
         let unrenderable = laid
             .missing
             .iter()
             .filter(|ch| !source.can_render(**ch))
             .count();
 
-        let children = spawn_pages(
+        let mut pages = build.map_or_else(HashMap::default, |mut build| {
+            std::mem::take(&mut build.pages)
+        });
+        reconcile_pages(
             &laid,
-            text,
+            text.anchor,
             style,
             &stack,
+            &mut pages,
             &mut meshes,
             &mut materials,
             &mut commands,
+            entity,
         );
 
-        for child in &pages {
-            commands.entity(*child).despawn();
-        }
-        let new_runtime = TextRuntime {
-            stack:      stack.clone(),
-            pending:    laid.missing.len() > unrenderable,
-            missing:    laid.missing.clone(),
-            layout_key: layout_key(text, &stack),
-            pages:      children.clone(),
-        };
-        match runtime {
-            Some(mut runtime) => *runtime = new_runtime,
-            None => {
-                commands.entity(entity).insert(new_runtime);
-            }
-        }
+        let children = pages.values().map(|child| child.entity).collect::<Vec<_>>();
+        commands.entity(entity).insert(TextBuild {
+            pending: laid.missing.len() > unrenderable,
+            missing: laid.missing,
+            pages,
+        });
         if !children.is_empty() {
             commands.entity(entity).add_children(&children);
         }
         commands.entity(entity).insert(MissingGlyphs(unrenderable));
+        if laid.truncated {
+            warn!("{entity}: text was truncated to fit the layout cap");
+        }
     }
 }
 
-/// One child per `(font, page)` the laid-out text draws, each sampling the
-/// image that holds its glyphs.
-fn spawn_pages(
-    laid: &Laid,
-    text: &MsdfText,
+/// Reconciles `pages` against what the current layout draws: existing
+/// `(font, page)` entries have their mesh updated and their material's
+/// settings refreshed in place, new ones spawn, and ones the layout no
+/// longer draws despawn.
+#[expect(clippy::too_many_arguments)]
+fn reconcile_pages(
+    laid: &Layout,
+    anchor: Anchor,
     style: &MsdfStyle,
     stack: &[Arc<MsdfFont>],
+    pages: &mut HashMap<(u32, u32), PageChild>,
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<MsdfMaterial>,
     commands: &mut Commands,
-) -> Vec<Entity> {
-    let mut children = Vec::new();
-    for ((font_index, page), mesh) in page_meshes(laid, text.anchor) {
+    parent: Entity,
+) {
+    let mut drawn = HashSet::new();
+    for (key @ (font_index, page), mesh) in page_meshes(laid, anchor) {
         let Some(font) = stack.get(font_index as usize) else {
             continue;
         };
-        let state = font.state();
-        let handle = state.pages.get(page as usize).cloned();
-        let unit_range = state.unit_range;
-        drop(state);
-        let Some(handle) = handle else { continue };
+        let Some(handle) = font.page(page) else {
+            continue;
+        };
+        drawn.insert(key);
+
+        if let Some(child) = pages.get(&key) {
+            let _ = meshes.insert(&child.mesh, mesh);
+            if let Some(mut material) = materials.get_mut(&child.material) {
+                let unit_range = material.settings.unit_range;
+                material.settings = settings(style, unit_range);
+                material.field = handle;
+            }
+            continue;
+        }
+
+        let unit_range = font.unit_range();
         let material = materials.add(MsdfMaterial {
             settings: settings(style, unit_range),
             field:    handle,
         });
-        children.push(
-            commands
-                .spawn((
-                    Mesh3d(meshes.add(mesh)),
-                    MeshMaterial3d(material),
-                    MsdfUnitRange(unit_range),
-                    NotShadowCaster,
-                    Transform::default(),
-                    Visibility::default(),
-                ))
-                .id(),
+        let mesh_handle = meshes.add(mesh);
+        let entity = commands
+            .spawn((
+                Mesh3d(mesh_handle.clone()),
+                MeshMaterial3d(material.clone()),
+                NotShadowCaster,
+                Transform::default(),
+                Visibility::default(),
+                ChildOf(parent),
+            ))
+            .id();
+        pages.insert(
+            key,
+            PageChild {
+                entity,
+                mesh: mesh_handle,
+                material,
+            },
         );
     }
-    children
+
+    pages.retain(|key, child| {
+        if drawn.contains(key) {
+            return true;
+        }
+        commands.entity(child.entity).despawn();
+        false
+    });
 }
 
-/// What a layout depends on, so identical inputs skip a rebuild even while
-/// change detection still reports the component.
-fn layout_key(text: &MsdfText, stack: &[Arc<MsdfFont>]) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    text.value.hash(&mut hasher);
-    text.size.to_bits().hash(&mut hasher);
-    text.align.hash(&mut hasher);
-    text.anchor.hash(&mut hasher);
-    text.wrap.map(f32::to_bits).hash(&mut hasher);
-    text.line_height.to_bits().hash(&mut hasher);
-    for font in stack {
-        (std::ptr::addr_of!(**font) as usize).hash(&mut hasher);
+/// Cleans up the page meshes and [`TextBuild`] of an entity whose
+/// [`MsdfText`] was removed without despawning the entity itself (for example
+/// clearing an attribute), so a text that comes and goes does not leak page
+/// entities.
+pub(crate) fn despawn_orphaned_builds(
+    mut removed: RemovedComponents<MsdfText>,
+    builds: Query<&TextBuild, Without<MsdfText>>,
+    mut commands: Commands,
+) {
+    for entity in removed.read() {
+        let Ok(build) = builds.get(entity) else {
+            continue;
+        };
+        for child in build.pages.values() {
+            commands.entity(child.entity).despawn();
+        }
+        commands.entity(entity).remove::<TextBuild>();
     }
-    hasher.finish()
 }
 
 /// Restyles without rebuilding the mesh, so a colour fading every frame is
 /// cheap.
 pub(crate) fn restyle_text(
-    changed: Query<(&TextRuntime, &MsdfStyle), Changed<MsdfStyle>>,
-    page_materials: Query<(&MeshMaterial3d<MsdfMaterial>, &MsdfUnitRange)>,
+    changed: Query<(&TextBuild, &MsdfStyle), Changed<MsdfStyle>>,
     mut materials: ResMut<Assets<MsdfMaterial>>,
 ) {
-    for (runtime, style) in &changed {
-        for child in &runtime.pages {
-            let Ok((handle, unit_range)) = page_materials.get(*child) else {
-                continue;
-            };
-            if let Some(mut material) = materials.get_mut(handle) {
-                material.settings = settings(style, unit_range.0);
+    for (build, style) in &changed {
+        for child in build.pages.values() {
+            if let Some(mut material) = materials.get_mut(&child.material) {
+                let unit_range = material.settings.unit_range;
+                material.settings = settings(style, unit_range);
             }
         }
     }
 }
+
+/// Characters a registered face does not cover, logged once per change at
+/// most and truncated: the text itself is peer-controlled and otherwise an
+/// unbounded string lands in the log every time a face registers.
+const LOG_PREVIEW: usize = 32;
 
 /// A face still arriving is not a face that lacks the character, so nothing is
 /// called tofu until the chain is whole. Registering one re-lays-out every
 /// text, which reports again against what actually landed.
 pub(crate) fn report_missing_glyphs(
     changed: Query<(Entity, &MsdfText, &MissingGlyphs), Changed<MissingGlyphs>>,
-    loading: Query<(), With<FontFace>>,
+    loading: Query<(), With<FontRequest>>,
 ) {
     if !loading.is_empty() {
         return;
     }
     for (entity, text, missing) in &changed {
-        if missing.0 > 0 {
-            warn!(
-                "{entity}: {} character(s) of {:?} have no glyph in any registered font and draw \
-                 as tofu",
-                missing.0, text.value,
-            );
+        if missing.0 == 0 {
+            continue;
+        }
+        let preview = text.value.chars().take(LOG_PREVIEW).collect::<String>();
+        let elided = if text.value.chars().count() > LOG_PREVIEW {
+            "…"
+        } else {
+            ""
+        };
+        warn!(
+            "{entity}: {} character(s) of {preview:?}{elided} have no glyph in any registered \
+             font and draw as tofu",
+            missing.0,
+        );
+    }
+}
+
+/// Grows each font's page images and queues the sub-rects that changed since
+/// the last call, so the render world copies only what actually moved.
+pub(crate) fn update_pages(
+    texts: Query<&MsdfText>,
+    default: Option<Res<DefaultFontStack>>,
+    mut images: ResMut<Assets<Image>>,
+    mut queue: ResMut<QueuedUploads>,
+) {
+    queue.0.clear();
+    for font in fonts(&texts, default.as_deref()) {
+        for upload in font.drain_dirty(&mut images) {
+            queue.0.push(QueuedUpload {
+                image: upload.image,
+                x:     upload.rect.x,
+                y:     upload.rect.y,
+                w:     upload.rect.w,
+                h:     upload.rect.h,
+                data:  upload.data,
+            });
         }
     }
 }
@@ -589,8 +582,8 @@ pub(crate) fn upload_pages(
 mod tests {
     use bevy::asset::AssetPlugin;
     use msdf::{
+        atlas::AtlasOpts,
         font::Font,
-        runtime::RuntimeOpts,
     };
 
     use super::*;
@@ -611,6 +604,7 @@ mod tests {
                     sync_fonts,
                     update_pages,
                     rebuild_text,
+                    despawn_orphaned_builds,
                     report_missing_glyphs,
                 )
                     .chain(),
@@ -618,7 +612,7 @@ mod tests {
 
         let font = Font::parse(Arc::<[u8]>::from(notosans::REGULAR_TTF)).expect("parse");
         let mut images = app.world_mut().resource_mut::<Assets<Image>>();
-        let font = MsdfFont::new(Arc::new(font), RuntimeOpts::default(), &mut images);
+        let font = MsdfFont::new(Arc::new(font), AtlasOpts::default(), &mut images);
         app.insert_resource(DefaultFontStack(vec![Arc::new(font)]));
         app
     }
@@ -627,8 +621,26 @@ mod tests {
         app.world_mut().spawn(text).id()
     }
 
+    /// Ticks until the glyphs an async pump needs to land have landed, or
+    /// panics: generation runs off-thread now, so a test cannot assume one
+    /// `app.update()` is enough.
+    fn settle(app: &mut App, entity: Entity) {
+        for _ in 0..500 {
+            app.update();
+            let done = app
+                .world()
+                .get::<TextBuild>(entity)
+                .is_some_and(|build| !build.pending);
+            if done {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        panic!("text never finished generating");
+    }
+
     #[test]
-    fn a_string_lands_as_page_children_in_one_frame() {
+    fn a_string_lands_as_page_children_once_generation_catches_up() {
         let mut app = app();
         let entity = spawn(
             &mut app,
@@ -637,7 +649,7 @@ mod tests {
                 ..Default::default()
             },
         );
-        app.update();
+        settle(&mut app, entity);
 
         let world = app.world();
         assert_eq!(
@@ -651,6 +663,82 @@ mod tests {
     }
 
     #[test]
+    fn an_unchanged_text_is_not_rebuilt_on_a_later_frame() {
+        let mut app = app();
+        let entity = spawn(
+            &mut app,
+            MsdfText {
+                value: SmolStr::new("hello"),
+                ..Default::default()
+            },
+        );
+        settle(&mut app, entity);
+        let pages_before = app
+            .world()
+            .get::<TextBuild>(entity)
+            .expect("build")
+            .pages
+            .values()
+            .map(|child| (child.entity, child.mesh.clone()))
+            .collect::<Vec<_>>();
+
+        app.update();
+        app.update();
+
+        let pages_after = app
+            .world()
+            .get::<TextBuild>(entity)
+            .expect("build")
+            .pages
+            .values()
+            .map(|child| (child.entity, child.mesh.clone()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            pages_before, pages_after,
+            "the same page entities and mesh handles survive frames with no change"
+        );
+    }
+
+    #[test]
+    fn changing_the_value_rebuilds_but_reuses_the_page_entity() {
+        let mut app = app();
+        let entity = spawn(
+            &mut app,
+            MsdfText {
+                value: SmolStr::new("hi"),
+                ..Default::default()
+            },
+        );
+        settle(&mut app, entity);
+        let before = app
+            .world()
+            .get::<TextBuild>(entity)
+            .expect("build")
+            .pages
+            .values()
+            .map(|child| child.entity)
+            .collect::<Vec<_>>();
+
+        app.world_mut()
+            .get_mut::<MsdfText>(entity)
+            .expect("text")
+            .value = SmolStr::new("ho");
+        settle(&mut app, entity);
+        let after = app
+            .world()
+            .get::<TextBuild>(entity)
+            .expect("build")
+            .pages
+            .values()
+            .map(|child| child.entity)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            before, after,
+            "the same font and page reuse the page's mesh and material"
+        );
+    }
+
+    #[test]
     fn a_character_no_face_covers_is_reported_once_and_still_draws() {
         let mut app = app();
         let entity = spawn(
@@ -660,46 +748,34 @@ mod tests {
                 ..Default::default()
             },
         );
-        app.update();
+        settle(&mut app, entity);
 
         assert_eq!(
             app.world().get::<MissingGlyphs>(entity).copied(),
             Some(MissingGlyphs(1)),
             "the same missing character is counted once"
         );
-        let runtime = app.world().get::<TextRuntime>(entity).expect("runtime");
+        let build = app.world().get::<TextBuild>(entity).expect("build");
         assert!(
-            !runtime.pending,
+            !build.pending,
             "nothing is coming for it, so the text stops waiting"
         );
     }
 
     #[test]
-    fn a_string_past_the_glyph_cap_is_not_retried_every_frame() {
+    fn a_string_past_the_glyph_cap_is_truncated_rather_than_erroring() {
         let mut app = app();
         let entity = spawn(
             &mut app,
             MsdfText {
-                value: SmolStr::new("a".repeat(msdf::layout::MAX_GLYPHS + 1)),
+                value: SmolStr::new("a".repeat(msdf::layout::MAX_GLYPHS + 1).as_str()),
                 ..Default::default()
             },
         );
-        app.update();
+        settle(&mut app, entity);
 
-        let runtime = app.world().get::<TextRuntime>(entity).expect("runtime");
-        assert!(runtime.pages.is_empty(), "a refused layout draws nothing");
-        assert!(!runtime.pending);
-        let key = runtime.layout_key;
-
-        app.update();
-        assert_eq!(
-            app.world()
-                .get::<TextRuntime>(entity)
-                .expect("runtime")
-                .layout_key,
-            key,
-            "the failed layout is recorded rather than rebuilt every frame"
-        );
+        let build = app.world().get::<TextBuild>(entity).expect("build");
+        assert!(!build.pages.is_empty(), "the truncated text still draws");
     }
 
     #[test]
@@ -714,40 +790,35 @@ mod tests {
             },
         );
         app.update();
-        assert!(app.world().get::<TextRuntime>(entity).is_none());
+        assert!(app.world().get::<TextBuild>(entity).is_none());
     }
 
     #[test]
-    fn a_rect_outside_its_page_is_dropped_rather_than_sliced() {
-        let page = RgbaImage::new(8, 8);
-        let rect = |x, y, w, h| DirtyRect {
-            page: 0,
-            x,
-            y,
-            w,
-            h,
-        };
-        assert!(rows(&page, rect(0, 0, 8, 8)).is_some());
-        assert!(rows(&page, rect(4, 4, 8, 8)).is_none());
-        assert!(rows(&page, rect(0, 0, 9, 1)).is_none());
-    }
-
-    #[test]
-    fn a_blit_into_a_smaller_target_stops_at_its_end() {
-        let mut target = vec![0u8; 4 * 4 * 4];
-        let data = vec![7u8; 4 * 4];
-        blit_region(
-            &mut target,
-            4,
-            &data,
-            DirtyRect {
-                page: 0,
-                x:    2,
-                y:    3,
-                w:    4,
-                h:    4,
+    fn removing_the_text_component_despawns_its_pages() {
+        let mut app = app();
+        let entity = spawn(
+            &mut app,
+            MsdfText {
+                value: SmolStr::new("hi"),
+                ..Default::default()
             },
         );
-        assert!(target.iter().all(|byte| *byte == 0), "nothing overran");
+        settle(&mut app, entity);
+        let child = app
+            .world()
+            .get::<Children>(entity)
+            .expect("children")
+            .iter()
+            .next()
+            .expect("one child");
+
+        app.world_mut().entity_mut(entity).remove::<MsdfText>();
+        app.update();
+
+        assert!(app.world().get::<TextBuild>(entity).is_none());
+        assert!(
+            app.world().get_entity(child).is_err(),
+            "the orphaned page mesh is despawned, not leaked"
+        );
     }
 }

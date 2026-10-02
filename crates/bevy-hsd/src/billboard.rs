@@ -1,9 +1,12 @@
+//! Turns a body to face the viewer. Generic scene behaviour with no
+//! dependency on text or any other prim kind, so it lives here rather than in
+//! `bevy-msdf`.
+
 use bevy::{
     prelude::*,
     transform::TransformSystems,
 };
 
-/// Turns a body to face the viewer.
 #[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Billboard {
     /// Spins about the world's up axis only, so a label stays upright.
@@ -13,7 +16,7 @@ pub enum Billboard {
     Full,
 }
 
-pub fn plugin(app: &mut App) {
+pub(crate) fn plugin(app: &mut App) {
     app.add_systems(
         PostUpdate,
         // Before propagation, so a billboard's children inherit the facing it
@@ -22,7 +25,9 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-pub fn face_viewer(
+/// Turns billboards toward the first active camera. With several active
+/// cameras (split views, per-eye XR cameras) that is an arbitrary one.
+fn face_viewer(
     cameras: Query<(&GlobalTransform, &Camera)>,
     parents: Query<&GlobalTransform>,
     mut billboards: Query<(

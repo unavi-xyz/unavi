@@ -64,9 +64,13 @@ reqwest                 = { default-features = false, features = ["json", "nativ
 ron.workspace           = true
 semver                  = "1.0.28"
 serde.workspace         = true
+sha2                    = "0.10.9"
 tempfile.workspace      = true
 tokio.workspace         = true
 tracing.workspace       = true
+
+[dev-dependencies]
+tokio = { features = ["macros", "rt"], workspace = true }
 
 # Linux ships an AppImage, which needs no unpacking.
 [target.'cfg(not(target_os = "linux"))'.dependencies]

@@ -59,15 +59,14 @@ pub fn install_launcher(downloaded: &Path) -> anyhow::Result<Command> {
     Ok(Command::new(exe))
 }
 
-fn find_bundled(dir: &Path, prefix: &str) -> anyhow::Result<PathBuf> {
+/// Looks for a file literally named `name` (not merely a prefix match, which
+/// could pick an unrelated entry such as `unavi-client.dSYM` over the real
+/// binary) in `dir`.
+fn find_bundled(dir: &Path, name: &str) -> anyhow::Result<PathBuf> {
     fs::read_dir(dir)
         .with_context(|| format!("failed to read {}", dir.display()))?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
-        .find(|path| {
-            path.file_name()
-                .and_then(OsStr::to_str)
-                .is_some_and(|name| name.starts_with(prefix))
-        })
-        .with_context(|| format!("{prefix} not found in {}", dir.display()))
+        .find(|path| path.file_name().and_then(OsStr::to_str) == Some(name))
+        .with_context(|| format!("{name} not found in {}", dir.display()))
 }

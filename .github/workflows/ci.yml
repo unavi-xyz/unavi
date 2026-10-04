@@ -4,27 +4,29 @@ on:
     branches:
       - main
   pull_request:
+permissions:
+  contents: read
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@v4
+      - uses: AdityaGarg8/remove-unwanted-software@e379ba59405864059cedd318f38b6574dffd0ef8 # v4
         with:
           remove-android: true
           remove-cached-tools: true
           remove-codeql: true
           remove-dotnet: true
           remove-haskell: true
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.pull_request.head.ref || github.ref }}
-      - uses: DeterminateSystems/flake-checker-action@v13
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/flake-checker-action@de924abd783455e8429c858962b9e43062d19da1 # v13
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
         with:
           extra-conf: extra-experimental-features = pipe-operators
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # main
       # Put the devshell's cargo/rustc on PATH so the unwrappable rust-cache action can find them.
       - run: nix develop .#minimal --command printenv PATH >> "$GITHUB_PATH"
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - run: nix develop .#minimal --command just ci

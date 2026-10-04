@@ -5,6 +5,8 @@ on:
       ref:
         description: ref to build
         type: string
+permissions:
+  contents: read
 jobs:
   set-matrix:
     runs-on: ubuntu-latest
@@ -50,14 +52,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@v4
+      - uses: AdityaGarg8/remove-unwanted-software@e379ba59405864059cedd318f38b6574dffd0ef8 # v4
         with:
           remove-android: true
           remove-cached-tools: true
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - run: nix profile add nixpkgs#xz
@@ -81,7 +83,7 @@ jobs:
         run: nix build -L -o result .#${{ matrix.package }}
       - name: Upload artifact
         if: ${{ matrix.format != 'web' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: build-${{ matrix.name }}
           path: ${{ env.ARTIFACT }}
@@ -95,7 +97,7 @@ jobs:
           nix copy --to "file://$PWD/nix-cache" .#${{ matrix.package }}
       - name: Upload deploy cache artifact
         if: ${{ matrix.package == 'unavi-server' || matrix.package == 'unavi-client-web' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nix-cache-${{ matrix.name }}
           path: nix-cache

@@ -10,17 +10,19 @@ on:
         required: false
       WINDOWS_CERTIFICATE_PASSWORD:
         required: false
+permissions:
+  contents: read
 jobs:
   build-hsd:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
         with:
           extra-conf: extra-experimental-features = pipe-operators
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # main
       - name: Generate missing WIT
         run: nix develop .#minimal -c just update-wit-deps-locked
       - name: Install npm dependencies
@@ -28,13 +30,13 @@ jobs:
       - name: Build HSD assets
         run: nix develop .#minimal -c just hsd-release
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets
           path: crates/unavi-client/assets/hsd
           retention-days: 1
       - name: Upload WIT deps
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wit-deps
           path: |
@@ -52,19 +54,19 @@ jobs:
       CARGO_TARGET_DIR: target
       CERTIFICATE_PATH: certificate.pfx
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: assets
           path: crates/unavi-client/assets/hsd
       - name: Download WIT deps
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: wit-deps
           path: .
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
         with:
           toolchain: nightly-2026-08-14
           targets: x86_64-pc-windows-msvc
@@ -157,7 +159,7 @@ jobs:
         run: |
           cd result
           tar -cf - . | xz --x86 -9e > ../${{ matrix.package }}-x86_64-windows.tar.xz
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ matrix.package != 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows
@@ -189,7 +191,7 @@ jobs:
           Write-Host "Using certificate: $certPath"
           Write-Host "Using signtool: $signtool"
           & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 ${{ matrix.package }}-x86_64-windows.msi
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ matrix.package == 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows-installer

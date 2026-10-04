@@ -135,7 +135,8 @@ mod tests {
     #[test]
     fn runs_appimage_directly() {
         let version = Version::new(1, 2, 3);
-        let cmd = client_command_for(Path::new(APPIMAGE), &version, false).unwrap();
+        let cmd = client_command_for(Path::new(APPIMAGE), &version, false)
+            .expect("non-nixos should launch the AppImage");
         assert_eq!(cmd.get_program(), OsStr::new(APPIMAGE));
         assert_eq!(cmd.get_args().count(), 0);
     }

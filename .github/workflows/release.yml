@@ -22,7 +22,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
           fetch-depth: 0
@@ -30,13 +30,24 @@ jobs:
         run: |
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
       - run: |
           nix profile add nixpkgs#rustup
           rustup default nightly
           nix profile add nixpkgs#cargo-release
       - name: Bump version
-        run: cargo release version ${{ inputs.increment }} -x --no-confirm
+        # launcher/ and hsd/ are separate workspaces (excluded from the root
+        # so their lockfiles stay independent); bump all three together or
+        # the launcher reports a stale CARGO_PKG_VERSION and update-loops
+        # against the newly tagged release forever (J2).
+        run: |
+          cargo release version ${{ inputs.increment }} -x --no-confirm
+          cargo release version ${{ inputs.increment }} -x --no-confirm --manifest-path launcher/Cargo.toml --workspace
+          cargo release version ${{ inputs.increment }} -x --no-confirm --manifest-path hsd/Cargo.toml --workspace
+          cargo update --workspace --manifest-path launcher/Cargo.toml
+          cargo update --workspace --manifest-path hsd/Cargo.toml
+      - name: Check versions agree
+        run: nix develop .#minimal -c just check-versions
       - id: version
         run: |
           VERSION=$(grep '^version' Cargo.toml | sed -E 's/^version[[:space:]]*=[[:space:]]*"//; s/"$//')
@@ -63,7 +74,16 @@ jobs:
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
-    secrets: inherit
+    # Only the two secrets build-windows.yml declares, not every repo secret
+    # (J7): it has no use for DEPLOY_SSH_KEY.
+    secrets:
+      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+    with:
+      ref: release/v${{ needs.version.outputs.version }}
+  build-macos:
+    needs: version
+    uses: ./.github/workflows/build-macos.yml
     with:
       ref: release/v${{ needs.version.outputs.version }}
   deploy:
@@ -72,7 +92,8 @@ jobs:
       - build-nix
       - build-windows
     uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+    secrets:
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
     with:
       ref: release/v${{ needs.version.outputs.version }}
   publish:
@@ -80,12 +101,13 @@ jobs:
       - version
       - build-nix
       - build-windows
+      - build-macos
       - deploy
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
           fetch-depth: 0
@@ -108,12 +130,13 @@ jobs:
       - publish
       - build-nix
       - build-windows
+      - build-macos
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - run: mkdir artifacts
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: "build-*"
           path: artifacts
@@ -142,7 +165,14 @@ jobs:
             cd ..
             rm -rf "$dir"
           done
-      - uses: ncipollo/release-action@v1
+      - name: Generate checksums manifest
+        # Covers every final (renamed) asset name; the launcher downloads
+        # this file by exact name and verifies each asset against it before
+        # installing or executing anything (J1).
+        run: |
+          cd artifacts
+          sha256sum -- * > SHA256SUMS
+      - uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           artifacts: artifacts/*
           generateReleaseNotes: true

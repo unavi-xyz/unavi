@@ -35,7 +35,21 @@ deny:
 npm-install:
     npm install --prefix crates/unavi-script
 
-ci: update-wit-deps-locked npm-install check (clippy "deny") deny fmt-check
+# The release workflow bumps root, launcher/ and hsd/ together (J2); this
+# catches a bump that only touched one of the three before it ships a
+# launcher that loops forever trying to update itself.
+check-versions:
+    nu -c 'let root = (open Cargo.toml | get workspace.package.version); \
+        let launcher = (open launcher/Cargo.toml | get workspace.package.version); \
+        let hsd = (open hsd/Cargo.toml | get workspace.package.version); \
+        if $root != $launcher or $root != $hsd { \
+            print $"version mismatch: root=($root) launcher=($launcher) hsd=($hsd)"; \
+            exit 1 \
+        } else { \
+            print $"versions match: ($root)" \
+        }'
+
+ci: update-wit-deps-locked npm-install check (clippy "deny") test deny fmt-check check-versions
 
 # Build the guest HSD components into crates/unavi-client/assets/hsd.
 hsd *ARGS:

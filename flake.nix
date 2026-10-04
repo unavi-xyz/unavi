@@ -211,52 +211,57 @@
               {
                 minimal = pkgs.crane.devShell { inherit packages LD_LIBRARY_PATH; };
 
-                default = pkgs.crane.devShell {
-                  packages =
-                    packages
-                    ++ (with pkgs; [
-                      age
-                      bacon
-                      cargo-deny
-                      cargo-edit
-                      cargo-machete
-                      cargo-nextest
-                      cargo-release
-                      cargo-watch
-                      cargo-workspaces
-                      deploy-rs.packages.${system}.default
-                      doctl
-                      esbuild
-                      nodejs
-                      rustup
-                      secretspec
-                      sops
-                      terraform
-                      tokio-console
-                      trunk
+                default =
+                  pkgs.crane.devShell {
+                    packages =
+                      packages
+                      ++ (with pkgs; [
+                        age
+                        bacon
+                        cargo-deny
+                        cargo-edit
+                        cargo-machete
+                        cargo-nextest
+                        cargo-release
+                        cargo-watch
+                        cargo-workspaces
+                        deploy-rs.packages.${system}.default
+                        doctl
+                        esbuild
+                        nodejs
+                        rustup
+                        secretspec
+                        sops
+                        terraform
+                        tokio-console
+                        trunk
 
-                      # WASM toolchain
-                      llvmPackages_21.clang-unwrapped
-                      llvmPackages_21.libclang.lib
-                      llvmPackages_21.lld
-                      llvmPackages_21.llvm
-                    ]);
+                        # WASM toolchain
+                        llvmPackages_21.clang-unwrapped
+                        llvmPackages_21.libclang.lib
+                        llvmPackages_21.lld
+                        llvmPackages_21.llvm
+                      ]);
 
-                  inherit LD_LIBRARY_PATH;
+                    inherit LD_LIBRARY_PATH;
 
-                  # The profile whose values every locally built binary
-                  # compiles in, naming a locally run server.
-                  SECRETSPEC_PROFILE = "development";
+                    # The profile whose values every locally built binary
+                    # compiles in, naming a locally run server.
+                    SECRETSPEC_PROFILE = "development";
 
-                  NIX_LD = "${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2";
-                  LIBRARY_PATH = "${pkgs.gcc.cc.lib}/lib:${pkgs.glibc.out}/lib";
-
-                  # WASM toolchain - clang-unwrapped avoids hardening flags,
-                  # libclang headers provide stddef.h etc. for SQLite.
-                  CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
-                  AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
-                  CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
-                };
+                    # WASM toolchain - clang-unwrapped avoids hardening flags,
+                    # libclang headers provide stddef.h etc. for SQLite.
+                    CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+                    AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+                    CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
+                  }
+                  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+                    # NIX_LD points rustc's dynamically linked output at glibc's
+                    # loader; glibc has no Darwin build, so this only applies to
+                    # Linux (macOS needs neither).
+                    NIX_LD = "${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2";
+                    LIBRARY_PATH = "${pkgs.gcc.cc.lib}/lib:${pkgs.glibc.out}/lib";
+                  };
               };
           };
       }

@@ -12,6 +12,9 @@ on:
         description: git ref to deploy
         required: false
         type: string
+    secrets:
+      DEPLOY_SSH_KEY:
+        required: true
 concurrency:
   group: deploy
   cancel-in-progress: false
@@ -21,7 +24,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@v4
+      - uses: AdityaGarg8/remove-unwanted-software@e379ba59405864059cedd318f38b6574dffd0ef8 # v4
         with:
           remove-android: true
           remove-cached-tools: true
@@ -30,10 +33,10 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
         with:
           extra-conf: |
             extra-experimental-features = pipe-operators
@@ -41,7 +44,7 @@ jobs:
             require-sigs = false
       - name: Fetch build-nix deploy cache
         run: mkdir -p nix-cache
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         continue-on-error: true
         with:
           pattern: nix-cache-*
@@ -53,11 +56,25 @@ jobs:
           SERVER_IP=$(jq -r '.stable.server_ipv4' infra/terraform/deploy.json)
           echo "server_ip=$SERVER_IP" >> "$GITHUB_OUTPUT"
       - name: Setup ssh
+        # Pinned instead of ssh-keyscan's trust-on-first-use: requires the
+        # DEPLOY_SSH_KNOWN_HOSTS repo (or environment) variable to hold the
+        # server's known_hosts line(s), e.g. the one-time output of
+        # `ssh-keyscan -t ed25519 <server_ip>` verified out of band. If the
+        # droplet is ever recreated with a new host key, this variable must
+        # be regenerated.
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ vars.DEPLOY_SSH_KNOWN_HOSTS }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
+
+          if [ -z "$DEPLOY_SSH_KNOWN_HOSTS" ]; then
+            echo "DEPLOY_SSH_KNOWN_HOSTS is not set; refusing to trust the deploy host on first use" >&2
+            exit 1
+          fi
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
       - name: Deploy
         # The dev shell's LD_LIBRARY_PATH hands deploy-rs's host ssh tooling
         # Nix's openssl, whose glibc is newer than the runner's.

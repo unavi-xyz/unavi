@@ -1,0 +1,101 @@
+name: Build macOS
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: ref to build
+        type: string
+permissions:
+  contents: read
+jobs:
+  build-hsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # main
+      - name: Generate missing WIT
+        run: nix develop .#minimal -c just update-wit-deps-locked
+      - name: Install npm dependencies
+        run: nix develop .#minimal -c just npm-install
+      - name: Build HSD assets
+        run: nix develop .#minimal -c just hsd-release
+      # Named distinctly from build-windows.yml's own build-hsd job: both run
+      # in the same release.yml, and artifact names must be unique within a
+      # workflow run.
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: assets-macos
+          path: crates/unavi-client/assets/hsd
+          retention-days: 1
+      - name: Upload WIT deps
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: wit-deps-macos
+          path: |
+            protocol/wit
+            crates/unavi-script/wit
+          retention-days: 1
+  build-macos:
+    needs: build-hsd
+    # GitHub's default Apple Silicon image; the launcher's macOS path only
+    # ever expects one architecture (see RELEASE_TARGET in
+    # launcher/src/update/platform/macos.rs).
+    runs-on: macos-14
+    strategy:
+      matrix:
+        package: [unavi-client, unavi-launcher]
+    name: ${{ matrix.package }}-aarch64-macos
+    env:
+      CARGO_TARGET_DIR: target
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: assets-macos
+          path: crates/unavi-client/assets/hsd
+      - name: Download WIT deps
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: wit-deps-macos
+          path: .
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: nightly-2026-08-14
+      - name: Build client
+        if: ${{ matrix.package == 'unavi-client' }}
+        # Shipped build: devtools (egui inspector, bevy/debug) are
+        # default-on for dev builds only.
+        run: cargo build -p unavi-client --release --no-default-features
+      - name: Build launcher
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        run: cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
+      - name: Package release
+        run: |
+          mkdir result
+          if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
+            cp target/release/unavi-launcher result/
+          else
+            cp target/release/unavi-client result/
+            cp -r crates/unavi-client/assets result/
+          fi
+          cp LICENSE result
+      - name: Create tar.xz
+        # The launcher's macOS install path (archive::unpack_tar_xz) expects
+        # the executable at the archive root, named exactly CLIENT_EXE /
+        # LAUNCHER_EXE (unavi-client / unavi-launcher), no nested directory.
+        run: |
+          cd result
+          tar -cJf ../${{ matrix.package }}-aarch64-macos.tar.xz .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-${{ matrix.package }}-aarch64-macos
+          path: ${{ matrix.package }}-aarch64-macos.tar.xz
+          retention-days: 1

@@ -1,3 +1,5 @@
+//! The hold-to-confirm state for a consequential action.
+
 use crate::tuning::Tuning;
 
 /// Where a cast is.

@@ -16,7 +16,10 @@ use crate::{
         MAX_LINES,
         PlacardView,
     },
-    scene::draw,
+    render::{
+        draw,
+        shadow::Shadow,
+    },
     wired::scene::{
         document::{
             Document,
@@ -38,15 +41,18 @@ const TEXT_LIFT: f32 = 0.0015;
 /// stays readable.
 const PANEL_ALPHA: f32 = 0.88;
 
-pub struct Placard {
-    root:    (u64, u64),
-    panel:   (u64, u64),
-    lines:   Vec<(u64, u64)>,
-    /// Last opacity drawn; an unchanged fade skips the attribute write's sync.
-    opacity: Cell<Option<f32>>,
+pub struct PlacardPrims {
+    root:  (u64, u64),
+    panel: (u64, u64),
+    lines: Vec<(u64, u64)>,
+    /// Whether anything is currently drawn, so [`PlacardPrims::hide`] writes at
+    /// most once per time the placard actually goes away.
+    shown: Cell<bool>,
+    /// Last view drawn; an identical one costs no write at all.
+    last:  Shadow<PlacardView>,
 }
 
-impl Placard {
+impl PlacardPrims {
     pub fn new(doc: &Document, parent: (u64, u64)) -> anyhow::Result<Self> {
         let root = doc.create_prim(Layer::Local, Some(parent))?;
         doc.local()
@@ -71,13 +77,14 @@ impl Placard {
             root,
             panel,
             lines,
-            opacity: Cell::new(None),
+            shown: Cell::new(false),
+            last: Shadow::new(),
         })
     }
 
     pub fn hide(&self, doc: &Document) -> anyhow::Result<()> {
-        if self.opacity.get() != Some(0.0) {
-            self.opacity.set(Some(0.0));
+        self.last.clear();
+        if self.shown.replace(false) {
             doc.local()
                 .set(self.root, Property::Transform(draw::hidden()))
                 .flush()?;
@@ -91,6 +98,11 @@ impl Placard {
         view: &PlacardView,
         palette: &Palette,
     ) -> anyhow::Result<()> {
+        let Some(view) = self.last.diff(view.clone()) else {
+            return Ok(());
+        };
+        self.shown.set(true);
+
         let mut batch = doc.local().set(
             self.root,
             Property::Transform(Transform {
@@ -165,8 +177,6 @@ impl Placard {
             batch = batch.set(*prim, Property::Transform(draw::hidden()));
         }
         batch.flush()?;
-
-        self.opacity.set(Some(view.opacity));
         Ok(())
     }
 }

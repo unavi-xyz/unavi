@@ -1,5 +1,11 @@
+//! The mote graph: what a script builds and edits, and the level a surface
+//! currently has open into it.
+
 use std::{
-    cell::RefCell,
+    cell::{
+        Cell,
+        RefCell,
+    },
     rc::{
         Rc,
         Weak,
@@ -7,12 +13,22 @@ use std::{
 };
 
 use smol_str::SmolStr;
-use wired_guest::math::Color;
+use wired_guest::math::{
+    Color,
+    Vec3,
+};
 
-use crate::mote::{
-    Arrange,
-    MoteSpec,
-    Role,
+use crate::{
+    fit::{
+        self,
+        Fit,
+    },
+    mote::{
+        Arrange,
+        MoteSpec,
+        Role,
+    },
+    wired::scene::document::Document,
 };
 
 /// A prim in the document VUI draws into, naming its place in the scene
@@ -65,6 +81,10 @@ struct Data {
     /// nothing and a surface can keep drawing it after the consumer's own
     /// handle is gone.
     icon:        Option<PrimId>,
+    /// The icon's measured fit, cleared whenever `icon` is set. Measuring
+    /// reads every piece's stream back over the interface, which is cheap
+    /// once and not something to repeat every frame.
+    fit:         Cell<Option<Fit>>,
     /// Whether this mote stands for the one of its thing rather than for a
     /// source of them. Meaningless on anything but an item.
     unique:      bool,
@@ -93,6 +113,7 @@ impl Mote {
             label: SmolStr::new(label),
             description: None,
             icon: None,
+            fit: Cell::new(None),
             unique: false,
             arrange: Arrange::Orbit,
             tint: None,
@@ -108,6 +129,14 @@ impl Mote {
     #[must_use]
     pub fn is(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// A number identifying this mote, stable for as long as some handle
+    /// keeps it alive. A consumer can key a map by this instead of scanning
+    /// handles with [`Mote::is`].
+    #[must_use]
+    pub fn id(&self) -> u64 {
+        Rc::as_ptr(&self.0) as u64
     }
 
     #[must_use]
@@ -128,8 +157,30 @@ impl Mote {
         self.0.borrow_mut().description = Some(SmolStr::new(text));
     }
 
+    #[must_use]
+    pub fn description(&self) -> Option<SmolStr> {
+        self.0.borrow().description.clone()
+    }
+
     pub fn set_icon(&self, icon: Option<PrimId>) {
-        self.0.borrow_mut().icon = icon;
+        let mut data = self.0.borrow_mut();
+        data.icon = icon;
+        data.fit.set(None);
+    }
+
+    /// The fit this mote's icon wears, measured once and remembered until
+    /// [`Mote::set_icon`] changes it.
+    pub fn icon_fit(&self, doc: &Document, fraction: f32) -> anyhow::Result<Fit> {
+        if let Some(fit) = self.0.borrow().fit.get() {
+            return Ok(fit);
+        }
+        let Some(icon) = self.icon() else {
+            return Ok(fit::fit(Vec3::ZERO, Vec3::ZERO, fraction));
+        };
+        let (min, max) = fit::measure(doc, icon)?;
+        let computed = fit::fit(min, max, fraction);
+        self.0.borrow().fit.set(Some(computed));
+        Ok(computed)
     }
 
     pub fn set_unique(&self, unique: bool) {
@@ -217,27 +268,12 @@ impl Mote {
         self.0.borrow_mut().arrange = arrange;
     }
 
-    #[must_use]
-    pub fn tint(&self) -> Option<Color> {
-        self.0.borrow().tint
-    }
-
     pub fn set_tint(&self, tint: Option<Color>) {
         self.0.borrow_mut().tint = tint;
     }
 
-    #[must_use]
-    pub fn film(&self) -> f32 {
-        self.0.borrow().film
-    }
-
     pub fn set_film(&self, film: f32) {
         self.0.borrow_mut().film = film;
-    }
-
-    #[must_use]
-    pub fn frost(&self) -> f32 {
-        self.0.borrow().frost
     }
 
     pub fn set_frost(&self, frost: f32) {
@@ -307,8 +343,9 @@ pub enum Navigation {
     Bloomed(Mote),
     /// A leaf fired.
     Activated(Mote),
-    /// A consequential mote; a cast site should open on it.
-    Cast(Mote),
+    /// A consequential mote; nothing to report, since its cast site opens on
+    /// press rather than on this selection.
+    Cast,
     None,
 }
 
@@ -376,16 +413,24 @@ impl Tree {
 
     /// What [`Tree::level_motes`] draws as, slot for slot.
     pub fn level(&mut self) -> Vec<MoteSpec> {
+        self.level_with_motes().1
+    }
+
+    /// [`Tree::level_motes`] and [`Tree::level`] together, in one pass: a
+    /// caller that needs both should not walk the tree twice to get them.
+    pub fn level_with_motes(&mut self) -> (Vec<Mote>, Vec<MoteSpec>) {
         let depth = self.depth();
         let back = (depth > 0).then(|| self.back(depth));
-        self.level_motes()
+        let motes = self.level_motes();
+        let specs = motes
             .iter()
             .enumerate()
             .map(|(slot, mote)| match (&back, slot) {
                 (Some(back), 0) => back.clone(),
                 _ => mote.spec(),
             })
-            .collect()
+            .collect();
+        (motes, specs)
     }
 
     /// The way back, which is VUI's own mote rather than the level's: it
@@ -442,7 +487,7 @@ impl Tree {
                 self.path.push(child.clone());
                 Navigation::Bloomed(child)
             }
-            Kind::Cast => Navigation::Cast(child),
+            Kind::Cast => Navigation::Cast,
             // A toggle carries its own state, so choosing it flips it before
             // anyone is told: a consumer reads back the state it is in now
             // rather than being handed an edge to keep track of.
@@ -550,7 +595,7 @@ mod tests {
     #[test]
     fn slot_zero_collapses_only_when_nested() {
         let mut tree = tree();
-        assert!(matches!(tree.select(0), Navigation::Cast(mote) if mote.label() == "Home"));
+        assert!(matches!(tree.select(0), Navigation::Cast));
         assert_eq!(
             tree.depth(),
             0,

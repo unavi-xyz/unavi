@@ -2,27 +2,27 @@
 //! surface and drive it.
 //!
 //! Layout, targeting and interaction are host-testable modules of their own;
-//! [`scene`] draws them into the calling script's document, and [`api`] is the
-//! only thing a consumer sees.
+//! [`render`] draws them into the calling script's document, and [`api`] is
+//! the only thing a consumer sees.
 
-pub mod api;
-pub mod assist;
-pub mod attention;
-pub mod bloom;
-pub mod cast;
-pub mod fit;
-pub mod grasp;
-pub mod layout;
-pub mod mesh;
-pub mod mote;
-pub mod palette;
-pub mod placard;
-pub mod pointer;
-pub mod scene;
-pub mod surface;
-pub mod tree;
-pub mod tuning;
-pub mod view;
+mod api;
+mod assist;
+mod attention;
+mod cast;
+mod fit;
+mod grasp;
+mod layout;
+mod mesh;
+mod mote;
+mod palette;
+mod placard;
+mod pointer;
+mod render;
+mod reveal;
+mod surface;
+mod tree;
+mod tuning;
+mod view;
 
 wired_guest::generate!();
 

@@ -1,3 +1,6 @@
+//! Where a surface stands relative to the viewer: measured once when placed,
+//! and again wherever a carried level is let go.
+
 use wired_guest::math::{
     Transform,
     Vec2,
@@ -5,7 +8,7 @@ use wired_guest::math::{
 };
 
 use crate::{
-    scene::viewer,
+    render::viewer,
     tuning::Tuning,
 };
 
@@ -53,7 +56,7 @@ impl Mount {
         Self { offset, ..self }
     }
 
-    pub(crate) fn anchor(self, eye: &Transform) -> Transform {
+    pub fn anchor(self, eye: &Transform) -> Transform {
         let (along, rotation) = match self.bearing {
             Bearing::Level => {
                 let facing = viewer::facing(eye);
@@ -79,7 +82,7 @@ impl Mount {
 ///
 /// A drop is an aim rather than a measurement, so the one thing corrected is
 /// the one a hand is worst at: how high off the floor a thrown thing ends up.
-pub(crate) fn landed(at: Vec3, eye: &Transform, tuning: &Tuning) -> Transform {
+pub fn landed(at: Vec3, eye: &Transform, tuning: &Tuning) -> Transform {
     let away =
         Vec3::new(at.x - eye.translation.x, 0.0, at.z - eye.translation.z).normalize_or_zero();
     let facing = if away == Vec3::ZERO {

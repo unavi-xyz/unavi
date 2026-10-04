@@ -1,3 +1,6 @@
+//! Press, seize and release: whether a hold on a mote became a tap or a
+//! carry.
+
 use wired_guest::math::Vec3;
 
 use crate::tuning::Tuning;

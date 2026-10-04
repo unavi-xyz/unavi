@@ -1,3 +1,6 @@
+//! Slot geometry for a surface's own plane: where each slot sits, and which
+//! one a pointer falls in.
+
 use std::f32::consts::TAU;
 
 use wired_guest::math::Vec2;
@@ -27,14 +30,6 @@ pub enum Layout {
     Star { points: usize, radius: f32 },
     /// [`Layout::Star`] plus a centre slot at index 0.
     Centred { points: usize, radius: f32 },
-    /// `points` slots spread over `sweep` radians about `bearing`. The ends do
-    /// not wrap, so an arc has an outside that a full orbit does not.
-    Arc {
-        points:  usize,
-        radius:  f32,
-        sweep:   f32,
-        bearing: f32,
-    },
     /// Row-major cells centred on the anchor, slot 0 at the top left.
     Grid {
         columns: usize,
@@ -52,16 +47,6 @@ impl Layout {
     #[must_use]
     pub const fn centred(points: usize, radius: f32) -> Self {
         Self::Centred { points, radius }
-    }
-
-    #[must_use]
-    pub const fn arc(points: usize, radius: f32, sweep: f32, bearing: f32) -> Self {
-        Self::Arc {
-            points,
-            radius,
-            sweep,
-            bearing,
-        }
     }
 
     #[must_use]
@@ -98,7 +83,7 @@ impl Layout {
     #[must_use]
     pub const fn len(&self) -> usize {
         match *self {
-            Self::Star { points, .. } | Self::Arc { points, .. } => points,
+            Self::Star { points, .. } => points,
             Self::Centred { points, .. } => points + 1,
             Self::Grid { columns, rows, .. } => columns.saturating_mul(rows),
         }
@@ -118,9 +103,7 @@ impl Layout {
     #[must_use]
     pub const fn orbit_len(&self) -> usize {
         match *self {
-            Self::Star { points, .. } | Self::Centred { points, .. } | Self::Arc { points, .. } => {
-                points
-            }
+            Self::Star { points, .. } | Self::Centred { points, .. } => points,
             Self::Grid { .. } => 0,
         }
     }
@@ -130,7 +113,7 @@ impl Layout {
     #[must_use]
     pub fn extents(&self, tuning: &Tuning) -> Vec2 {
         match *self {
-            Self::Star { radius, .. } | Self::Centred { radius, .. } | Self::Arc { radius, .. } => {
+            Self::Star { radius, .. } | Self::Centred { radius, .. } => {
                 Vec2::splat(radius * tuning.reach_frac)
             }
             Self::Grid {
@@ -152,12 +135,6 @@ impl Layout {
                 0 => Some(Vec2::ZERO),
                 _ => Some(orbit_position(index - 1, points, radius)),
             },
-            Self::Arc {
-                points,
-                radius,
-                sweep,
-                bearing,
-            } => Some(polar(arc_angle(index, points, sweep, bearing), radius)),
             Self::Grid {
                 columns,
                 rows,
@@ -183,12 +160,6 @@ impl Layout {
         }
         match *self {
             Self::Star { .. } | Self::Centred { .. } => self.resolve_radial(local, current, tuning),
-            Self::Arc {
-                points,
-                radius,
-                sweep,
-                bearing,
-            } => resolve_arc(local, points, radius, sweep, bearing, current, tuning),
             Self::Grid {
                 columns,
                 rows,
@@ -234,9 +205,7 @@ impl Layout {
 
     const fn radius(&self) -> Option<f32> {
         match *self {
-            Self::Star { radius, .. } | Self::Centred { radius, .. } | Self::Arc { radius, .. } => {
-                Some(radius)
-            }
+            Self::Star { radius, .. } | Self::Centred { radius, .. } => Some(radius),
             Self::Grid { .. } => None,
         }
     }
@@ -249,51 +218,6 @@ fn polar(angle: f32, radius: f32) -> Vec2 {
 
 fn orbit_position(index: usize, points: usize, radius: f32) -> Vec2 {
     polar(index as f32 * TAU / points as f32, radius)
-}
-
-/// Step between adjacent arc slots. A single-slot arc sits on its bearing.
-fn arc_step(points: usize, sweep: f32) -> f32 {
-    if points <= 1 {
-        0.0
-    } else {
-        sweep / (points - 1) as f32
-    }
-}
-
-fn arc_angle(index: usize, points: usize, sweep: f32, bearing: f32) -> f32 {
-    let step = arc_step(points, sweep);
-    ((points - 1) as f32)
-        .mul_add(-0.5, index as f32)
-        .mul_add(step, bearing)
-}
-
-fn resolve_arc(
-    local: Vec2,
-    points: usize,
-    radius: f32,
-    sweep: f32,
-    bearing: f32,
-    current: Option<usize>,
-    tuning: &Tuning,
-) -> Option<usize> {
-    if local.length() > radius * tuning.reach_frac {
-        return None;
-    }
-    let angle = local.x.atan2(local.y);
-    let (slot, delta) = (0..points)
-        .map(|index| {
-            let mut delta = angular_delta(angle, arc_angle(index, points, sweep, bearing));
-            if current == Some(index) {
-                delta -= tuning.stick;
-            }
-            (index, delta)
-        })
-        .min_by(|(_, a), (_, b)| a.total_cmp(b))?;
-
-    // Half a step past an end is off the arc entirely; a ring would have
-    // wrapped here, and an arc must not.
-    let outside = arc_step(points, sweep).mul_add(0.5, tuning.stick);
-    (delta <= outside.max(tuning.stick)).then_some(slot)
 }
 
 fn resolve_grid(
@@ -459,73 +383,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    #[test]
-    fn an_arc_spreads_its_slots_about_its_bearing() {
-        let layout = Layout::arc(3, R, PI / 2.0, 0.0);
-        assert_eq!(layout.len(), 3);
-        let middle = layout.slot(1).expect("middle");
-        assert!(middle.x.abs() < 1.0e-5, "the middle sits on the bearing");
-        assert!((middle.y - R).abs() < 1.0e-5);
-        assert!(layout.slot(0).expect("first").x < 0.0);
-        assert!(layout.slot(2).expect("last").x > 0.0);
-    }
-
-    #[test]
-    fn a_single_slot_arc_sits_on_its_bearing() {
-        let layout = Layout::arc(1, R, PI, 0.0);
-        assert_eq!(layout.slot(0), Some(Vec2::new(0.0, R)));
-    }
-
-    #[test]
-    fn an_arc_bearing_turns_the_whole_run() {
-        let flat = Layout::arc(3, R, PI / 2.0, 0.0);
-        let turned = Layout::arc(3, R, PI / 2.0, PI / 2.0);
-        let middle = turned.slot(1).expect("middle");
-        assert!((middle.x - R).abs() < 1.0e-5, "the bearing points right");
-        assert!(middle.y.abs() < 1.0e-5);
-        assert_ne!(flat.slot(1), turned.slot(1));
-    }
-
-    #[test]
-    fn every_arc_slot_resolves_to_itself() {
-        for points in [1_usize, 3, 5, 7] {
-            let layout = Layout::arc(points, R, PI * 0.75, 0.4);
-            for index in 0..layout.len() {
-                let position = layout.slot(index).expect("slot");
-                assert_eq!(
-                    layout.resolve(position, None, &tuning()),
-                    Some(index),
-                    "points={points} index={index}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn an_arc_has_an_outside_where_a_ring_would_have_wrapped() {
-        let sweep = PI / 2.0;
-        let layout = Layout::arc(3, R, sweep, 0.0);
-        // Directly opposite the bearing: within a full ring this would be the
-        // far side of some slot's wedge.
-        let behind = Vec2::new(0.0, -R);
-        assert_eq!(
-            layout.resolve(behind, None, &tuning()),
-            None,
-            "an arc does not claim the directions it does not span"
-        );
-    }
-
-    #[test]
-    fn arc_attention_sticks_to_the_slot_it_is_on() {
-        let sweep = PI;
-        let layout = Layout::arc(3, R, sweep, 0.0);
-        let step = sweep / 2.0;
-        let just_past = step.mul_add(0.5, 0.06) - step;
-        let point = Vec2::new(R * just_past.sin(), R * just_past.cos());
-        assert_eq!(layout.resolve(point, None, &tuning()), Some(1));
-        assert_eq!(layout.resolve(point, Some(0), &tuning()), Some(0));
     }
 
     #[test]

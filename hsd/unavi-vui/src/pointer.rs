@@ -1,3 +1,5 @@
+//! Where the viewer is looking and reaching, read from the host once a frame.
+
 use wired_guest::math::{
     Ray,
     Transform,

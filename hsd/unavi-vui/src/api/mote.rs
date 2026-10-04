@@ -1,3 +1,5 @@
+//! The `mote` resource: `unavi:vui`'s view onto a [`tree::Mote`].
+
 use wired_guest::math::Color;
 
 use crate::{
@@ -9,7 +11,7 @@ use crate::{
         MoteBorrow,
     },
     mote,
-    scene::draw,
+    render::draw,
     tree,
     wired::{
         core::error::Error,
@@ -22,13 +24,13 @@ use crate::{
 
 /// `mote.set-label`: at most 256 bytes.
 const MAX_LABEL_BYTES: usize = 256;
-/// `mote.describe`: at most 1024 bytes.
+/// `mote.set-description`: at most 1024 bytes.
 const MAX_DESCRIPTION_BYTES: usize = 1024;
 
 /// The `mote` resource: a handle onto a mote in some tree.
-pub struct Mote(pub tree::Mote);
+pub struct MoteRes(pub tree::Mote);
 
-impl GuestMote for Mote {
+impl GuestMote for MoteRes {
     fn new(kind: Kind, label: String) -> Result<Self, Error> {
         bounded(&label, MAX_LABEL_BYTES, "label")?;
         Ok(Self(tree::Mote::new(held(kind), &label)))
@@ -48,10 +50,18 @@ impl GuestMote for Mote {
         Ok(())
     }
 
-    fn describe(&self, text: String) -> Result<(), Error> {
+    fn description(&self) -> Option<String> {
+        self.0.description().map(|text| text.to_string())
+    }
+
+    fn set_description(&self, text: String) -> Result<(), Error> {
         bounded(&text, MAX_DESCRIPTION_BYTES, "description")?;
         self.0.describe(&text);
         Ok(())
+    }
+
+    fn id(&self) -> u64 {
+        self.0.id()
     }
 
     /// Hidden on the way in: a prim nothing has parented is a root of the
@@ -140,7 +150,7 @@ impl GuestMote for Mote {
 /// A fresh handle onto `mote`, for a consumer that has no handle of its own —
 /// what an event carries.
 pub fn handle(mote: tree::Mote) -> Handle {
-    Handle::new(Mote(mote))
+    Handle::new(MoteRes(mote))
 }
 
 const fn held(kind: Kind) -> tree::Kind {

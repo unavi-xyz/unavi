@@ -1,9 +1,12 @@
+//! The `orbit` and `grid` resources: thin WIT handles onto a [`SurfaceId`]
+//! each, the surface itself drawn and driven by [`crate::render::Vui`].
+
 use crate::{
     api::{
         convert,
         dismiss,
         drain,
-        mote::Mote,
+        mote::MoteRes,
         put_up,
         remove,
         shown,
@@ -18,7 +21,7 @@ use crate::{
         Mount,
         Orbit as OrbitHandle,
     },
-    scene::SurfaceId,
+    render::SurfaceId,
     wired::core::error::Error,
 };
 
@@ -36,7 +39,7 @@ impl GuestOrbit for Orbit {
                 "capacity is {capacity}, over the limit of {MAX_ORBIT_CAPACITY}"
             )));
         }
-        let root = root.get::<Mote>().0.clone();
+        let root = root.get::<MoteRes>().0.clone();
         let surface = put_up(|vui| vui.orbit(root, convert::mount(mount), capacity as usize))?;
         Ok(OrbitHandle::new(Self(surface)))
     }
@@ -81,7 +84,7 @@ impl GuestGrid for Grid {
                 columns.saturating_mul(rows)
             )));
         }
-        let root = root.get::<Mote>().0.clone();
+        let root = root.get::<MoteRes>().0.clone();
         let surface =
             put_up(|vui| vui.grid(root, columns as usize, rows as usize, convert::mount(mount)))?;
         Ok(GridHandle::new(Self(surface)))

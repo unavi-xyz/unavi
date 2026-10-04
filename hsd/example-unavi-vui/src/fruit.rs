@@ -104,7 +104,7 @@ impl Fruit {
     pub fn grow(variety: &Variety) -> anyhow::Result<Self> {
         let mote = Mote::new(Kind::Item, variety.label)?;
         if !variety.description.is_empty() {
-            mote.describe(variety.description)?;
+            mote.set_description(variety.description)?;
         }
         mote.set_unique(variety.unique);
         mote.set_tint(Some(variety.color));

@@ -56,7 +56,7 @@ struct Script {
 fn mote(kind: Kind, label: &str, description: &str) -> anyhow::Result<Mote> {
     let mote = Mote::new(kind, label)?;
     if !description.is_empty() {
-        mote.describe(description)?;
+        mote.set_description(description)?;
     }
     Ok(mote)
 }
@@ -252,9 +252,9 @@ fn report(event: &Event) {
         Event::Casting(mote) => format!("casting {}", mote.label()),
         Event::Cast(mote) => format!("cast {}", mote.label()),
         Event::Aborted(mote) => format!("aborted {}", mote.label()),
-        Event::Planted((mote, _)) => format!("dropped {}", mote.label()),
+        Event::Planted(planted) => format!("dropped {}", planted.mote.label()),
         Event::Filed(mote) => format!("filed {}", mote.label()),
-        Event::Paged(page) => format!("page {} of {}", page.index + 1, page.count),
+        Event::Paged(page) => format!("page {} of {}", page.index + 1, page.pages),
     };
     println!("{what}");
 }
@@ -304,8 +304,8 @@ impl ScriptBehavior for Script {
 
         for event in self.orbit.events() {
             report(&event);
-            if let Event::Planted((mote, landing)) = &event {
-                self.deliver(mote, *landing);
+            if let Event::Planted(planted) = &event {
+                self.deliver(&planted.mote, planted.landing);
             }
         }
         Ok(())

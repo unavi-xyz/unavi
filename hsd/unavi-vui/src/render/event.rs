@@ -1,3 +1,6 @@
+//! What a surface reports to the script driving it, and what it hands back
+//! internally while a selection or a cast is still in flight.
+
 use wired_guest::math::Vec3;
 
 use crate::{
@@ -59,7 +62,7 @@ pub struct FixedUpdate {
 }
 
 /// A consequential action, mid-cast. Shared by every shape that can show one.
-pub(crate) struct Casting {
+pub struct Casting {
     pub slot: usize,
     pub mote: Mote,
     pub cast: Cast,

@@ -8,12 +8,10 @@ use crate::{
         Event,
         Guest,
     },
-    palette::Palette,
-    scene::{
+    render::{
         SurfaceId,
         Vui,
     },
-    tuning::Tuning,
     wired::core::error::Error,
 };
 
@@ -28,7 +26,7 @@ thread_local! {
 
 impl Guest for World {
     type Grid = surface::Grid;
-    type Mote = mote::Mote;
+    type Mote = mote::MoteRes;
     type Orbit = surface::Orbit;
 
     fn fixed_update() -> Result<(), Error> {
@@ -44,8 +42,7 @@ fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<S
     VUI.with_borrow_mut(|slot| {
         let vui = match slot {
             Some(vui) => vui,
-            None => slot
-                .insert(Vui::new(Tuning::DEFAULT, Palette::DEFAULT).map_err(|err| failed(&err))?),
+            None => slot.insert(Vui::new().map_err(|err| failed(&err))?),
         };
         shape(vui).map_err(|err| failed(&err))
     })

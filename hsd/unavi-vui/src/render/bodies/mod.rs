@@ -1,11 +1,12 @@
 //! Transcribes the [`SlotView`]s a surface computes into prims.
+//!
+//! Split across this module's files by concern: [`mod@dock`] parks and fits
+//! icons, [`mod@hitbox`] reads the surface's own input listener. Both add
+//! `impl Bodies` blocks to the one type defined here.
 
-use std::{
-    cell::{
-        Cell,
-        RefCell,
-    },
-    collections::HashMap,
+use std::cell::{
+    Cell,
+    RefCell,
 };
 
 use smol_str::SmolStr;
@@ -19,10 +20,6 @@ use wired_guest::math::{
 
 use crate::{
     attention::Attention,
-    fit::{
-        self,
-        Fit,
-    },
     mesh,
     mote::{
         Arrange,
@@ -32,10 +29,11 @@ use crate::{
     },
     palette::Palette,
     placard::PlacardView,
-    scene::{
+    render::{
         draw,
         graphs,
-        placard::Placard,
+        placard::PlacardPrims,
+        shadow::Shadow,
     },
     tree::Mote,
     tuning::Tuning,
@@ -46,11 +44,7 @@ use crate::{
     wired::{
         input::{
             targeted::listen,
-            types::{
-                Action,
-                Button,
-                InputSubscription,
-            },
+            types::InputSubscription,
         },
         physics::simulation::velocity as physics_velocity,
         scene::{
@@ -68,7 +62,6 @@ use crate::{
                 Text,
                 TextAlign,
                 TextAnchor,
-                VertexAttribute,
             },
         },
         shading::graph::{
@@ -77,6 +70,9 @@ use crate::{
         },
     },
 };
+
+mod dock;
+mod hitbox;
 
 /// What a surface's own listener heard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,67 +157,66 @@ struct Shell {
 }
 
 struct SlotPrims {
-    root:     (u64, u64),
-    body:     (u64, u64),
+    root:        (u64, u64),
+    root_xform:  Shadow<Transform>,
+    body:        (u64, u64),
+    body_xform:  Shadow<Transform>,
     /// Container children, drawn see-through.
-    nested:   (u64, u64),
+    nested:      (u64, u64),
     /// Leaf children, or depth marks, drawn solid.
-    plain:    (u64, u64),
-    overflow: (u64, u64),
+    plain:       (u64, u64),
+    overflow:    (u64, u64),
     /// Whether `overflow` has had its mesh written yet.
-    marked:   Cell<bool>,
+    marked:      Cell<bool>,
     /// The way back's own mark, which no other role wears.
-    back:     (u64, u64),
+    back:        (u64, u64),
     /// Whether `back` has had its mesh written yet.
-    carved:   Cell<bool>,
+    carved:      Cell<bool>,
     /// The mote's name, drawn always rather than on attention.
-    label:    (u64, u64),
+    label:       (u64, u64),
+    label_xform: Shadow<Vec3>,
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
-    icon:     RefCell<Option<Mote>>,
+    icon:        RefCell<Option<Mote>>,
     /// What the shell graph was last handed, so a settled mote is not written
     /// every frame.
-    shell:    Cell<Option<Shell>>,
-    shape:    Cell<Option<PipShape>>,
+    shell:       Shadow<Shell>,
+    shape:       Shadow<PipShape>,
     /// Last `(label, attention)` written; a `set_text` write costs a sync
     /// whether or not the string changed.
-    written:  RefCell<Option<(SmolStr, Attention)>>,
+    written:     Shadow<(SmolStr, Attention)>,
 }
 
 /// The prims one surface draws with: a hit surface, a pool of slot bodies
 /// grown to what is actually shown, and the placard riding whichever of them
 /// holds attention.
 pub struct Bodies {
-    root:      (u64, u64),
+    root:     (u64, u64),
     /// The surface's face and its only resting collider. A mote is a drawing
     /// until it is taken, so only this can be hit.
-    field:     (u64, u64),
-    surface:   Collider,
+    field:    (u64, u64),
+    surface:  Collider,
     /// Grabs against this surface; anything landing elsewhere belongs to
     /// whatever it hit.
-    input:     InputSubscription,
+    input:    InputSubscription,
     /// Where an icon waits while the mote holding it is not drawn. Scale zero
     /// rather than unparented: `wired:scene` has no detached prim, and a
     /// removed child would reappear at the document root.
-    park:      (u64, u64),
+    park:     (u64, u64),
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
-    slots:     RefCell<Vec<SlotPrims>>,
-    capacity:  usize,
-    unit:      mesh::MeshData,
-    placard:   Placard,
-    tuning:    Tuning,
+    slots:    RefCell<Vec<SlotPrims>>,
+    capacity: usize,
+    unit:     mesh::MeshData,
+    placard:  PlacardPrims,
+    tuning:   Tuning,
     /// Radians the drawn icons have turned, accumulated per frame so the
     /// spin is smooth however fast the tick.
-    spin:      Cell<f32>,
-    /// An icon's measured fit, keyed by its prim, so a mote that moves between
-    /// slots is not measured again. Measuring reads every piece's stream back
-    /// over the interface, which is cheap once and not something to repeat.
-    icon_fits: RefCell<HashMap<(u64, u64), Fit>>,
+    spin:     Cell<f32>,
     /// Whether the surface is up. A dismissed one keeps every prim — the
     /// meshes are paid for once, and a summon that re-uploaded them would
     /// spend a `Flow::BlobUpload` per body every time.
-    shown:     Cell<bool>,
+    shown:    Cell<bool>,
 }
 
 impl Bodies {
@@ -250,7 +245,7 @@ impl Bodies {
             .flush()?;
         let input = listen(doc, field)?;
 
-        let placard = Placard::new(doc, root)?;
+        let placard = PlacardPrims::new(doc, root)?;
 
         let park = doc.create_prim(Layer::Local, Some(root))?;
         doc.local()
@@ -269,7 +264,6 @@ impl Bodies {
             placard,
             tuning: *tuning,
             spin: Cell::new(0.0),
-            icon_fits: RefCell::new(HashMap::new()),
             shown: Cell::new(true),
         })
     }
@@ -314,7 +308,9 @@ impl Bodies {
 
             slots.push(SlotPrims {
                 root: slot_root,
+                root_xform: Shadow::new(),
                 body,
+                body_xform: Shadow::new(),
                 nested,
                 plain,
                 overflow,
@@ -322,10 +318,11 @@ impl Bodies {
                 back,
                 carved: Cell::new(false),
                 label,
+                label_xform: Shadow::new(),
                 icon: RefCell::new(None),
-                shell: Cell::new(None),
-                shape: Cell::new(None),
-                written: RefCell::new(None),
+                shell: Shadow::new(),
+                shape: Shadow::new(),
+                written: Shadow::new(),
             });
         }
         Ok(())
@@ -368,25 +365,6 @@ impl Bodies {
         };
         batch.flush()?;
         Ok(())
-    }
-
-    /// What this surface's listener heard. A release reaches it wherever the
-    /// pointer ends up, because the host sends one to whoever heard the press.
-    pub fn poll(&self) -> Vec<Signal> {
-        let mut signals = Vec::new();
-        for event in self.input.drain(64) {
-            match event.action {
-                Action::Pressed(Button::Trigger) => signals.push(Signal::Act(true)),
-                Action::Released(Button::Trigger) => signals.push(Signal::Act(false)),
-                Action::Pressed(Button::Grip) => signals.push(Signal::Take(true)),
-                Action::Released(Button::Grip) => signals.push(Signal::Take(false)),
-                Action::Scroll(delta) if delta.y != 0.0 => {
-                    signals.push(Signal::Turn(if delta.y > 0.0 { -1 } else { 1 }));
-                }
-                _ => {}
-            }
-        }
-        signals
     }
 
     /// Turns a mote into a dynamic body the engine's grab can take. The
@@ -454,98 +432,6 @@ impl Bodies {
             .map_or(Vec3::ZERO, |velocity| velocity.linear)
     }
 
-    /// Puts each drawn mote's icon inside its shell and parks the rest.
-    ///
-    /// Runs before [`Bodies::apply`], which reads back what a slot ended up
-    /// holding to decide whether its shell is glass.
-    pub fn icons(
-        &self,
-        doc: &Document,
-        motes: &[Mote],
-        specs: &[MoteSpec],
-        views: &[SlotView],
-        drawn: &[usize],
-        delta: f32,
-    ) -> anyhow::Result<()> {
-        self.ensure(doc, views.len())?;
-        // A gentle turn so the icons read as things rather than pictures;
-        // zero keeps every icon still.
-        self.spin
-            .set(delta.mul_add(self.tuning.icon_spin, self.spin.get()));
-        let spin = Quat::new(
-            0.0,
-            (self.spin.get() * 0.5).sin(),
-            0.0,
-            (self.spin.get() * 0.5).cos(),
-        );
-        let slots = self.slots.borrow();
-
-        // The spec decides, not the mote: a slot standing for a level rather
-        // than showing it wears none of that level's glyph.
-        let wanted = |slot: usize| {
-            let index = *drawn.get(slot)?;
-            let worn = specs.get(index).is_some_and(|spec| spec.icon);
-            motes
-                .get(index)
-                .filter(|mote| worn && slot < views.len() && mote.has_icon())
-        };
-
-        // Handing every stale icon back first, so a mote that moved between
-        // slots is not parked by the slot it left after arriving.
-        for (index, slot) in slots.iter().enumerate() {
-            let held = slot.icon.borrow();
-            let keep = wanted(index).is_some_and(|mote| held.as_ref().is_some_and(|h| h.is(mote)));
-            if keep || held.is_none() {
-                continue;
-            }
-            if let Some(mote) = held.as_ref()
-                && let Some(icon) = mote.icon()
-            {
-                doc.local()
-                    .set(icon, Property::Parent(Some(self.park)))
-                    .flush()?;
-            }
-            drop(held);
-            *slot.icon.borrow_mut() = None;
-        }
-
-        for (index, slot) in slots.iter().enumerate() {
-            let Some(mote) = wanted(index) else {
-                continue;
-            };
-            let Some(icon) = mote.icon() else {
-                continue;
-            };
-            let radius = views.get(index).map_or(0.0, |view| view.radius);
-            let fit = self.icon_fit(doc, icon)?;
-            if slot.icon.borrow().is_none() {
-                doc.local()
-                    .set(icon, Property::Parent(Some(slot.root)))
-                    .flush()?;
-                *slot.icon.borrow_mut() = Some(mote.clone());
-            }
-            doc.local()
-                .set(
-                    icon,
-                    Property::Transform(draw::fitted(fit.center, radius * fit.scale, spin)),
-                )
-                .flush()?;
-        }
-        Ok(())
-    }
-
-    /// The fit a mote's icon wears, measured once and remembered for as long
-    /// as the icon does.
-    fn icon_fit(&self, doc: &Document, icon: (u64, u64)) -> anyhow::Result<Fit> {
-        if let Some(fit) = self.icon_fits.borrow().get(&icon) {
-            return Ok(*fit);
-        }
-        let (min, max) = icon_box(doc, icon)?;
-        let fit = fit::fit(min, max, self.tuning.icon_fill);
-        self.icon_fits.borrow_mut().insert(icon, fit);
-        Ok(fit)
-    }
-
     /// `drawn` maps each view back to its spec, which pagination makes a real
     /// translation rather than an identity. `held` is the slot the engine is
     /// carrying, whose transform belongs to the solver rather than to us.
@@ -570,16 +456,20 @@ impl Bodies {
 
         for (index, (slot, view)) in slots.iter().zip(views).enumerate() {
             let mut batch = doc.local();
-            if held != Some(index) {
-                batch = batch.set(
-                    slot.root,
-                    Property::Transform(draw::placed(view.position, view.bloom)),
-                );
+            if held == Some(index) {
+                // The solver owns this slot's transform until it comes back;
+                // forgetting what we last wrote makes the first frame back
+                // write for sure, rather than trusting it matches.
+                slot.root_xform.clear();
+            } else if let Some(xform) = slot
+                .root_xform
+                .diff(draw::placed(view.position, view.bloom))
+            {
+                batch = batch.set(slot.root, Property::Transform(xform));
             }
-            batch = batch.set(
-                slot.body,
-                Property::Transform(draw::placed(Vec3::ZERO, view.radius)),
-            );
+            if let Some(xform) = slot.body_xform.diff(draw::placed(Vec3::ZERO, view.radius)) {
+                batch = batch.set(slot.body, Property::Transform(xform));
+            }
 
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
             if let Some(spec) = spec {
@@ -593,10 +483,10 @@ impl Bodies {
                 frost: spec.map_or(0.0, |spec| spec.frost),
                 bloom: view.bloom,
             };
-            let overrides = if slot.shell.get() == Some(shell) {
-                None
-            } else {
-                slot.shell.set(Some(shell));
+            // Not `Option::map_or`: the closure would need to move `batch`
+            // out of this scope, and a `Batch` is not `Clone`.
+            #[expect(clippy::option_if_let_else)]
+            let overrides = if let Some(shell) = slot.shell.diff(shell) {
                 batch = batch
                     .set(slot.nested, Property::Material(draw::pip(view.style, true)))
                     .set(slot.plain, Property::Material(draw::pip(view.style, false)))
@@ -606,6 +496,8 @@ impl Bodies {
                     )
                     .set(slot.back, Property::Material(draw::pip(view.style, false)));
                 Some((index, shell))
+            } else {
+                None
             };
 
             batch = Self::apply_pips(batch, slot, view);
@@ -681,23 +573,20 @@ impl Bodies {
         spec: &MoteSpec,
         palette: &Palette,
     ) -> crate::Batch<'a> {
-        batch = batch.set(
-            slot.label,
-            Property::Transform(draw::placed(view.label_offset, 1.0)),
-        );
-
-        let key = (spec.label.clone(), view.attention);
-        let mut written = slot.written.borrow_mut();
-        if written.as_ref() == Some(&key) {
-            return batch;
+        if let Some(offset) = slot.label_xform.diff(view.label_offset) {
+            batch = batch.set(slot.label, Property::Transform(draw::placed(offset, 1.0)));
         }
-        let color = palette.tint(view.attention);
-        *written = Some(key);
+
+        let Some((label, attention)) = slot.written.diff((spec.label.clone(), view.attention))
+        else {
+            return batch;
+        };
+        let color = palette.tint(attention);
 
         batch.set(
             slot.label,
             Property::Text(Text {
-                value:         spec.label.to_string(),
+                value:         label.to_string(),
                 size:          Some(view.label_size),
                 align:         Some(TextAlign::Center),
                 anchor:        Some(TextAnchor::Top),
@@ -713,7 +602,7 @@ impl Bodies {
                     a: 0.85,
                 }),
                 outline_width: Some(0.22),
-                emissive:      Some(if view.attention.is_active() { 0.5 } else { 0.1 }),
+                emissive:      Some(if attention.is_active() { 0.5 } else { 0.1 }),
                 billboard:     None,
             }),
         )
@@ -765,8 +654,7 @@ impl Bodies {
             PipPlacement::Around => (AROUND_ORBIT, MARK_RADIUS),
         };
 
-        if slot.shape.get() != Some(shape) {
-            slot.shape.set(Some(shape));
+        if slot.shape.diff(shape).is_some() {
             batch = apply_run(
                 batch,
                 slot.nested,
@@ -843,52 +731,4 @@ fn apply_run(
     draw::mesh(&mesh::cluster(start, len, total, arrange, spread, radius))
         .into_iter()
         .fold(batch, |batch, property| batch.set(prim, property))
-}
-
-/// The box an icon's whole tree fills, in its root's own frame. The root's
-/// xform is skipped, because the surface replaces it when it places the icon;
-/// every piece beneath it is walked and posed in turn.
-fn icon_box(doc: &Document, root: (u64, u64)) -> anyhow::Result<(Vec3, Vec3)> {
-    let identity = Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ONE,
-    };
-    let mut min = Vec3::splat(f32::MAX);
-    let mut max = Vec3::splat(f32::MIN);
-    gather(doc, root, &identity, &mut min, &mut max)?;
-    if min.x > max.x {
-        return Ok((Vec3::ZERO, Vec3::ZERO));
-    }
-    Ok((min, max))
-}
-
-fn gather(
-    doc: &Document,
-    prim: (u64, u64),
-    parent: &Transform,
-    min: &mut Vec3,
-    max: &mut Vec3,
-) -> anyhow::Result<()> {
-    if let Some(Property::MeshVertices(positions)) =
-        doc.get(prim, &PropertyKey::MeshVertices(VertexAttribute::Position))
-    {
-        for vertex in positions.values.as_chunks::<3>().0 {
-            let point = parent.transform_point(Vec3::new(vertex[0], vertex[1], vertex[2]));
-            *min = min.min(point);
-            *max = max.max(point);
-        }
-    }
-    for child in doc.children(prim) {
-        let local = match doc.get(child, &PropertyKey::Transform) {
-            Some(Property::Transform(transform)) => transform,
-            _ => Transform {
-                translation: Vec3::ZERO,
-                rotation:    Quat::IDENTITY,
-                scale:       Vec3::ONE,
-            },
-        };
-        gather(doc, child, &fit::chain(parent, &local), min, max)?;
-    }
-    Ok(())
 }

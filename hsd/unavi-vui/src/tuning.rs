@@ -1,3 +1,5 @@
+//! Every feel constant VUI animates by, in one place.
+
 /// Every feel constant in one place.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tuning {
@@ -55,14 +57,14 @@ pub struct Tuning {
     /// it filled: letting go is a snap back, not a rewind.
     pub cast_recoil:   f32,
 
-    /// How fast a surface opens and closes, in full blooms per second.
-    pub bloom_speed:     f32,
+    /// How fast a surface opens and closes, in full reveals per second.
+    pub reveal_speed:     f32,
     /// How far each slot lags the one before it, as a fraction of one slot's
     /// own ramp. Zero makes a level arrive all at once, which reads as a panel
     /// rather than as objects.
-    pub bloom_stagger:   f32,
+    pub reveal_stagger:   f32,
     /// How far past its size a mote lands before settling back onto it.
-    pub bloom_overshoot: f32,
+    pub reveal_overshoot: f32,
 
     /// How much of its brightness a mote keeps while another holds
     /// attention. The field receding is what makes the chosen one stand out;
@@ -140,9 +142,9 @@ impl Tuning {
         cast_duration: 0.9,
         cast_recoil:   4.0,
 
-        bloom_speed:     6.5,
-        bloom_stagger:   0.22,
-        bloom_overshoot: 1.5,
+        reveal_speed:     6.5,
+        reveal_stagger:   0.22,
+        reveal_overshoot: 1.5,
 
         sibling_dim: 0.8,
 

@@ -1,8 +1,18 @@
 //! Fitting an icon's real geometry into the shell that draws it.
 
 use wired_guest::math::{
+    Quat,
     Transform,
     Vec3,
+};
+
+use crate::wired::scene::{
+    document::Document,
+    properties::{
+        Property,
+        PropertyKey,
+        VertexAttribute,
+    },
 };
 
 /// Two xforms in a chain: `local` posed beneath `parent`.
@@ -13,6 +23,56 @@ pub fn chain(parent: &Transform, local: &Transform) -> Transform {
         rotation:    parent.rotation * local.rotation,
         scale:       parent.scale * local.scale,
     }
+}
+
+/// The box `root`'s whole tree fills, in `root`'s own frame.
+///
+/// `root`'s own xform is skipped — the caller replaces it when it places the
+/// result — and every piece beneath it is walked and posed in turn, so this
+/// costs one stream read per piece rather than a vertex upload.
+pub fn measure(doc: &Document, root: (u64, u64)) -> anyhow::Result<(Vec3, Vec3)> {
+    let identity = Transform {
+        translation: Vec3::ZERO,
+        rotation:    Quat::IDENTITY,
+        scale:       Vec3::ONE,
+    };
+    let mut min = Vec3::splat(f32::MAX);
+    let mut max = Vec3::splat(f32::MIN);
+    gather(doc, root, &identity, &mut min, &mut max)?;
+    if min.x > max.x {
+        return Ok((Vec3::ZERO, Vec3::ZERO));
+    }
+    Ok((min, max))
+}
+
+fn gather(
+    doc: &Document,
+    prim: (u64, u64),
+    parent: &Transform,
+    min: &mut Vec3,
+    max: &mut Vec3,
+) -> anyhow::Result<()> {
+    if let Some(Property::MeshVertices(positions)) =
+        doc.get(prim, &PropertyKey::MeshVertices(VertexAttribute::Position))
+    {
+        for vertex in positions.values.as_chunks::<3>().0 {
+            let point = parent.transform_point(Vec3::new(vertex[0], vertex[1], vertex[2]));
+            *min = min.min(point);
+            *max = max.max(point);
+        }
+    }
+    for child in doc.children(prim) {
+        let local = match doc.get(child, &PropertyKey::Transform) {
+            Some(Property::Transform(transform)) => transform,
+            _ => Transform {
+                translation: Vec3::ZERO,
+                rotation:    Quat::IDENTITY,
+                scale:       Vec3::ONE,
+            },
+        };
+        gather(doc, child, &chain(parent, &local), min, max)?;
+    }
+    Ok(())
 }
 
 /// A box's centre and the uniform scale that makes its diagonal span `fraction`

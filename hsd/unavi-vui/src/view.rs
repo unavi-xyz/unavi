@@ -1,3 +1,5 @@
+//! What a surface hands a renderer: concrete values, no further state.
+
 use wired_guest::math::{
     Color,
     Transform,
@@ -82,7 +84,6 @@ pub struct Aim {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Frame {
-    pub eye:    Vec3,
     pub anchor: Transform,
     /// Resolves which slot is targeted. A held mote follows [`Frame::hand`]
     /// instead.

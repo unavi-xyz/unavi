@@ -94,7 +94,7 @@ impl Toolbelt {
                     continue;
                 }
             };
-            if let Err(err) = mote.describe(&tool.description) {
+            if let Err(err) = mote.set_description(&tool.description) {
                 eprintln!("halo: tool description for '{}': {err:?}", tool.name);
             }
 

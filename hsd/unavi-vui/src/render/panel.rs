@@ -1,5 +1,6 @@
-//! A self-contained navigable orbit: owns its motes, its machinery, its prims,
-//! its input and its cast site.
+//! A self-contained panel: owns its content, its machinery, its prims, its
+//! input and its cast site. An orbit and a grid are the same panel with a
+//! different [`Content`].
 
 use wired_guest::math::{
     Transform,
@@ -13,14 +14,16 @@ use crate::{
         Centre,
         Layout,
     },
-    mote::Arrange,
+    mote::{
+        Arrange,
+        MoteSpec,
+    },
     palette::Palette,
     pointer::{
         self,
         Gaze,
     },
-    scene::{
-        Mounted,
+    render::{
         bodies::{
             Bodies,
             Hit,
@@ -50,9 +53,112 @@ use crate::{
     wired::scene::document::Document,
 };
 
-/// A level of motes arranged around an anchor, selected by direction.
-pub struct Orbit {
-    tree:    Tree,
+/// What a panel draws. An orbit navigates a level of a tree; a grid is a
+/// fixed destination over one mote's children.
+enum Content {
+    /// A level open into a tree; layout follows the open mote's own
+    /// arrangement.
+    Level(Tree),
+    /// A destination with a size of its own: a mote filed here is taken out
+    /// of the level it came from and hung under `root`.
+    Shelf { root: Mote, layout: Layout },
+}
+
+impl Content {
+    /// The motes drawn, and what they draw as, in one pass.
+    fn motes_and_specs(&mut self) -> (Vec<Mote>, Vec<MoteSpec>) {
+        match self {
+            Self::Level(tree) => tree.level_with_motes(),
+            Self::Shelf { root, .. } => {
+                let motes = root.children();
+                let specs = motes.iter().map(Mote::spec).collect();
+                (motes, specs)
+            }
+        }
+    }
+
+    /// The mote drawn at `index` of [`Content::motes_and_specs`].
+    fn at(&mut self, index: usize) -> Option<Mote> {
+        match self {
+            Self::Level(tree) => tree.at_level(index),
+            Self::Shelf { root, .. } => root.children().get(index).cloned(),
+        }
+    }
+
+    /// The layout this content takes, and how many leading slots are pinned.
+    fn layout(&mut self, capacity: usize, tuning: &Tuning) -> (Layout, usize) {
+        match self {
+            Self::Level(tree) => match tree.arrange() {
+                Arrange::Orbit => {
+                    let centre = if tree.is_nested() {
+                        Centre::Held
+                    } else {
+                        Centre::Open
+                    };
+                    Layout::orbit(
+                        tree.level_motes().len(),
+                        centre,
+                        capacity,
+                        tuning.orbit_radius,
+                    )
+                }
+                Arrange::Grid => (
+                    Layout::grid(
+                        tuning.grid_columns,
+                        tuning.grid_rows,
+                        Vec2::splat(tuning.grid_pitch),
+                    ),
+                    usize::from(tree.is_nested()),
+                ),
+            },
+            Self::Shelf { layout, .. } => (*layout, 0),
+        }
+    }
+
+    /// Navigates to `index`, only a level's business.
+    fn select(&mut self, index: usize) -> Option<Event> {
+        let Self::Level(tree) = self else {
+            return None;
+        };
+        match tree.select(index) {
+            Navigation::Bloomed(mote) => Some(Event::Opened(mote)),
+            Navigation::Collapsed(mote) => Some(Event::Closed(mote)),
+            Navigation::Activated(mote) => Some(Event::Activated(mote)),
+            Navigation::Cast | Navigation::None => None,
+        }
+    }
+
+    /// Opens `mote` as this content's level, only a level's business.
+    fn open(&mut self, mote: &Mote) -> Option<Event> {
+        let Self::Level(tree) = self else {
+            return None;
+        };
+        let index = tree.level_motes().iter().position(|drawn| drawn.is(mote))?;
+        self.select(index)
+    }
+
+    /// Whether a release at `local` lands inside this content, only a
+    /// shelf's business.
+    fn accepts(&self, local: Vec2, tuning: &Tuning) -> bool {
+        match self {
+            Self::Level(_) => false,
+            Self::Shelf { layout, .. } => layout.accepts(local, tuning),
+        }
+    }
+
+    /// Takes a released mote in, only a shelf's business.
+    fn stow(&mut self, mote: &Mote) -> bool {
+        match self {
+            Self::Level(_) => false,
+            Self::Shelf { root, .. } => root.add_child(mote),
+        }
+    }
+}
+
+/// A panel drawing one surface's worth of motes: an orbit navigable into a
+/// tree, or a grid that files what is dropped on it.
+pub struct Panel {
+    content: Content,
     surface: Surface,
     bodies:  Bodies,
     site:    Site,
@@ -69,8 +175,9 @@ pub struct Orbit {
     paged:   Option<usize>,
 }
 
-impl Orbit {
-    pub fn new(
+impl Panel {
+    /// A level of motes arranged around an anchor, selected by direction.
+    pub fn orbit(
         doc: &Document,
         root: Mote,
         mount: Mount,
@@ -84,7 +191,7 @@ impl Orbit {
         let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
         Ok(Self {
-            tree: Tree::new(root),
+            content: Content::Level(Tree::new(root)),
             surface,
             bodies,
             site,
@@ -95,35 +202,90 @@ impl Orbit {
             paged: None,
         })
     }
-}
 
-impl Mounted for Orbit {
-    fn mount(&self) -> Mount {
+    /// A bounded grid of `root`'s motes, and a destination a release over it
+    /// lands in.
+    pub fn grid(
+        doc: &Document,
+        root: Mote,
+        layout: Layout,
+        mount: Mount,
+        tuning: &Tuning,
+        palette: Palette,
+    ) -> anyhow::Result<Self> {
+        let capacity = layout.len();
+        let surface = Surface::new(capacity, *tuning, palette);
+        let extents = layout.extents(tuning);
+        let bodies = Bodies::new(doc, capacity, tuning, Hit::Slab { extents })?;
+        let site = Site::new(doc, bodies.root(), tuning, palette)?;
+
+        Ok(Self {
+            content: Content::Shelf { root, layout },
+            surface,
+            bodies,
+            site,
+            casting: None,
+            mount,
+            depth: None,
+            held: None,
+            paged: None,
+        })
+    }
+
+    pub const fn mount(&self) -> Mount {
         self.mount
     }
 
-    fn place(&mut self, doc: &Document, anchor: &Transform) -> anyhow::Result<()> {
+    pub fn place(&self, doc: &Document, anchor: &Transform) -> anyhow::Result<()> {
         self.bodies.place(doc, anchor)
     }
 
-    fn field_lift(&self) -> f32 {
+    pub const fn field_lift(&self) -> f32 {
         self.surface.tuning().field_lift
     }
 
-    fn root(&self) -> (u64, u64) {
+    /// The prim everything this panel drew hangs from. Removing it takes the
+    /// whole panel — bodies, placard and cast site alike — out of the scene
+    /// in one edit.
+    pub const fn root(&self) -> (u64, u64) {
         self.bodies.root()
     }
 
-    fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()> {
+    /// Puts the panel up or takes it down, keeping its prims either way.
+    pub fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()> {
         self.surface.set_open(shown);
         self.bodies.show(doc, shown)
     }
 
-    fn is_visible(&self) -> bool {
+    /// Whether anything of it is still drawn. A panel sent away keeps being
+    /// stepped until it has finished leaving.
+    pub fn is_visible(&self) -> bool {
         self.surface.is_visible()
     }
 
-    fn update(
+    /// Whether a release at `local` — in this panel's own plane — files into
+    /// it. Only a shelf is a destination; an orbit has no extents to land in.
+    pub fn accepts(&self, local: Vec2) -> bool {
+        self.content.accepts(local, self.surface.tuning())
+    }
+
+    /// Takes a released mote in, reporting whether it did.
+    pub fn stow(&mut self, mote: &Mote) -> bool {
+        self.content.stow(mote)
+    }
+
+    /// Opens `mote` as this panel's level, reporting what that did. Only a
+    /// panel holding a tree can navigate one.
+    ///
+    /// A level let go in the room opens the same way a tapped one does, so
+    /// the way back and everything else about it reads identically.
+    pub fn open(&mut self, mote: &Mote) -> Option<Event> {
+        self.content.open(mote)
+    }
+
+    /// Steps and draws. Call from the script's `update`, where animation
+    /// belongs — pinning it to the fixed rate makes motion step.
+    pub fn update(
         &mut self,
         doc: &Document,
         gaze: &Gaze,
@@ -132,39 +294,16 @@ impl Mounted for Orbit {
     ) -> anyhow::Result<Vec<Event>> {
         let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
         let frame = Frame {
-            eye: gaze.eye.translation,
             anchor,
             aim: pointer::aim(&gaze.ray, &anchor, self.surface.tuning().field_lift),
             hand,
             delta,
         };
 
-        let motes = self.tree.level_motes();
-        let specs = self.tree.level();
-        let tuning = self.surface.tuning();
-        let (layout, pinned) = match self.tree.arrange() {
-            Arrange::Orbit => {
-                let centre = if self.tree.is_nested() {
-                    Centre::Held
-                } else {
-                    Centre::Open
-                };
-                Layout::orbit(
-                    specs.len(),
-                    centre,
-                    self.surface.capacity(),
-                    tuning.orbit_radius,
-                )
-            }
-            Arrange::Grid => (
-                Layout::grid(
-                    tuning.grid_columns,
-                    tuning.grid_rows,
-                    Vec2::splat(tuning.grid_pitch),
-                ),
-                usize::from(self.tree.is_nested()),
-            ),
-        };
+        let (motes, specs) = self.content.motes_and_specs();
+        let (layout, pinned) = self
+            .content
+            .layout(self.surface.capacity(), self.surface.tuning());
         self.surface.update(&specs, layout, pinned, &frame);
 
         self.bodies.icons(
@@ -198,18 +337,9 @@ impl Mounted for Orbit {
         Ok(events)
     }
 
-    /// A level let go in the room opens the same way a tapped one does, so
-    /// the way back and everything else about it reads identically.
-    fn open(&mut self, mote: &Mote) -> Option<Event> {
-        let index = self
-            .tree
-            .level_motes()
-            .iter()
-            .position(|drawn| drawn.is(mote))?;
-        self.select_at(index)
-    }
-
-    fn fixed_update(
+    /// Reads input and resolves what it did. Call from the script's
+    /// `fixed_update`, where state belongs.
+    pub fn fixed_update(
         &mut self,
         doc: &Document,
         gaze: &Gaze,
@@ -231,9 +361,7 @@ impl Mounted for Orbit {
         }
         Ok(done)
     }
-}
 
-impl Orbit {
     /// Grabs the lit mote at its drawn depth, so it arrives under the pointer.
     ///
     /// A consequential mote opens its cast site here rather than on release:
@@ -261,12 +389,12 @@ impl Orbit {
     /// The mote drawn in `slot`, if holding it is what fires it.
     fn consequential(&mut self, slot: usize) -> Option<Mote> {
         let index = self.surface.spec_index(slot)?;
-        self.tree
-            .at_level(index)
+        self.content
+            .at(index)
             .filter(|mote| mote.kind() == Kind::Cast)
     }
 
-    /// Returns the carried mote to its surface, reporting what a tap did and
+    /// Returns the carried mote to its panel, reporting what a tap did and
     /// handing the host anything that was placed.
     ///
     /// What a landing means belongs to the mote that landed: a level opens
@@ -313,8 +441,8 @@ impl Orbit {
     fn delivered(&mut self, doc: &Document, slot: usize) -> Option<Released> {
         let index = self.surface.spec_index(slot)?;
         let mote = self
-            .tree
-            .at_level(index)
+            .content
+            .at(index)
             .filter(|mote| mote.kind().delivers())?;
         Some(Released {
             mote,
@@ -329,31 +457,22 @@ impl Orbit {
     fn opens(&mut self, slot: usize) -> bool {
         self.surface
             .spec_index(slot)
-            .and_then(|index| self.tree.at_level(index))
+            .and_then(|index| self.content.at(index))
             .is_some_and(|mote| mote.kind().holds_children())
     }
 
-    /// Selects whatever holds attention in `slot`, navigating the tree.
+    /// Selects whatever holds attention in `slot`, navigating the content.
     ///
     /// A consequential mote is not selected on release: its site opened when
     /// it was pressed, and by the time the grasp lets go the cast has either
     /// fired or been abandoned.
     fn select(&mut self, slot: usize) -> Option<Event> {
         let index = self.surface.spec_index(slot)?;
-        self.select_at(index)
+        self.content.select(index)
     }
 
-    fn select_at(&mut self, index: usize) -> Option<Event> {
-        match self.tree.select(index) {
-            Navigation::Bloomed(mote) => Some(Event::Opened(mote)),
-            Navigation::Collapsed(mote) => Some(Event::Closed(mote)),
-            Navigation::Activated(mote) => Some(Event::Activated(mote)),
-            Navigation::Cast(_) | Navigation::None => None,
-        }
-    }
-
-    /// Says how much is off the page, because an orbit that quietly holds three
-    /// of eighteen apples is an orbit that is lying.
+    /// Says how much is off the page, because a panel that quietly holds
+    /// three of eighteen apples is a panel that is lying.
     fn report_page(&mut self, events: &mut Vec<Event>) {
         let page = self.surface.page();
         if !page.is_paged() {
@@ -392,7 +511,7 @@ impl Orbit {
     fn build_released(&mut self, slot: usize, at: Vec3, velocity: Vec3) -> Option<Released> {
         let index = self.surface.spec_index(slot)?;
         Some(Released {
-            mote:    self.tree.at_level(index)?,
+            mote:    self.content.at(index)?,
             landing: Landing { at, velocity },
         })
     }

@@ -1,3 +1,5 @@
+//! Easing helpers: proximity, lean and the generic approach toward a target.
+
 use wired_guest::math::Vec3;
 
 use crate::{

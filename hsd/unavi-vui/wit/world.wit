@@ -55,9 +55,16 @@ interface api {
     label: func() -> string;
     /// At most 256 bytes.
     set-label: func(value: string) -> result<_, error>;
-    /// What it does, shown on its placard once attention has been held. At
-    /// most 1024 bytes.
-    describe: func(text: string) -> result<_, error>;
+
+    /// What it does, shown on its placard once attention has been held.
+    description: func() -> option<string>;
+    /// At most 1024 bytes.
+    set-description: func(value: string) -> result<_, error>;
+
+    /// A number identifying this mote, stable for as long as some handle
+    /// keeps it alive. Key a map by this instead of comparing every entry
+    /// with `is`.
+    id: func() -> u64;
 
     /// What this mote looks like, drawn inside its shell — a prim in `doc`,
     /// the same document the surface draws into.
@@ -155,9 +162,16 @@ interface api {
 
   record page {
     index: u32,
-    count: u32,
+    /// Pages the level takes in all.
+    pages: u32,
     /// Motes the level holds in all.
-    total: u32,
+    motes: u32,
+  }
+
+  /// A mote let go in the room with nowhere of its own to go.
+  record planted {
+    mote: mote,
+    landing: landing,
   }
 
   /// What a surface did, in the terms a consumer thinks in.
@@ -181,7 +195,7 @@ interface api {
     /// Let go in the room by a mote with nowhere of its own to go: the
     /// surface draws nothing there. What lands, if anything, is the
     /// consumer's to place at the landing.
-    planted(tuple<mote, landing>),
+    planted(planted),
     /// Carried out and filed into a grid.
     filed(mote),
     /// The page turned.

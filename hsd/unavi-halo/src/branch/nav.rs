@@ -205,7 +205,7 @@ fn build(listing: &Listing) -> Option<Space> {
     let color = generate_color(Hash::from_str(&listing.hex).ok()?);
 
     let group = Mote::new(Kind::Group, listing.hex.get(..8)?).ok()?;
-    group.describe(&describe(listing)).ok()?;
+    group.set_description(&describe(listing)).ok()?;
     group.set_tint(Some(color));
     // The space wears its beacon's form: in the grid it reads as the marker
     // it is, and opening it still shows the travel and beacon motes beneath.
@@ -216,11 +216,11 @@ fn build(listing: &Listing) -> Option<Space> {
     }
 
     let travel = Mote::new(Kind::Cast, "Travel").ok()?;
-    travel.describe("Go to this space.").ok()?;
+    travel.set_description("Go to this space.").ok()?;
     travel.set_tint(Some(color));
 
     let beacon = Mote::new(Kind::Item, "Beacon").ok()?;
-    beacon.describe("A marker you can drop here.").ok()?;
+    beacon.set_description("A marker you can drop here.").ok()?;
     beacon.set_tint(Some(color));
     // The beacon itself is a cube of corners around a pulsing core, so its
     // glyph is the same form. A missing glyph is not a reason to lose the

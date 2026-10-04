@@ -15,7 +15,7 @@ use crate::{
     },
     mesh,
     palette::Palette,
-    scene::{
+    render::{
         draw,
         graphs,
     },

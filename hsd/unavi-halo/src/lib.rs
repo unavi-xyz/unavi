@@ -83,17 +83,17 @@ impl Script {
             Event::Opened(mote) => self.opened(mote),
             Event::Cast(mote) => self.cast(mote),
             Event::Activated(mote) => self.activated(mote)?,
-            Event::Planted((mote, landing)) => {
+            Event::Planted(planted) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
-                if self.nav.plant(mote, *landing) {
+                if self.nav.plant(&planted.mote, planted.landing) {
                     let dismiss = self.summon.taken();
                     self.apply(dismiss)?;
                 }
             }
             Event::Closed(_) | Event::Casting(_) | Event::Aborted(_) | Event::Filed(_) => {}
             Event::Paged(page) => {
-                println!("halo: page {} of {}", page.index + 1, page.count);
+                println!("halo: page {} of {}", page.index + 1, page.pages);
             }
         }
         Ok(())

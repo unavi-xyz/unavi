@@ -1,3 +1,6 @@
+//! The client's scene flow: limbo while no space is loaded, travel between
+//! spaces, and the startup join into home or `--join`.
+
 use bevy::{
     light::{
         CascadeShadowConfigBuilder,
@@ -25,13 +28,13 @@ pub struct ScenePlugin;
 
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<HsdState>()
+        app.init_state::<SceneState>()
             .init_resource::<limbo::LimboArrival>()
             .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
             .add_observer(home::enter_home)
             .add_systems(
-                OnEnter(HsdState::Limbo),
+                OnEnter(SceneState::Limbo),
                 (
                     limbo::arm_limbo_arrival,
                     limbo::spawn_limbo,
@@ -39,7 +42,7 @@ impl Plugin for ScenePlugin {
                 ),
             )
             .add_systems(
-                OnExit(HsdState::Limbo),
+                OnExit(SceneState::Limbo),
                 (limbo::despawn_limbo, build_iroh_router),
             )
             .add_systems(
@@ -58,7 +61,7 @@ impl Plugin for ScenePlugin {
                 FixedUpdate,
                 (
                     travel::drive_travel,
-                    limbo::hold_agent_in_limbo.run_if(in_state(HsdState::Limbo)),
+                    limbo::hold_agent_in_limbo.run_if(in_state(SceneState::Limbo)),
                     respawn::teleport_from_void,
                 ),
             );
@@ -66,7 +69,7 @@ impl Plugin for ScenePlugin {
 }
 
 #[derive(Default, Debug, States, Clone, Copy, PartialEq, Eq, Hash)]
-enum HsdState {
+enum SceneState {
     /// Empty "limbo" scene, if not in any spaces.
     /// Acts as a loading screen or fallback on error.
     #[default]

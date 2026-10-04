@@ -127,14 +127,21 @@ pub fn dump_file(input: &Path) -> Result<String> {
         }
     }
 
-    let roots = build(&nodes, None);
+    let roots = build(&nodes, None, 0);
     ron::Options::default()
         .with_default_extension(Extensions::IMPLICIT_SOME)
         .to_string_pretty(&roots, ron::ser::PrettyConfig::default())
         .context("serializing dump")
 }
 
-fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim> {
+/// A `.hsdz` is untrusted input: its parent chain comes from whoever authored
+/// it, and nothing else in this path bounds its depth before recursing.
+const MAX_DEPTH: usize = 256;
+
+fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>, depth: usize) -> Vec<DumpPrim> {
+    if depth > MAX_DEPTH {
+        return Vec::new();
+    }
     nodes
         .iter()
         .filter(|(_, node)| node.parent.and_then(|p| p.prim()) == parent)
@@ -144,7 +151,7 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
             overrides:     node.overrides.clone(),
-            children:      build(nodes, Some(*id)),
+            children:      build(nodes, Some(*id), depth + 1),
         })
         .collect()
 }

@@ -41,30 +41,32 @@ clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 iroh-docs.workspace     = true
-log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "0.4.34" }
-n0-future.workspace     = true
-parking_lot.workspace   = true
-postcard.workspace      = true
-tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
-unavi-agent.path        = "../unavi-agent"
-unavi-assets.path       = "../unavi-assets"
-unavi-avatar.path       = "../unavi-avatar"
-unavi-config.path       = "../unavi-config"
-unavi-devtools          = { optional = true, path = "../unavi-devtools" }
-unavi-grab.path         = "../unavi-grab"
-unavi-identity.path     = "../unavi-identity"
-unavi-input.path        = "../unavi-input"
-unavi-local.path        = "../unavi-local"
-unavi-physics.path      = "../unavi-physics"
-unavi-policy.path       = "../unavi-policy"
-unavi-portal.path       = "../unavi-portal"
-unavi-registry          = { features = ["client"], path = "../unavi-registry" }
-unavi-script.path       = "../unavi-script"
-unavi-space.path        = "../unavi-space"
-unavi-space-devtools    = { optional = true, path = "../unavi-space-devtools" }
-unavi-store.path        = "../unavi-store"
-winit                   = { default-features = false, version = "0.30.13" }
-xdid.workspace          = true
+# Never called directly; some dependency logs through the `log` facade
+# rather than `tracing`, so its compiled-in max level has to be set here too.
+log                   = { features = ["max_level_debug", "release_max_level_warn"], version = "0.4.34" }
+n0-future.workspace   = true
+parking_lot.workspace = true
+postcard.workspace    = true
+tracing               = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
+unavi-agent.path      = "../unavi-agent"
+unavi-assets.path     = "../unavi-assets"
+unavi-avatar.path     = "../unavi-avatar"
+unavi-config.path     = "../unavi-config"
+unavi-devtools        = { optional = true, path = "../unavi-devtools" }
+unavi-grab.path       = "../unavi-grab"
+unavi-identity.path   = "../unavi-identity"
+unavi-input.path      = "../unavi-input"
+unavi-local.path      = "../unavi-local"
+unavi-physics.path    = "../unavi-physics"
+unavi-policy.path     = "../unavi-policy"
+unavi-portal.path     = "../unavi-portal"
+unavi-registry        = { features = ["client"], path = "../unavi-registry" }
+unavi-script.path     = "../unavi-script"
+unavi-space.path      = "../unavi-space"
+unavi-space-devtools  = { optional = true, path = "../unavi-space-devtools" }
+unavi-store.path      = "../unavi-store"
+winit                 = { default-features = false, version = "0.30.13" }
+xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { features = ["Location", "UrlSearchParams"], workspace = true }

@@ -53,10 +53,12 @@ update-wit-deps:
 update-wit-deps-locked:
     nu nu/update-wit-deps.nu --locked
 
-# Build both web client variants (WebGL + WebGPU) into dist/.
+# Build both web client variants (WebGL + WebGPU) into dist/. This is the
+# shipped build: devtools (egui inspector, bevy/debug) stay off here even
+# though the crate defaults them on for local native dev builds.
 web *ARGS:
-    trunk build --dist dist-webgl --public-url /webgl/ {{ARGS}}
-    trunk build --dist dist-webgpu --public-url /webgpu/ --features webgpu {{ARGS}}
+    trunk build --dist dist-webgl --public-url /webgl/ --no-default-features {{ARGS}}
+    trunk build --dist dist-webgpu --public-url /webgpu/ --no-default-features --features webgpu {{ARGS}}
     rm -rf dist
     mkdir dist
     cp crates/unavi-client/loader.html dist/index.html

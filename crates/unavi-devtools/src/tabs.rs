@@ -21,16 +21,22 @@ pub struct DevPanel {
     pub title: String,
 }
 
-/// Present on the panel whose tab is currently selected. Panel systems filter
-/// on this so their work only runs while visible.
+/// Present on the panel whose tab is currently selected.
+///
+/// Panel systems filter on this so their work only runs while visible; it
+/// exists alongside [`ActiveDevPanel`] because [`panel_active`]'s query needs
+/// a queryable marker, not an entity to compare against. `pub` because
+/// `panel_active`'s query type names it.
 #[derive(Component)]
 pub struct ActivePanel;
 
 #[derive(Component)]
 pub(crate) struct PanelButton(Entity);
 
+/// The one panel [`ActivePanel`] is mirroring. Kept so systems that need the
+/// entity itself, not just "is mine active", do not have to query for it.
 #[derive(Resource, Default)]
-pub struct ActiveDevPanel(pub Option<Entity>);
+pub(crate) struct ActiveDevPanel(pub Option<Entity>);
 
 /// Run condition: true only while the panel marked `M` is the active tab.
 #[must_use]

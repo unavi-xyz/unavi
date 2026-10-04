@@ -1,3 +1,6 @@
+//! This device's identity: keys, storage, and the `wired/auth` endpoint
+//! wiring every other client plugin shares.
+
 #[cfg(target_family = "wasm")] use std::path::PathBuf;
 use std::sync::Arc;
 #[cfg(not(target_family = "wasm"))] use std::sync::LazyLock;

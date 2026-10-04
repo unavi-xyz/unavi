@@ -99,6 +99,15 @@ impl Drop for DocHandle {
 }
 
 impl Document {
+    #[cfg_attr(
+        target_family = "wasm",
+        expect(
+            clippy::unnecessary_wraps,
+            reason = "native's cfg'd-in runtime handle lookup below can fail; \
+                      wasm's branch cannot, but the signature stays one type \
+                      for both targets"
+        )
+    )]
     pub(crate) fn new(
         doc: Doc,
         blobs: Blobs,

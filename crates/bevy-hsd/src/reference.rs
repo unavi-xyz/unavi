@@ -173,7 +173,7 @@ pub(crate) fn open_references(
 }
 
 // n0_future futures stay !Send on wasm and gain `Send` elsewhere.
-#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
+#[cfg_attr(target_family = "wasm", allow(clippy::future_not_send))]
 async fn open_reference(
     async_world: &AsyncWorld,
     store: Store,

@@ -68,7 +68,10 @@
 
         doCheck = false;
 
-        cargoExtraArgs = "-p ${pname}";
+        # Shipped Nix packages (native, AppImage, and the web trunk build
+        # below) must not carry devtools (egui inspector, bevy/debug): that
+        # feature set is default-on in Cargo.toml for local dev builds only.
+        cargoExtraArgs = "-p ${pname} --no-default-features";
         strictDeps = true;
 
         nativeBuildInputs =

@@ -1,3 +1,6 @@
+//! Rendering settings applied to every camera that spawns, plus the sky
+//! material.
+
 use bevy::{
     camera::{
         Exposure,

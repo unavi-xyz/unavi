@@ -136,6 +136,28 @@ fn write_referencing(case: &str) -> PathBuf {
     input
 }
 
+/// `a.hsda` references `b.hsda`, which references `a.hsda` back. Without a
+/// visited stack this recurses until it overflows; it must error instead.
+#[test]
+fn a_reference_cycle_fails_the_build_instead_of_recursing_forever() {
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("cycle");
+    std::fs::create_dir_all(&dir).expect("create case dir");
+
+    let a = dir.join("a.hsda");
+    let b = dir.join("b.hsda");
+    std::fs::write(&a, r#"[(attributes: (name: "a", reference: "b.hsda"))]"#).expect("write a");
+    std::fs::write(&b, r#"[(attributes: (name: "b", reference: "a.hsda"))]"#).expect("write b");
+
+    let err = compile(&a).expect_err("a cycle must fail, not recurse forever");
+    assert!(
+        err.to_string().contains("reference cycle")
+            || err
+                .chain()
+                .any(|e| e.to_string().contains("reference cycle")),
+        "{err:?}"
+    );
+}
+
 #[test]
 fn a_referenced_file_is_carried_beside_the_root_rather_than_inside_it() {
     let package = compile(&write_referencing("reference")).expect("compile");

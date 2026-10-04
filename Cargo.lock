@@ -11354,7 +11354,6 @@ dependencies = [
 name = "unavi-devtools"
 version = "0.0.16"
 dependencies = [
- "async-channel",
  "bevy",
 ]
 

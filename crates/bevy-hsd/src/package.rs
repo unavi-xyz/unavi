@@ -101,7 +101,7 @@ pub(crate) fn import_packages(
 
 // On failure, removes every namespace `try_import_package` minted.
 // n0_future futures stay !Send on wasm and gain `Send` elsewhere.
-#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
+#[cfg_attr(target_family = "wasm", allow(clippy::future_not_send))]
 async fn import_package(
     async_world: &AsyncWorld,
     store: Store,

@@ -32,7 +32,7 @@ pub fn read(
     mut captured: ResMut<Captured>,
 ) {
     #[cfg(feature = "devtools")]
-    let by_overlay = overlay.is_some_and(|active| active.0);
+    let by_overlay = overlay.is_some_and(|active| active.is_open());
     #[cfg(not(feature = "devtools"))]
     let by_overlay = false;
 

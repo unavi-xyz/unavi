@@ -1,4 +1,7 @@
-// Bevy`s `AsBindGroup` needs higher limit
+//! The UNAVI desktop and web client: windowing, identity, the scene state
+//! machine, and the glue that assembles every other crate into one app.
+
+// Bevy's `AsBindGroup` needs a higher limit than the derive's default.
 #![recursion_limit = "256"]
 
 use std::sync::Arc;
@@ -20,7 +23,7 @@ mod icon;
 mod identity;
 mod scene;
 
-#[cfg(feature = "devtools")] mod dev_tools;
+#[cfg(feature = "devtools")] mod devtools;
 
 #[cfg(not(target_family = "wasm"))] mod xr;
 
@@ -92,7 +95,7 @@ impl Plugin for UnaviPlugin {
         }
 
         #[cfg(feature = "devtools")]
-        app.add_plugins(dev_tools::ClientDevToolsPlugin);
+        app.add_plugins(devtools::ClientDevToolsPlugin);
 
         // Built once, shared with every plugin that persists opaque app
         // state: the identity keys and the trust table live here.
@@ -138,20 +141,37 @@ impl Plugin for UnaviPlugin {
         )
         .add_systems(Startup, icon::set_window_icon);
 
-        // The endpoint key derives from the identity, so the identity plugin
-        // has to have built before this runs.
-        let secret_key = app
-            .world()
-            .resource::<identity::LocalNode>()
-            .0
-            .endpoint()
-            .clone();
-        let auth = Arc::clone(&app.world().resource::<identity::Auth>().0);
-
-        app.world_mut().trigger(LoadEndpoint {
-            configure: Some(Arc::new(move |builder| auth.install(builder))),
-            filter: AddrFilter::default(),
-            secret_key,
-        });
+        load_endpoint(app);
     }
+}
+
+/// The endpoint key derives from the identity, so the identity plugin has to
+/// have built before this runs. `IdentityPlugin` skips inserting these
+/// resources when it could not build a DID resolver; degrade to a clean exit
+/// instead of panicking on the missing resource.
+fn load_endpoint(app: &mut App) {
+    let Some(secret_key) = app
+        .world()
+        .get_resource::<identity::LocalNode>()
+        .map(|node| node.0.endpoint().clone())
+    else {
+        error!("identity did not initialize; exiting");
+        app.world_mut().write_message(AppExit::error());
+        return;
+    };
+    let Some(auth) = app
+        .world()
+        .get_resource::<identity::Auth>()
+        .map(|auth| Arc::clone(&auth.0))
+    else {
+        error!("identity did not initialize; exiting");
+        app.world_mut().write_message(AppExit::error());
+        return;
+    };
+
+    app.world_mut().trigger(LoadEndpoint {
+        configure: Some(Arc::new(move |builder| auth.install(builder))),
+        filter: AddrFilter::default(),
+        secret_key,
+    });
 }

@@ -76,7 +76,9 @@ jobs:
           if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
             cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
           else
-            cargo build -p unavi-client --release
+            # Shipped build: devtools (egui inspector, bevy/debug) are
+            # default-on for dev builds only.
+            cargo build -p unavi-client --release --no-default-features
           fi
       - name: Check DLL dependencies
         if: ${{ matrix.package == 'unavi-client' }}

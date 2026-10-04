@@ -10,5 +10,4 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-async-channel.workspace = true
-bevy                    = { features = ["bevy_feathers"], workspace = true }
+bevy = { features = ["bevy_feathers"], workspace = true }

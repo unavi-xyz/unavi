@@ -39,6 +39,14 @@ impl Backend {
 
 /// On wasm everything is in memory, so a reload starts empty.
 // TODO: persist on wasm through IndexedDB.
+#[cfg_attr(
+    target_family = "wasm",
+    expect(
+        clippy::unused_async,
+        reason = "native's branch of this match awaits fs::open; only wasm's \
+                  synchronous memory-store branch survives cfg stripping"
+    )
+)]
 pub async fn open(
     storage: &DeviceStorage,
     gc: Option<GcConfig>,

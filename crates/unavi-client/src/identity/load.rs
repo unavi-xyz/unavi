@@ -95,7 +95,7 @@ pub fn serve_auth(
             return;
         };
 
-        async_world
+        let sent = async_world
             .commands()
             .push(move |world: &mut World| {
                 if let Ok(mut entity) = world.get_entity_mut(entity) {
@@ -104,8 +104,10 @@ pub fn serve_auth(
                 }
             })
             .send()
-            .await
-            .ok();
+            .await;
+        if let Err(err) = sent {
+            warn!(?err, "the world is gone; dropping the auth handshake task");
+        }
     });
 }
 
@@ -145,10 +147,9 @@ pub fn load_store(
 ) {
     let entity = trigger.entity;
 
-    let endpoint = endpoints
-        .get(entity)
-        .map(|e| e.0.clone())
-        .expect("endpoint");
+    let Ok(endpoint) = endpoints.get(entity).map(|e| e.0.clone()) else {
+        return;
+    };
 
     let node = Arc::clone(&node.0);
     let follower = Follower {

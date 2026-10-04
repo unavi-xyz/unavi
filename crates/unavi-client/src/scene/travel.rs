@@ -6,7 +6,7 @@ use unavi_space::{
 };
 
 use crate::scene::{
-    HsdState,
+    SceneState,
     limbo::LimboArrival,
 };
 
@@ -19,14 +19,14 @@ use crate::scene::{
 /// left it in a state worth abandoning.
 pub fn drive_travel(
     mut pending: ResMut<PendingTravel>,
-    state: Res<State<HsdState>>,
+    state: Res<State<SceneState>>,
     active: Res<ActiveSpace>,
     spaces: Query<(Entity, &Space)>,
     mut arrival: ResMut<LimboArrival>,
-    mut next: ResMut<NextState<HsdState>>,
+    mut next: ResMut<NextState<SceneState>>,
     mut commands: Commands,
 ) {
-    if !matches!(state.get(), HsdState::Space) {
+    if !matches!(state.get(), SceneState::Space) {
         return;
     }
     let Some(target) = pending.0 else {
@@ -44,5 +44,5 @@ pub fn drive_travel(
         commands.spawn(Space(target));
     }
     arrival.target = Some(target);
-    next.set(HsdState::Limbo);
+    next.set(SceneState::Limbo);
 }

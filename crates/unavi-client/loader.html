@@ -37,54 +37,77 @@
           transform: rotate(360deg);
         }
       }
+
+      .error {
+        color: #f88;
+        font-family: sans-serif;
+        max-width: 32rem;
+        text-align: center;
+      }
     </style>
   </head>
 
   <body>
     <div class="spinner" id="spinner"></div>
+    <noscript>UNAVI needs JavaScript enabled to load.</noscript>
     <script>
       (async function () {
-        let variant = "webgl";
         try {
-          if (navigator.gpu && (await navigator.gpu.requestAdapter())) {
-            variant = "webgpu";
+          let variant = "webgl";
+          try {
+            if (navigator.gpu && (await navigator.gpu.requestAdapter())) {
+              variant = "webgpu";
+            }
+          } catch (e) {
+            console.log("WebGPU detection failed, using WebGL:", e);
           }
-        } catch (e) {
-          console.log("WebGPU detection failed, using WebGL:", e);
-        }
-        console.log("Loading variant:", variant);
+          console.log("Loading variant:", variant);
 
-        // Bevy's wasm asset reader fetches "assets/..." relative to
-        // `document.baseURI`, which without this stays "/" since this
-        // document never navigates into the variant's own directory.
-        const base = document.createElement("base");
-        base.href = "/" + variant + "/";
-        document.head.appendChild(base);
+          // Bevy's wasm asset reader fetches "assets/..." relative to
+          // `document.baseURI`, which without this stays "/" since this
+          // document never navigates into the variant's own directory.
+          const base = document.createElement("base");
+          base.href = "/" + variant + "/";
+          document.head.appendChild(base);
 
-        // Fetch variant's index.html (paths already absolute from --public-url).
-        const res = await fetch("/" + variant + "/index.html");
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
+          // Fetch variant's index.html (paths already absolute from --public-url).
+          const res = await fetch("/" + variant + "/index.html");
+          if (!res.ok) {
+            throw new Error(
+              `fetching ${variant}/index.html: ${res.status} ${res.statusText}`,
+            );
+          }
+          const html = await res.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
 
-        // Inject link tags (paths already correct).
-        doc
-          .querySelectorAll('link[rel="stylesheet"], link[rel="icon"]')
-          .forEach((el) => {
-            document.head.appendChild(el.cloneNode(true));
+          // Inject link tags (paths already correct).
+          doc
+            .querySelectorAll('link[rel="stylesheet"], link[rel="icon"]')
+            .forEach((el) => {
+              document.head.appendChild(el.cloneNode(true));
+            });
+
+          // Remove spinner only once the variant is confirmed loadable.
+          document.getElementById("spinner").remove();
+
+          // Inject and execute scripts (paths already correct).
+          doc.querySelectorAll("script").forEach((el) => {
+            const script = document.createElement("script");
+            if (el.src) script.src = el.src;
+            else script.textContent = el.textContent;
+            if (el.type) script.type = el.type;
+            document.body.appendChild(script);
           });
-
-        // Remove spinner.
-        document.getElementById("spinner").remove();
-
-        // Inject and execute scripts (paths already correct).
-        doc.querySelectorAll("script").forEach((el) => {
-          const script = document.createElement("script");
-          if (el.src) script.src = el.src;
-          else script.textContent = el.textContent;
-          if (el.type) script.type = el.type;
-          document.body.appendChild(script);
-        });
+        } catch (e) {
+          console.error("Failed to load UNAVI:", e);
+          const spinner = document.getElementById("spinner");
+          if (spinner) spinner.remove();
+          const message = document.createElement("div");
+          message.className = "error";
+          message.textContent = "Failed to load: " + e;
+          document.body.appendChild(message);
+        }
       })();
     </script>
   </body>

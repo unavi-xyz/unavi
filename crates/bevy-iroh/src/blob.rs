@@ -101,7 +101,10 @@ impl ProgressLog {
     /// The interval runs from `start`, so a download that completes within it
     /// never logs.
     const fn new(start: Instant) -> Self {
-        Self { step: 0, at: start }
+        Self {
+            step: 0,
+            at:   start,
+        }
     }
 
     fn should_log(&mut self, progress: f64, now: Instant) -> bool {

@@ -12,7 +12,6 @@ use super::{
     common::{
         MAX_DOWNLOAD_BYTES,
         download_with_progress,
-        fetch_checksum_manifest,
         fetch_latest_release,
         find_asset,
         is_network_error,
@@ -111,9 +110,6 @@ where
 
     info!("Updating client to {}", latest.version);
 
-    // Fetched before `find_asset` borrows out of `latest.assets` so a
-    // missing manifest aborts before anything is downloaded.
-    let manifest = fetch_checksum_manifest(&latest.assets).await?;
     let asset = find_asset(&latest.assets, "unavi-client", platform::CLIENT_EXT)
         .context("client asset not found in release")?;
 
@@ -140,10 +136,6 @@ where
         },
     )
     .await?;
-
-    manifest
-        .verify(&asset.name, &tmp_archive_path)
-        .context("client update failed integrity verification")?;
 
     let dest_dir = client_dir(&latest.version);
     std::fs::create_dir_all(&dest_dir)?;

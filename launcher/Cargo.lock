@@ -5252,7 +5252,6 @@ dependencies = [
  "self-replace",
  "semver",
  "serde",
- "sha2",
  "tar",
  "tempfile",
  "tokio",

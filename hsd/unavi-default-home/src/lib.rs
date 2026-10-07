@@ -82,10 +82,9 @@ impl ScriptBehavior for Script {
         // Material payloads cannot carry texture relationships, so the mesh
         // binds to the authored prim instead.
         batch = match ground_root {
-            Some(ground) => batch.set(ground, Property::Material(material)).set(
-                prim,
-                Property::Relation((Relation::ShaderBinding, ground)),
-            ),
+            Some(ground) => batch
+                .set(ground, Property::Material(material))
+                .set(prim, Property::Relation((Relation::ShaderBinding, ground))),
             None => batch.set(prim, Property::Material(material)),
         };
 

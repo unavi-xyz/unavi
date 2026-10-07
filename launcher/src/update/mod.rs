@@ -1,5 +1,4 @@
 mod common;
-mod verify;
 
 pub mod client;
 pub mod launcher;

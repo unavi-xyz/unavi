@@ -165,13 +165,6 @@ jobs:
             cd ..
             rm -rf "$dir"
           done
-      - name: Generate checksums manifest
-        # Covers every final (renamed) asset name; the launcher downloads
-        # this file by exact name and verifies each asset against it before
-        # installing or executing anything (J1).
-        run: |
-          cd artifacts
-          sha256sum -- * > SHA256SUMS
       - uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           artifacts: artifacts/*

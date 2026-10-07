@@ -9,7 +9,6 @@ use super::{
     common::{
         MAX_DOWNLOAD_BYTES,
         download_with_progress,
-        fetch_checksum_manifest,
         fetch_latest_release,
         find_asset,
         is_network_error,
@@ -50,9 +49,6 @@ where
 
     info!("Updating to {}", latest.version);
 
-    // Fetched before `find_asset` borrows out of `latest.assets` so a
-    // missing manifest aborts before anything is downloaded.
-    let manifest = fetch_checksum_manifest(&latest.assets).await?;
     let asset = find_asset(&latest.assets, "unavi-launcher", platform::LAUNCHER_EXT)
         .context("launcher asset not found in release")?;
 
@@ -77,10 +73,6 @@ where
         },
     )
     .await?;
-
-    manifest
-        .verify(&asset.name, &tmp_archive_path)
-        .context("launcher update failed integrity verification")?;
 
     on_status(UpdateStatus::UpdatedNeedsRestart);
 

@@ -20,17 +20,11 @@ use futures::{
 use semver::Version;
 use serde::Deserialize;
 
-use super::{
-    platform::RELEASE_TARGET,
-    verify::Manifest,
-};
+use super::platform::RELEASE_TARGET;
 
 const REPO_OWNER: &str = "unavi-xyz";
 const REPO_NAME: &str = "unavi";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
-
-/// The manifest asset every release publishes alongside its binaries.
-const CHECKSUM_MANIFEST_NAME: &str = "SHA256SUMS";
 
 /// Generous enough for a client bundle, but still bounds a server that tries
 /// to stream unbounded data at a downloader.
@@ -166,37 +160,6 @@ pub fn find_asset<'a>(
                 .extension()
                 .is_some_and(|found| found.eq_ignore_ascii_case(ext))
     })
-}
-
-/// Fetches and parses the `SHA256SUMS` manifest published with a release.
-/// Every asset is verified against it before being installed or executed.
-pub async fn fetch_checksum_manifest(assets: &[GitHubAsset]) -> anyhow::Result<Manifest> {
-    let asset = assets
-        .iter()
-        .find(|asset| asset.name == CHECKSUM_MANIFEST_NAME)
-        .context("release has no SHA256SUMS manifest")?;
-
-    ensure_github_url(&asset.browser_download_url)?;
-
-    let response = HTTP
-        .get(&asset.browser_download_url)
-        .send()
-        .await
-        .context("failed to fetch checksum manifest")?;
-
-    if !response.status().is_success() {
-        bail!(
-            "checksum manifest download failed with status {}",
-            response.status()
-        );
-    }
-
-    let text = response
-        .text()
-        .await
-        .context("failed to read checksum manifest")?;
-
-    Manifest::parse(&text)
 }
 
 /// The trust root for every download is "GitHub account + release assets";

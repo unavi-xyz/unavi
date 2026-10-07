@@ -22,11 +22,6 @@ world imports {
   import wired:portal/portals@0.1.0;
 }
 
-/// A component composed into a script at build time.
-world library {
-  include imports;
-}
-
 /// A script attached to a prim.
 world script {
   include imports;

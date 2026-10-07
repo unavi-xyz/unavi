@@ -17,6 +17,7 @@ use tracing::debug;
 
 use crate::{
     auth::{
+        CLOSE_GRACE,
         CLOSE_REFUSED,
         PROOF_DEADLINE,
         bindings::Bindings,
@@ -72,7 +73,14 @@ impl ProtocolHandler for AuthProtocol {
         };
 
         match n0_future::time::timeout(PROOF_DEADLINE, exchange).await {
-            Ok(Ok(did)) => debug!(%did, "peer identified"),
+            Ok(Ok(did)) => {
+                debug!(%did, "peer identified");
+                if let Err(elapsed) =
+                    n0_future::time::timeout(CLOSE_GRACE, connection.closed()).await
+                {
+                    debug!(%did, %elapsed, "forcing connection close");
+                }
+            }
             Ok(Err(err)) => {
                 debug!(?err, "peer proved no identity");
                 connection.close(VarInt::from_u32(CLOSE_REFUSED), b"proof refused");

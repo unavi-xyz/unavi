@@ -48,6 +48,11 @@ pub const ALPN: &[u8] = b"wired/auth";
 const PROOF_DEADLINE: Duration = Duration::from_secs(20);
 const CLOSE_REFUSED: u32 = 403;
 
+/// How long the accepting end holds a proven connection open for the peer to
+/// read its verdict. The peer should close as soon as it has read it; this only
+/// bounds a peer that never does.
+const CLOSE_GRACE: Duration = Duration::from_secs(5);
+
 pub(crate) enum Message {
     Prove(EndpointId, oneshot::Sender<()>),
     /// A handshake finished; `true` if the remote proved a DID.

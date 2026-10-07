@@ -22,6 +22,7 @@ use iroh_blobs::{
     HashAndFormat,
     api::blobs::Blobs,
 };
+use n0_future::time::Instant;
 use thiserror::Error;
 use tokio::sync::oneshot;
 use unavi_store::Store;
@@ -42,9 +43,11 @@ const ATTEMPT_TIMEOUT: Duration = Duration::from_mins(5);
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
 const MAX_ATTEMPTS: u32 = 10;
-/// Progress is logged once per step, so a large transfer emits a handful of
-/// lines rather than one per chunk.
+/// Progress is logged at most once per step and once per interval, so a large
+/// transfer emits a handful of lines and a quick one emits none. The lines are
+/// there to show a stalled or slow download, not to narrate every fetch.
 const PROGRESS_STEP: f64 = 0.1;
+const PROGRESS_INTERVAL: Duration = Duration::from_secs(5);
 
 /// Fetches the blob `hash`. Replacing it cancels the fetch in flight and starts
 /// another; removing it cancels.
@@ -86,6 +89,30 @@ impl BlobError {
 
 fn progress_step(progress: f64) -> u32 {
     (progress / PROGRESS_STEP) as u32
+}
+
+/// Decides which progress readings of one download are worth a log line.
+struct ProgressLog {
+    step: u32,
+    at:   Instant,
+}
+
+impl ProgressLog {
+    /// The interval runs from `start`, so a download that completes within it
+    /// never logs.
+    const fn new(start: Instant) -> Self {
+        Self { step: 0, at: start }
+    }
+
+    fn should_log(&mut self, progress: f64, now: Instant) -> bool {
+        let step = progress_step(progress);
+        if step <= self.step || now.duration_since(self.at) < PROGRESS_INTERVAL {
+            return false;
+        }
+        self.step = step;
+        self.at = now;
+        true
+    }
 }
 
 /// The backoff before attempt `attempt` (0-indexed), doubling to a cap.
@@ -243,7 +270,7 @@ async fn get_blob(hash: Hash, store: &Store, providers: &[EndpointId]) -> Result
 async fn watch_until_complete(hash: Hash, blobs: &Blobs) -> Result<(), BlobError> {
     let mut stream = blobs.observe(hash).stream().await.map_err(BlobError::io)?;
 
-    let mut logged = 0;
+    let mut log = ProgressLog::new(Instant::now());
 
     while let Some(field) = stream.next().await {
         let size = field.size();
@@ -260,9 +287,7 @@ async fn watch_until_complete(hash: Hash, blobs: &Blobs) -> Result<(), BlobError
             // `validated_size` only resolves once the final chunk lands, so
             // received bytes are what a transfer's progress reads from.
             let progress = field.total_bytes() as f64 / size as f64;
-            let step = progress_step(progress);
-            if step > logged {
-                logged = step;
+            if log.should_log(progress, Instant::now()) {
                 info!(hash = %hash, "Downloading: {:.0}%", progress * 100.0);
             }
         }
@@ -310,6 +335,27 @@ mod tests {
         assert_eq!(progress_step(0.1), 1);
         assert_eq!(progress_step(0.55), 5);
         assert_eq!(progress_step(1.0), 10);
+    }
+
+    #[test]
+    fn progress_logs_wait_for_both_a_step_and_the_interval() {
+        let start = Instant::now();
+        let mut log = ProgressLog::new(start);
+
+        assert!(
+            !log.should_log(0.9, start + Duration::from_secs(1)),
+            "a download inside its first interval logs nothing"
+        );
+        assert!(log.should_log(0.2, start + PROGRESS_INTERVAL));
+        assert!(
+            !log.should_log(0.25, start + PROGRESS_INTERVAL * 3),
+            "no new step, no line"
+        );
+        assert!(
+            !log.should_log(0.5, start + PROGRESS_INTERVAL + Duration::from_secs(1)),
+            "a new step inside the interval waits"
+        );
+        assert!(log.should_log(0.5, start + PROGRESS_INTERVAL * 2));
     }
 
     #[test]

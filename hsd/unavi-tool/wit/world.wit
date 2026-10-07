@@ -1,7 +1,7 @@
 package unavi:tool@0.1.0;
 
 world guest {
-  include wired:worlds/library@0.1.0;
+  include wired:prelude/library@0.1.0;
   export api;
 }
 

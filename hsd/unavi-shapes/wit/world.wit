@@ -8,7 +8,7 @@ package unavi:shapes@0.1.0;
 /// counts are clamped at the bounds documented on each setter, returning
 /// `invalid-argument` over the limit.
 world guest {
-  include wired:worlds/library@0.1.0;
+  include wired:prelude/library@0.1.0;
   export api;
 }
 

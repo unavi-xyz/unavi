@@ -39,7 +39,7 @@ interface portals {
   resource intent-subscription {
     drain:   func(max: u32) -> list<link-intent>;
     dropped: func() -> u64;
-    /// Takes `intent` for this script, answering whether it won: exactly one
+    /// Takes `intent` for this script, answering whether it won. Exactly one
     /// subscriber in the space does.
     claim:   func(intent: link-intent) -> bool;
   }

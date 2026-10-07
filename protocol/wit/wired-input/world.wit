@@ -2,7 +2,7 @@
 /// device.
 ///
 /// A pointer is the screen cursor on desktop, or a hand in VR. Its trigger
-/// acts on what it points at; its grip takes hold of it.
+/// acts on what it points at. Its grip takes hold of it.
 package wired:input@0.1.0;
 
 interface types {

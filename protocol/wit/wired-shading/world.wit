@@ -37,7 +37,7 @@ interface graph {
     input(u16),
     /// Index into the enclosing network's node list. Must be strictly lower
     /// than the node holding this port, which is the whole of why a graph
-    /// cannot describe a cycle. Never reaches across networks: the two run as
+    /// cannot describe a cycle. Never reaches across networks. The two run as
     /// different shader stages and share no per-invocation value.
     node(u16),
   }
@@ -74,8 +74,7 @@ interface graph {
   ///
   /// Every kind has a fixed arity and one output, so a graph's cost is a
   /// function of how many nodes it has. There is no loop, no general branch,
-  /// and no way to carry source text — a graph is safe because of its shape,
-  /// which is why a script may build one at all.
+  /// and no way to carry source text.
   ///
   /// The zero-arity kinds read shader-stage context and are each legal in one
   /// network or both: `uv`/`world-normal`/`world-position`/`vertex-color`/
@@ -131,7 +130,7 @@ interface graph {
     triangle-wave(port),
     luminance(port),
 
-    /// Power exponent on the host's own view term; a graph parameterizes it
+    /// Power exponent on the host's own view term. A graph parameterizes it
     /// rather than building one.
     fresnel(port),
     noise(port),
@@ -140,10 +139,10 @@ interface graph {
     /// position. Offsetting that position by the surface's own curvature is
     /// what bends the scene behind it, so this is how a graph refracts.
     ///
-    /// Only ever what was drawn *before* this surface: two surfaces reading
+    /// Only ever what was drawn *before* this surface. Two surfaces reading
     /// it do not see each other, and neither sees anything drawn after. A
     /// graph using it is drawn in a later pass, which costs a full-screen
-    /// copy — so reach for it when the distortion is the point.
+    /// copy.
     scene-color(port),
 
     extract(extract-op),
@@ -170,8 +169,7 @@ interface graph {
     /// How much of what is behind this surface comes through tinted by
     /// `base-color`, `0..1`. Above zero the surface is drawn in the
     /// transmissive phase, where the host refracts the already-drawn scene
-    /// behind it by `thickness`/`ior` — with depth rejection, the way real
-    /// glass bends rather than smears.
+    /// behind it by `thickness`/`ior`, with depth rejection.
     specular-transmission: option<port>,
     /// The Lambertian transmitted lobe, lit from behind. Clear glass that
     /// only refracts leaves this at zero.
@@ -179,12 +177,11 @@ interface graph {
     /// Meters the refracted ray travels inside the surface before exiting;
     /// how far the scene behind appears displaced.
     thickness:             option<port>,
-    /// Refractive index. `1.0` is air; water is `1.33`, glass `1.5`.
+    /// Refractive index. `1.0` is air, `1.33` water, `1.5` glass.
     ior:                   option<port>,
   }
 
-  /// Written straight out, with no lighting pass — what a beam, a hologram or
-  /// any energy effect needs.
+  /// Written straight out, with no lighting pass.
   record unlit-output {
     color:                port,
     alpha-clip-threshold: option<port>,
@@ -237,15 +234,13 @@ interface graph {
   /// A whole shading description: shared inputs, a fragment network, and
   /// optionally a vertex one.
   ///
-  /// `public-inputs` are the defaults; a prim rendering this graph overrides
-  /// them per-instance with `set-overrides`, which costs nothing like
-  /// submitting a graph does.
+  /// `public-inputs` are the defaults. A prim rendering this graph overrides
+  /// them per-instance with `set-overrides`.
   record shader-graph {
     public-inputs: list<graph-value>,
     surface:       surface-graph,
     displacement:  option<displacement-graph>,
   }
-
 
   /// Draws `prim` with `graph` in place of its material, or stops on
   /// `none`, which also drops its overrides.
@@ -264,8 +259,8 @@ interface graph {
   overrides: func(document: borrow<document>, prim: prim-id) -> list<tuple<u16, graph-value>>;
 
   /// Overrides public inputs of the graph `prim` draws with, by index,
-  /// replacing every earlier override in `layer`. Cheap: the compiled
-  /// program is untouched and still shared.
+  /// replacing every earlier override in `layer`. The compiled program is
+  /// untouched and still shared.
   set-overrides: func(
     document: borrow<document>,
     prim:     prim-id,

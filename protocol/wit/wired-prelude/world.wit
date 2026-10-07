@@ -1,9 +1,9 @@
-/// The worlds a guest targets.
+/// The import surface a guest targets.
 ///
 /// Every interface is linked for every guest. Which calls succeed is decided
 /// at run time by the permissions of the guest's document, not by the world
 /// it was built against.
-package wired:worlds@0.1.0;
+package wired:prelude@0.1.0;
 
 /// Everything a guest may import.
 world imports {

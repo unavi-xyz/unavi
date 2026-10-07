@@ -3,5 +3,5 @@ package example:unavi-vui;
 world guest {
   import unavi:shapes/api@0.1.0;
   import unavi:vui/api@0.1.0;
-  include wired:worlds/script@0.1.0;
+  include wired:prelude/script@0.1.0;
 }

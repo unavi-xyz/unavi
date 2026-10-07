@@ -1,74 +1,49 @@
-[unavi-host]
-path = "../../../crates/unavi-script/wit"
-sha256 = "7c50221af2620c45eb23ee5af7bd9342c81dd82ddc35fd0d683d343f94a05505"
-sha512 = "519edd623696b8f56f91ddf07999da22ce0aa602127395d7e637acc47961fd5556e6bbf4b15984258a4b0631db0cd8c3bce56c07198ff3889017a8b8d4a34c3f"
-
-[unavi-shapes]
-path = "../../unavi-shapes/wit"
-sha256 = "7b9daf0348274706e272dd6ab8cc65734bc2e7b7fdc7c47e7e50f18ab7dda961"
-sha512 = "2780d2ef4fe3e99ff81c3f2bafed2e4c64bc7473bc58f645c803e635add20ce1e6bf2931d200a2457aa20949f48f3f51ea69cbb8f9699b313d87733b5e437958"
-
-[unavi-tool]
-path = "../../unavi-tool/wit"
-sha256 = "8d7373416a00becaf2276706e6dc42ae2225b9811648678e78319d7d8a7c033f"
-sha512 = "8d6f00e07e8db0ea49661e3f70173f1e8a9f40d9bb5ce972b337d922d31943e25ead3ccf932c3f7f63cb6f6d8ea9e338e89d7604e102dd3b3ea63975ca056c37"
-
-[unavi-vui]
-path = "../../unavi-vui/wit"
-sha256 = "7bcc2a2dde2f263a0e025eac34aee4fa5f26193b441d9c693eaaa7470f4185a6"
-sha512 = "0cb0e5db311ac56ba275d2d6c258f52f87d6717ee1d301204f3b75ff765af64d227ba416141cf288eb994f7f5c96ccb47217c7896f2f8374a8f360343eaa6f6d"
-
 [wired-agent]
-path = "../../../protocol/wit/wired-agent"
+path = "../wired-agent"
 sha256 = "cbb9d2e9123c7d6ee3461bb45069dcb730c78c082ee9d8cf97a6072871b0496a"
 sha512 = "cee5f296f2162429bee5e28061f1ffb39d9d535a1e4e43a36a5857b2b93500efad83130783c09318695addfe2df53c207404db4bcb69f641274076c3435269c4"
 
 [wired-core]
-path = "../../../protocol/wit/wired-core"
+path = "../wired-core"
 sha256 = "ad55a9968a3c1c7bd5d89e372b1da4297ff5c945722f5b4522f826db36dfa648"
 sha512 = "c8f942a43dc791529fb8134bec4fc9ac6dc2d8de40165af5fdc202c49b37fd957c27034cf4313fbefac1dd6b1dc57417579da45ad9bcf13609c6eb1ae1b3e478"
 
 [wired-event]
-path = "../../../protocol/wit/wired-event"
+path = "../wired-event"
 sha256 = "6f403f9cdefa5930810c8eabec5e405a76d18636d9b6e18572e6943674377155"
 sha512 = "9e08d51d06c06f5a595a52232176c05cad095e43cd6de6345928de1dc237bcb3cc11ddef83110f91b262a95e5e23d68afe3a7121161bb6f78e9d59783d3e4b32"
 
 [wired-input]
-path = "../../../protocol/wit/wired-input"
+path = "../wired-input"
 sha256 = "50f37b3a991cdd050483ef59e8a3f8a1aa703ecaa04f94cfba269f9ed8b23163"
 sha512 = "3ba44c44df86681417f08aa2c6c3d9f7aaf8b5af9b0592f4d73e5d871c8a9647f2cad26d2d085ac519fa9573d9442ef8a13e8a61bc3ff8465df47089023b5731"
 
 [wired-peer]
-path = "../../../protocol/wit/wired-peer"
+path = "../wired-peer"
 sha256 = "73998820154a4be76384663aa0580b32e85f041d4d77f452bbad57bb991dc3e3"
 sha512 = "8a9285c8abd650229824edf0e164f513ddd1d763146cbfde48c82272e48ac3cf0b09a12f5b3be7a1e89dcb883b2b86c0e7369a1c6e09f36f93cd21b28447e33a"
 
 [wired-physics]
-path = "../../../protocol/wit/wired-physics"
+path = "../wired-physics"
 sha256 = "fad435cc97dcd05601626bcd5c73f4125f0de5795093a4879abff1f1fa98ca37"
 sha512 = "88112aac7cce6fce4e754abf19a78c96ae57f78404e70a11fb4ffc5a8d36af3550021a5de2bbd9f41280ff5cdb7f8dd064c1a2715b6f95e285fbfc0695029360"
 
 [wired-portal]
-path = "../../../protocol/wit/wired-portal"
+path = "../wired-portal"
 sha256 = "b2e4af086ef332ff00884307b57dcd0cc4534bb23d2bb0ace281ec49bd0d0801"
 sha512 = "3179dfcf9d8d963b87341b461753914954a871356bea7a7b8bcb8c2f6edffc65279d84100bd1b125f133eb1274941eae790ddd586b1f148fa36e49c4e1ff7811"
 
-[wired-prelude]
-path = "../../../protocol/wit/wired-prelude"
-sha256 = "94f292cc565b2f97ca118f0e44018f5c3a9cd1e9ecfa826bf1e5d0511722215f"
-sha512 = "ef7a77ae9652d69576d6279bb09908f52a22606791927e8c8ec1e942917c85e766866d27e2f60d6f586400660fd42ac0482f5d502441288ff22aeb403751ee87"
-
 [wired-scene]
-path = "../../../protocol/wit/wired-scene"
+path = "../wired-scene"
 sha256 = "535b3e4ad777369108fad1bbf3a82fab6740b464642104d45cfec51446e77280"
 sha512 = "32e61d0bdac6c1256d723519ebddb9e6cfe35c6e9e96079da68056e401bb31ae387d32fcea8ac2603794e0064d66f09b7fca9fd55d1ae3c000a93e2baa06429b"
 
 [wired-script]
-path = "../../../protocol/wit/wired-script"
+path = "../wired-script"
 sha256 = "9f81b69ea4475bc1274a0adfbf19cf2100399a093b706939ab4f8c108d984851"
 sha512 = "d40e1c13d2c13d7bafd7b132a30a0c3a2c76192f7d6bdd3b281280f5e649ef413fa929c11ff50a97ee35c7b8956110f3a4bbeadca88ae1290c732ab2fa643967"
 
 [wired-shading]
-path = "../../../protocol/wit/wired-shading"
+path = "../wired-shading"
 sha256 = "14db37d986c6bd41226e5b7d49845c4ff02d4d6e8e49c4d23bda417f4d9ecf67"
 sha512 = "2d729586c6d72367a808c2ddb2a08c7507da28719b82d14154430ced21a8dba300fc42186147cf697de48bf16f68436bc531ad7e1a566fa0cc0abd7d093beef2"

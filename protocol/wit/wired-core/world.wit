@@ -4,16 +4,18 @@
 /// Units: lengths in meters, time in seconds, mass in kilograms, angles in
 /// radians, forces in newtons. Space is right-handed with +Y up and -Z
 /// forward. Rotations are unit quaternions. Colors are linear RGB with
-/// straight (not premultiplied) alpha, each channel nominally 0 to 1.
+/// straight (not premultiplied) alpha, each channel nominally 0 to 1. An
+/// `f64` time is seconds on this peer's clock, monotonic but not synchronized
+/// with other peers.
 ///
 /// Errors: a call that can fail returns `result<_, error>`. Passing a handle
-/// that was already dropped, or one from another script, traps; every other
+/// that was already dropped, or one from another script, traps. Every other
 /// failure is an `error`, so a script can always branch on it.
 ///
 /// Permissions: a script runs with the permissions its document's author is
-/// granted on this peer. A call outside them fails with `permission`, and
-/// `wired:script/host.granted` answers ahead of time. A resource is checked
-/// once, when it is created, and keeps working for as long as it is held.
+/// granted on this peer. A call outside them fails with `permission`. A
+/// resource is checked once, when it is created, and keeps working for as
+/// long as it is held.
 ///
 /// Results that arrive later are `pending-<noun>` resources: `poll` answers
 /// `none` until the result is ready, then the same result on every later
@@ -61,7 +63,7 @@ interface math {
     a: f32,
   }
 
-  /// A half-line in world space. `direction` need not be normalized; a zero
+  /// A half-line in world space. `direction` need not be normalized. A zero
   /// direction is an invalid argument.
   record ray {
     origin:    vec3,
@@ -142,7 +144,7 @@ interface error {
   }
 
   variant error {
-    /// The caller passed something malformed or out of bounds; the string
+    /// The caller passed something malformed or out of bounds. The string
     /// says what, for a human.
     invalid-argument(string),
     /// The target does not exist, or is not loaded on this peer.
@@ -160,7 +162,7 @@ interface error {
     /// A ceiling is reached. Retrying succeeds only after something is
     /// released.
     limit-reached(limit),
-    /// The host failed; the string says how, for a human.
+    /// The host failed. The string says how, for a human.
     internal(string),
   }
 }

@@ -2,8 +2,8 @@
 /// may write.
 ///
 /// The simulation runs on every peer. A body's motion is decided by the peer
-/// holding its document (`wired:peer/authority`) and sent to the others, so
-/// a write made on any other peer is overwritten by the holder's.
+/// holding its document and sent to the others, so a write made on any other
+/// peer is overwritten by the holder's.
 package wired:physics@0.1.0;
 
 interface simulation {

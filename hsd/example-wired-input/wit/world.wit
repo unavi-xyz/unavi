@@ -1,5 +1,5 @@
 package example:wired-input;
 
 world guest {
-  include wired:worlds/script@0.1.0;
+  include wired:prelude/script@0.1.0;
 }

@@ -3,5 +3,5 @@ package unavi:physgun;
 world guest {
   import unavi:shapes/api@0.1.0;
   import unavi:tool/api@0.1.0;
-  include wired:worlds/script@0.1.0;
+  include wired:prelude/script@0.1.0;
 }

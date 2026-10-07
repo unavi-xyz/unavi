@@ -1,12 +1,12 @@
 /// Documents and the prims they hold: the scene a script reads and edits.
 ///
-/// A document is a tree of prims. A prim is nothing but an id; everything
+/// A document is a tree of prims. A prim is nothing but an id. Everything
 /// about it, from its place in the tree to its mesh, is a property. Each
 /// property is composed from layers, strongest first:
 ///
 /// - `shared`: what peers present in the space state for this session.
 /// - `local`: what this peer states, for itself only.
-/// - durable: what the document holds, which `commit` writes.
+/// - the document's durable value, which `commit` writes.
 ///
 /// A script may write its own document, the documents it creates, and every
 /// document authored by the same user as its own. It may read any document
@@ -64,7 +64,7 @@ interface properties {
   /// default. Textures are `relation`s, set beside it.
   record material {
     base-color:   option<color>,
-    /// Added light, in linear RGB; alpha is ignored.
+    /// Added light, in linear RGB. Alpha is ignored.
     emissive:     option<color>,
     /// 0 to 1.
     metallic:     option<f32>,
@@ -197,7 +197,7 @@ interface properties {
   }
 
   /// A string drawn in the prim's XY plane, reading along +X. One style for
-  /// the whole string; there is no markup.
+  /// the whole string. There is no markup.
   record text {
     /// At most 4 KiB.
     value:         string,
@@ -302,7 +302,7 @@ interface document {
   use wired:core/error@0.1.0.{error};
   use properties.{property, property-key};
 
-  /// Where a write lands. Neither layer is durable; `commit` is.
+  /// Where a write lands. Neither layer is durable.
   enum layer {
     /// This peer only, gone when the document unloads.
     ///
@@ -313,22 +313,21 @@ interface document {
     /// Every peer present in the space, live, for the rest of the session.
     ///
     /// Peers accept a document's shared state only from its author, so a
-    /// shared write succeeds only on the peer whose user authors the document
-    /// (`wired:peer/authority.is-author`), and fails with `forbidden` on every
-    /// other. A document no author has proven, such as a space's own
-    /// content, takes shared writes from anyone present. Relations cannot be
-    /// shared.
+    /// shared write succeeds only on the peer whose user authors the document,
+    /// and fails with `forbidden` on every other. A document no author has
+    /// proven, such as a space's own content, takes shared writes from anyone
+    /// present. Relations cannot be shared.
     shared,
   }
 
   variant edit {
-    /// Sets a property. Setting `parent` moves the prim; the prim must exist
+    /// Sets a property. Setting `parent` moves the prim. The prim must exist,
     /// and the new parent must not lie beneath it.
     set(tuple<prim-id, property>),
     /// Drops this layer's value for a key, so weaker layers show through.
     /// A `shared` value stays stated for the session, so clearing one states
     /// that the key has no value, hiding weaker layers too. `parent` cannot be
-    /// cleared; use `remove`.
+    /// cleared. Use `remove`.
     clear(tuple<prim-id, property-key>),
     /// Takes a prim and everything beneath it out of the scene.
     remove(prim-id),
@@ -343,7 +342,7 @@ interface document {
   }
 
   /// A document in the world. Holding one is the capability to read it, and
-  /// to write it when the script may write it; writes to a document the
+  /// to write it when the script may write it. Writes to a document the
   /// script may not write fail with `forbidden`.
   resource document {
     id: func() -> document-id;
@@ -365,7 +364,7 @@ interface document {
 
     /// The composed value of a property: the strongest layer's. For
     /// `transform` that is the stated value, not where physics has since
-    /// moved the prim; see `world-transform`.
+    /// moved the prim. See `world-transform`.
     get:      func(prim: prim-id, key: property-key) -> option<property>;
     /// `get` for many keys in one call, answered in order.
     get-many: func(keys: list<tuple<prim-id, property-key>>) -> list<option<property>>;
@@ -391,10 +390,10 @@ interface document {
     /// when this peer can write it, or as an override in the document
     /// referencing it. Fails with `forbidden` when it can write neither.
     ///
-    /// Takes effect only on the author's device of the script's own document
-    /// (`wired:peer/authority`); elsewhere it succeeds and does nothing, so a
-    /// script running on every peer commits once. A script outside any space
-    /// runs on one peer, which always commits.
+    /// Takes effect only on the device that authors the script's own
+    /// document. Elsewhere it succeeds and does nothing, so a script running
+    /// on every peer commits once. A script outside any space runs on one
+    /// peer, which always commits.
     commit: func(keys: list<tuple<prim-id, property-key>>) -> result<_, error>;
 
     /// Puts the document into the scene, or moves it, at `offset` from

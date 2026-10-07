@@ -42,6 +42,6 @@ interface node-storage {
 /// What this host links for every script: the `wired` script world plus
 /// its own extensions.
 world shell {
-  include wired:worlds/script@0.1.0;
+  include wired:prelude/script@0.1.0;
   import node-storage;
 }

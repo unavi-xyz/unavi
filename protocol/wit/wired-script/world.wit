@@ -1,10 +1,10 @@
 /// A script's lifecycle, and what it can ask the host about itself.
 package wired:script@0.1.0;
 
-/// Exported by every script. The host calls into it; a script never calls
+/// Exported by every script. The host calls into it. A script never calls
 /// these itself.
 ///
-/// Calls never overlap: each export returns before the host makes the next
+/// Calls never overlap. Each export returns before the host makes the next
 /// call into the same script. A call that is still running when its next
 /// turn comes skips that turn rather than queueing it. A script that never
 /// returns is stopped and not called again.

@@ -2,7 +2,7 @@
 ///
 /// Nothing here crosses the network. Every peer runs the same scripts, so
 /// each peer's copy of a script sends its own messages to the scripts beside
-/// it; anything that must agree across peers belongs in a `shared` property.
+/// it. Anything that must agree across peers belongs in a `shared` property.
 ///
 /// Channels are a flat namespace any script can guess. Name them
 /// `<namespace>:<package>/<name>` to avoid collisions, and filter by sender
@@ -21,8 +21,8 @@ interface messaging {
   }
 
   /// Where a message is heard. A spatial message reaches a spatial listener
-  /// only when their spheres overlap; a global one reaches only global
-  /// listeners; a global listener hears spatial messages too.
+  /// only when their spheres overlap, and reaches every global listener. A
+  /// global message reaches global listeners only.
   variant scope {
     global,
     spatial(spatial),
@@ -35,7 +35,7 @@ interface messaging {
     sender:      option<document-id>,
     /// Meters between the two origins, when both were spatial.
     distance:    option<f32>,
-    /// When it was sent, on the clock of `wired:script/lifecycle.tick`.
+    /// When it was sent, in seconds on this peer's clock.
     sent-at:     f64,
     /// Present when the sender named an audience. Pass it to
     /// `message-subscription.claim` to take the message from the rest of the
@@ -68,7 +68,7 @@ interface messaging {
     /// Takes a message the sender addressed to an audience, answering
     /// whether this subscription won it: exactly one listener in the
     /// audience does. A subscription remembers the tokens of its 256 most
-    /// recent addressed messages; an older one loses.
+    /// recent addressed messages. An older one loses.
     claim:   func(token: u64) -> bool;
   }
 }

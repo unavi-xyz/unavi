@@ -31,8 +31,6 @@ wired_guest::generate_script!(Script);
 const GROUND_SIZE: f32 = 30.0;
 const GROUND_THICK: f32 = 0.5;
 
-const MATERIAL_BINDING: &str = "material/binding";
-
 /// The document id's bytes, little-endian word by word, as `blake3::Hash`
 /// wants for [`generate_color`].
 fn document_color_seed(id: (u64, u64, u64, u64)) -> blake3::Hash {
@@ -86,7 +84,7 @@ impl ScriptBehavior for Script {
         batch = match ground_root {
             Some(ground) => batch.set(ground, Property::Material(material)).set(
                 prim,
-                Property::Relation((Relation::Custom(MATERIAL_BINDING.to_owned()), ground)),
+                Property::Relation((Relation::ShaderBinding, ground)),
             ),
             None => batch.set(prim, Property::Material(material)),
         };

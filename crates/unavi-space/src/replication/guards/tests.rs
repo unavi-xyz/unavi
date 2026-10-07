@@ -176,7 +176,7 @@ fn a_departing_peer_takes_its_pins() {
 }
 
 #[test]
-fn a_hold_is_refused_to_a_stranger_and_granted_by_release() {
+fn a_guest_holds_and_reserves_the_next() {
     let (mut world, replicas) = world();
     let alice = identity();
     let (doc, proven) = authored(3, &alice);
@@ -184,16 +184,20 @@ fn a_hold_is_refused_to_a_stranger_and_granted_by_release() {
 
     let author_device = remote(&mut world, peer(1), Some(alice.did()));
     assert!(spawn_pin(&mut world, &author_device, doc, space, proven));
-
-    let guest = remote(&mut world, peer(2), None);
-    assert!(!spawn_hold(&mut world, &guest, doc, space));
     assert_eq!(replicas.holder(space, doc), Some(peer(1)));
 
-    release_hold(&mut world, &author_device, doc, Some(peer(2)));
+    let guest = remote(&mut world, peer(2), None);
     assert!(spawn_hold(&mut world, &guest, doc, space));
     assert_eq!(replicas.holder(space, doc), Some(peer(2)));
 
-    world.despawn(guest.entity);
+    release_hold(&mut world, &guest, doc, Some(peer(3)));
+    assert_eq!(replicas.holder(space, doc), Some(peer(1)));
+
+    let other = remote(&mut world, peer(3), None);
+    assert!(spawn_hold(&mut world, &other, doc, space));
+    assert_eq!(replicas.holder(space, doc), Some(peer(3)));
+
+    world.despawn(other.entity);
     assert_eq!(replicas.holder(space, doc), Some(peer(1)));
 }
 

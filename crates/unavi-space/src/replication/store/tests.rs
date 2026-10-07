@@ -115,7 +115,7 @@ fn a_pin_naming_another_space_is_refused() {
 }
 
 #[test]
-fn only_the_author_or_whom_the_holder_released_to_may_hold() {
+fn anyone_may_hold_until_the_holder_reserves_the_next() {
     let replicas = replicas();
     let alice = identity();
     let (doc, proof) = authored(4, &alice);
@@ -129,20 +129,31 @@ fn only_the_author_or_whom_the_holder_released_to_may_hold() {
     assert_eq!(replicas.holder(space, doc), Some(author_device));
 
     assert!(
-        !replicas.add_hold(guest, Some(&guest_did), doc, space, 2),
-        "a stranger cannot take physics authority"
+        replicas.add_hold(guest, Some(&guest_did), doc, space, 2),
+        "anyone may take physics authority by default"
     );
-
-    replicas.remove_hold(author_device, doc, Some(guest));
-    assert!(!replicas.add_hold(other, None, doc, space, 3));
-    assert!(replicas.add_hold(guest, Some(&guest_did), doc, space, 4));
     assert_eq!(replicas.holder(space, doc), Some(guest));
 
-    replicas.remove_hold(guest, doc, None);
+    replicas.remove_hold(guest, doc, Some(other));
+    assert!(!replicas.add_hold(guest, Some(&guest_did), doc, space, 3));
+    assert!(replicas.add_hold(other, None, doc, space, 4));
+    assert_eq!(replicas.holder(space, doc), Some(other));
+
+    replicas.remove_hold(other, doc, None);
     assert_eq!(replicas.holder(space, doc), Some(author_device));
     assert!(
-        !replicas.add_hold(guest, Some(&guest_did), doc, space, 5),
-        "a release spends the grant"
+        replicas.add_hold(guest, Some(&guest_did), doc, space, 5),
+        "a spent reservation opens the document again"
+    );
+
+    replicas.remove_hold(guest, doc, Some(other));
+    assert!(
+        replicas.add_hold(author_device, Some(alice.did()), doc, space, 7),
+        "the author holds through a reservation"
+    );
+    assert!(
+        replicas.add_hold(other, None, doc, space, 8),
+        "the author's hold clears the reservation"
     );
 }
 

@@ -95,7 +95,8 @@ struct DocPresence {
     author:     Option<Did>,
     /// The proof that pin carried, re-sent when this node pins too.
     proof:      Option<Authorship>,
-    /// The peer the holder last released to, which may take hold next.
+    /// The peer the holder reserved the next hold for. While set, only it or
+    /// the author may hold.
     hold_grant: Option<EndpointId>,
     quota:      Arc<Quota>,
     _doc_lease: StockLease,
@@ -303,14 +304,14 @@ impl Inner {
         }
     }
 
-    /// Whether `peer`, proving `did`, may hold `doc`: its author, or the peer
-    /// the holder released to.
+    /// Whether `peer`, proving `did`, may hold `doc`: anyone while no
+    /// reservation stands, the reserved peer or the author otherwise.
     fn may_hold(&self, peer: EndpointId, did: Option<&Did>, doc: DocId, space: SpaceId) -> bool {
         let Some(presence) = self.docs.get(&doc).filter(|p| p.space == space) else {
             return false;
         };
         let is_author = did.is_some_and(|did| presence.author.as_ref() == Some(did));
-        is_author || presence.hold_grant == Some(peer)
+        is_author || presence.hold_grant.is_none_or(|grant| grant == peer)
     }
 
     fn add_hold(
@@ -540,7 +541,7 @@ impl Inner {
     }
 
     /// The latest hold, else the author's endpoint, so an author drives its
-    /// objects until someone it allowed takes over.
+    /// objects until someone grabs them.
     fn holder(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
         self.resolve_peer(space, doc, true, |e| e.hold)
             .or_else(|| self.author_endpoint(space, doc))
@@ -725,7 +726,8 @@ impl Replicas {
         self.0.lock().add_hold(peer, did, doc, space, at)
     }
 
-    /// Drops `peer`'s hold. With `to`, a holder lets that peer take hold next.
+    /// Drops `peer`'s hold. With `to`, the holder reserves the next hold for
+    /// that peer.
     pub fn remove_hold(&self, peer: EndpointId, doc: DocId, to: Option<EndpointId>) {
         self.0.lock().remove_hold(peer, doc, to);
     }

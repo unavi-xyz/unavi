@@ -664,7 +664,8 @@ impl LocalReplica {
         }
     }
 
-    /// Takes hold of `doc`, if this node authors it or was released to.
+    /// Takes hold of `doc`, unless the holder reserved the next hold for
+    /// another peer.
     pub fn take_hold(&self, space: SpaceId, doc: DocId) {
         let this = self.clone();
         let _ = self
@@ -677,8 +678,8 @@ impl LocalReplica {
             .try_send();
     }
 
-    /// Drops this node's hold on `doc`. With `to`, that peer may take hold
-    /// next.
+    /// Drops this node's hold on `doc`. With `to`, the holder reserves the
+    /// next hold for that peer.
     pub fn release_hold(&self, doc: DocId, to: Option<EndpointId>) {
         let this = self.clone();
         let _ = self

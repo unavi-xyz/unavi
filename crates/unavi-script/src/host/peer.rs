@@ -66,7 +66,7 @@ fn space(host: &ScriptHost, doc: u32) -> Result<(hsd::id::DocId, SpaceId), Scrip
 }
 
 /// Takes hold of a document the script may write. The replica refuses a peer
-/// that neither authors it nor was released to.
+/// the holder reserved the next hold for.
 pub fn take_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     host.require(HostApi::Peer)?;
     let (id, space) = space(host, doc)?;

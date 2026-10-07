@@ -1,4 +1,4 @@
-package unavi:shapes@0.1.0;
+package unavi:shapes;
 
 /// Primitive mesh builders, composed into a consumer at build time.
 ///
@@ -8,15 +8,15 @@ package unavi:shapes@0.1.0;
 /// counts are clamped at the bounds documented on each setter, returning
 /// `invalid-argument` over the limit.
 world guest {
-  include wired:prelude/imports@0.1.0;
+  include wired:prelude/imports;
   export api;
 }
 
 interface api {
-  use wired:core/math@0.1.0.{vec3};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/properties@0.1.0.{collider};
-  use wired:scene/document@0.1.0.{document, prim-id};
+  use wired:core/math.{vec3};
+  use wired:core/error.{error};
+  use wired:scene/properties.{collider};
+  use wired:scene/document.{document, prim-id};
 
   resource capsule {
     constructor(radius: f32, height: f32);

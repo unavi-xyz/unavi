@@ -12,7 +12,7 @@
 //! and moves that same document ever after: pick the pear up off the floor,
 //! drop it somewhere else, and it is the pear that moved.
 //!
-//! NOTE: `unavi:shapes` is not yet ported to `@0.1.0` (it is owned by another
+//! NOTE: `unavi:shapes` is not yet ported (it is owned by another
 //! unit of this work), so the `Sphere`/`Capsule`/`Cuboid` calls below are a
 //! best-effort translation against its published WIT and have not been
 //! type-checked against real bindings. `set-doc` is typed as an owned

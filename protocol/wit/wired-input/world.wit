@@ -3,11 +3,11 @@
 ///
 /// A pointer is the screen cursor on desktop, or a hand in VR. Its trigger
 /// acts on what it points at. Its grip takes hold of it.
-package wired:input@0.1.0;
+package wired:input;
 
 interface types {
-  use wired:core/math@0.1.0.{vec2, vec3, ray};
-  use wired:core/ids@0.1.0.{prim-ref};
+  use wired:core/math.{vec2, vec3, ray};
+  use wired:core/ids.{prim-ref};
 
   enum pointer-kind {
     /// The desktop cursor, aimed from the camera.
@@ -82,9 +82,9 @@ interface types {
 
 /// Input aimed at a prim.
 interface targeted {
-  use wired:core/ids@0.1.0.{prim-id};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document};
+  use wired:core/ids.{prim-id};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
   use types.{input-subscription};
 
   /// Input aimed at `prim` or anything beneath it, in a document the script
@@ -94,7 +94,7 @@ interface targeted {
 
 /// Every input of the local user's devices.
 interface device {
-  use wired:core/error@0.1.0.{error};
+  use wired:core/error.{error};
   use types.{input-subscription, pointer};
 
   listen:   func() -> result<input-subscription, error>;

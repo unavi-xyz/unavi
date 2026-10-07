@@ -11,12 +11,10 @@ import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
  * free function, `<interface>#[method]<resource>.<name>` for a resource
  * method. Everything else lifts as a plain synchronous call.
  *
- * Unversioned: the import *object keys* `buildImports` below returns must be
- * unversioned (confirmed against a transpiled dummy guest of this crate's
- * `shell` world — jco reads `imports['wired:scene/document']`, not
- * `imports['wired:scene/document@0.1.0']`); this list, read only by
- * `asyncMode`'s own matcher, accepts either form, so it stays unversioned
- * too for one convention.
+ * Unversioned: the import *object keys* `buildImports` below returns are
+ * unversioned (jco reads `imports['wired:scene/document']`), and the protocol
+ * packages carry no version either, so `asyncMode`'s matcher sees one form
+ * throughout.
  */
 const ASYNC_IMPORTS = [
   "wired:scene/document#open-document",

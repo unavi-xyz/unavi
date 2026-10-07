@@ -4,20 +4,20 @@
 /// Its holder is the peer currently deciding how it moves, by default the
 /// author's peer. Holding is transferable. Authors and holders are users,
 /// named by DID.
-package wired:peer@0.1.0;
+package wired:peer;
 
 interface identity {
-  use wired:core/ids@0.1.0.{did};
-  use wired:core/error@0.1.0.{error};
+  use wired:core/ids.{did};
+  use wired:core/error.{error};
 
   /// The local user's identifier.
   self-did: func() -> result<did, error>;
 }
 
 interface authority {
-  use wired:core/ids@0.1.0.{did};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document};
+  use wired:core/ids.{did};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
 
   /// Who authors `document`, or `none` when no author has proven itself,
   /// as with a space's own content.

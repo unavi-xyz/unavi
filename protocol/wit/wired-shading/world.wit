@@ -6,13 +6,13 @@
 /// text. Its cost is bounded by its size, which is why any script may build
 /// one. Limits: at most 128 nodes per network, 16 public inputs and 4
 /// texture samples.
-package wired:shading@0.1.0;
+package wired:shading;
 
 interface graph {
-  use wired:core/math@0.1.0.{vec2, vec3, color};
-  use wired:core/ids@0.1.0.{prim-id};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document, layer};
+  use wired:core/math.{vec2, vec3, color};
+  use wired:core/ids.{prim-id};
+  use wired:core/error.{error};
+  use wired:scene/document.{document, layer};
 
   /// A value a shader graph's public input can be overridden with.
   variant graph-value {

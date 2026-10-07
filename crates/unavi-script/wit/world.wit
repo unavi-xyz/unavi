@@ -1,14 +1,14 @@
 /// The UNAVI client's own extensions to the `wired` protocol, for the shell
 /// and the tools it ships. Not part of the protocol: another host need not
 /// provide them, and a guest importing them runs only here.
-package unavi:host@0.1.0;
+package unavi:host;
 
 /// Reads of the documents this node keeps: its root document, and the views
 /// of the registries it follows. Needs the storage grant, which only the
 /// local user's own content holds; anything else fails with `forbidden`.
 interface node-storage {
-  use wired:core/ids@0.1.0.{document-id};
-  use wired:core/error@0.1.0.{error};
+  use wired:core/ids.{document-id};
+  use wired:core/error.{error};
 
   record entry {
     key:   string,
@@ -42,6 +42,6 @@ interface node-storage {
 /// What this host links for every script: the `wired` script world plus
 /// its own extensions.
 world shell {
-  include wired:prelude/script@0.1.0;
+  include wired:prelude/script;
   import node-storage;
 }

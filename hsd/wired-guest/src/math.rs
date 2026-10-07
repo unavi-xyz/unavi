@@ -1,4 +1,4 @@
-//! Rust types for `wired:core/math@0.1.0`, mapped in by every guest's
+//! Rust types for `wired:core/math`, mapped in by every guest's
 //! `generate!` call.
 //!
 //! `Vec2`/`Vec3` are `glam`'s own types: their layout is a plain `{x, y(, z)}`

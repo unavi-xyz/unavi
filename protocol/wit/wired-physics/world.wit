@@ -4,13 +4,13 @@
 /// The simulation runs on every peer. A body's motion is decided by the peer
 /// holding its document and sent to the others, so a write made on any other
 /// peer is overwritten by the holder's.
-package wired:physics@0.1.0;
+package wired:physics;
 
 interface simulation {
-  use wired:core/math@0.1.0.{vec3, ray};
-  use wired:core/ids@0.1.0.{document-id, prim-id, prim-ref};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document};
+  use wired:core/math.{vec3, ray};
+  use wired:core/ids.{document-id, prim-id, prim-ref};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
 
   record ray-hit {
     /// The prim whose collider was hit.

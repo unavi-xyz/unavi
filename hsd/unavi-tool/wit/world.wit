@@ -1,15 +1,15 @@
-package unavi:tool@0.1.0;
+package unavi:tool;
 
 world guest {
-  include wired:prelude/imports@0.1.0;
+  include wired:prelude/imports;
   export api;
 }
 
 /// A shell-hosted tool, built by a tool crate.
 interface api {
-  use wired:core/math@0.1.0.{color};
-  use wired:core/ids@0.1.0.{document-id};
-  use wired:core/error@0.1.0.{error};
+  use wired:core/math.{color};
+  use wired:core/ids.{document-id};
+  use wired:core/error.{error};
 
   /// Visual state the shell pushes onto a tool.
   record tool-state {

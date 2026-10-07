@@ -1,5 +1,5 @@
 /// A script's lifecycle, and what it can ask the host about itself.
-package wired:script@0.1.0;
+package wired:script;
 
 /// Exported by every script. The host calls into it. A script never calls
 /// these itself.
@@ -35,7 +35,7 @@ interface lifecycle {
 
 /// What a script can ask the host about itself.
 interface host {
-  use wired:core/error@0.1.0.{permission};
+  use wired:core/error.{permission};
 
   /// Whether the script's document holds `permission` now. Grants can
   /// change while a script runs, as the user decides how far to trust an

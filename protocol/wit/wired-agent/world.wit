@@ -1,11 +1,11 @@
 /// The local user's body: where they look, where their limbs are, and
 /// documents carried with them.
-package wired:agent@0.1.0;
+package wired:agent;
 
 interface local {
-  use wired:core/math@0.1.0.{transform};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document};
+  use wired:core/math.{transform};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
 
   /// The VRM 1.0 humanoid bone set.
   enum humanoid-bone {

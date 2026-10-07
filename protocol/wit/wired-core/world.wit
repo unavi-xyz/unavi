@@ -26,7 +26,7 @@
 /// `max` queued items, oldest first. A queue that overflows drops its oldest
 /// item, and `dropped` counts how many it has lost since it was created.
 /// Draining once per tick is the expected pattern.
-package wired:core@0.1.0;
+package wired:core;
 
 interface math {
   record vec2 {

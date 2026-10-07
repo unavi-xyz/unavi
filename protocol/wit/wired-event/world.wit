@@ -7,11 +7,11 @@
 /// Channels are a flat namespace any script can guess. Name them
 /// `<namespace>:<package>/<name>` to avoid collisions, and filter by sender
 /// where it matters who is speaking.
-package wired:event@0.1.0;
+package wired:event;
 
 interface messaging {
-  use wired:core/ids@0.1.0.{document-id, prim-ref};
-  use wired:core/error@0.1.0.{error};
+  use wired:core/ids.{document-id, prim-ref};
+  use wired:core/error.{error};
 
   /// A sphere around a prim of a document the script may write.
   record spatial {

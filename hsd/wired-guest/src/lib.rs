@@ -5,9 +5,8 @@
 //! `wired-guest` plus `wit-bindgen` itself.
 //!
 //! A guest calls [`generate_script!`] once, which:
-//! - runs `wit_bindgen::generate!` for its own world, mapping
-//!   `wired:core/math@0.1.0` onto [`math`] so `vec2`/`vec3` are `glam`'s own
-//!   types;
+//! - runs `wit_bindgen::generate!` for its own world, mapping `wired:core/math`
+//!   onto [`math`] so `vec2`/`vec3` are `glam`'s own types;
 //! - defines a local `ScriptBehavior` trait (`init`, `update(tick)`,
 //!   `fixed_update(tick)`) and wires it to `wired:script/lifecycle`;
 //! - adds `Document::local()`/`Document::shared()` batchers, `find_one`, a
@@ -39,7 +38,7 @@ macro_rules! generate {
         ::wit_bindgen::generate!({
             generate_all,
             with: {
-                "wired:core/math@0.1.0": ::wired_guest::math,
+                "wired:core/math": ::wired_guest::math,
             },
         });
 

@@ -3,13 +3,13 @@
 /// A two-way portal is two halves, one in each space, bearing the same
 /// link. Opening one half asks the scripts of the target space for the other:
 /// they hear a `link-intent` and answer it with `pair`.
-package wired:portal@0.1.0;
+package wired:portal;
 
 interface portals {
-  use wired:core/ids@0.1.0.{document-id, prim-id};
-  use wired:core/error@0.1.0.{error};
-  use wired:scene/document@0.1.0.{document};
-  use wired:scene/properties@0.1.0.{link-id};
+  use wired:core/ids.{document-id, prim-id};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
+  use wired:scene/properties.{link-id};
 
   /// A portal in `source-space` bearing `link` that nothing in this space
   /// answers yet.

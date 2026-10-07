@@ -11,12 +11,12 @@
 /// A script may write its own document, the documents it creates, and every
 /// document authored by the same user as its own. It may read any document
 /// it can open, and write only those.
-package wired:scene@0.1.0;
+package wired:scene;
 
 /// The built-in properties a prim can carry.
 interface properties {
-  use wired:core/math@0.1.0.{vec2, vec3, transform, color};
-  use wired:core/ids@0.1.0.{document-id, prim-id};
+  use wired:core/math.{vec2, vec3, transform, color};
+  use wired:core/ids.{document-id, prim-id};
 
   /// How a mesh's vertices are assembled into primitives.
   enum topology {
@@ -297,9 +297,9 @@ interface properties {
 }
 
 interface document {
-  use wired:core/math@0.1.0.{transform};
-  use wired:core/ids@0.1.0.{document-id, prim-id, prim-ref};
-  use wired:core/error@0.1.0.{error};
+  use wired:core/math.{transform};
+  use wired:core/ids.{document-id, prim-id, prim-ref};
+  use wired:core/error.{error};
   use properties.{property, property-key};
 
   /// Where a write lands. Neither layer is durable.

@@ -5,11 +5,9 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    # Pinned for reproducibility. The AppRun is no longer patched, so this
-    # can be bumped with `nix flake update nix-appimage` at any time.
     nix-appimage = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
+      url = "github:ralismark/nix-appimage";
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -161,11 +159,6 @@
                 enable = true;
                 package = toolchain;
               };
-              sqlfluff-lint.enable = true;
-              sqlfluff = {
-                enable = true;
-                dialect = "sqlite";
-              };
               statix.enable = true;
               taplo.enable = true;
               terraform.enable = true;
@@ -250,14 +243,15 @@
                     SECRETSPEC_PROFILE = "development";
 
                     # WASM toolchain - clang-unwrapped avoids hardening flags,
-                    # libclang headers provide stddef.h etc. for SQLite.
+                    # libclang headers provide stddef.h etc. for the C code that
+                    # wasm-target dependencies compile.
                     CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
                     AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
                     CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
                   }
                   // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
                     # NIX_LD points rustc's dynamically linked output at glibc's
-                    # loader; glibc has no Darwin build, so this only applies to
+                    # loader, glibc has no Darwin build, so this only applies to
                     # Linux (macOS needs neither).
                     NIX_LD = "${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2";
                     LIBRARY_PATH = "${pkgs.gcc.cc.lib}/lib:${pkgs.glibc.out}/lib";

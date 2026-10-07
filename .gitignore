@@ -32,5 +32,3 @@ deps/
 # Other
 *.db
 docs/
-CLAUDE.md
-AGENTS.md

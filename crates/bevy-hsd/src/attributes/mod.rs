@@ -10,7 +10,7 @@ use hsd::{
     },
 };
 
-mod buffer;
+pub mod buffer;
 pub mod collider;
 mod gravity_scale;
 pub mod image;

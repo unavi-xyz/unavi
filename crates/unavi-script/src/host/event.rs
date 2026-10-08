@@ -11,12 +11,9 @@ use std::{
     },
 };
 
-use hsd::{
-    bounds::MAX_EVENT_PAYLOAD_BYTES,
-    id::{
-        DocId,
-        PrimId,
-    },
+use hsd::id::{
+    DocId,
+    PrimId,
 };
 use unavi_physics::finite;
 use unavi_policy::{
@@ -53,6 +50,8 @@ pub const MAX_CHANNELS: usize = 32;
 pub const MAX_FILTER_DOCUMENTS: usize = 64;
 /// Claims a subscription remembers. Older tokens can no longer be claimed.
 const MAX_CLAIMS: usize = 256;
+/// Largest payload a single `emit` may carry, fanned out to every receptor.
+const MAX_EVENT_PAYLOAD_BYTES: usize = 64 * 1024;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Scope {

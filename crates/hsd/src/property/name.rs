@@ -10,7 +10,8 @@ use std::{
 use smol_str::SmolStr;
 use thiserror::Error;
 
-use crate::bounds::MAX_NAME_BYTES;
+/// Largest string written into a synced document (names, relationship keys).
+pub const MAX_NAME_BYTES: usize = 1024;
 
 /// Builds a `const` [`PropName`], failing the build on an invalid path.
 ///

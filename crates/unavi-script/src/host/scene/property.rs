@@ -3,6 +3,7 @@
 
 use std::mem::size_of_val;
 
+use bevy_hsd::attributes::buffer::MAX_MESH_STREAM_BYTES;
 use hsd::{
     attributes::{
         collider::{
@@ -74,12 +75,6 @@ use hsd::{
             XformAttr,
         },
     },
-    bounds::{
-        MAX_IMAGE_BYTES,
-        MAX_MESH_STREAM_BYTES,
-        MAX_NAME_BYTES,
-        MAX_TEXT_BYTES,
-    },
     id::{
         DocId,
         PrimId,
@@ -88,7 +83,10 @@ use hsd::{
     property::{
         Payload,
         Property as _,
-        name::PropName,
+        name::{
+            MAX_NAME_BYTES,
+            PropName,
+        },
     },
     state::HsdState,
 };
@@ -98,6 +96,10 @@ use crate::error::ScriptError;
 
 /// Largest value one custom property may hold.
 pub const MAX_CUSTOM_BYTES: usize = 64 * 1024;
+/// Largest encoded image a single prim may carry.
+const MAX_IMAGE_BYTES: usize = 16 * 1024 * 1024;
+/// Largest string a single text prim may carry.
+const MAX_TEXT_BYTES: usize = 4 * 1024;
 
 /// Every group the host defines. A custom property or relation must live
 /// outside them, so a script cannot write raw bytes into a field the host

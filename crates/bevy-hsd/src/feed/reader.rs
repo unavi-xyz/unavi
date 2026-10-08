@@ -8,6 +8,7 @@ use async_channel::Sender;
 use bevy::log::warn;
 use bytes::Bytes;
 use hsd::{
+    format::package,
     key,
     state::entry::Entry,
 };
@@ -27,7 +28,7 @@ use crate::feed::{
 };
 
 // A value hsd lets a writer produce must be one the store fetches.
-const _: () = assert!(hsd::bounds::MAX_ENTRY_BYTES as u64 <= MAX_ENTRY_BYTES);
+const _: () = assert!(package::MAX_ENTRY_BYTES as u64 <= MAX_ENTRY_BYTES);
 
 /// Reads each key's winner out of a document's store and sends it on.
 pub(super) struct Reader {

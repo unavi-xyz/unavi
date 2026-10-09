@@ -110,11 +110,25 @@ pub fn note_promoted_bodies(
 }
 
 /// A body stops being grabbable the moment it stops being a rigid body at
-/// all, not only when [`RigidBody`] changes value: [`Changed`] never fires
-/// on a removal, so this is the only path that notices one.
-pub fn on_rigid_body_removed(trigger: On<Remove, RigidBody>, mut commands: Commands) {
-    commands.entity(trigger.entity).remove::<Grabbable>();
-    commands.entity(trigger.entity).remove::<Held>();
+/// all, not only when [`RigidBody`] changes value: [`Changed`] never fires on
+/// a removal, so a scan for bodies left without one is the only path that
+/// notices. A `Remove` observer cannot tell a live removal from a despawn,
+/// and would queue the removals against the despawned entity.
+pub fn drop_grabbable_without_body(
+    stale: Query<
+        (Entity, Has<Grabbable>, Has<Held>),
+        (Without<RigidBody>, Or<(With<Grabbable>, With<Held>)>),
+    >,
+    mut commands: Commands,
+) {
+    for (entity, grabbable, held) in &stale {
+        if grabbable {
+            commands.entity(entity).remove::<Grabbable>();
+        }
+        if held {
+            commands.entity(entity).remove::<Held>();
+        }
+    }
 }
 
 pub fn start_pending_grabs(

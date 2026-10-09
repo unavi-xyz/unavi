@@ -18,7 +18,6 @@ impl Plugin for GrabPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<pending::PendingGrabs>()
             .add_observer(held::on_held_removed)
-            .add_observer(pending::on_rigid_body_removed)
             .add_systems(
                 Update,
                 (
@@ -26,6 +25,7 @@ impl Plugin for GrabPlugin {
                     held::on_release,
                     pending::cancel_pending_on_release,
                     pending::note_promoted_bodies,
+                    pending::drop_grabbable_without_body,
                     pending::start_pending_grabs,
                     held::reach_grabbed_objects,
                     held::move_grabbed_objects,

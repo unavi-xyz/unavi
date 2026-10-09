@@ -7,16 +7,13 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_async::task;
-use bevy_hsd::{
-    document::{
-        DocIndex,
-        Hsd,
-        HsdDocId,
-        HsdNamespace,
-        Minted,
-        Unplaced,
-    },
-    reference::ReferenceInstance,
+use bevy_hsd::document::{
+    DocIndex,
+    Hsd,
+    HsdDocId,
+    HsdNamespace,
+    Minted,
+    Unplaced,
 };
 use bevy_iroh::store::DataStore;
 use hsd::{
@@ -121,18 +118,9 @@ pub async fn copy_document(host: &mut ScriptHost, source: u32) -> Result<u32, Sc
 async fn source_entries(host: &ScriptHost, id: DocId) -> Result<Vec<Entry>, ScriptError> {
     let doc = host
         .world_call(move |world| {
-            let by_id = world
-                .get_resource::<DocIndex>()
-                .and_then(|index| index.get(id))
+            super::doc_entity(world, id)
                 .and_then(|entity| world.get::<HsdNamespace>(entity))
-                .map(|ns| ns.0.clone());
-            by_id.or_else(|| {
-                world
-                    .query::<(&ReferenceInstance, &HsdNamespace)>()
-                    .iter(world)
-                    .find(|(instance, _)| instance.target == id)
-                    .map(|(_, ns)| ns.0.clone())
-            })
+                .map(|ns| ns.0.clone())
         })
         .await?
         .ok_or(ScriptError::NotFound)?;

@@ -6,9 +6,12 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::document::{
-    DocIndex,
-    Hsd,
+use bevy_hsd::{
+    document::{
+        DocIndex,
+        Hsd,
+    },
+    reference::ReferenceInstance,
 };
 use hsd::{
     attributes::name::NameAttr,
@@ -80,6 +83,26 @@ pub const fn script_prim(host: &ScriptHost) -> PrimId {
     host.prim
 }
 
+/// The entity backing `id`: the document indexed under it, or the reference
+/// instance standing in for the namespace `id` names.
+///
+/// A reference realizes as a child keyed by its site id, so a guest holding
+/// the target id a `reference` property carries (the only id it can see) must
+/// still reach the document that reference stands for.
+pub fn doc_entity(world: &mut World, id: DocId) -> Option<Entity> {
+    if let Some(entity) = world
+        .get_resource::<DocIndex>()
+        .and_then(|index| index.get(id))
+    {
+        return Some(entity);
+    }
+    world
+        .query::<(Entity, &ReferenceInstance)>()
+        .iter(world)
+        .find(|(_, instance)| instance.target == id)
+        .map(|(entity, _)| entity)
+}
+
 /// A document loaded on this peer, `None` when it is not.
 pub async fn open_document(host: &mut ScriptHost, id: DocId) -> Result<Option<u32>, ScriptError> {
     host.require(HostApi::Scene)?;
@@ -87,8 +110,8 @@ pub async fn open_document(host: &mut ScriptHost, id: DocId) -> Result<Option<u3
         Some(Arc::clone(&host.state))
     } else {
         host.world_call(move |world| {
-            let entity = world.get_resource::<DocIndex>()?.get(id)?;
-            world.get::<Hsd>(entity).map(|doc| Arc::clone(&doc.0))
+            doc_entity(world, id)
+                .and_then(|entity| world.get::<Hsd>(entity).map(|doc| Arc::clone(&doc.0)))
         })
         .await?
     };
@@ -205,4 +228,46 @@ pub fn offset_to(
 #[must_use]
 pub const fn node(doc: DocId, prim: PrimId) -> AbsoluteNodeId {
     AbsoluteNodeId { doc, node: prim }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_hsd::document::HsdDocId;
+
+    use super::*;
+
+    /// A reference realizes under its site id, so a lookup by the target id a
+    /// `reference` property carries must still find it.
+    #[test]
+    fn a_reference_target_resolves_to_its_instance() {
+        let mut world = World::new();
+        world.init_resource::<DocIndex>();
+        let prim = world.spawn_empty().id();
+        let target = DocId([9; 32]);
+        let instance = world
+            .spawn((
+                Hsd::new(HsdState::new()),
+                HsdDocId(DocId([1; 32])),
+                ReferenceInstance {
+                    prim,
+                    target,
+                    depth: 1,
+                },
+            ))
+            .id();
+
+        assert_eq!(doc_entity(&mut world, target), Some(instance));
+    }
+
+    /// A namespace-backed document is indexed under its own id, so it answers
+    /// before any reference is consulted.
+    #[test]
+    fn a_namespace_backed_document_resolves_by_its_id() {
+        let mut world = World::new();
+        world.init_resource::<DocIndex>();
+        let id = DocId([2; 32]);
+        let doc = world.spawn((Hsd::new(HsdState::new()), HsdDocId(id))).id();
+
+        assert_eq!(doc_entity(&mut world, id), Some(doc));
+    }
 }

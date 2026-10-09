@@ -17,6 +17,7 @@ use bevy_iroh::{
 };
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
+use unavi_space::grid::Spaceless;
 
 pub mod home;
 mod limbo;
@@ -39,11 +40,12 @@ impl Plugin for ScenePlugin {
                     limbo::arm_limbo_arrival,
                     limbo::spawn_limbo,
                     spawn_local_agent,
+                    limbo::enter_limbo,
                 ),
             )
             .add_systems(
                 OnExit(SceneState::Limbo),
-                (limbo::despawn_limbo, build_iroh_router),
+                (limbo::despawn_limbo, build_iroh_router, limbo::leave_limbo),
             )
             .add_systems(
                 Startup,
@@ -94,7 +96,7 @@ fn spawn_local_agent(local_agent: Query<(), With<LocalAgent>>, mut commands: Com
     if !local_agent.is_empty() {
         return;
     }
-    commands.spawn(LocalAgent);
+    commands.spawn((LocalAgent, Spaceless));
 }
 
 fn spawn_sun(mut commands: Commands) {

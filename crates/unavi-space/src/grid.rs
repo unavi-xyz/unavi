@@ -67,6 +67,12 @@ impl SpaceGrid {
 #[derive(Resource, Default, Debug, Clone, Copy)]
 pub struct ActiveSpace(pub Option<Entity>);
 
+/// Marks the local agent as not standing in any space, so its position says
+/// nothing about where a space is. The client holds it while limbo pins the
+/// agent to the limbo floor.
+#[derive(Component)]
+pub struct Spaceless;
+
 pub fn assign_anchor(
     trigger: On<Add, Space>,
     mut allocator: ResMut<SpaceGrid>,
@@ -121,7 +127,7 @@ pub fn apply_anchor_offsets(
 /// Promotes the space nearest the local agent's body to active, shifting
 /// every body so that space sits at the origin.
 pub fn recenter_active_space(
-    agents: Query<&LocalAgentEntities, With<LocalAgent>>,
+    agents: Query<&LocalAgentEntities, (With<LocalAgent>, Without<Spaceless>)>,
     spaces: Query<(Entity, &Transform), With<Space>>,
     mut bodies: Query<
         (
@@ -213,9 +219,12 @@ pub fn recenter_active_space(
 pub fn promote_first_space(
     trigger: On<Add, Space>,
     spaces: Query<(), With<Space>>,
+    spaceless: Query<(), With<Spaceless>>,
     mut active: ResMut<ActiveSpace>,
 ) {
-    if active.0.is_none() && spaces.contains(trigger.entity) {
+    // A spaceless agent's position is the limbo floor, not a claim about
+    // where a space is; promotion waits until it enters one.
+    if spaceless.is_empty() && active.0.is_none() && spaces.contains(trigger.entity) {
         active.0 = Some(trigger.entity);
     }
 }
@@ -299,6 +308,30 @@ mod tests {
         assert_eq!(translation(&app, a), Vec3::ZERO);
         assert_eq!(translation(&app, b), expected);
         assert_ne!(expected, Vec3::ZERO);
+    }
+
+    #[test]
+    fn a_spaceless_agent_promotes_no_space() {
+        let mut app = setup();
+        let tracked_head = app.world_mut().spawn_empty().id();
+        let body = app
+            .world_mut()
+            .spawn((
+                Transform::from_translation(Vec3::new(SPACE_CELL_SIZE, 0.0, SPACE_CELL_SIZE)),
+                Position(Vec3::new(SPACE_CELL_SIZE, 0.0, SPACE_CELL_SIZE)),
+            ))
+            .id();
+        app.world_mut().spawn((
+            LocalAgent,
+            LocalAgentEntities { body, tracked_head },
+            Spaceless,
+        ));
+
+        let a = spawn_space(&mut app, b"a");
+        app.update();
+
+        assert_eq!(app.world().resource::<ActiveSpace>().0, None);
+        assert_ne!(translation(&app, a), Vec3::ZERO);
     }
 
     #[test]

@@ -130,7 +130,8 @@ interface error {
     portal,
   }
 
-  /// A ceiling on something held. Only releasing something frees it.
+  /// A ceiling on a held resource. It frees only when that resource is
+  /// released.
   enum limit {
     documents,
     prims,

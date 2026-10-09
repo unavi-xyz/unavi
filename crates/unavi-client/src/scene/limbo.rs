@@ -21,6 +21,7 @@ use unavi_space::{
     grid::{
         ActiveSpace,
         SPACE_CELL_SIZE,
+        Spaceless,
     },
     membership::{
         Space,
@@ -124,6 +125,29 @@ pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) 
     }
 }
 
+/// Marks the local agent spaceless and drops the active space, so no system
+/// reads its limbo-floor position as a place in a space.
+pub fn enter_limbo(
+    agents: Query<Entity, (With<LocalAgent>, Without<Spaceless>)>,
+    mut active: ResMut<ActiveSpace>,
+    mut commands: Commands,
+) {
+    active.0 = None;
+    for entity in &agents {
+        commands.entity(entity).insert(Spaceless);
+    }
+}
+
+/// Lets the agent stand in a space again; the next recenter promotes one.
+pub fn leave_limbo(
+    agents: Query<Entity, (With<LocalAgent>, With<Spaceless>)>,
+    mut commands: Commands,
+) {
+    for entity in &agents {
+        commands.entity(entity).remove::<Spaceless>();
+    }
+}
+
 /// The space limbo is holding the local agent for.
 #[derive(Resource, Default)]
 pub struct LimboArrival {
@@ -132,6 +156,10 @@ pub struct LimboArrival {
     pub target: Option<SpaceId>,
     timeout:    Duration,
     ready:      Option<Arrival>,
+    /// The space just entered, pending promotion by `recenter_active_space`.
+    /// `active.0` is not set until that runs in `PostUpdate`, so this covers
+    /// the gap where the agent is in `SceneState::Space` with no active space.
+    entering:   Option<Entity>,
 }
 
 struct Arrival {
@@ -142,6 +170,7 @@ struct Arrival {
 pub fn arm_limbo_arrival(time: Res<Time>, mut arrival: ResMut<LimboArrival>) {
     arrival.timeout = time.elapsed() + SPACE_LOAD_TIMEOUT;
     arrival.ready = None;
+    arrival.entering = None;
 }
 
 /// Drops back to limbo whenever the space underfoot is gone or still loading,
@@ -150,12 +179,20 @@ pub fn fall_back_to_limbo(
     state: Res<State<SceneState>>,
     active: Res<ActiveSpace>,
     loaded: Query<(), (With<Space>, With<HsdLoaded>)>,
+    mut arrival: ResMut<LimboArrival>,
     mut next: ResMut<NextState<SceneState>>,
 ) {
     if !matches!(state.get(), SceneState::Space) {
         return;
     }
     if active.0.is_some_and(|space| loaded.contains(space)) {
+        // The active space settled; the entry that chose it is done.
+        arrival.entering = None;
+        return;
+    }
+    // `recenter_active_space` promotes the arrival in `PostUpdate`, after this
+    // runs; the agent would otherwise bounce back before the promotion lands.
+    if arrival.entering.is_some_and(|space| loaded.contains(space)) {
         return;
     }
     info!("No loaded space, returning to limbo");
@@ -233,6 +270,7 @@ pub fn enter_space(
 ) {
     arrival.target = None;
     arrival.ready = None;
+    arrival.entering = trigger.event().space;
     next.set(SceneState::Space);
     commands.trigger(Respawn {
         space: trigger.event().space,
@@ -315,6 +353,55 @@ mod tests {
         app.update();
         assert_eq!(state(app), SceneState::Space, "failed to enter start space");
         space
+    }
+
+    /// Enters `SceneState::Space` with `space` just arrived at but not yet
+    /// promoted to active, the window `recenter_active_space` covers in
+    /// `PostUpdate`.
+    fn begin_entry(app: &mut App, space: Entity) {
+        app.update();
+        app.world_mut().resource_mut::<LimboArrival>().entering = Some(space);
+        app.world_mut()
+            .resource_mut::<NextState<SceneState>>()
+            .set(SceneState::Space);
+        app.update();
+    }
+
+    #[test]
+    fn entering_waits_for_recenter_before_falling_back() {
+        let mut app = setup();
+        let space = app
+            .world_mut()
+            .spawn((Space(namespace(1).into()), HsdLoaded))
+            .id();
+
+        begin_entry(&mut app, space);
+
+        app.update();
+        assert_eq!(
+            state(&app),
+            SceneState::Space,
+            "a pending promotion must not bounce back to limbo"
+        );
+
+        app.world_mut().resource_mut::<ActiveSpace>().0 = Some(space);
+        app.update();
+        assert_eq!(app.world().resource::<LimboArrival>().entering, None);
+    }
+
+    #[test]
+    fn a_dropped_entering_space_still_falls_back() {
+        let mut app = setup();
+        let space = app
+            .world_mut()
+            .spawn((Space(namespace(1).into()), HsdLoaded))
+            .id();
+
+        begin_entry(&mut app, space);
+        app.world_mut().entity_mut(space).despawn();
+        app.update();
+        app.update();
+        assert_eq!(state(&app), SceneState::Limbo);
     }
 
     #[test]

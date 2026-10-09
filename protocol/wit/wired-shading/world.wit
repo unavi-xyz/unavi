@@ -1,10 +1,12 @@
-/// Shading programs a script builds as data: a shader graph a prim draws
-/// with in place of its `material`.
+/// Shading programs a script builds as data. A shader graph is a program a
+/// prim draws with in place of its `material`.
 ///
 /// A graph has a fixed shape: every node has a fixed arity and one output,
 /// a node reads only nodes before it, and there is no loop, branch or source
 /// text. Its cost is bounded by its size, which is why any script may build
-/// one. Limits: at most 128 nodes per network, 16 public inputs and 4
+/// one.
+///
+/// Limits: at most 128 nodes per network, 16 public inputs and 4
 /// texture samples.
 package wired:shading;
 
@@ -29,7 +31,7 @@ interface graph {
     color,
   }
 
-  /// A node input: a constant, one of the graph's public inputs, or an
+  /// A node input. It is a constant, one of the graph's public inputs, or an
   /// earlier node in the same network.
   variant port {
     const(graph-value),

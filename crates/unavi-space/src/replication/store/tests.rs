@@ -394,6 +394,30 @@ fn a_visitor_cannot_replace_what_the_author_stated() {
 }
 
 #[test]
+fn a_visitor_pays_for_the_documents_it_names() {
+    let replicas = replicas();
+    let space = space(b"fabricated");
+    let visitor = identity();
+    let quota = replicas.attribution().author_quota(visitor.did());
+
+    replicas
+        .add_session(
+            peer(2),
+            Some(visitor.did()),
+            DocId([13; 32]),
+            space,
+            write("k", b"v"),
+            1,
+        )
+        .expect("open property");
+    assert_eq!(
+        quota.usage(Stock::Documents),
+        1,
+        "a document id a visitor made up must cost the visitor, not the space"
+    );
+}
+
+#[test]
 fn one_closed_key_refuses_the_whole_batch() {
     let replicas = replicas();
     let space = space(b"mixed");

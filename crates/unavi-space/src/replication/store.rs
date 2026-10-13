@@ -181,13 +181,14 @@ impl Inner {
     }
 
     /// Ensures a [`DocPresence`] for `doc` in `space`, charging one
-    /// `Documents` unit on first sight. Refuses a document already present in
-    /// another space.
+    /// `Documents` unit on first sight to `payer`, else to the document's own
+    /// quota. Refuses a document already present in another space.
     fn ensure_presence(
         &mut self,
         doc: DocId,
         space: SpaceId,
         author: Option<&Did>,
+        payer: Option<&Arc<Quota>>,
     ) -> Result<&mut DocPresence, PinRefused> {
         let author = author.cloned().or_else(|| self.author_of(doc));
         match self.docs.entry(doc) {
@@ -197,7 +198,7 @@ impl Inner {
                 let quota = self
                     .attribution
                     .document_quota(doc, Some(space), author.as_ref());
-                let Ok(lease) = quota.lease(Stock::Documents, 1) else {
+                let Ok(lease) = payer.unwrap_or(&quota).lease(Stock::Documents, 1) else {
                     forget_untracked(&self.attribution, doc);
                     return Err(PinRefused::Quota);
                 };
@@ -275,7 +276,7 @@ impl Inner {
         if self.author_of(doc).is_some_and(|known| known != author) {
             return Err(PinRefused::WrongAuthor);
         }
-        let presence = self.ensure_presence(doc, space, Some(&author))?;
+        let presence = self.ensure_presence(doc, space, Some(&author), None)?;
         let attributed = presence.author.is_none();
         if attributed {
             presence.author = Some(author);
@@ -404,7 +405,8 @@ impl Inner {
     /// before any cell changes, so a refusal leaves nothing behind.
     ///
     /// The author's cells charge the document. Anyone else's charge the
-    /// writer, so writing to another peer's document never spends its budget.
+    /// writer, as does the presence a non-author's first write creates, so
+    /// writing to another peer's document never spends its budget.
     fn add_session(
         &mut self,
         writer: EndpointId,
@@ -417,7 +419,7 @@ impl Inner {
         let is_author = self.may_write(did, doc, space, &batch)?;
         let writer_quota = (!is_author).then(|| self.attribution.writer_quota(writer, did));
         let presence = self
-            .ensure_presence(doc, space, None)
+            .ensure_presence(doc, space, None, writer_quota.as_ref())
             .map_err(|err| match err {
                 PinRefused::Quota => SessionError::QuotaExceeded,
                 PinRefused::WrongSpace => SessionError::WrongSpace,
@@ -686,7 +688,9 @@ impl Replicas {
         let resync = Arc::new(AtomicBool::new(false));
         let mut inner = self.0.lock();
         let snapshot = inner.self_snapshot(me);
-        let _ = tx.try_send(ReplicationMsg::Snapshot(snapshot));
+        if tx.try_send(ReplicationMsg::Snapshot(snapshot)).is_err() {
+            resync.store(true, Ordering::Relaxed);
+        }
         let token = StreamToken(inner.next_token);
         inner.next_token += 1;
         inner.senders.insert(

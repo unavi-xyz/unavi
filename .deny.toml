@@ -66,7 +66,7 @@ deny              = [{ deny-multiple-versions = true, name = "bevy" }, { deny-mu
 multiple-versions = "warn"
 
 [sources]
-allow-git        = ["https://github.com/m11m/iroh-blobs", "https://github.com/unavi-xyz/xdid"]
+allow-git        = ["https://github.com/m11m/iroh-blobs"]
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
 unknown-git      = "deny"
 unknown-registry = "deny"

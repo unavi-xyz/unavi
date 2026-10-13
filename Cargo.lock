@@ -13377,7 +13377,8 @@ checksum = "163b33ed8786455e2fa5d72f554057ce3f3182425434f756cd39c99839d88e23"
 [[package]]
 name = "xdid"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ecf90899acdbb61a11af397de3542a8216e63e92c11e81a10ea6c3bccfd5c4"
 dependencies = [
  "smallvec",
  "thiserror 2.0.20",
@@ -13389,7 +13390,8 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "281d10223321644c93e7451b23e2226e94afd6cb11db8d922ae9ccdef58c5ccb"
 dependencies = [
  "jose-jwk",
  "multibase",
@@ -13403,7 +13405,8 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfd52e84b5b1ee4d1856588b1c5a9e19f93bcc1872c70fe2acc9c89d31fd9dbc"
 dependencies = [
  "jose-jwk",
  "multibase",
@@ -13418,7 +13421,8 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2df4c7c81c2a467ca7bdfa76c910167c6a68047b60bd1525773b78cdbbfc1282"
 dependencies = [
  "futures",
  "percent-encoding",

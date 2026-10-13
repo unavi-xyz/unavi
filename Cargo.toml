@@ -109,7 +109,6 @@ wasmtime = { default-features = false, features = [
 
 [patch.crates-io]
 iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
-xdid       = { git = "https://github.com/unavi-xyz/xdid" }
 
 [profile.release]
 codegen-units = 1

@@ -18,9 +18,12 @@ use bevy_async::{
     AsyncCommands,
     AsyncWorld,
 };
-use bevy_hsd::document::{
-    DocIndex,
-    Hsd,
+use bevy_hsd::{
+    document::{
+        DocIndex,
+        Hsd,
+    },
+    stack,
 };
 use bevy_iroh::store::DataStore;
 use hsd::{
@@ -503,7 +506,7 @@ fn valid_name(name: &str) -> Result<PropName, SessionError> {
 /// not holding open.
 fn doc_state(world: &World, doc: DocId) -> Option<Arc<Mutex<HsdState>>> {
     let entity = world.get_resource::<DocIndex>()?.get(doc)?;
-    world.get::<Hsd>(entity).map(|live| Arc::clone(&live.0))
+    world.get::<Hsd>(entity).map(Hsd::handle)
 }
 
 /// Rolls back every session opinion `peer` wrote and composes whatever was
@@ -536,14 +539,19 @@ fn restore_session(world: &World, restored: Restored) {
 
     // The reverted peer's opinion carries the newer stamp, so it is dropped
     // rather than written over: an older write is refused, and rightly.
-    state.clear_session(restored.key.prim, &restored.key.name);
+    if let Err(err) = state.clear(&stack::SESSION, restored.key.prim, &restored.key.name) {
+        warn!(?err, "reverted opinion not cleared");
+    }
     if let Standing::Prior { value, at } = restored.standing {
         let bytes = value.map_or_default(|bytes| Value::Attribute(bytes.into()).encode());
-        if let Err(err) = state.apply_session(&Entry::new(
-            key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
-            bytes,
-            at,
-        )) {
+        if let Err(err) = state.apply(
+            &stack::SESSION,
+            &Entry::new(
+                key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
+                bytes,
+                at,
+            ),
+        ) {
             warn!(?err, "restored opinion refused by the document");
         }
     }
@@ -573,11 +581,10 @@ fn compose_session(world: &World, doc: DocId, writes: &[(SessionWrite, PropName)
             .value
             .as_ref()
             .map_or_default(|bytes| Value::Attribute(bytes.clone().into()).encode());
-        if let Err(err) = state.apply_session(&Entry::new(
-            key::Key::prop(write.prim, name).to_string(),
-            value,
-            at,
-        )) {
+        if let Err(err) = state.apply(
+            &stack::SESSION,
+            &Entry::new(key::Key::prop(write.prim, name).to_string(), value, at),
+        ) {
             warn!(?err, "session opinion refused by the document");
         }
     }

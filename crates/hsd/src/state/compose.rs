@@ -19,11 +19,12 @@ use crate::{
             now_micros,
         },
         event::SceneEvent,
-        layer::{
-            Layer,
-            LayerId,
-        },
         prim::PrimState,
+        stack::{
+            MaskKey,
+            Merge,
+            Stacked,
+        },
     },
 };
 
@@ -89,29 +90,29 @@ fn after(held: Option<Stamp>) -> u64 {
     held.map_or(now, |held| now.max(held.timestamp.saturating_add(1)))
 }
 
-/// The strongest opinion on a key. `Blocked` stops the walk.
-fn resolve_property<'a>(layers: &'a [Layer], prim: PrimId, name: &PropName) -> Option<&'a Value> {
-    layers
+/// The strongest opinion on a key its layer's mask admits. `Blocked` stops
+/// the walk.
+fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> Option<&'a Value> {
+    stack
         .iter()
         .rev()
-        .find_map(|layer| layer.get(prim)?.property(name))
+        .find_map(|stacked| {
+            let opinion = stacked.layer.get(prim)?.property(name)?;
+            stacked
+                .mask
+                .admits(prim, MaskKey::Property(name, opinion.value()))
+                .then_some(opinion)
+        })
         .and_then(|opinion| opinion.value())
 }
 
 impl HsdState {
-    pub(super) const fn layer(&self, id: LayerId) -> &Layer {
-        &self.layers[id.idx()]
-    }
-
-    pub(super) const fn layer_mut(&mut self, id: LayerId) -> &mut Layer {
-        &mut self.layers[id.idx()]
-    }
-
-    /// A timestamp for a local write to a property in `layer`, past the stamp
-    /// the layer already holds for it even when the wall clock has not moved.
-    pub(super) fn local_property_time(&self, layer: LayerId, prim: PrimId, name: &PropName) -> u64 {
+    /// A timestamp for a local write to a property in the layer at `at`, past
+    /// the stamp it already holds even when the wall clock has not moved.
+    pub(super) fn local_property_time(&self, at: usize, prim: PrimId, name: &PropName) -> u64 {
         after(
-            self.layer(layer)
+            self.stack[at]
+                .layer
                 .get(prim)
                 .and_then(|opinions| opinions.property_stamp(name)),
         )
@@ -119,12 +120,12 @@ impl HsdState {
 
     pub(super) fn local_parent_stamp(
         &self,
-        layer: LayerId,
+        at: usize,
         prim: PrimId,
         parent: Option<ParentAttr>,
     ) -> Stamp {
-        let held = self
-            .layer(layer)
+        let held = self.stack[at]
+            .layer
             .get(prim)
             .and_then(|opinions| opinions.parent())
             .map(|(_, stamp)| *stamp);
@@ -133,10 +134,16 @@ impl HsdState {
     }
 
     fn resolve_parent(&self, prim: PrimId) -> (Option<ParentAttr>, Stamp) {
-        self.layers
+        self.stack
             .iter()
             .rev()
-            .find_map(|layer| layer.get(prim)?.parent())
+            .find_map(|stacked| {
+                let held = stacked.layer.get(prim)?.parent()?;
+                stacked
+                    .mask
+                    .admits(prim, MaskKey::Parent(held.0.value().copied()))
+                    .then_some(held)
+            })
             .map_or_else(
                 || (None, Stamp::default()),
                 |(opinion, stamp)| (opinion.value().copied(), *stamp),
@@ -147,17 +154,21 @@ impl HsdState {
     /// `None`.
     pub(super) fn write_parent(
         &mut self,
-        layer: LayerId,
+        at: usize,
         prim: PrimId,
         parent: Option<ParentAttr>,
         stamp: Option<Stamp>,
     ) {
-        let stamp = stamp.unwrap_or_else(|| self.local_parent_stamp(layer, prim, parent));
-        let opinions = self.layer_mut(layer).entry(prim);
-        if layer.is_projected() {
-            opinions.replace_parent(parent.into(), stamp);
-        } else if !opinions.set_parent(parent.into(), stamp) {
-            return;
+        let stamp = stamp.unwrap_or_else(|| self.local_parent_stamp(at, prim, parent));
+        let stacked = &mut self.stack[at];
+        let opinions = stacked.layer.entry(prim);
+        match stacked.merge {
+            Merge::Replace => opinions.replace_parent(parent.into(), stamp),
+            Merge::Latest => {
+                if !opinions.set_parent(parent.into(), stamp) {
+                    return;
+                }
+            }
         }
         self.settle_parent(prim);
     }
@@ -186,24 +197,28 @@ impl HsdState {
 
     pub(super) fn write_property(
         &mut self,
-        layer: LayerId,
+        at: usize,
         prim: PrimId,
         name: &PropName,
         value: Option<Value>,
         stamp: Stamp,
     ) {
-        let opinions = self.layer_mut(layer).entry(prim);
-        if layer.is_projected() {
-            opinions.replace_property(name, value.into(), stamp);
-        } else if !opinions.set_property(name, value.into(), stamp) {
-            return;
+        let stacked = &mut self.stack[at];
+        let opinions = stacked.layer.entry(prim);
+        match stacked.merge {
+            Merge::Replace => opinions.replace_property(name, value.into(), stamp),
+            Merge::Latest => {
+                if !opinions.set_property(name, value.into(), stamp) {
+                    return;
+                }
+            }
         }
         self.settle_property(prim, name);
     }
 
     /// Recomposes one property, emitting it if the composed value moved.
     pub(super) fn settle_property(&mut self, prim: PrimId, name: &PropName) {
-        let resolved = resolve_property(&self.layers, prim, name);
+        let resolved = resolve_property(&self.stack, prim, name);
         let view = self.resolved.entry(prim).or_default();
         if view.property(name) == resolved {
             return;
@@ -222,7 +237,11 @@ impl HsdState {
 
     /// Drops the composed view of a prim no layer holds an opinion on.
     pub(super) fn forget_if_unstated(&mut self, prim: PrimId) {
-        if self.layers.iter().all(|layer| layer.get(prim).is_none()) {
+        if self
+            .stack
+            .iter()
+            .all(|stacked| stacked.layer.get(prim).is_none())
+        {
             self.resolved.remove(&prim);
             self.capped.remove(&prim);
         }

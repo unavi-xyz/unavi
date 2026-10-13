@@ -113,7 +113,7 @@ fn scene_reference(ctx: &mut TestContext, backing: &Backing) -> (Document, Entit
         .app
         .world_mut()
         .spawn((
-            Hsd(referenced()),
+            Hsd::shared(referenced()),
             ReferenceInstance {
                 prim:   site,
                 target: DocId([9; 32]),

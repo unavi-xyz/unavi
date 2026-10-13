@@ -35,7 +35,7 @@ fn unplace(ctx: &mut TestContext) -> Entity {
 
     ctx.app
         .world_mut()
-        .spawn((Hsd(Arc::clone(&ctx.state)), Unplaced))
+        .spawn((Hsd::shared(Arc::clone(&ctx.state)), Unplaced))
         .id()
 }
 

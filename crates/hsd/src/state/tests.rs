@@ -38,12 +38,38 @@ use crate::{
         event::SceneEvent,
         layer::{
             Layer,
-            LayerId,
             OpinionKey,
         },
         opinion::Opinion,
+        stack::{
+            LayerId,
+            MAX_LAYERS,
+            Mask,
+            MaskKey,
+            Merge,
+            StackError,
+        },
     },
 };
+
+const OVERRIDE: LayerId = LayerId::from_static("override");
+const RUNTIME: LayerId = LayerId::from_static("runtime");
+const SESSION: LayerId = LayerId::from_static("session");
+
+/// The base layer under override, runtime and session, with plain writes
+/// going to runtime.
+fn stacked() -> HsdState {
+    let mut state = HsdState::new();
+    for (id, merge) in [
+        (OVERRIDE, Merge::Replace),
+        (RUNTIME, Merge::Latest),
+        (SESSION, Merge::Latest),
+    ] {
+        state.add_layer(id, merge, Mask::all()).expect("add layer");
+    }
+    state.set_edit_target(RUNTIME).expect("edit target");
+    state
+}
 
 fn prim(n: u8) -> PrimId {
     PrimId([n; 16])
@@ -98,7 +124,7 @@ fn shape(state: &HsdState) -> BTreeMap<PrimId, Option<PrimId>> {
 /// value, except in a reference layer, where it is an empty entry.
 fn document(state: &HsdState) -> BTreeMap<String, Vec<u8>> {
     let mut out = BTreeMap::new();
-    let layer = state.layer(LayerId::Document);
+    let layer = state.layer(&LayerId::BASE).expect("base");
     for (prim, opinion) in layer.keys() {
         let Some(opinions) = layer.get(prim) else {
             continue;
@@ -499,7 +525,7 @@ fn an_unknown_attribute_round_trips_untouched() {
 
 #[test]
 fn relationships_and_attributes_share_one_namespace() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[root_entry(prim(1), 1), root_entry(prim(2), 1)],
@@ -531,7 +557,7 @@ fn relationships_and_attributes_share_one_namespace() {
 
 #[test]
 fn removing_a_namespace_takes_its_relationships_with_it() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[root_entry(prim(1), 1), root_entry(prim(2), 1)],
@@ -555,7 +581,7 @@ fn removing_a_namespace_takes_its_relationships_with_it() {
 
 #[test]
 fn parent_is_only_written_through_set_parent() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
 
     assert!(matches!(
@@ -566,7 +592,7 @@ fn parent_is_only_written_through_set_parent() {
 
 #[test]
 fn script_created_prims_are_absent_from_the_document_layer() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
 
     let scratch = state.create_prim(Some(prim(1)));
@@ -582,7 +608,7 @@ fn script_created_prims_are_absent_from_the_document_layer() {
 
 #[test]
 fn a_script_editing_a_document_prim_changes_what_is_drawn_not_what_is_kept() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -698,10 +724,14 @@ fn removing_a_property_emits_an_absent_value() {
 
 #[test]
 fn a_commit_survives_its_store_echo_without_an_event() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
     runtime_property(&mut state, prim(1), NameAttr::NAME, Some(name_attr("kept")));
-    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
     state.drain_events();
 
     let echoed = writes
@@ -789,7 +819,7 @@ fn moving_a_subtree_under_a_deep_chain_holds_what_passes_the_cap() {
 
 #[test]
 fn a_prim_past_the_scene_cap_is_admitted_once_room_frees() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
 
     let ids = (0..MAX_SCENE_PRIMS)
         .map(|i| {
@@ -951,6 +981,17 @@ fn runtime_property(state: &mut HsdState, prim: PrimId, name: PropName, value: O
     }
 }
 
+/// Commits the runtime and session opinions on `props`.
+fn commit_live(
+    state: &mut HsdState,
+    target: &CommitTarget,
+    props: &[(PrimId, PropName)],
+) -> Vec<Entry> {
+    state
+        .commit(&[RUNTIME, SESSION], target, props)
+        .expect("commit")
+}
+
 fn name_attr(value: &str) -> Value {
     Value::Attribute(NameAttr(value.into()).encode().expect("encode").into())
 }
@@ -961,7 +1002,7 @@ fn name_of(state: &HsdState, prim: PrimId) -> Option<String> {
 
 #[test]
 fn a_runtime_opinion_shadows_the_document_beneath_it() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -991,7 +1032,7 @@ fn a_runtime_opinion_shadows_the_document_beneath_it() {
 
 #[test]
 fn a_spawn_despawn_loop_leaves_nothing_behind() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
     let resolved = state.resolved.len();
 
@@ -1004,13 +1045,13 @@ fn a_spawn_despawn_loop_leaves_nothing_behind() {
     }
 
     assert_eq!(state.resolved.len(), resolved);
-    assert_eq!(state.layer(LayerId::Runtime).keys(), Vec::new());
+    assert_eq!(state.layer(&RUNTIME).expect("runtime").keys(), Vec::new());
     assert_eq!(state.children(prim(1)), Vec::new());
 }
 
 #[test]
 fn removing_a_document_prim_blocks_it_rather_than_forgetting_it() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
@@ -1024,7 +1065,7 @@ fn removing_a_document_prim_blocks_it_rather_than_forgetting_it() {
 
 #[test]
 fn back_to_back_local_writes_keep_the_last_value() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
 
     for i in 0..1000 {
@@ -1038,7 +1079,7 @@ fn back_to_back_local_writes_keep_the_last_value() {
 
 #[test]
 fn a_document_write_under_a_runtime_opinion_emits_nothing() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1070,7 +1111,7 @@ fn a_document_write_under_a_runtime_opinion_emits_nothing() {
 
 #[test]
 fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1106,7 +1147,7 @@ fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
 
 #[test]
 fn a_runtime_write_leaves_the_document_layer_byte_identical() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1138,22 +1179,18 @@ fn a_runtime_write_leaves_the_document_layer_byte_identical() {
 
 #[test]
 fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
+    let runtime = state.position(&RUNTIME).expect("runtime");
 
-    state.write_parent(
-        LayerId::Runtime,
-        prim(9),
-        Some(ParentAttr::Prim(prim(1))),
-        None,
-    );
+    state.write_parent(runtime, prim(9), Some(ParentAttr::Prim(prim(1))), None);
 
     assert!(state.exists(prim(9)));
     assert!(state.is_in_scene(prim(9)));
     assert_eq!(state.children(prim(1)), vec![prim(9)]);
 
-    state.write_parent(LayerId::Runtime, prim(9), Some(ParentAttr::Root), None);
+    state.write_parent(runtime, prim(9), Some(ParentAttr::Root), None);
 
     assert_eq!(state.parent(prim(9)), None);
     assert_eq!(state.children(prim(1)), Vec::new());
@@ -1165,7 +1202,7 @@ fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
 
 #[test]
 fn commit_promotes_a_live_opinion_into_the_document() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1182,7 +1219,11 @@ fn commit_promotes_a_live_opinion_into_the_document() {
         Some(name_attr("runtime")),
     );
     state.drain_events();
-    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
     assert!(
@@ -1205,7 +1246,11 @@ fn commit_promotes_a_live_opinion_into_the_document() {
     );
 
     assert_eq!(
-        state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]),
+        commit_live(
+            &mut state,
+            &CommitTarget::Base,
+            &[(prim(1), NameAttr::NAME)]
+        ),
         Vec::new(),
         "a second commit has no live opinion left to promote"
     );
@@ -1213,7 +1258,7 @@ fn commit_promotes_a_live_opinion_into_the_document() {
 
 #[test]
 fn commit_with_no_writable_key_writes_the_session_layer() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1230,7 +1275,11 @@ fn commit_with_no_writable_key_writes_the_session_layer() {
         NameAttr::NAME,
         Some(name_attr("runtime")),
     );
-    let writes = state.commit(CommitTarget::Session, &[(prim(1), NameAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Layer(SESSION),
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
     assert_eq!(writes, Vec::new(), "the session layer has no store");
@@ -1249,7 +1298,7 @@ fn commit_with_no_writable_key_writes_the_session_layer() {
 
 #[test]
 fn committing_a_script_created_prim_writes_it_to_the_store() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
@@ -1258,14 +1307,14 @@ fn committing_a_script_created_prim_writes_it_to_the_store() {
         .set_attribute(scratch, &NameAttr("kept".into()))
         .expect("attribute");
 
-    let writes = state
-        .commit(
-            CommitTarget::Document,
-            &[(scratch, ParentAttr::NAME), (scratch, NameAttr::NAME)],
-        )
-        .into_iter()
-        .map(|write| write.key)
-        .collect::<Vec<_>>();
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(scratch, ParentAttr::NAME), (scratch, NameAttr::NAME)],
+    )
+    .into_iter()
+    .map(|write| write.key)
+    .collect::<Vec<_>>();
 
     assert_eq!(
         writes,
@@ -1281,7 +1330,7 @@ fn committing_a_script_created_prim_writes_it_to_the_store() {
 
 #[test]
 fn committing_a_blocked_opinion_deletes_a_document_property() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1292,7 +1341,11 @@ fn committing_a_blocked_opinion_deletes_a_document_property() {
     state.drain_events();
 
     state.remove_property(prim(1), &NameAttr::NAME);
-    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(name_of(&state, prim(1)), None);
     assert_eq!(
@@ -1316,7 +1369,7 @@ fn committing_a_blocked_opinion_deletes_a_document_property() {
 
 #[test]
 fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1337,7 +1390,11 @@ fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
         "but hiding is a live opinion, and the document still holds the prim"
     );
 
-    let writes = state.commit(CommitTarget::Document, &[(prim(2), ParentAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(2), ParentAttr::NAME)],
+    );
 
     assert_eq!(
         writes
@@ -1359,7 +1416,7 @@ fn committing_a_blocked_parent_deletes_the_prim_and_its_properties() {
 
 #[test]
 fn committing_a_key_with_no_live_opinion_changes_nothing() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1369,7 +1426,11 @@ fn committing_a_key_with_no_live_opinion_changes_nothing() {
     );
     let held = document(&state);
 
-    let writes = state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(writes, Vec::new());
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("document"));
@@ -1382,7 +1443,7 @@ fn override_entry(site: PrimId, target: PrimId, name: PropName, value: &Value) -
 
 /// A referenced document, holding one prim with a name of its own.
 fn referenced() -> HsdState {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1405,18 +1466,25 @@ fn stated(site: PrimId, entries: &[Entry]) -> Layer {
         .unwrap_or_default()
 }
 
+fn install(state: &mut HsdState, layer: Layer) {
+    state.replace_layer(&OVERRIDE, layer).expect("replace");
+}
+
 #[test]
 fn an_override_beats_the_document_it_speaks_for() {
     let mut state = referenced();
-    state.install_reference_layer(&stated(
-        prim(7),
-        &[override_entry(
+    install(
+        &mut state,
+        stated(
             prim(7),
-            prim(1),
-            NameAttr::NAME,
-            &name_attr("recoloured"),
-        )],
-    ));
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::NAME,
+                &name_attr("recoloured"),
+            )],
+        ),
+    );
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
     assert_eq!(
@@ -1438,15 +1506,18 @@ fn an_override_beats_the_document_it_speaks_for() {
 #[test]
 fn a_live_opinion_beats_an_override() {
     let mut state = referenced();
-    state.install_reference_layer(&stated(
-        prim(7),
-        &[override_entry(
+    install(
+        &mut state,
+        stated(
             prim(7),
-            prim(1),
-            NameAttr::NAME,
-            &name_attr("room says"),
-        )],
-    ));
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::NAME,
+                &name_attr("room says"),
+            )],
+        ),
+    );
     runtime_property(
         &mut state,
         prim(1),
@@ -1464,18 +1535,21 @@ fn a_live_opinion_beats_an_override() {
 #[test]
 fn an_override_the_referencing_document_dropped_stops_resolving() {
     let mut state = referenced();
-    state.install_reference_layer(&stated(
-        prim(7),
-        &[override_entry(
+    install(
+        &mut state,
+        stated(
             prim(7),
-            prim(1),
-            NameAttr::NAME,
-            &name_attr("recoloured"),
-        )],
-    ));
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::NAME,
+                &name_attr("recoloured"),
+            )],
+        ),
+    );
     state.drain_events();
 
-    state.install_reference_layer(&Layer::default());
+    install(&mut state, Layer::default());
 
     assert_eq!(
         name_of(&state, prim(1)).as_deref(),
@@ -1499,17 +1573,20 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     project(&mut state, &[child_entry(prim(2), prim(1), 3)]);
     state.drain_events();
 
-    state.install_reference_layer(&stated(
-        prim(7),
-        &[tombstone(
-            LayerKey {
-                target: prim(2),
-                name:   ParentAttr::NAME,
-            }
-            .key(prim(7)),
-            4,
-        )],
-    ));
+    install(
+        &mut state,
+        stated(
+            prim(7),
+            &[tombstone(
+                LayerKey {
+                    target: prim(2),
+                    name:   ParentAttr::NAME,
+                }
+                .key(prim(7)),
+                4,
+            )],
+        ),
+    );
 
     assert!(
         !state.is_in_scene(prim(2)),
@@ -1527,11 +1604,11 @@ fn a_projected_override_recomposes_the_document_it_speaks_for() {
     let mut state = referenced();
     let entry = override_entry(prim(7), prim(1), NameAttr::NAME, &name_attr("recoloured"));
 
-    state.project_override(&entry).expect("project");
+    state.project_override(&OVERRIDE, &entry).expect("project");
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
 
     state
-        .project_override(&tombstone(entry.key, 4))
+        .project_override(&OVERRIDE, &tombstone(entry.key, 4))
         .expect("project");
     assert_eq!(
         name_of(&state, prim(1)),
@@ -1554,8 +1631,12 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     );
     target.drain_events();
 
-    let entries = target.commit(
-        CommitTarget::Override { site },
+    let entries = commit_live(
+        &mut target,
+        &CommitTarget::Override {
+            layer: OVERRIDE,
+            site,
+        },
         &[(prim(1), NameAttr::NAME)],
     );
 
@@ -1596,7 +1677,13 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
         "which is what makes the edit survive the session"
     );
 
-    target.install_reference_layer(referencing.reference_layer_for(site).expect("holds it"));
+    install(
+        &mut target,
+        referencing
+            .reference_layer_for(site)
+            .cloned()
+            .expect("holds it"),
+    );
     assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
     assert!(
         state_is_quiet(&mut target),
@@ -1611,11 +1698,14 @@ fn state_is_quiet(state: &mut HsdState) -> bool {
 /// What a present peer says, arriving as a state message does.
 fn session_property(state: &mut HsdState, prim: PrimId, value: &Value, at: u64) {
     state
-        .apply_session(&Entry::new(
-            key::Key::prop(prim, &NameAttr::NAME).to_string(),
-            value.encode(),
-            at,
-        ))
+        .apply(
+            &SESSION,
+            &Entry::new(
+                key::Key::prop(prim, &NameAttr::NAME).to_string(),
+                value.encode(),
+                at,
+            ),
+        )
         .expect("apply session");
 }
 
@@ -1650,7 +1740,9 @@ fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
     session_property(&mut state, prim(1), &name_attr("what the peer said"), 5);
     state.drain_events();
 
-    state.clear_session(prim(1), &NameAttr::NAME);
+    state
+        .clear(&SESSION, prim(1), &NameAttr::NAME)
+        .expect("clear");
 
     assert_eq!(
         name_of(&state, prim(1)).as_deref(),
@@ -1671,7 +1763,9 @@ fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
 #[test]
 fn clearing_a_key_no_peer_stated_changes_nothing() {
     let mut state = referenced();
-    state.clear_session(prim(1), &NameAttr::NAME);
+    state
+        .clear(&SESSION, prim(1), &NameAttr::NAME)
+        .expect("clear");
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
     assert!(state_is_quiet(&mut state));
@@ -1682,7 +1776,11 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
     let mut state = referenced();
     session_property(&mut state, prim(1), &name_attr("a guest recoloured it"), 5);
 
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(
         document(&state).get(&key::Key::prop(prim(1), &NameAttr::NAME).to_string()),
@@ -1699,7 +1797,7 @@ fn keeping_a_session_opinion_promotes_it_into_the_document() {
 
 #[test]
 fn a_promotion_lands_even_when_the_opinion_predates_the_document_value() {
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(
         &mut state,
         &[
@@ -1709,7 +1807,11 @@ fn a_promotion_lands_even_when_the_opinion_predates_the_document_value() {
     );
     session_property(&mut state, prim(1), &name_attr("recoloured"), 500);
 
-    state.commit(CommitTarget::Document, &[(prim(1), NameAttr::NAME)]);
+    commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(prim(1), NameAttr::NAME)],
+    );
 
     assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
     assert_eq!(
@@ -1736,12 +1838,16 @@ fn a_committed_reference_target_projects_back_as_the_ref_property() {
     let site = prim(7);
     let target = DocId([7; 32]);
 
-    let mut state = HsdState::new();
+    let mut state = stacked();
     project(&mut state, &[root_entry(site, 1)]);
     state
         .set_attribute(site, &ReferenceAttr(target))
         .expect("reference");
-    let writes = state.commit(CommitTarget::Document, &[(site, ReferenceAttr::NAME)]);
+    let writes = commit_live(
+        &mut state,
+        &CommitTarget::Base,
+        &[(site, ReferenceAttr::NAME)],
+    );
 
     assert_eq!(
         writes[0].key,
@@ -1758,5 +1864,339 @@ fn a_committed_reference_target_projects_back_as_the_ref_property() {
             .expect("ref")
             .expect("decode"),
         ReferenceAttr(target),
+    );
+}
+
+fn name_entry(id: PrimId, text: &str, timestamp: u64) -> Entry {
+    attr_entry(id, &NameAttr(text.into()), timestamp)
+}
+
+fn name_changed(id: PrimId, text: &str) -> SceneEvent {
+    SceneEvent::Property {
+        prim:  id,
+        name:  NameAttr::NAME,
+        value: Some(name_attr(text)),
+    }
+}
+
+fn layer_ids(state: &HsdState) -> Vec<LayerId> {
+    state.layers().cloned().collect()
+}
+
+fn refusing_names() -> Mask {
+    Mask::new(|_, key| !matches!(key, MaskKey::Property(name, _) if *name == NameAttr::NAME))
+}
+
+#[test]
+fn a_stronger_layers_opinion_wins_and_removing_it_uncovers_the_weaker_one() {
+    let mut state = referenced();
+    state
+        .apply(&RUNTIME, &name_entry(prim(1), "runtime", 3))
+        .expect("apply");
+    state
+        .apply(&SESSION, &name_entry(prim(1), "session", 4))
+        .expect("apply");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("session"));
+    state.drain_events();
+
+    let removed = state.remove_layer(&SESSION).expect("remove");
+
+    assert_eq!(
+        removed.keys(),
+        vec![(prim(1), OpinionKey::Property(NameAttr::NAME))],
+        "the removed layer is answered whole"
+    );
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+    assert_eq!(state.drain_events(), vec![name_changed(prim(1), "runtime")]);
+
+    state.remove_layer(&RUNTIME).expect("remove");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
+}
+
+#[test]
+fn a_tombstone_in_a_stronger_layer_hides_the_weaker_layers_and_clearing_it_uncovers_them() {
+    let mut state = referenced();
+    state
+        .apply(&RUNTIME, &name_entry(prim(1), "runtime", 3))
+        .expect("apply");
+    state
+        .apply(
+            &SESSION,
+            &tombstone(key::Key::prop(prim(1), &NameAttr::NAME).to_string(), 4),
+        )
+        .expect("apply");
+    assert_eq!(
+        name_of(&state, prim(1)),
+        None,
+        "a block stops the walk, so neither weaker value shows through"
+    );
+    state.drain_events();
+
+    state
+        .clear(&SESSION, prim(1), &NameAttr::NAME)
+        .expect("clear");
+
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+    assert_eq!(state.drain_events(), vec![name_changed(prim(1), "runtime")]);
+}
+
+#[test]
+fn a_masked_out_opinion_resolves_as_absent_and_changing_the_mask_re_resolves() {
+    let mut state = referenced();
+    let filtered = LayerId::from_static("filtered");
+    state
+        .add_layer(filtered.clone(), Merge::Latest, refusing_names())
+        .expect("add");
+
+    state
+        .apply(&filtered, &name_entry(prim(1), "masked", 3))
+        .expect("apply");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
+    assert!(
+        state_is_quiet(&mut state),
+        "a refused opinion changes nothing that is drawn"
+    );
+
+    state.set_mask(&filtered, Mask::all()).expect("mask");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("masked"));
+    assert_eq!(state.drain_events(), vec![name_changed(prim(1), "masked")]);
+
+    state.set_mask(&filtered, refusing_names()).expect("mask");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
+    assert_eq!(state.drain_events(), vec![name_changed(prim(1), "couch")]);
+}
+
+#[test]
+fn a_value_aware_mask_admits_one_value_of_a_property_and_refuses_another() {
+    let mut state = referenced();
+    let allowed = name_attr("allowed");
+    let filtered = LayerId::from_static("filtered");
+    state
+        .add_layer(
+            filtered.clone(),
+            Merge::Latest,
+            Mask::new(
+                move |_, key| matches!(key, MaskKey::Property(_, Some(value)) if *value == allowed),
+            ),
+        )
+        .expect("add");
+
+    state
+        .apply(&filtered, &name_entry(prim(1), "allowed", 3))
+        .expect("apply");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("allowed"));
+
+    state
+        .apply(&filtered, &name_entry(prim(1), "refused", 4))
+        .expect("apply");
+    assert_eq!(
+        name_of(&state, prim(1)).as_deref(),
+        Some("couch"),
+        "the layer holds the newer value, which the mask refuses"
+    );
+}
+
+#[test]
+fn reordering_changes_the_winner_and_refuses_an_order_that_is_not_one() {
+    let mut state = referenced();
+    state
+        .apply(&RUNTIME, &name_entry(prim(1), "runtime", 3))
+        .expect("apply");
+    state
+        .apply(&SESSION, &name_entry(prim(1), "session", 4))
+        .expect("apply");
+    state.drain_events();
+
+    state
+        .reorder(&[OVERRIDE, SESSION, RUNTIME])
+        .expect("reorder");
+
+    assert_eq!(
+        layer_ids(&state),
+        vec![LayerId::BASE, OVERRIDE, SESSION, RUNTIME]
+    );
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+    assert_eq!(state.drain_events(), vec![name_changed(prim(1), "runtime")]);
+
+    let refused = [
+        vec![OVERRIDE, SESSION],
+        vec![OVERRIDE, SESSION, SESSION],
+        vec![LayerId::BASE, SESSION, RUNTIME],
+        vec![OVERRIDE, SESSION, LayerId::from_static("unknown")],
+    ];
+    for order in refused {
+        assert_eq!(
+            state.reorder(&order),
+            Err(StackError::NotAnOrder),
+            "{order:?} is not an order of the layers above the base"
+        );
+    }
+    assert_eq!(
+        layer_ids(&state),
+        vec![LayerId::BASE, OVERRIDE, SESSION, RUNTIME],
+        "a refused order leaves the stack as it was"
+    );
+}
+
+#[test]
+fn the_base_cannot_be_removed_or_added_again() {
+    let mut state = stacked();
+
+    assert!(matches!(
+        state.remove_layer(&LayerId::BASE),
+        Err(StackError::Base)
+    ));
+    assert_eq!(
+        state.add_layer(LayerId::BASE, Merge::Latest, Mask::all()),
+        Err(StackError::Base)
+    );
+    assert_eq!(state.layers().next(), Some(&LayerId::BASE));
+    assert_eq!(state.layers().count(), 4);
+}
+
+#[test]
+fn a_duplicate_layer_id_is_refused() {
+    let mut state = stacked();
+
+    assert_eq!(
+        state.add_layer(RUNTIME, Merge::Replace, Mask::all()),
+        Err(StackError::Duplicate(RUNTIME))
+    );
+    assert_eq!(state.layers().count(), 4);
+}
+
+#[test]
+fn the_stack_refuses_layers_past_the_cap() {
+    let mut state = HsdState::new();
+    for i in 1..MAX_LAYERS {
+        state
+            .add_layer(
+                LayerId::new(format!("layer-{i}")),
+                Merge::Latest,
+                Mask::all(),
+            )
+            .expect("room");
+    }
+    assert_eq!(state.layers().count(), MAX_LAYERS);
+
+    assert_eq!(
+        state.add_layer(LayerId::from_static("extra"), Merge::Latest, Mask::all()),
+        Err(StackError::Full)
+    );
+}
+
+#[test]
+fn removing_the_edit_target_sends_plain_writes_back_to_the_base() {
+    let mut state = stacked();
+    assert_eq!(state.edit_target(), &RUNTIME);
+
+    state.remove_layer(&RUNTIME).expect("remove");
+    let made = state.create_prim(None);
+
+    assert_eq!(state.edit_target(), &LayerId::BASE);
+    assert!(
+        document(&state).contains_key(&parent_key(made)),
+        "the write landed in the base layer"
+    );
+}
+
+#[test]
+fn commit_moves_the_strongest_opinion_among_from_only() {
+    let mut state = referenced();
+    state
+        .apply(&RUNTIME, &name_entry(prim(1), "runtime", 3))
+        .expect("apply");
+    state
+        .apply(&SESSION, &name_entry(prim(1), "session", 4))
+        .expect("apply");
+
+    let writes = state
+        .commit(
+            &[RUNTIME],
+            &CommitTarget::Base,
+            &[(prim(1), NameAttr::NAME)],
+        )
+        .expect("commit");
+
+    assert_eq!(writes.len(), 1);
+    assert_eq!(
+        document(&state).get(&writes[0].key),
+        Some(&name_attr("runtime").encode())
+    );
+    assert_eq!(
+        state.layer(&RUNTIME).expect("runtime").keys(),
+        Vec::new(),
+        "a layer in from gives up its opinion"
+    );
+    assert_eq!(
+        state.layer(&SESSION).expect("session").keys(),
+        vec![(prim(1), OpinionKey::Property(NameAttr::NAME))],
+        "a layer outside from keeps its own"
+    );
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("session"));
+
+    state
+        .clear(&SESSION, prim(1), &NameAttr::NAME)
+        .expect("clear");
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+}
+
+#[test]
+fn commit_takes_the_strongest_of_the_layers_it_is_given() {
+    let mut state = referenced();
+    state
+        .apply(&RUNTIME, &name_entry(prim(1), "runtime", 3))
+        .expect("apply");
+    state
+        .apply(&SESSION, &name_entry(prim(1), "session", 4))
+        .expect("apply");
+
+    let writes = state
+        .commit(
+            &[SESSION, RUNTIME],
+            &CommitTarget::Base,
+            &[(prim(1), NameAttr::NAME)],
+        )
+        .expect("commit");
+
+    assert_eq!(writes.len(), 1);
+    assert_eq!(
+        document(&state).get(&writes[0].key),
+        Some(&name_attr("session").encode())
+    );
+    assert_eq!(state.layer(&RUNTIME).expect("runtime").keys(), Vec::new());
+    assert_eq!(state.layer(&SESSION).expect("session").keys(), Vec::new());
+    assert_eq!(name_of(&state, prim(1)).as_deref(), Some("session"));
+}
+
+#[test]
+fn a_removed_layers_prims_that_no_other_layer_states_are_forgotten() {
+    let mut state = referenced();
+    project(&mut state, &[child_entry(prim(3), prim(1), 2)]);
+    state
+        .apply(&SESSION, &child_entry(prim(2), prim(1), 5))
+        .expect("apply");
+    state
+        .apply(&SESSION, &root_entry(prim(3), 5))
+        .expect("apply");
+    assert!(state.is_in_scene(prim(2)));
+    assert_eq!(state.parent(prim(3)), None);
+    state.drain_events();
+
+    state.remove_layer(&SESSION).expect("remove");
+
+    assert!(!state.exists(prim(2)));
+    assert!(!state.is_in_scene(prim(2)));
+    assert!(state.get(prim(2)).is_none());
+    assert_eq!(state.children(prim(1)), vec![prim(3)]);
+    assert_eq!(
+        state.parent(prim(3)),
+        Some(prim(1)),
+        "a prim the base also states falls back to it"
+    );
+    assert!(
+        state
+            .drain_events()
+            .contains(&SceneEvent::Removed { prim: prim(2) })
     );
 }

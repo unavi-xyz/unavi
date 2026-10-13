@@ -123,7 +123,7 @@ pub fn instantiate_scripts(
             ScriptIdentity {
                 doc:      doc_id.0,
                 prim:     prim.0,
-                state:    std::sync::Arc::clone(&doc.0),
+                state:    doc.handle(),
                 view:     (*view).clone(),
                 quota:    std::sync::Arc::clone(&quota),
                 world:    (*async_world).clone(),

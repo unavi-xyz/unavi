@@ -135,7 +135,7 @@ pub fn instantiate_scripts(
             ScriptIdentity {
                 doc:      doc_id.0,
                 prim:     prim.0,
-                state:    Arc::clone(&doc.0),
+                state:    doc.handle(),
                 view:     (*view).clone(),
                 quota:    Arc::clone(&quota),
                 world:    (*async_world).clone(),

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use bytes::Bytes;
 
 use crate::{
@@ -16,41 +14,17 @@ use crate::{
         HsdState,
         StateError,
         entry::Stamp,
-        layer::{
-            Layer,
-            LayerId,
-            OpinionKey,
-        },
+        layer::Layer,
         opinion::Opinion,
     },
 };
 
 impl HsdState {
     /// This document's opinions about the prims of the document `site`
-    /// references.
+    /// references, which the referenced document stacks as an override layer.
     #[must_use]
     pub fn reference_layer_for(&self, site: PrimId) -> Option<&Layer> {
         self.references.get(&site)
-    }
-
-    /// Replaces the override layer with what the referencing document states,
-    /// recomposing every key either layer held. Later changes arrive through
-    /// [`Self::project_override`].
-    pub fn install_reference_layer(&mut self, layer: &Layer) {
-        let mut keys = self
-            .layer(LayerId::Override)
-            .keys()
-            .into_iter()
-            .collect::<HashSet<_>>();
-        keys.extend(layer.keys());
-        *self.layer_mut(LayerId::Override) = layer.clone();
-
-        for (prim, opinion) in keys {
-            match opinion {
-                OpinionKey::Parent => self.settle_parent(prim),
-                OpinionKey::Property(name) => self.settle_property(prim, &name),
-            }
-        }
     }
 
     /// Replaces this document's opinion on a key of the document `site`

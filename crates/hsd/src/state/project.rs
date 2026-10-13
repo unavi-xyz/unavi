@@ -1,6 +1,6 @@
-//! The projected layers. Each entry is a key's winner as the store chose it,
-//! and replaces whatever the layer held for that key. An empty value is a key
-//! the store holds no value for.
+//! Projecting a store into a layer. Each entry is a key's winner as the store
+//! chose it, and replaces whatever the layer held for that key. An empty value
+//! is a key the store holds no value for.
 
 use crate::{
     attributes::{
@@ -29,15 +29,15 @@ use crate::{
             Entry,
             Stamp,
         },
-        layer::LayerId,
         opinion::Opinion,
+        stack::LayerId,
     },
 };
 
 impl HsdState {
-    /// Projects one of this document's entries. A value that fails to decode
-    /// still clears what the key held, since it is no longer the store's
-    /// winner.
+    /// Projects one of this document's entries into the base layer. A value
+    /// that fails to decode still clears what the key held, since it is no
+    /// longer the store's winner.
     pub fn project(&mut self, entry: &Entry) -> Result<(), StateError> {
         let stamp = Stamp::new(entry.timestamp, &entry.value);
         let value = (!entry.value.is_empty()).then(|| entry.value.clone());
@@ -77,9 +77,10 @@ impl HsdState {
         }
     }
 
-    /// Projects an entry of the referencing document into the override layer.
-    /// Keys outside that document's reference layers are ignored.
-    pub fn project_override(&mut self, entry: &Entry) -> Result<(), StateError> {
+    /// Projects an entry of the referencing document into the override layer
+    /// `id`. Keys outside that document's reference layers are ignored.
+    pub fn project_override(&mut self, id: &LayerId, entry: &Entry) -> Result<(), StateError> {
+        let at = self.layer_position(id)?;
         let Some((_, LayerKey { target, name })) = LayerKey::parse_key(&entry.key) else {
             return Ok(());
         };
@@ -92,10 +93,10 @@ impl HsdState {
                 .map(ParentAttr::from_wire)
                 .transpose()?
                 .flatten();
-            self.write_parent(LayerId::Override, target, parent, Some(stamp));
+            self.write_parent(at, target, parent, Some(stamp));
         } else {
             let property = value.as_ref().map(Value::decode).transpose()?;
-            self.write_property(LayerId::Override, target, &name, property, stamp);
+            self.write_property(at, target, &name, property, stamp);
         }
         Ok(())
     }
@@ -127,7 +128,7 @@ impl HsdState {
     }
 
     fn project_parent(&mut self, prim: PrimId, parent: Option<ParentAttr>, stamp: Stamp) {
-        let layer = self.layer_mut(LayerId::Document);
+        let layer = &mut self.stack[0].layer;
         match parent {
             Some(parent) => layer
                 .entry(prim)
@@ -147,7 +148,7 @@ impl HsdState {
         value: Option<Value>,
         stamp: Stamp,
     ) {
-        let layer = self.layer_mut(LayerId::Document);
+        let layer = &mut self.stack[0].layer;
         match value {
             Some(value) => layer
                 .entry(prim)

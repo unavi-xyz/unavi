@@ -16,34 +16,6 @@ use crate::{
     },
 };
 
-/// Seats in the layer stack, weakest first.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) enum LayerId {
-    /// Projected from this document's store.
-    Document,
-    /// Projected from the store of the document referencing this one.
-    Override,
-    /// Local writes. Never replicated.
-    Runtime,
-    /// Opinions present peers state for this session.
-    Session,
-}
-
-impl LayerId {
-    pub(super) const ALL: [Self; 4] =
-        [Self::Document, Self::Override, Self::Runtime, Self::Session];
-
-    /// A projected layer repeats the winners a store chose, so it replaces what
-    /// it holds rather than ordering writes itself.
-    pub(super) const fn is_projected(self) -> bool {
-        matches!(self, Self::Document | Self::Override)
-    }
-
-    pub(super) const fn idx(self) -> usize {
-        self as usize
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) enum OpinionKey {
     Parent,
@@ -57,6 +29,10 @@ pub struct Layer(HashMap<PrimId, PrimOpinions>);
 impl Layer {
     pub(super) fn get(&self, prim: PrimId) -> Option<&PrimOpinions> {
         self.0.get(&prim)
+    }
+
+    pub(super) fn prims(&self) -> Vec<PrimId> {
+        self.0.keys().copied().collect()
     }
 
     pub(super) fn keys(&self) -> Vec<(PrimId, OpinionKey)> {

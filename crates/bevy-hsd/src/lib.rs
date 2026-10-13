@@ -21,6 +21,7 @@ pub mod package;
 pub mod prim;
 pub mod reference;
 mod scene_events;
+pub mod stack;
 
 /// Applies document changes to the world. A write made before this set is
 /// visible the same frame.

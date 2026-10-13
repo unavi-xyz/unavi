@@ -17,6 +17,7 @@ use bevy_hsd::{
         Prim,
         PrimOf,
     },
+    stack,
 };
 use hsd::{
     attributes::parent::ParentAttr,
@@ -354,10 +355,15 @@ pub async fn commit(
 
     let landing = landing(host, doc.id).await?;
     let target = match &landing {
-        Landing::Document => CommitTarget::Document,
-        Landing::Override { site, .. } => CommitTarget::Override { site: *site },
+        Landing::Document => CommitTarget::Base,
+        Landing::Override { site, .. } => CommitTarget::Override {
+            layer: stack::OVERRIDE,
+            site:  *site,
+        },
     };
-    let entries = doc.write(|state| state.commit(target, &props))?;
+    let entries = doc
+        .write(|state| state.commit(&[stack::RUNTIME, stack::SESSION], &target, &props))?
+        .map_err(ScriptError::internal)?;
 
     match landing {
         Landing::Document => write_entries(host, namespace_of(host, doc.id).await?, entries).await,
@@ -430,7 +436,7 @@ fn reference_site(world: &World, doc: DocId) -> Option<(PrimId, DocId, Arc<Mutex
     Some((
         site,
         world.get::<HsdDocId>(host)?.0,
-        Arc::clone(&world.get::<Hsd>(host)?.0),
+        world.get::<Hsd>(host)?.handle(),
     ))
 }
 

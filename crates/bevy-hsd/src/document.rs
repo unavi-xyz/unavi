@@ -19,20 +19,43 @@ use hsd::{
 use iroh::EndpointAddr;
 use unavi_store::Document;
 
-use crate::prim::{
-    PrimIndex,
-    Prims,
+use crate::{
+    prim::{
+        PrimIndex,
+        Prims,
+    },
+    stack,
 };
 
 /// An HSD document, placed or not.
 #[derive(Component, Clone)]
 #[require(Prims, PrimIndex, Transform, Visibility)]
-pub struct Hsd(pub Arc<Mutex<HsdState>>);
+pub struct Hsd(Arc<Mutex<HsdState>>);
 
 impl Hsd {
+    /// Wraps `state` with [`stack::install`]'s layers above its base.
     #[must_use]
     pub fn new(state: HsdState) -> Self {
-        Self(Arc::new(Mutex::new(state)))
+        Self::shared(Arc::new(Mutex::new(state)))
+    }
+
+    /// Wraps a state other holders keep a handle to, installing
+    /// [`stack::install`]'s layers in it.
+    #[must_use]
+    pub fn shared(state: Arc<Mutex<HsdState>>) -> Self {
+        let hsd = Self(state);
+        if let Some(mut state) = hsd.lock()
+            && let Err(err) = stack::install(&mut state)
+        {
+            warn!(?err, "document stack refused the engine's layers");
+        }
+        hsd
+    }
+
+    /// The shared state this component wraps.
+    #[must_use]
+    pub fn handle(&self) -> Arc<Mutex<HsdState>> {
+        Arc::clone(&self.0)
     }
 
     /// `None` on a poisoned lock.

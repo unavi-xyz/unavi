@@ -33,6 +33,7 @@ use crate::{
         Prim,
         PrimOf,
     },
+    stack,
 };
 
 /// The decoded `reference` attribute.
@@ -203,13 +204,16 @@ async fn open_reference(
 
             // Installed before the spawn so no entry is drawn without its
             // overrides.
-            let mut state = HsdState::new();
-            if let Some(layer) = site_overrides(world, prim_ent) {
-                state.install_reference_layer(&layer);
+            let hsd = Hsd::new(HsdState::new());
+            if let Some(layer) = site_overrides(world, prim_ent)
+                && let Some(mut state) = hsd.lock()
+                && let Err(err) = state.replace_layer(&stack::OVERRIDE, layer)
+            {
+                warn!(?err, "reference overrides not installed");
             }
 
             world.spawn((
-                Hsd::new(state),
+                hsd,
                 HsdDocId(site),
                 DocFeed::joined(doc.clone(), events, FeedReady::Snapshot),
                 HsdNamespace(doc),

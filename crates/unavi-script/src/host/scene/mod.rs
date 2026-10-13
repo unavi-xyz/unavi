@@ -110,8 +110,7 @@ pub async fn open_document(host: &mut ScriptHost, id: DocId) -> Result<Option<u3
         Some(Arc::clone(&host.state))
     } else {
         host.world_call(move |world| {
-            doc_entity(world, id)
-                .and_then(|entity| world.get::<Hsd>(entity).map(|doc| Arc::clone(&doc.0)))
+            doc_entity(world, id).and_then(|entity| world.get::<Hsd>(entity).map(Hsd::handle))
         })
         .await?
     };

@@ -7,13 +7,16 @@ use std::sync::{
 
 use bevy::prelude::*;
 use bevy_async::task;
-use bevy_hsd::document::{
-    DocIndex,
-    Hsd,
-    HsdDocId,
-    HsdNamespace,
-    Minted,
-    Unplaced,
+use bevy_hsd::{
+    document::{
+        DocIndex,
+        Hsd,
+        HsdDocId,
+        HsdNamespace,
+        Minted,
+        Unplaced,
+    },
+    stack,
 };
 use bevy_iroh::store::DataStore;
 use hsd::{
@@ -183,6 +186,7 @@ async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptE
     let lease = host.quota.lease(Stock::Documents, 1)?;
 
     let mut state = HsdState::new();
+    stack::install(&mut state).map_err(ScriptError::internal)?;
     for entry in &entries {
         state.project(entry).map_err(ScriptError::internal)?;
     }
@@ -238,7 +242,7 @@ async fn spawn_minted(
 
     host.world_call(move |world| {
         world.spawn((
-            Hsd(state),
+            Hsd::shared(state),
             Unplaced,
             HsdDocId(id),
             HsdNamespace(doc),

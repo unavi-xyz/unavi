@@ -135,7 +135,7 @@ fn a_session_write_composes_into_the_document_it_speaks_for() {
     world.spawn(Space(space));
     let state = Arc::new(Mutex::new(HsdState::new()));
     world.spawn((
-        Hsd(Arc::clone(&state)),
+        Hsd::shared(Arc::clone(&state)),
         bevy_hsd::document::HsdDocId(space.doc()),
     ));
 

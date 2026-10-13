@@ -1,4 +1,4 @@
-//! Local writes, into the runtime layer.
+//! Plain writes, into the edit target.
 
 use crate::{
     attributes::parent::ParentAttr,
@@ -13,7 +13,6 @@ use crate::{
         HsdState,
         StateError,
         entry::Stamp,
-        layer::LayerId,
     },
 };
 
@@ -21,7 +20,7 @@ impl HsdState {
     pub fn create_prim(&mut self, parent: Option<PrimId>) -> PrimId {
         let prim = PrimId::new();
         self.write_parent(
-            LayerId::Runtime,
+            self.edit_position(),
             prim,
             Some(parent.map_or(ParentAttr::Root, ParentAttr::Prim)),
             None,
@@ -33,26 +32,28 @@ impl HsdState {
         if !self.exists(prim) {
             return Err(StateError::UnknownPrim(prim));
         }
-        self.write_parent(LayerId::Runtime, prim, Some(parent), None);
+        self.write_parent(self.edit_position(), prim, Some(parent), None);
         Ok(())
     }
 
-    /// A prim only the runtime layer states is forgotten. Any other is
-    /// blocked in the runtime layer, and stays in the layers beneath it.
+    /// A prim only the edit target states is forgotten. Any other is blocked
+    /// in the edit target, and stays in the layers that state it.
     pub fn remove_prim(&mut self, prim: PrimId) {
         if !self.resolved.contains_key(&prim) {
             return;
         }
-        let runtime_only = LayerId::ALL
-            .into_iter()
-            .filter(|id| *id != LayerId::Runtime)
-            .all(|id| self.layer(id).get(prim).is_none());
-        if !runtime_only {
-            self.write_parent(LayerId::Runtime, prim, None, None);
+        let at = self.edit_position();
+        let target_only = self
+            .stack
+            .iter()
+            .enumerate()
+            .all(|(i, stacked)| i == at || stacked.layer.get(prim).is_none());
+        if !target_only {
+            self.write_parent(at, prim, None, None);
             return;
         }
 
-        self.layer_mut(LayerId::Runtime).remove(prim);
+        self.stack[at].layer.remove(prim);
         self.settle_parent(prim);
         self.forget_if_unstated(prim);
     }
@@ -66,9 +67,10 @@ impl HsdState {
         if *name == ParentAttr::NAME {
             return Err(StateError::Reserved(name.clone()));
         }
-        let timestamp = self.local_property_time(LayerId::Runtime, prim, name);
+        let at = self.edit_position();
+        let timestamp = self.local_property_time(at, prim, name);
         let stamp = Stamp::of_property(timestamp, &value);
-        self.write_property(LayerId::Runtime, prim, name, Some(value), stamp);
+        self.write_property(at, prim, name, Some(value), stamp);
         Ok(())
     }
 
@@ -102,9 +104,10 @@ impl HsdState {
         if *name == ParentAttr::NAME {
             return;
         }
-        let timestamp = self.local_property_time(LayerId::Runtime, prim, name);
+        let at = self.edit_position();
+        let timestamp = self.local_property_time(at, prim, name);
         let stamp = Stamp::new(timestamp, &[]);
-        self.write_property(LayerId::Runtime, prim, name, None, stamp);
+        self.write_property(at, prim, name, None, stamp);
     }
 
     /// Removes every property of `group` the prim resolves.

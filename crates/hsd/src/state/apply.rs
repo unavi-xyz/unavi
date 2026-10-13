@@ -1,5 +1,4 @@
-//! The session layer. Opinions arrive from peers in any order, so a write
-//! older than the one held is refused.
+//! Writes into a named layer, from entries that arrive in any order.
 
 use crate::{
     attributes::parent::ParentAttr,
@@ -17,14 +16,15 @@ use crate::{
             Entry,
             Stamp,
         },
-        layer::LayerId,
+        stack::LayerId,
     },
 };
 
 impl HsdState {
-    /// An empty value blocks the key. Keys other than a prim's properties are
-    /// ignored.
-    pub fn apply_session(&mut self, entry: &Entry) -> Result<(), StateError> {
+    /// Writes one entry into `id`. An empty value blocks the key. Keys other
+    /// than a prim's properties are ignored.
+    pub fn apply(&mut self, id: &LayerId, entry: &Entry) -> Result<(), StateError> {
+        let at = self.layer_position(id)?;
         let Some(key::Key::Prop { prim, name }) = key::Key::parse(&entry.key) else {
             return Ok(());
         };
@@ -37,24 +37,26 @@ impl HsdState {
                 .map(ParentAttr::from_wire)
                 .transpose()?
                 .flatten();
-            self.write_parent(LayerId::Session, prim, parent, Some(stamp));
+            self.write_parent(at, prim, parent, Some(stamp));
         } else {
             let property = value.as_ref().map(Value::decode).transpose()?;
-            self.write_property(LayerId::Session, prim, &name, property, stamp);
+            self.write_property(at, prim, &name, property, stamp);
         }
         Ok(())
     }
 
-    /// Drops the session opinion on a key, which is not the same as blocking
-    /// it.
-    pub fn clear_session(&mut self, prim: PrimId, name: &PropName) {
-        let session = self.layer_mut(LayerId::Session);
+    /// Drops `id`'s opinion on a key, which is not the same as blocking it.
+    pub fn clear(&mut self, id: &LayerId, prim: PrimId, name: &PropName) -> Result<(), StateError> {
+        let at = self.layer_position(id)?;
+        let layer = &mut self.stack[at].layer;
         if *name == ParentAttr::NAME {
-            if session.take_parent(prim).is_some() {
+            if layer.take_parent(prim).is_some() {
                 self.settle_parent(prim);
             }
-        } else if session.take_property(prim, name).is_some() {
+        } else if layer.take_property(prim, name).is_some() {
             self.settle_property(prim, name);
         }
+        self.forget_if_unstated(prim);
+        Ok(())
     }
 }

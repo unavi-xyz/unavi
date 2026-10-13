@@ -27,6 +27,7 @@ use crate::{
     },
     prim::PrimIndex,
     reference::ReferenceInstances,
+    stack,
 };
 
 mod reader;
@@ -167,7 +168,7 @@ pub(crate) fn apply_doc_deltas(
                 let Some(mut state) = reference.lock() else {
                     continue;
                 };
-                if let Err(err) = state.project_override(entry) {
+                if let Err(err) = state.project_override(&stack::OVERRIDE, entry) {
                     warn!(key = %entry.key, ?err, "dropping an unreadable override");
                 }
             }

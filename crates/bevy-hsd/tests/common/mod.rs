@@ -213,7 +213,7 @@ impl TestContext {
         self.doc = self
             .app
             .world_mut()
-            .spawn(bevy_hsd::document::Hsd(Arc::clone(&self.state)))
+            .spawn(bevy_hsd::document::Hsd::shared(Arc::clone(&self.state)))
             .id();
     }
 
@@ -224,7 +224,7 @@ impl TestContext {
         let entity = self
             .app
             .world_mut()
-            .spawn(bevy_hsd::document::Hsd(Arc::clone(&state)))
+            .spawn(bevy_hsd::document::Hsd::shared(Arc::clone(&state)))
             .id();
         TestDocument { entity, state }
     }

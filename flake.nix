@@ -13,10 +13,6 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
     # Rust
-    advisory-db = {
-      url = "github:rustsec/advisory-db";
-      flake = false;
-    };
     crane.url = "github:ipetkov/crane";
     fenix = {
       url = "github:nix-community/fenix";
@@ -116,11 +112,6 @@
             };
 
             checks = {
-              # audit = pkgs.crane.cargoAudit {
-              #   inherit (inputs) advisory-db;
-              #   src = ./.;
-              #   pname = "unavi";
-              # };
               deny = pkgs.runCommand "unavi-cargo-deny" {
                 nativeBuildInputs = [
                   (pkgs.crane.cargoDeny {

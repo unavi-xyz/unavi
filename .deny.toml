@@ -50,6 +50,14 @@ ignore = [
 
   # ttf-parser unmaintained, no maintained successor with a compatible API
   "RUSTSEC-2026-0192",
+
+  # rustybuzz unmaintained; pulled in by usvg via the launcher's dioxus stack.
+  # harfrust is the successor, but usvg 0.46 does not use it yet.
+  "RUSTSEC-2026-0206",
+
+  # ruzstd 0.8 is pinned by bevy_image 0.19; fixed in 0.9.1, which bevy_image
+  # does not accept yet.
+  "RUSTSEC-2026-0344",
 ]
 version = 2
 
@@ -58,11 +66,7 @@ deny              = [{ deny-multiple-versions = true, name = "bevy" }, { deny-mu
 multiple-versions = "warn"
 
 [sources]
-allow-git = [
-  "https://github.com/m11m/iroh-blobs",
-  "https://github.com/stevesloan/Schminput",
-  "https://github.com/unavi-xyz/xdid",
-]
-allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-unknown-git = "deny"
+allow-git        = ["https://github.com/m11m/iroh-blobs", "https://github.com/unavi-xyz/xdid"]
+allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
+unknown-git      = "deny"
 unknown-registry = "deny"

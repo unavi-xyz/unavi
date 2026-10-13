@@ -16,7 +16,10 @@ use xdid::core::did::Did;
 use crate::{
     claim::Presence,
     error::RegistryError,
-    server::config::Config,
+    server::config::{
+        Config,
+        is_did_key,
+    },
 };
 
 #[derive(Default)]
@@ -24,9 +27,13 @@ pub struct PresenceTable(Mutex<Inner>);
 
 #[derive(Default)]
 struct Inner {
-    spaces: HashMap<NamespaceId, Vec<Occupant>>,
+    spaces:  HashMap<NamespaceId, Vec<Occupant>>,
     /// Devices each DID has present, per namespace.
-    by_did: HashMap<Did, HashMap<NamespaceId, usize>>,
+    by_did:  HashMap<Did, HashMap<NamespaceId, usize>>,
+    /// Occupants across every namespace.
+    total:   usize,
+    /// Occupants whose DID is a `did:key`.
+    did_key: usize,
 }
 
 pub struct ActiveSpace {
@@ -72,6 +79,11 @@ impl PresenceTable {
             if occupants.is_some_and(|list| list.len() >= config.max_occupants) {
                 return Err(RegistryError::NamespaceFull);
             }
+            if inner.total >= config.max_presences
+                || (is_did_key(&presence.did) && inner.did_key >= config.max_did_key_presences)
+            {
+                return Err(RegistryError::TooManyPresences);
+            }
         }
 
         inner.remove(presence.ns, |o| o.endpoint == presence.endpoint);
@@ -88,6 +100,10 @@ impl PresenceTable {
             .or_default()
             .entry(presence.ns)
             .or_default() += 1;
+        inner.total += 1;
+        if is_did_key(&presence.did) {
+            inner.did_key += 1;
+        }
         drop(inner);
 
         Ok(())
@@ -109,9 +125,16 @@ impl PresenceTable {
             })
     }
 
-    /// Spaces active within `window`, most recently active first, then
-    /// busiest.
-    pub fn active(&self, window: Duration) -> Vec<ActiveSpace> {
+    /// Spaces active within `window` that satisfy `listed`, most recently
+    /// active first, then busiest.
+    ///
+    /// Presence can name any namespace, so the caller says which may be
+    /// published.
+    pub fn active(
+        &self,
+        window: Duration,
+        listed: impl Fn(NamespaceId) -> bool,
+    ) -> Vec<ActiveSpace> {
         let now = now();
         let cutoff = now - i64::try_from(window.as_secs()).unwrap_or(i64::MAX);
 
@@ -121,6 +144,9 @@ impl PresenceTable {
             .spaces
             .iter()
             .filter_map(|(ns, occupants)| {
+                if !listed(*ns) {
+                    return None;
+                }
                 let seen = occupants
                     .iter()
                     .filter(|o| o.last_seen > cutoff && o.expires > now);
@@ -178,6 +204,10 @@ impl Inner {
         }
 
         for did in gone {
+            self.total = self.total.saturating_sub(1);
+            if is_did_key(&did) {
+                self.did_key = self.did_key.saturating_sub(1);
+            }
             let Some(held) = self.by_did.get_mut(&did) else {
                 continue;
             };
@@ -265,5 +295,95 @@ mod tests {
         assert_eq!(table.occupants(NamespaceId::from(&[1; 32])).len(), 1);
         let did = Did::from_str(&key.public().to_did().to_string()).expect("did");
         assert_eq!(table.0.lock().by_did[&did][&NamespaceId::from(&[1; 32])], 1);
+    }
+    fn web_presence(name: &str, ns: u8, endpoint: EndpointId) -> (Presence, Signed<Presence>) {
+        let key = P256KeyPair::generate();
+        let presence = Presence {
+            did: Did::from_str(&format!("did:web:{name}.example")).expect("did"),
+            endpoint,
+            ns: NamespaceId::from(&[ns; 32]),
+            expires: now() + 60,
+        };
+        let signed = presence.sign(&key).expect("sign");
+        (presence, signed)
+    }
+
+    fn endpoint() -> EndpointId {
+        SecretKey::generate().public()
+    }
+
+    #[test]
+    fn did_keys_share_one_presence_pool_while_a_did_web_is_still_admitted() {
+        let table = PresenceTable::default();
+        let config = Config {
+            max_did_key_presences: 2,
+            ..Config::default()
+        };
+        for ns in 0..2 {
+            let (p, s) = presence(&P256KeyPair::generate(), ns, endpoint());
+            table.insert(&p, s, &config).expect("within the pool");
+        }
+
+        let (p, s) = presence(&P256KeyPair::generate(), 9, endpoint());
+        assert_eq!(
+            table.insert(&p, s, &config),
+            Err(RegistryError::TooManyPresences)
+        );
+        let (p, s) = web_presence("a", 9, endpoint());
+        assert_eq!(table.insert(&p, s, &config), Ok(()));
+    }
+
+    #[test]
+    fn presences_are_capped_across_all_namespaces_but_a_refresh_still_lands() {
+        let table = PresenceTable::default();
+        let config = Config {
+            max_presences: 2,
+            ..Config::default()
+        };
+        let first = endpoint();
+        let (p, s) = web_presence("a", 1, first);
+        table.insert(&p, s, &config).expect("first");
+        let (p, s) = web_presence("b", 2, endpoint());
+        table.insert(&p, s, &config).expect("second");
+
+        let (p, s) = web_presence("c", 3, endpoint());
+        assert_eq!(
+            table.insert(&p, s, &config),
+            Err(RegistryError::TooManyPresences)
+        );
+        let (p, s) = web_presence("a", 1, first);
+        assert_eq!(table.insert(&p, s, &config), Ok(()));
+        assert_eq!(table.0.lock().total, 2);
+    }
+
+    #[test]
+    fn sweeping_releases_the_global_counts() {
+        let table = PresenceTable::default();
+        let config = Config::default();
+        let (p, s) = presence(&P256KeyPair::generate(), 1, endpoint());
+        table.insert(&p, s, &config).expect("insert");
+        assert_eq!(table.0.lock().did_key, 1);
+
+        table.sweep(Duration::ZERO);
+
+        let inner = table.0.lock();
+        assert_eq!((inner.total, inner.did_key), (0, 0));
+    }
+
+    #[test]
+    fn the_active_list_holds_only_listed_namespaces() {
+        let table = PresenceTable::default();
+        let config = Config::default();
+        for ns in [1, 2] {
+            let (p, s) = presence(&P256KeyPair::generate(), ns, endpoint());
+            table.insert(&p, s, &config).expect("insert");
+        }
+
+        let listed = NamespaceId::from(&[1; 32]);
+        let active = table.active(Duration::from_mins(5), |ns| ns == listed);
+
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].ns, listed);
+        assert_eq!(table.occupants(NamespaceId::from(&[2; 32])).len(), 1);
     }
 }

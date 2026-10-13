@@ -20,6 +20,8 @@ use crate::{
 };
 
 /// Accepts registry calls, pairing each with the endpoint it arrived from.
+/// A connection's requests run one at a time, so one peer cannot multiply its
+/// concurrent identity resolutions.
 ///
 /// `IrohProtocol::with_sender` would be the shorter path, but it hands the
 /// handler a message with no way back to the connection it arrived on, which is
@@ -48,12 +50,9 @@ impl ProtocolHandler for RegistryProtocol {
             .await
             .map_err(AcceptError::from_err)?
         {
-            let shared = Arc::clone(&self.shared);
-            n0_future::task::spawn(async move {
-                if let Err(err) = handle_message(shared, remote, msg).await {
-                    error!("registry request failed: {err:?}");
-                }
-            });
+            if let Err(err) = handle_message(Arc::clone(&self.shared), remote, msg).await {
+                error!("registry request failed: {err:?}");
+            }
         }
 
         Ok(())

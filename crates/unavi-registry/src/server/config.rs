@@ -37,6 +37,13 @@ pub struct Config {
     pub max_listings:            usize,
     /// Most namespaces one DID may be present in at once.
     pub max_presences_per_did:   usize,
+    /// Abuse bound on the listings all `did:key` identities hold together,
+    /// since minting one costs nothing.
+    pub max_did_key_listings:    usize,
+    /// Abuse bound on the presences all `did:key` identities hold together.
+    pub max_did_key_presences:   usize,
+    /// Abuse bound on occupants across every namespace.
+    pub max_presences:           usize,
     /// Most devices of one DID present in one namespace.
     pub max_devices_per_did:     usize,
     /// Most occupants one namespace lists.
@@ -54,14 +61,22 @@ impl Default for Config {
             view_capacity:           256,
             activity_window:         Duration::from_mins(5),
             max_retention:           Duration::from_hours(24 * 30),
-            max_submissions_per_did: 64,
-            max_listings:            100_000,
+            max_submissions_per_did: 8,
+            max_listings:            10_000,
             max_presences_per_did:   4,
+            max_did_key_listings:    1_000,
+            max_did_key_presences:   2_000,
+            max_presences:           50_000,
             max_devices_per_did:     4,
             max_occupants:           256,
             max_presence_ttl:        Duration::from_mins(10),
         }
     }
+}
+
+/// Whether `did` costs nothing to mint, and so shares a pooled allowance.
+pub fn is_did_key(did: &Did) -> bool {
+    did.method_name.as_str() == "key"
 }
 
 impl Config {

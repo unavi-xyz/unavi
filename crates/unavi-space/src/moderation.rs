@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use iroh::EndpointId;
 use unavi_policy::{
     ledger::PeerKey,
-    quota::limits::Limits,
     trust::Trust,
 };
 
@@ -60,7 +59,7 @@ fn set_trust(view: &SpaceView, peer: EndpointId, trust: Option<Trust>) -> Result
         }
         None => view.trust().clear(&did),
     }
-    let limits = Limits::for_trust(view.trust_of_did(&did));
+    let limits = view.rules().limits(view.trust_of_did(&did));
     view.policy().retrust_peer(&PeerKey::Did(did), limits);
 
     if let Err(err) = view.trust().save() {

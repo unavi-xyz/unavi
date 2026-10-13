@@ -23,6 +23,7 @@ use unavi_policy::{
     ledger::PeerKey,
     permissions::Permissions,
     quota::Quota,
+    rules::Rules,
     trust::{
         Trust,
         TrustTable,
@@ -55,6 +56,7 @@ pub struct SpaceView {
     identity:    LocalIdentity,
     me:          EndpointId,
     trust:       TrustTable,
+    rules:       Rules,
     async_world: AsyncWorld,
 }
 
@@ -66,6 +68,7 @@ impl SpaceView {
         identity: LocalIdentity,
         me: EndpointId,
         trust: TrustTable,
+        rules: Rules,
         async_world: AsyncWorld,
     ) -> Self {
         replicas
@@ -77,6 +80,7 @@ impl SpaceView {
             identity,
             me,
             trust,
+            rules,
             async_world,
         }
     }
@@ -144,7 +148,7 @@ impl SpaceView {
         let trust = self
             .author(doc)
             .map_or(Trust::Guest, |did| self.trust_of_did(&did));
-        Permissions::for_trust(trust)
+        self.rules.permissions(trust)
     }
 
     /// `doc`'s quota, charging its author, its space, or the unattributed
@@ -186,6 +190,11 @@ impl SpaceView {
     #[must_use]
     pub const fn trust(&self) -> &TrustTable {
         &self.trust
+    }
+
+    #[must_use]
+    pub const fn rules(&self) -> &Rules {
+        &self.rules
     }
 }
 
@@ -271,7 +280,7 @@ mod tests {
     #[test]
     fn a_child_of_a_spaceless_host_resolves_by_its_own_space() {
         let policy = Policy::new();
-        let replicas = Replicas::new(policy.clone());
+        let replicas = Replicas::new(policy.clone(), Rules::default());
         let (space, halo, beacon) = (doc(1), doc(2), doc(3));
 
         policy.update(space, |record| record.space = Some(space));

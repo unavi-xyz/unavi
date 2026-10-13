@@ -73,7 +73,9 @@ impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
             SessionError::QuotaExceeded => Self::LimitReached(Stock::SessionMemory),
-            SessionError::NotAuthor | SessionError::WrongSpace => Self::Forbidden,
+            SessionError::NotAuthor | SessionError::WrongSpace | SessionError::Untrusted => {
+                Self::Forbidden
+            }
             SessionError::BadName => Self::invalid("invalid shared property name"),
             SessionError::Unavailable => Self::Internal("the world is gone".into()),
         }

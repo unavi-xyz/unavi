@@ -185,12 +185,10 @@ impl Policy {
     }
 
     /// The budget shared by every document with neither a known author nor a
-    /// space, sized for an anonymous peer.
+    /// space, with `limits` applied on first sight.
     #[must_use]
-    pub fn unattributed_quota(&self) -> Arc<Quota> {
-        self.quota(Principal::Unattributed, || {
-            Limits::for_trust(crate::trust::Trust::Anonymous)
-        })
+    pub fn unattributed_quota(&self, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
+        self.quota(Principal::Unattributed, limits)
     }
 
     #[must_use]

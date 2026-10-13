@@ -7,6 +7,7 @@ use hsd::{
         PrimId,
     },
     property::{
+        Payload,
         Property,
         name::PropName,
     },
@@ -37,27 +38,45 @@ pub(crate) struct SessionKey {
 /// here — one write, two places, because only this side knows who wrote it and
 /// only that side can draw it.
 pub(crate) struct Cell {
-    pub(crate) at:    u64,
-    pub(crate) peer:  EndpointId,
-    pub(crate) value: Option<Vec<u8>>,
-    pub(crate) lease: StockLease,
+    pub(crate) at:        u64,
+    pub(crate) peer:      EndpointId,
+    pub(crate) value:     Option<Vec<u8>>,
+    pub(crate) lease:     StockLease,
+    /// Written by the document's author. Nobody else may replace it.
+    pub(crate) by_author: bool,
     /// Exactly one prior version, making "revert everything peer X wrote" a
     /// scan of the cell map rather than a general undo log.
-    pub(crate) prev:  Option<Box<Self>>,
+    pub(crate) prev:      Option<Box<Self>>,
 }
 
 /// The group guest scripts keep their own session state under. It carries no
 /// meaning to the engine.
 const SCRIPT_STATE_GROUP: &str = "state";
 
-/// Whether a peer other than the document's author may state `name`.
+/// Largest side of a portal a non-author may state, in metres.
+const MAX_PAIRED_PORTAL_SIDE: f64 = 16.0;
+
+/// Whether a peer other than the document's author may state `value` at
+/// `name`.
 ///
 /// Every other property is composed and applied as if authored, so a
 /// non-author stating one would decide what the author's document runs,
-/// references or simulates. A portal is open so that a peer in another space
-/// can pair with it.
-pub(crate) fn open_to_any_writer(name: &PropName) -> bool {
-    *name == PortalAttr::NAME || name.group() == SCRIPT_STATE_GROUP
+/// references or simulates. A portal is admitted only as the far half of a
+/// pairing: a linked destination of bounded size, never a tombstone.
+pub(crate) fn admits_non_author(name: &PropName, value: Option<&[u8]>) -> bool {
+    if name.group() == SCRIPT_STATE_GROUP {
+        return true;
+    }
+    if *name != PortalAttr::NAME {
+        return false;
+    }
+    let Some(Ok(portal)) = value.map(<PortalAttr as Payload>::decode) else {
+        return false;
+    };
+    let bounded = |side: f64| side.is_finite() && side > 0.0 && side <= MAX_PAIRED_PORTAL_SIDE;
+    portal.destination.is_some_and(|dest| dest.link.is_some())
+        && bounded(portal.size_x)
+        && bounded(portal.size_y)
 }
 
 pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
@@ -74,6 +93,9 @@ pub enum SessionError {
     NotAuthor,
     #[error("session write to a document present in another space")]
     WrongSpace,
+    /// The writer's trust does not grant the host API the write stands for.
+    #[error("session write the writer's trust does not grant")]
+    Untrusted,
     #[error("session write exceeds quota")]
     QuotaExceeded,
     /// The world the replica lives in is gone.

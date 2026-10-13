@@ -123,12 +123,6 @@ impl Quota {
         })
     }
 
-    /// An uncapped, owner-less quota, for trusted scripts.
-    #[must_use]
-    pub fn unlimited() -> Arc<Self> {
-        Self::new(Limits::default(), None)
-    }
-
     pub(crate) fn owner(&self) -> Option<Arc<Self>> {
         self.owner.lock().clone()
     }

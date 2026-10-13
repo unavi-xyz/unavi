@@ -34,9 +34,12 @@ use iroh::{
 };
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
-use unavi_policy::trust::{
-    Trust,
-    TrustTable,
+use unavi_policy::{
+    rules::Rules,
+    trust::{
+        Trust,
+        TrustTable,
+    },
 };
 use web_time::Instant;
 
@@ -287,6 +290,7 @@ pub fn register_protocol(
     policy: Res<unavi_policy::Policy>,
     replicas: Res<Replicas>,
     trust: Res<TrustTable>,
+    rules: Res<Rules>,
     presence: Res<PeerPresence>,
     async_world: Res<AsyncWorld>,
     mut commands: Commands,
@@ -305,6 +309,7 @@ pub fn register_protocol(
         identity.clone(),
         endpoint.0.id(),
         trust.clone(),
+        rules.clone(),
         async_world.clone(),
     );
     let link = PeerLink::new(view.clone(), presence.clone());

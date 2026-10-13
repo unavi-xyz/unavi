@@ -12,7 +12,10 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
-use unavi_policy::trust::TrustTable;
+use unavi_policy::{
+    rules::Rules,
+    trust::TrustTable,
+};
 use unavi_portal::{
     crossing::apply_crossings,
     echo::maintain_echoes,
@@ -59,6 +62,7 @@ impl Plugin for SpacePlugin {
             TrustTable::new(storage)
         });
         app.insert_resource(trust);
+        app.init_resource::<Rules>();
 
         replication::guards::init_indexes(app.world_mut());
         app.init_resource::<index::Index<discovery::Peer>>()
@@ -118,7 +122,7 @@ impl Plugin for SpacePlugin {
                         object_sync::systems::advance_object_interp,
                     )
                         .chain(),
-                    portal::enter_peeked_space,
+                    portal::enter_portal_space,
                     scene::start_space_fetch,
                     scene::instance_pending_scenes,
                     pinned::fetch_pinned_docs,

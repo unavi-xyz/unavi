@@ -20,6 +20,7 @@ use unavi_identity::{
 use unavi_local::DeviceStorage;
 use unavi_policy::{
     Policy,
+    rules::Rules,
     trust::TrustTable,
 };
 use unavi_registry::client::Followed;
@@ -116,7 +117,7 @@ fn fixture() -> Fixture {
     let me = peer(2);
 
     let policy = Policy::new();
-    let replicas = Replicas::new(policy.clone());
+    let replicas = Replicas::new(policy.clone(), Rules::default());
     replicas
         .add_pin(other_device, doc, space, alice.did().clone(), proof, 1)
         .expect("this node's own pin of its own document is never refused");
@@ -137,7 +138,15 @@ fn fixture() -> Fixture {
 
     let async_world = app.world().resource::<bevy_async::AsyncWorld>().clone();
     let trust = TrustTable::new(DeviceStorage::memory());
-    let view = SpaceView::new(policy, replicas, local_identity, me, trust, async_world);
+    let view = SpaceView::new(
+        policy,
+        replicas,
+        local_identity,
+        me,
+        trust,
+        Rules::default(),
+        async_world,
+    );
     app.insert_resource(view);
 
     let space_entity = app.world_mut().spawn(Space(space)).id();
@@ -261,7 +270,7 @@ fn grabbing_an_untracked_document_takes_no_hold() {
     let mut fixture = fixture();
     // The hold can only be taken once the publish path has pinned the doc;
     // starting from a fresh `Replicas` leaves it untracked.
-    let empty = Replicas::new(Policy::new());
+    let empty = Replicas::new(Policy::new(), Rules::default());
     fixture.app.insert_resource(empty);
 
     fixture.app.world_mut().trigger(Grabbed {

@@ -33,8 +33,13 @@ use crate::{
     pinned::PinnedDoc,
 };
 
-/// Most spaces open at once through portals in peer-pinned documents.
-pub const MAX_PEEKED_SPACES: usize = 8;
+/// Most spaces open at once through portals and not yet entered.
+pub const MAX_PORTAL_SPACES: usize = 8;
+
+/// A space loaded because a portal leads to it, until the local agent enters
+/// it. Counted against [`MAX_PORTAL_SPACES`], whoever wrote the portal.
+#[derive(Component)]
+pub struct ByPortal;
 
 /// A space loaded only because a peer-pinned document has a portal to it.
 ///
@@ -43,16 +48,16 @@ pub const MAX_PEEKED_SPACES: usize = 8;
 #[derive(Component)]
 pub struct Peeked;
 
-/// Loads the destination space of every portal. One in a document a peer
-/// pinned opens [`Peeked`], within [`MAX_PEEKED_SPACES`], and only if its
-/// author may open portals at all.
+/// Loads the destination space of every portal, within [`MAX_PORTAL_SPACES`].
+/// One in a document a peer pinned opens [`Peeked`], and only if its author
+/// may open portals at all.
 pub fn spawn_portal_space(
     trigger: On<Insert, PortalConfig>,
     portals: Query<(&PortalConfig, Option<&PrimOf>)>,
     docs: Query<(&HsdDocId, Has<PinnedDoc>)>,
     doc_index: Res<DocIndex>,
     spaces: Res<Index<Space>>,
-    peeked: Query<(), With<Peeked>>,
+    by_portal: Query<(), With<ByPortal>>,
     policy: Res<Policy>,
     view: Option<Res<SpaceView>>,
     // A `commands.spawn` isn't visible to `spaces` until the command queue
@@ -86,11 +91,11 @@ pub fn spawn_portal_space(
         });
     let peek = source.is_some_and(|(_, pinned)| pinned);
 
+    if by_portal.iter().count() + pending.len() >= MAX_PORTAL_SPACES {
+        debug!(space = %id, "portal space cap reached; destination not loaded");
+        return;
+    }
     if peek {
-        if peeked.iter().count() >= MAX_PEEKED_SPACES {
-            debug!(space = %id, "peeked space cap reached; portal destination not loaded");
-            return;
-        }
         let allowed = source.is_some_and(|(root, _)| {
             view.as_deref()
                 .is_some_and(|view| view.permissions(root).require(HostApi::Portal).is_ok())
@@ -101,22 +106,23 @@ pub fn spawn_portal_space(
     }
 
     pending.insert(id);
-    let mut space = commands.spawn(Space(id));
+    let mut space = commands.spawn((Space(id), ByPortal));
     if peek {
         space.insert(Peeked);
     }
 }
 
-/// A peeked space the local agent walked into is entered like any other.
-pub fn enter_peeked_space(
+/// A space the local agent walked into through a portal is entered like any
+/// other.
+pub fn enter_portal_space(
     active: Res<ActiveSpace>,
-    peeked: Query<(), With<Peeked>>,
+    by_portal: Query<(), With<ByPortal>>,
     mut commands: Commands,
 ) {
     if let Some(entity) = active.0
-        && peeked.contains(entity)
+        && by_portal.contains(entity)
     {
-        commands.entity(entity).remove::<Peeked>();
+        commands.entity(entity).remove::<(ByPortal, Peeked)>();
     }
 }
 

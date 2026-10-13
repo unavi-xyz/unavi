@@ -21,7 +21,10 @@ use bevy_hsd::{
         PrimOf,
     },
 };
-use unavi_policy::quota::Quota;
+use unavi_policy::{
+    quota::Quota,
+    trust::Trust,
+};
 use unavi_space::{
     authority::SpaceView,
     identity::RootDocument,
@@ -112,7 +115,7 @@ pub fn instantiate_scripts(
 
         let name = name.to_string();
         let quota = if exempt {
-            Quota::unlimited()
+            Quota::new(view.rules().limits(Trust::Myself), None)
         } else {
             view.document_quota(doc_id.0)
         };

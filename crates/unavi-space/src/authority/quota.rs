@@ -12,10 +12,9 @@ use parking_lot::RwLock;
 use unavi_policy::{
     Policy,
     ledger::PeerKey,
-    quota::{
-        Quota,
-        limits::Limits,
-    },
+    permissions::Permissions,
+    quota::Quota,
+    rules::Rules,
     trust::{
         Trust,
         TrustTable,
@@ -30,6 +29,7 @@ use crate::membership::SpaceId;
 #[derive(Clone)]
 pub struct Attribution {
     policy: Policy,
+    rules:  Rules,
     local:  Arc<RwLock<Option<Local>>>,
 }
 
@@ -42,9 +42,10 @@ struct Local {
 
 impl Attribution {
     #[must_use]
-    pub fn new(policy: Policy) -> Self {
+    pub fn new(policy: Policy, rules: Rules) -> Self {
         Self {
             policy,
+            rules,
             local: Arc::default(),
         }
     }
@@ -84,13 +85,21 @@ impl Attribution {
         }
     }
 
+    /// The host APIs a writer proving `did` holds, by how far it is trusted.
+    /// A writer that proved nothing is anonymous.
+    #[must_use]
+    pub fn writer_permissions(&self, did: Option<&Did>) -> Permissions {
+        let trust = did.map_or(Trust::Anonymous, |did| self.trust_of_did(did));
+        self.rules.permissions(trust)
+    }
+
     /// `author`'s budget, sized by how far it is trusted and shared by every
     /// device proving that DID.
     #[must_use]
     pub fn author_quota(&self, author: &Did) -> Arc<Quota> {
         let trust = self.trust_of_did(author);
         self.policy
-            .peer_quota(&PeerKey::Did(author.clone()), || Limits::for_trust(trust))
+            .peer_quota(&PeerKey::Did(author.clone()), || self.rules.limits(trust))
     }
 
     /// What `writer`'s own session cells on documents it does not author
@@ -99,8 +108,9 @@ impl Attribution {
     pub fn writer_quota(&self, writer: EndpointId, did: Option<&Did>) -> Arc<Quota> {
         did.map_or_else(
             || {
-                self.policy
-                    .peer_quota(&PeerKey::Endpoint(writer), || Limits::for_trust(Trust::Anonymous))
+                self.policy.peer_quota(&PeerKey::Endpoint(writer), || {
+                    self.rules.limits(Trust::Anonymous)
+                })
             },
             |did| self.author_quota(did),
         )
@@ -119,7 +129,9 @@ impl Attribution {
         match (author, space) {
             (Some(author), _) if !is_space_doc => self.author_quota(author),
             (_, Some(space)) => self.policy.space_quota(space.doc()),
-            (_, None) => self.policy.unattributed_quota(),
+            (_, None) => self
+                .policy
+                .unattributed_quota(|| self.rules.limits(Trust::Anonymous)),
         }
     }
 
@@ -155,7 +167,7 @@ mod tests {
 
     #[test]
     fn an_authors_documents_share_one_budget() {
-        let attribution = Attribution::new(Policy::new());
+        let attribution = Attribution::new(Policy::new(), Rules::default());
         let author = did("alice");
         let space = SpaceId([9; 32]);
 
@@ -169,7 +181,7 @@ mod tests {
 
     #[test]
     fn the_local_did_is_trusted_as_myself() {
-        let attribution = Attribution::new(Policy::new());
+        let attribution = Attribution::new(Policy::new(), Rules::default());
         let me = did("me");
         assert_eq!(attribution.trust_of_did(&me), Trust::Anonymous);
 

@@ -22,11 +22,15 @@ use bevy::prelude::{
     World,
 };
 use hsd::{
+    attributes::portal::PortalAttr,
     id::{
         DocId,
         PrimId,
     },
-    property::name::PropName,
+    property::{
+        Property,
+        name::PropName,
+    },
 };
 use iroh::EndpointId;
 use parking_lot::Mutex;
@@ -34,11 +38,13 @@ use unavi_identity::authorship::Authorship;
 use unavi_policy::{
     Policy,
     ledger::Record,
+    permissions::HostApi,
     quota::{
         Quota,
         Stock,
         StockLease,
     },
+    rules::Rules,
 };
 use xdid::core::did::Did;
 
@@ -52,8 +58,8 @@ use crate::{
             SessionError,
             SessionKey,
             Standing,
+            admits_non_author,
             cell_bytes,
-            open_to_any_writer,
         },
         message::{
             DocSnapshot,
@@ -350,27 +356,48 @@ impl Inner {
         }
     }
 
-    /// Whether a writer proving `did` may state `keys` on `doc`.
+    /// Whether a writer proving `did` may state `batch` on `doc`, answering
+    /// whether it is the author.
     ///
     /// The author may state anything. Anyone else, including every writer of
-    /// a document whose author is unknown here, may state only properties
-    /// open to any writer.
-    fn may_write<'a>(
+    /// a document whose author is unknown here, may state only what
+    /// [`admits_non_author`] allows, and never over a cell the author wrote.
+    fn may_write(
         &self,
         did: Option<&Did>,
         doc: DocId,
         space: SpaceId,
-        mut keys: impl Iterator<Item = &'a SessionKey>,
+        batch: &[(SessionKey, Option<Vec<u8>>)],
     ) -> Result<bool, SessionError> {
-        if self.docs.get(&doc).is_some_and(|p| p.space != space) {
+        let presence = self.docs.get(&doc);
+        if presence.is_some_and(|p| p.space != space) {
             return Err(SessionError::WrongSpace);
         }
-        let is_author = did.is_some() && self.author_resolved(doc).as_ref() == did;
-        if is_author || keys.all(|key| open_to_any_writer(&key.name)) {
-            Ok(is_author)
-        } else {
-            Err(SessionError::NotAuthor)
+        if did.is_some() && self.author_resolved(doc).as_ref() == did {
+            return Ok(true);
         }
+        let authored = |key: &SessionKey| {
+            presence
+                .and_then(|p| p.session.get(key))
+                .is_some_and(|cell| cell.by_author)
+        };
+        if !batch
+            .iter()
+            .all(|(key, value)| admits_non_author(&key.name, value.as_deref()) && !authored(key))
+        {
+            return Err(SessionError::NotAuthor);
+        }
+        let pairs = batch.iter().any(|(key, _)| key.name == PortalAttr::NAME);
+        if pairs
+            && self
+                .attribution
+                .writer_permissions(did)
+                .require(HostApi::Portal)
+                .is_err()
+        {
+            return Err(SessionError::Untrusted);
+        }
+        Ok(false)
     }
 
     /// Writes a batch of cells on `doc`, all or none. Every lease is taken
@@ -387,7 +414,7 @@ impl Inner {
         batch: Vec<(SessionKey, Option<Vec<u8>>)>,
         at: u64,
     ) -> Result<(), SessionError> {
-        let is_author = self.may_write(did, doc, space, batch.iter().map(|(key, _)| key))?;
+        let is_author = self.may_write(did, doc, space, &batch)?;
         let writer_quota = (!is_author).then(|| self.attribution.writer_quota(writer, did));
         let presence = self
             .ensure_presence(doc, space, None)
@@ -421,12 +448,14 @@ impl Inner {
                     // replaces is dropped, releasing its lease. Depth stays
                     // one.
                     let displaced = Cell {
-                        at:    cell.at,
-                        peer:  cell.peer,
-                        value: cell.value.take(),
-                        lease: std::mem::replace(&mut cell.lease, lease),
-                        prev:  None,
+                        at:        cell.at,
+                        peer:      cell.peer,
+                        value:     cell.value.take(),
+                        lease:     std::mem::replace(&mut cell.lease, lease),
+                        by_author: cell.by_author,
+                        prev:      None,
                     };
+                    cell.by_author = is_author;
                     cell.at = at;
                     cell.peer = writer;
                     cell.value = value;
@@ -438,6 +467,7 @@ impl Inner {
                         peer: writer,
                         value,
                         lease,
+                        by_author: is_author,
                         prev: None,
                     });
                     inserted += 1;
@@ -623,15 +653,17 @@ pub struct Replicas(Arc<Mutex<Inner>>);
 
 impl FromWorld for Replicas {
     fn from_world(world: &mut World) -> Self {
-        Self::new(world.get_resource_or_init::<Policy>().clone())
+        let policy = world.get_resource_or_init::<Policy>().clone();
+        let rules = world.get_resource_or_init::<Rules>().clone();
+        Self::new(policy, rules)
     }
 }
 
 impl Replicas {
     #[must_use]
-    pub fn new(policy: Policy) -> Self {
+    pub fn new(policy: Policy, rules: Rules) -> Self {
         Self(Arc::new(Mutex::new(Inner {
-            attribution: Attribution::new(policy),
+            attribution: Attribution::new(policy, rules),
             peers:       HashMap::new(),
             docs:        HashMap::new(),
             minted:      HashSet::new(),

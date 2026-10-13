@@ -1,14 +1,26 @@
 use hsd::{
     attributes::{
-        portal::PortalAttr,
+        portal::{
+            LinkId,
+            PortalAttr,
+            PortalDestination,
+        },
         script::ScriptAttr,
     },
     id::PrimId,
-    property::Property,
+    property::{
+        Payload,
+        Property,
+    },
 };
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
-use unavi_policy::Policy;
+use unavi_local::DeviceStorage;
+use unavi_policy::{
+    Policy,
+    rules::Rules,
+    trust::TrustTable,
+};
 use xdid::method::key::{
     DidKeyPair,
     PublicKey,
@@ -61,7 +73,7 @@ fn world() -> (World, Replicas) {
     let mut world = World::new();
     let policy = Policy::new();
     world.insert_resource(policy.clone());
-    let replicas = Replicas::new(policy);
+    let replicas = Replicas::new(policy, Rules::default());
     world.insert_resource(replicas.clone());
     init_indexes(&mut world);
     (world, replicas)
@@ -266,9 +278,12 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     let space = space(b"far-half");
     let gate = DocId([4; 32]);
 
-    host_replicas.attribution().set_local(
-        host.did().clone(),
-        unavi_policy::trust::TrustTable::new(unavi_local::DeviceStorage::memory()),
+    host_replicas
+        .attribution()
+        .set_local(host.did().clone(), TrustTable::new(DeviceStorage::memory()));
+    visitor_replicas.attribution().set_local(
+        visitor.did().clone(),
+        TrustTable::new(DeviceStorage::memory()),
     );
     host_replicas.record_minted(gate);
 
@@ -278,10 +293,20 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
         Ok(ReplicationMsg::Snapshot(_))
     ));
 
+    let far_half = PortalAttr {
+        destination: Some(PortalDestination {
+            space: [3; 32],
+            link:  Some(LinkId([1; 16])),
+        }),
+        size_x:      2.0,
+        size_y:      2.0,
+    }
+    .encode()
+    .expect("encode");
     let pairing = vec![SessionWrite {
         prim:  prim(),
         name:  PortalAttr::NAME.to_string(),
-        value: Some(b"dest".to_vec()),
+        value: Some(far_half.clone()),
     }];
     let opener = local(&mut visitor_world, visitor_id, visitor.did());
     set_session(&mut visitor_world, &opener, gate, space, pairing, 1).expect("pairing admitted");
@@ -295,7 +320,8 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     else {
         panic!("the visitor broadcasts its pairing");
     };
-    let from_visitor = claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
+    let from_visitor =
+        claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
     apply_remote(
         &mut host_world,
         from_visitor,
@@ -310,7 +336,7 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     for replicas in [&visitor_replicas, &host_replicas] {
         assert_eq!(
             replicas.session_value(space, gate, prim(), &PortalAttr::NAME),
-            Some(b"dest".to_vec()),
+            Some(far_half.clone()),
             "both peers compose the far half"
         );
     }

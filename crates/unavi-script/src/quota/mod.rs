@@ -40,7 +40,7 @@ impl QuotaLeases {
     }
 }
 
-/// Marks a document whose scripts bypass quota enforcement, for trusted system
-/// scripts.
+/// Marks a document whose scripts are charged the local user's own budget in
+/// place of their author's, for trusted system scripts.
 #[derive(Component)]
 pub struct QuotaExempt;

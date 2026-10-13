@@ -66,8 +66,10 @@ impl PresenceTable {
             (held.len(), held.get(&presence.ns).copied().unwrap_or(0))
         });
         let occupants = inner.spaces.get(&presence.ns);
-        let refreshing =
-            occupants.is_some_and(|list| list.iter().any(|o| o.endpoint == presence.endpoint));
+        let refreshing = occupants.is_some_and(|list| {
+            list.iter()
+                .any(|o| o.endpoint == presence.endpoint && o.did == presence.did)
+        });
 
         if !refreshing {
             if devices_here == 0 && spaces_held >= config.max_presences_per_did {
@@ -204,14 +206,17 @@ impl Inner {
         }
 
         for did in gone {
+            debug_assert!(self.total > 0, "presence total drifted");
             self.total = self.total.saturating_sub(1);
             if is_did_key(&did) {
+                debug_assert!(self.did_key > 0, "did:key presence count drifted");
                 self.did_key = self.did_key.saturating_sub(1);
             }
             let Some(held) = self.by_did.get_mut(&did) else {
                 continue;
             };
             if let Some(count) = held.get_mut(&ns) {
+                debug_assert!(*count > 0, "per-namespace presence count drifted");
                 *count = count.saturating_sub(1);
                 if *count == 0 {
                     held.remove(&ns);
@@ -294,7 +299,27 @@ mod tests {
 
         assert_eq!(table.occupants(NamespaceId::from(&[1; 32])).len(), 1);
         let did = Did::from_str(&key.public().to_did().to_string()).expect("did");
-        assert_eq!(table.0.lock().by_did[&did][&NamespaceId::from(&[1; 32])], 1);
+        let inner = table.0.lock();
+        assert_eq!(inner.by_did[&did][&NamespaceId::from(&[1; 32])], 1);
+        assert_eq!((inner.total, inner.did_key), (1, 1));
+    }
+
+    #[test]
+    fn an_endpoint_rebound_to_a_new_did_is_not_a_refresh() {
+        let table = PresenceTable::default();
+        let config = Config {
+            max_did_key_presences: 1,
+            ..Config::default()
+        };
+        let shared = endpoint();
+        let (p, s) = presence(&P256KeyPair::generate(), 1, shared);
+        table.insert(&p, s, &config).expect("first");
+
+        let (p, s) = presence(&P256KeyPair::generate(), 1, shared);
+        assert_eq!(
+            table.insert(&p, s, &config),
+            Err(RegistryError::TooManyPresences)
+        );
     }
     fn web_presence(name: &str, ns: u8, endpoint: EndpointId) -> (Presence, Signed<Presence>) {
         let key = P256KeyPair::generate();

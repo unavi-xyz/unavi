@@ -1,7 +1,10 @@
 //! Every live listing, durable in a document only this registry writes, and
 //! indexed in memory so no request reads the whole document.
 
-use std::collections::HashMap;
+use std::collections::{
+    BTreeSet,
+    HashMap,
+};
 
 use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
@@ -52,13 +55,15 @@ struct Listing {
 /// The listings held in memory, with the counts the caps are checked against
 /// kept in step so no check scans them.
 ///
-/// Expired entries stay counted until pruned.
+/// Expired entries stay counted until evicted, which every insert does first.
 #[derive(Default)]
 struct Index {
-    entries: HashMap<NamespaceId, Submission>,
-    per_did: HashMap<Did, usize>,
+    entries:   HashMap<NamespaceId, Submission>,
+    /// Earliest expiry first, so eviction visits only what has lapsed.
+    by_expiry: BTreeSet<(i64, NamespaceId)>,
+    per_did:   HashMap<Did, usize>,
     /// Entries held by `did:key` identities.
-    did_key: usize,
+    did_key:   usize,
 }
 
 impl Index {
@@ -68,20 +73,32 @@ impl Index {
         if is_did_key(&submission.did) {
             self.did_key += 1;
         }
+        self.by_expiry.insert((submission.expires, submission.ns));
         self.entries.insert(submission.ns, submission);
+    }
+
+    /// Namespaces whose listing lapsed at or before `now`.
+    fn expired(&self, now: i64) -> Vec<NamespaceId> {
+        self.by_expiry
+            .range(..=(now, NamespaceId::from(&[u8::MAX; 32])))
+            .map(|(_, ns)| *ns)
+            .collect()
     }
 
     fn remove(&mut self, ns: NamespaceId) {
         let Some(gone) = self.entries.remove(&ns) else {
             return;
         };
+        self.by_expiry.remove(&(gone.expires, ns));
         if let Some(count) = self.per_did.get_mut(&gone.did) {
+            debug_assert!(*count > 0, "per-DID listing count drifted");
             *count = count.saturating_sub(1);
             if *count == 0 {
                 self.per_did.remove(&gone.did);
             }
         }
         if is_did_key(&gone.did) {
+            debug_assert!(self.did_key > 0, "did:key listing count drifted");
             self.did_key = self.did_key.saturating_sub(1);
         }
     }
@@ -102,10 +119,16 @@ impl Index {
             _ => {}
         }
 
+        // An expired entry here is replaced, so it frees the room it fills.
+        let replaced = self.entries.get(&submission.ns);
+        let replaced_total = usize::from(replaced.is_some());
+        let replaced_key = usize::from(replaced.is_some_and(|r| is_did_key(&r.did)));
+
         let held = self.per_did.get(&submission.did).copied().unwrap_or(0);
         if held >= config.max_submissions_per_did
-            || self.entries.len() >= config.max_listings
-            || (is_did_key(&submission.did) && self.did_key >= config.max_did_key_listings)
+            || self.entries.len() - replaced_total >= config.max_listings
+            || (is_did_key(&submission.did)
+                && self.did_key - replaced_key >= config.max_did_key_listings)
         {
             return Err(RegistryError::TooManySubmissions);
         }
@@ -134,7 +157,6 @@ pub struct Catalog {
 impl Catalog {
     pub async fn create(store: &Store) -> anyhow::Result<Self> {
         let doc = store.named(KEY).await?;
-        let now = now();
         let mut index = Index::default();
 
         for entry in doc.list(ENTRIES_PREFIX).await? {
@@ -147,9 +169,7 @@ impl Catalog {
             else {
                 continue;
             };
-            if submission.expires > now {
-                index.insert(submission);
-            }
+            index.insert(submission);
         }
 
         Ok(Self {
@@ -174,6 +194,7 @@ impl Catalog {
         let _write = self.write.lock().await;
         let now = now();
 
+        self.evict_expired(now).await;
         self.index.read().admit(&submission, now, config)?;
 
         let listing = Listing {
@@ -235,25 +256,30 @@ impl Catalog {
     }
 
     /// Deletes expired listings from the document and the index.
-    pub async fn prune(&self) -> anyhow::Result<usize> {
+    ///
+    /// Returns how many were removed; a failed delete is logged and left for
+    /// the next pass.
+    pub async fn prune(&self) -> usize {
         let _write = self.write.lock().await;
-        let now = now();
+        self.evict_expired(now()).await
+    }
 
-        let expired = self
-            .index
-            .read()
-            .entries
-            .values()
-            .filter(|s| s.expires <= now)
-            .map(|s| s.ns)
-            .collect::<Vec<_>>();
+    /// The caller must hold the write lock.
+    async fn evict_expired(&self, now: i64) -> usize {
+        let expired = self.index.read().expired(now);
+        let mut removed = 0;
 
-        for ns in &expired {
-            self.doc.remove_key(entry_key(*ns)).await?;
-            self.index.write().remove(*ns);
+        for ns in expired {
+            match self.doc.remove_key(entry_key(ns)).await {
+                Ok(()) => {
+                    self.index.write().remove(ns);
+                    removed += 1;
+                }
+                Err(err) => tracing::warn!(?err, "failed removing expired listing"),
+            }
         }
 
-        Ok(expired.len())
+        removed
     }
 }
 
@@ -361,6 +387,7 @@ mod tests {
         index.insert(refresh);
         assert_eq!(index.entries.len(), 1);
         assert_eq!(index.did_key, 1);
+        assert_eq!(index.by_expiry.len(), 1);
     }
 
     #[test]
@@ -377,6 +404,41 @@ mod tests {
         assert!(!index.per_did.contains_key(&old));
         assert_eq!(index.per_did[&new], 1);
         assert_eq!(index.did_key, 1);
+    }
+
+    #[test]
+    fn replacing_an_expired_listing_is_admitted_at_a_full_catalog_and_pool() {
+        let config = Config {
+            max_listings: 1,
+            max_did_key_listings: 1,
+            ..Config::default()
+        };
+        let mut index = Index::default();
+        index.insert(listing(&did_key(), 1, Kind::Space, NOW - 1));
+
+        let take = listing(&did_key(), 1, Kind::Space, NOW + 60);
+        assert_eq!(index.admit(&take, NOW, &config), Ok(()));
+        let other = listing(&did_key(), 2, Kind::Space, NOW + 60);
+        assert_eq!(
+            index.admit(&other, NOW, &config),
+            Err(RegistryError::TooManySubmissions)
+        );
+    }
+
+    #[test]
+    fn only_lapsed_listings_are_reported_expired_and_removal_forgets_them() {
+        let web = did_web();
+        let mut index = Index::default();
+        index.insert(listing(&web, 1, Kind::Space, NOW - 1));
+        index.insert(listing(&web, 2, Kind::Space, NOW));
+        index.insert(listing(&web, 3, Kind::Space, NOW + 1));
+
+        assert_eq!(
+            index.expired(NOW),
+            vec![NamespaceId::from(&[1; 32]), NamespaceId::from(&[2; 32])]
+        );
+        index.remove(NamespaceId::from(&[1; 32]));
+        assert_eq!(index.expired(NOW), vec![NamespaceId::from(&[2; 32])]);
     }
 
     #[test]

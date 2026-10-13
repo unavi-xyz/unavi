@@ -135,12 +135,8 @@ async fn maintenance(shared: Arc<Shared>) {
             warn!(?err, "active view write failed");
         }
 
-        if tick.is_multiple_of(PRUNE_EVERY) {
-            match shared.catalog.prune().await {
-                Ok(0) => {}
-                Ok(_) => shared.request_rebuild(),
-                Err(err) => warn!(?err, "catalog prune failed"),
-            }
+        if tick.is_multiple_of(PRUNE_EVERY) && shared.catalog.prune().await > 0 {
+            shared.request_rebuild();
         }
 
         if shared.dirty.swap(false, Ordering::AcqRel)

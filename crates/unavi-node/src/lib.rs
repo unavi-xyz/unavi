@@ -43,6 +43,9 @@ use unavi_registry::server::{
 use unavi_store::StoreBuilder;
 use xdid::core::did::Did;
 
+use crate::accept_only::AcceptOnly;
+
+mod accept_only;
 pub mod config;
 mod files;
 
@@ -87,8 +90,14 @@ pub async fn run(
 
     // Fixes the endpoint id across restarts. The served DID document names it,
     // so a peer that resolved this DID can still reach the node.
+    // Installed ahead of the identity hooks, so a refused dial never starts
+    // a proof.
     let endpoint = auth
-        .install(Endpoint::builder(N0).secret_key(node.endpoint().clone()))
+        .install(
+            Endpoint::builder(N0)
+                .secret_key(node.endpoint().clone())
+                .hooks(AcceptOnly),
+        )
         .bind()
         .await?;
 

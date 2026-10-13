@@ -17,10 +17,7 @@ use bevy_hsd::{
         FeedReady,
     },
 };
-use bevy_iroh::store::{
-    DataStore,
-    SyncTargets,
-};
+use bevy_iroh::store::DataStore;
 use hsd::state::HsdState;
 use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
@@ -55,7 +52,6 @@ pub struct PendingScene {
 #[derive(Component)]
 pub struct PendingSpacePeers {
     ns:            NamespaceId,
-    sync_targets:  Vec<EndpointAddr>,
     waiting_since: Duration,
 }
 
@@ -63,7 +59,6 @@ pub fn spawn_space_scene(
     trigger: On<Add, Space>,
     spaces: Query<(&Space, Option<&HsdNamespace>)>,
     store: Option<Res<DataStore>>,
-    sync_targets: Option<Res<SyncTargets>>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
@@ -105,7 +100,6 @@ pub fn spawn_space_scene(
         .entity(trigger.entity)
         .try_insert(PendingSpacePeers {
             ns,
-            sync_targets: sync_targets.map_or_default(|targets| targets.0.clone()),
             waiting_since: time.elapsed(),
         });
 }
@@ -116,11 +110,6 @@ pub fn spawn_space_scene(
 /// exchange (see [`crate::discovery::gossip`]), so a real
 /// occupant shows up here within milliseconds of connecting, not the full
 /// presence broadcast interval.
-///
-/// A configured sync target never skips this wait on its own: a space's
-/// content lives with its occupants, and a general-purpose sync target
-/// answers "not found" for a space it was never asked to hold — firing on it
-/// alone raced out the occupant that was a tick away from confirming.
 pub fn start_space_fetch(
     time: Res<Time>,
     pending: Query<(Entity, &PendingSpacePeers)>,
@@ -144,8 +133,9 @@ pub fn start_space_fetch(
             continue;
         }
 
-        let mut peers = waiting.sync_targets.clone();
-        peers.extend(confirmed);
+        // Occupants only. A space's content lives with them, and the
+        // configured sync targets are registry nodes, which hold no space.
+        let peers = confirmed;
 
         let ns = waiting.ns;
         let store = store.0.clone();

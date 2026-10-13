@@ -56,6 +56,10 @@ use crate::{
 };
 pub use crate::{
     builder::StoreBuilder,
+    dial_scope::{
+        DialHooks,
+        DialScope,
+    },
     document::{
         Document,
         Events,
@@ -74,6 +78,7 @@ pub use crate::{
 
 mod backend;
 mod builder;
+mod dial_scope;
 mod document;
 mod error;
 mod fetch;
@@ -101,6 +106,7 @@ struct StoreInner {
     storage:    DeviceStorage,
     visits:     Document,
     fetchers:   Arc<Fetchers>,
+    dial_scope: Option<DialScope>,
     /// Taken shared by every open and exclusively by a remove, so a remove
     /// never deletes a replica an open is handing out.
     gate:       RwLock<()>,
@@ -200,6 +206,10 @@ impl Store {
         }
 
         let events = doc.subscribe().await?;
+        // Named first: the sync dials them as it starts.
+        if let Some(scope) = &self.0.dial_scope {
+            scope.name(&providers);
+        }
         doc.doc().start_sync(peers).await?;
 
         Ok((doc, events))

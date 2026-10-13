@@ -15,6 +15,7 @@ use unavi_identity::{
 };
 use unavi_registry::client::Followed;
 use unavi_space::identity::LocalIdentity;
+use unavi_store::DialScope;
 
 mod load;
 
@@ -36,6 +37,11 @@ pub struct LocalNode(pub Arc<NodeIdentity>);
 /// endpoint builder and served once the endpoint binds.
 #[derive(Resource, Clone)]
 pub struct Auth(pub Arc<EndpointAuth>);
+
+/// Which peers the docs engine may dial. Its hooks go on the endpoint builder
+/// and the same scope goes to the store, which names the peers it joins.
+#[derive(Resource, Clone, Default)]
+pub struct Dials(pub DialScope);
 
 pub struct IdentityPlugin {
     pub storage: unavi_local::DeviceStorage,
@@ -120,6 +126,7 @@ impl Plugin for IdentityPlugin {
         .insert_resource(self.sync.clone())
         .insert_resource(LocalNode(Arc::new(node)))
         .insert_resource(Auth(auth))
+        .init_resource::<Dials>()
         .add_observer(load::serve_auth)
         .add_observer(load::load_store);
     }

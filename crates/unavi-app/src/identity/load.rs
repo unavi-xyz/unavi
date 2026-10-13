@@ -40,12 +40,14 @@ use unavi_space::identity::{
     RootDocument,
 };
 use unavi_store::{
+    DialScope,
     Store,
     StoreBuilder,
 };
 
 use crate::identity::{
     Auth,
+    Dials,
     KeyStorage,
     LocalNode,
     SyncConfig,
@@ -143,6 +145,7 @@ pub fn load_store(
     local: Res<LocalIdentity>,
     storage: Res<KeyStorage>,
     sync: Res<SyncConfig>,
+    dials: Res<Dials>,
     async_world: Res<AsyncWorld>,
 ) {
     let entity = trigger.entity;
@@ -161,6 +164,7 @@ pub fn load_store(
     };
     let storage = storage.0.clone();
     let sync = sync.clone();
+    let dials = dials.0.clone();
     let async_world = async_world.clone();
 
     task::spawn(async move {
@@ -175,6 +179,7 @@ pub fn load_store(
             entity,
             storage.clone(),
             sync.clone(),
+            dials.clone(),
         )
         .await
         {
@@ -192,11 +197,13 @@ async fn load(
     entity: Entity,
     storage: unavi_local::DeviceStorage,
     sync: SyncConfig,
+    dials: DialScope,
 ) -> anyhow::Result<()> {
     let builder = StoreBuilder::new(follower.endpoint.clone(), node.author())
         .sweep_interval(Duration::from_mins(15))
         .doc_budget(DOC_BUDGET)
-        .storage(storage.clone());
+        .storage(storage.clone())
+        .dial_scope(dials);
 
     let store = builder.build().await?;
 

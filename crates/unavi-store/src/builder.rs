@@ -27,6 +27,7 @@ use crate::{
         self,
         Backend,
     },
+    dial_scope::DialScope,
     document::Document,
     error::Result,
     fetch::Fetchers,
@@ -47,6 +48,7 @@ pub struct StoreBuilder {
     storage:        DeviceStorage,
     doc_budget:     Option<u64>,
     doc_ttl:        Duration,
+    dial_scope:     Option<DialScope>,
 }
 
 /// What a load attempt opens from disk.
@@ -66,6 +68,7 @@ impl StoreBuilder {
             storage: DeviceStorage::memory(),
             doc_budget: Some(8 * GIB),
             doc_ttl: Duration::from_hours(24 * 7),
+            dial_scope: None,
         }
     }
 
@@ -96,6 +99,14 @@ impl StoreBuilder {
     #[must_use]
     pub const fn doc_ttl(mut self, ttl: Duration) -> Self {
         self.doc_ttl = ttl;
+        self
+    }
+
+    /// Names each peer a join passes to this scope before the sync dials it.
+    /// Without one the docs engine dials every peer it remembers.
+    #[must_use]
+    pub fn dial_scope(mut self, scope: DialScope) -> Self {
+        self.dial_scope = Some(scope);
         self
     }
 
@@ -156,6 +167,7 @@ impl StoreBuilder {
                 storage: self.storage,
                 visits,
                 fetchers,
+                dial_scope: self.dial_scope,
                 gate: tokio::sync::RwLock::default(),
                 doc_budget: self.doc_budget,
                 doc_ttl: self.doc_ttl,

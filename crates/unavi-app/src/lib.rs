@@ -174,8 +174,21 @@ fn load_endpoint(app: &mut App) {
         return;
     };
 
+    let Some(dials) = app
+        .world()
+        .get_resource::<identity::Dials>()
+        .map(|dials| dials.0.clone())
+    else {
+        error!("identity did not initialize; exiting");
+        app.world_mut().write_message(AppExit::error());
+        return;
+    };
+
+    // The dial guard goes first: a refused dial must not start a DID proof.
     app.world_mut().trigger(LoadEndpoint {
-        configure: Some(Arc::new(move |builder| auth.install(builder))),
+        configure: Some(Arc::new(move |builder| {
+            auth.install(builder.hooks(dials.hooks()))
+        })),
         filter: AddrFilter::default(),
         secret_key,
     });

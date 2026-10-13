@@ -115,7 +115,7 @@ impl Followed {
 /// that did not.
 ///
 /// An unresolved target is worth retrying rather than failing the load over. A
-/// client with no reachable server still runs peer to peer.
+/// app with no reachable registry still runs peer to peer.
 pub async fn resolve_batch(dids: Vec<String>, resolver: &Resolver) -> (Vec<Target>, Vec<String>) {
     let mut targets = Vec::new();
     let mut unresolved = Vec::new();

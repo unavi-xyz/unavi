@@ -1,8 +1,8 @@
 [build]
-target = "crates/unavi-client/index.html"
+target = "crates/unavi-app/index.html"
 
 [watch]
-ignore = ["crates/unavi-server"]
+ignore = ["crates/unavi-node"]
 watch  = ["crates"]
 
 [[hooks]]

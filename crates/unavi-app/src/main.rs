@@ -17,7 +17,7 @@ struct Args {
     debug_log: bool,
 
     /// Keeps the identity key and document store in-memory.
-    /// Useful for running multiple clients on the same machine.
+    /// Useful for running multiple apps on the same machine.
     #[arg(long)]
     in_memory: bool,
 
@@ -32,7 +32,7 @@ struct Args {
 }
 
 impl Args {
-    /// XR is not a wasm arg: the web client has no `OpenXR` runtime to ask for.
+    /// XR is not a wasm arg: the web app has no `OpenXR` runtime to ask for.
     #[cfg_attr(
         target_family = "wasm",
         allow(
@@ -66,7 +66,7 @@ fn main() -> AppExit {
     #[cfg(not(debug_assertions))]
     app.set_error_handler(bevy::ecs::error::warn);
 
-    app.add_plugins(unavi_client::UnaviPlugin {
+    app.add_plugins(unavi_app::UnaviPlugin {
         in_memory: args.in_memory,
         xr: args.xr(),
         join: args.join,

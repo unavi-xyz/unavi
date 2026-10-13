@@ -1,4 +1,4 @@
-//! The client's scene flow: limbo while no space is loaded, travel between
+//! The app's scene flow: limbo while no space is loaded, travel between
 //! spaces, and the startup join into home or `--join`.
 
 use bevy::{

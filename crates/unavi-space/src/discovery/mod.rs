@@ -225,7 +225,7 @@ pub fn track_peers(
 /// Offers the tracked peers to the blob downloader.
 ///
 /// A space's document syncs from its occupants, so its content lives with them
-/// too; a fetch knowing only the configured sync targets asks a server that may
+/// too; a fetch knowing only the configured sync targets asks a node that may
 /// never have seen the space.
 pub fn publish_blob_providers(peers: Query<&Peer>, providers: Option<ResMut<BlobProviders>>) {
     let Some(mut providers) = providers else {

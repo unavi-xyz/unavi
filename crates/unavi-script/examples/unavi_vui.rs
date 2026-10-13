@@ -15,17 +15,17 @@ use bevy_hsd::package::ImportPackage;
 use bevy_iroh::store::DataStore;
 use unavi_agent::LocalAgent;
 
-use crate::util::create_client_store;
+use crate::util::create_app_store;
 
 mod util;
 
 const SCRIPT_PATH: &str = "hsd/example_unavi_vui.hsdz";
-const ASSETS_PATH: &str = "../unavi-client/assets/";
+const ASSETS_PATH: &str = "../unavi-app/assets/";
 const GROUND_SIZE: f32 = 24.0;
 const GROUND_THICKNESS: f32 = 0.5;
 
 fn main() {
-    let store = create_client_store();
+    let store = create_app_store();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before

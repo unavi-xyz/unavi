@@ -1,5 +1,5 @@
 //! Render layer shared by every crate that draws or excludes a portal's
-//! live-view plane (`unavi-agent`, `unavi-client`, this crate).
+//! live-view plane (`unavi-agent`, `unavi-app`, this crate).
 //!
 //! Kept here, not duplicated, because both of those crates already depend
 //! on `unavi-portal`.

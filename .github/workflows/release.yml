@@ -36,10 +36,8 @@ jobs:
           rustup default nightly
           nix profile add nixpkgs#cargo-release
       - name: Bump version
-        # launcher/ and hsd/ are separate workspaces (excluded from the root
-        # so their lockfiles stay independent); bump all three together or
-        # the launcher reports a stale CARGO_PKG_VERSION and update-loops
-        # against the newly tagged release forever (J2).
+        # A stale launcher CARGO_PKG_VERSION update-loops against the new tag,
+        # so the root, launcher/ and hsd/ workspaces bump together.
         run: |
           cargo release version ${{ inputs.increment }} -x --no-confirm
           cargo release version ${{ inputs.increment }} -x --no-confirm --manifest-path launcher/Cargo.toml --workspace
@@ -74,8 +72,6 @@ jobs:
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
-    # Only the two secrets build-windows.yml declares, not every repo secret
-    # (J7): it has no use for DEPLOY_SSH_KEY.
     secrets:
       WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}

@@ -70,7 +70,7 @@ struct Space {
     beacon: Mote,
 }
 
-/// Lists the spaces currently occupied per the registries this client follows.
+/// Lists the spaces currently occupied per the registries this app follows.
 #[derive(Default)]
 pub struct Nav {
     lists:   Vec<PendingEntries>,

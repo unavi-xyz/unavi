@@ -54,7 +54,7 @@ fn main() {
                     ..default()
                 })
                 .set(AssetPlugin {
-                    file_path: concat!(env!("CARGO_MANIFEST_DIR"), "/../unavi-client/assets")
+                    file_path: concat!(env!("CARGO_MANIFEST_DIR"), "/../unavi-app/assets")
                         .to_string(),
                     ..default()
                 }),

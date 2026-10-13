@@ -28,7 +28,7 @@ use xdid::{
 };
 
 /// Debug builds resolve a `did:web` naming a loopback or private host over
-/// plaintext HTTP, so a development server is reachable. Release builds refuse
+/// plaintext HTTP, so a development node is reachable. Release builds refuse
 /// them, where resolving a peer-supplied DID would otherwise probe this host's
 /// own network.
 const TARGET: TargetPolicy = if cfg!(debug_assertions) {

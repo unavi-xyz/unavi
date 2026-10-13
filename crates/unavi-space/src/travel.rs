@@ -6,7 +6,7 @@ use crate::membership::SpaceId;
 
 /// A queued request to travel the local agent into a space.
 ///
-/// Consumed by the client's travel driver, which unloads the current space and
+/// Consumed by the app's travel driver, which unloads the current space and
 /// routes arrival through the limbo load-gate so spawning honors the target's
 /// spawn points.
 #[derive(Resource, Default)]

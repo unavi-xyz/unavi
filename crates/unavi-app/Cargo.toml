@@ -2,7 +2,7 @@
 build                = "build.rs"
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-client"
+name                 = "unavi-app"
 publish              = false
 repository.workspace = true
 version.workspace    = true

@@ -68,7 +68,7 @@ impl SpaceGrid {
 pub struct ActiveSpace(pub Option<Entity>);
 
 /// Marks the local agent as not standing in any space, so its position says
-/// nothing about where a space is. The client holds it while limbo pins the
+/// nothing about where a space is. The app holds it while limbo pins the
 /// agent to the limbo floor.
 #[derive(Component)]
 pub struct Spaceless;

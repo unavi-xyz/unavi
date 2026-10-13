@@ -46,11 +46,11 @@ use xdid::core::did::Did;
 pub mod config;
 mod files;
 
-/// Bytes of documents the server holds before the retention sweep evicts
+/// Bytes of documents the node holds before the retention sweep evicts
 /// read-only ones, least recently joined first.
 const DOC_BUDGET: u64 = 16 * 1024 * 1024 * 1024;
 
-pub struct ServerOptions {
+pub struct NodeOptions {
     /// The domain this node's `did:web` resolves from.
     pub domain:   String,
     /// Where keys, documents and hosted files live. `None` keeps keys and
@@ -64,8 +64,8 @@ pub struct ServerOptions {
 }
 
 /// Runs the node until `shutdown` resolves, then flushes the stores.
-pub async fn run_server(
-    opts: ServerOptions,
+pub async fn run(
+    opts: NodeOptions,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let did = did_web(&opts.domain)?;
@@ -74,10 +74,10 @@ pub async fn run_server(
         .as_ref()
         .map_or_else(DeviceStorage::memory, |dir| DeviceStorage::at(dir.clone()));
 
-    // The node proves the DID it publishes, so a client that followed it binds
+    // The node proves the DID it publishes, so an app that followed it binds
     // this endpoint to that DID.
     let node = Arc::new(NodeIdentity::load_as(&storage, did.clone())?);
-    info!(%did, "Running server");
+    info!(%did, "Running node");
 
     let resolver = Arc::new(Resolver::new()?);
     let auth = Arc::new(EndpointAuth::new(
@@ -86,7 +86,7 @@ pub async fn run_server(
     ));
 
     // Fixes the endpoint id across restarts. The served DID document names it,
-    // so a client that resolved this DID can still reach the node.
+    // so a peer that resolved this DID can still reach the node.
     let endpoint = auth
         .install(Endpoint::builder(N0).secret_key(node.endpoint().clone()))
         .bind()

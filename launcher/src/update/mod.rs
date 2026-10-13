@@ -1,6 +1,6 @@
 mod common;
 
-pub mod client;
+pub mod app;
 pub mod launcher;
 
 #[cfg_attr(target_os = "linux", path = "platform/linux.rs")]

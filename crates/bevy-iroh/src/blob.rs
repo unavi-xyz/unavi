@@ -146,7 +146,7 @@ pub(crate) fn on_blob_request_insert(
         return;
     };
 
-    // Appended rather than merged, so a configured server is still tried first.
+    // Appended rather than merged, so a configured node is still tried first.
     let mut providers = targets.0.iter().map(|addr| addr.id).collect::<Vec<_>>();
     for id in &peers.0 {
         if !providers.contains(id) {

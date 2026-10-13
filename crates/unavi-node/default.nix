@@ -2,7 +2,7 @@ _: {
   perSystem =
     { pkgs, lib, ... }:
     let
-      pname = "unavi-server";
+      pname = "unavi-node";
 
       src = lib.fileset.toSource rec {
         root = ../..;

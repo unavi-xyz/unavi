@@ -2,8 +2,8 @@
 artifacts/
 
 # Bevy assets
-crates/unavi-client/assets/hsd
-crates/unavi-client/assets/wasm
+crates/unavi-app/assets/hsd
+crates/unavi-app/assets/wasm
 
 # Nix
 result
@@ -20,7 +20,7 @@ dist/
 node_modules/
 
 # Generated web script assets
-crates/unavi-client/assets/unavi-script/
+crates/unavi-app/assets/unavi-script/
 
 # WIT
 deps/

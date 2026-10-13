@@ -1,5 +1,5 @@
 //! Renders `shader/graph` (a compiled [`ShaderGraph`]) as a live material,
-//! generating WGSL client-side from the validated graph.
+//! generating WGSL locally from the validated graph.
 
 pub mod cache;
 pub mod codegen;

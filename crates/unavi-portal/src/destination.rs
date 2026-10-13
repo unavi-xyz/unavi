@@ -51,7 +51,7 @@ pub struct Arrivals(Vec<Entity>);
 pub struct LinkedPortal {
     pub entity: Entity,
     /// The portal's document and prim, which order candidates identically
-    /// on every client.
+    /// on every peer.
     pub key:    (DocId, PrimId),
     pub home:   DocId,
     pub target: DocId,

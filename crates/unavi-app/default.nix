@@ -7,7 +7,7 @@
       ...
     }:
     let
-      pname = "unavi-client";
+      pname = "unavi-app";
 
       wasmBindgenVersion =
         (fromTOML (builtins.readFile ../../Cargo.lock)).package
@@ -118,7 +118,7 @@
 
       desktopItem = pkgs.makeDesktopItem {
         name = pname;
-        desktopName = "UNAVI Client";
+        desktopName = "UNAVI";
         comment = "Peer-to-peer 3D social platform for VR and desktop";
         exec = pname;
         icon = pname;

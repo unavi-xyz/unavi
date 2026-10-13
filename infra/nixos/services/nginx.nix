@@ -11,7 +11,7 @@ let
   proxyServices = lib.filterAttrs (_: c: c ? port) services;
   staticServices = lib.filterAttrs (_: c: c ? static && c.static) services;
 
-  webClientPkg = self.packages.${pkgs.system}.unavi-client-web;
+  webAppPkg = self.packages.${pkgs.system}.unavi-app-web;
 
   proxyHosts = lib.mapAttrs (_: cfg: {
     enableACME = true;
@@ -25,7 +25,7 @@ let
   staticHosts = lib.mapAttrs (_: _cfg: {
     enableACME = true;
     forceSSL = true;
-    root = webClientPkg;
+    root = webAppPkg;
     locations."/" = {
       tryFiles = "$uri $uri/ =404";
     };

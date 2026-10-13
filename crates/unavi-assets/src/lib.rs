@@ -15,7 +15,7 @@ use bevy_msdf::font::asset::{
     FontRequest,
 };
 
-/// Every asset must be hosted by a reachable unavi-server (or other provider).
+/// Every asset must be hosted by a reachable unavi-node (or other provider).
 pub const DEFAULT_AVATAR: AssetSpec = AssetSpec {
     rel_path: "model/default.vrm",
     hash:     hex_hash("a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281"),
@@ -44,7 +44,7 @@ pub const CJK_FONT: AssetSpec = AssetSpec {
     size:     16_467_736,
 };
 
-/// The assets the client pulls over iroh.
+/// The assets the app pulls over iroh.
 pub const MANIFEST: &[AssetSpec] = &[
     DEFAULT_AVATAR,
     DEFAULT_CHARACTER_ANIMATIONS,

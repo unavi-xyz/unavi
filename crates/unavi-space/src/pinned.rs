@@ -111,7 +111,7 @@ pub fn adopt_pinned_docs(
     }
 }
 
-/// Syncs and instances pinned documents this client lacks, once a pinner is
+/// Syncs and instances pinned documents this peer lacks, once a pinner is
 /// reachable.
 ///
 /// Only parented trackers fetch: an unparented one belongs to a space that has

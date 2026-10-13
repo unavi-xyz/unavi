@@ -1,4 +1,4 @@
-//! The UNAVI desktop and web client: windowing, identity, the scene state
+//! The UNAVI desktop and web app: windowing, identity, the scene state
 //! machine, and the glue that assembles every other crate into one app.
 
 // Bevy's `AsBindGroup` needs a higher limit than the derive's default.

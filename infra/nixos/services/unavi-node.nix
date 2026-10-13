@@ -8,44 +8,44 @@
 with lib;
 
 let
-  cfg = config.services.unavi-server;
+  cfg = config.services.unavi-node;
 in
 {
-  options.services.unavi-server = {
-    enable = mkEnableOption "unavi server";
+  options.services.unavi-node = {
+    enable = mkEnableOption "unavi node";
 
     package = mkOption {
       type = types.package;
-      description = "unavi-server package to use";
+      description = "unavi-node package to use";
     };
 
     domain = mkOption {
       type = types.str;
-      default = deployInfo.stable.services.unavi_server.domain;
-      description = "Server domain for DID generation";
+      default = deployInfo.stable.services.unavi_node.domain;
+      description = "node domain for DID generation";
     };
 
     port = mkOption {
       type = types.port;
-      default = deployInfo.stable.services.unavi_server.port;
-      description = "port for unavi-server";
+      default = deployInfo.stable.services.unavi_node.port;
+      description = "port for unavi-node";
     };
 
     dataDir = mkOption {
       type = types.str;
-      default = "/var/lib/unavi-server";
-      description = "data directory for server state";
+      default = "/var/lib/unavi-node";
+      description = "data directory for node state";
     };
 
     user = mkOption {
       type = types.str;
-      default = "unavi-server";
+      default = "unavi-node";
       description = "user account for the service";
     };
 
     group = mkOption {
       type = types.str;
-      default = "unavi-server";
+      default = "unavi-node";
       description = "group for the service";
     };
   };
@@ -60,8 +60,8 @@ in
 
     users.groups.${cfg.group} = { };
 
-    systemd.services.unavi-server = {
-      description = "unavi server";
+    systemd.services.unavi-node = {
+      description = "unavi node";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
 
@@ -82,7 +82,7 @@ in
       };
 
       script = ''
-        exec ${cfg.package}/bin/unavi-server \
+        exec ${cfg.package}/bin/unavi-node \
           --port ${toString cfg.port}
       '';
     };

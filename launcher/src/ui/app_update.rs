@@ -4,11 +4,11 @@ use tracing::error;
 use super::app::Route;
 use crate::update::{
     UpdateStatus,
-    client,
+    app,
 };
 
 #[component]
-pub fn ClientUpdate() -> Element {
+pub fn AppUpdate() -> Element {
     let nav = navigator();
     let mut update_status = use_signal(|| None::<UpdateStatus>);
 
@@ -18,7 +18,7 @@ pub fn ClientUpdate() -> Element {
         let (tx, rx) = async_channel::unbounded();
 
         let handle = tokio::spawn(async move {
-            client::update_client_with_callback(move |s| {
+            app::update_app_with_callback(move |s| {
                 let _ = tx.try_send(s);
             })
             .await
@@ -34,16 +34,12 @@ pub fn ClientUpdate() -> Element {
                 nav.push(Route::Home);
             }
             Ok(Err(e)) => {
-                error!("Error checking client updates: {e:?}");
-                update_status.set(Some(UpdateStatus::Error(format!(
-                    "client update failed: {e}"
-                ))));
+                error!("Error checking app updates: {e:?}");
+                update_status.set(Some(UpdateStatus::Error(format!("app update failed: {e}"))));
             }
             Err(e) => {
                 error!("Task error: {e:?}");
-                update_status.set(Some(UpdateStatus::Error(format!(
-                    "client update failed: {e}"
-                ))));
+                update_status.set(Some(UpdateStatus::Error(format!("app update failed: {e}"))));
             }
         }
     });
@@ -63,8 +59,8 @@ pub fn ClientUpdate() -> Element {
                 }
             };
         }
-        Some(UpdateStatus::UpToDate) => "client up to date",
-        Some(UpdateStatus::UpdatedNeedsRestart) => "client updated successfully",
+        Some(UpdateStatus::UpToDate) => "app up to date",
+        Some(UpdateStatus::UpdatedNeedsRestart) => "app updated successfully",
         Some(UpdateStatus::Offline) => {
             return rsx! {
                 div { class: "status", "offline, skipping update" }

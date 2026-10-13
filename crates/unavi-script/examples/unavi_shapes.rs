@@ -25,7 +25,7 @@ fn main() {
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: "../unavi-client/assets/".to_string(),
+                file_path: "../unavi-app/assets/".to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {

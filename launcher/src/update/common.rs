@@ -26,7 +26,7 @@ const REPO_OWNER: &str = "unavi-xyz";
 const REPO_NAME: &str = "unavi";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// Generous enough for a client bundle, but still bounds a server that tries
+/// Generous enough for an app bundle, but still bounds a server that tries
 /// to stream unbounded data at a downloader.
 pub const MAX_DOWNLOAD_BYTES: u64 = 1024 * 1024 * 1024;
 
@@ -325,7 +325,7 @@ mod tests {
 
     #[test]
     fn refuses_non_github_download_host() {
-        assert!(ensure_github_url("https://evil.example/unavi-client.AppImage").is_err());
+        assert!(ensure_github_url("https://evil.example/unavi-app.AppImage").is_err());
         assert!(
             ensure_github_url("https://github.com/unavi-xyz/unavi/releases/download/v1/x").is_ok()
         );

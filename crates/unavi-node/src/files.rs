@@ -3,7 +3,7 @@
 //! Every file in [`files_dir`] is pinned under a `files/` tag so the store's
 //! GC keeps it, and served over `iroh_blobs::ALPN`; a sweep on each host pass
 //! drops tags the directory no longer backs. A `files.json` index lists
-//! name -> hash so an operator can wire the client's manifest to what this
+//! name -> hash so an operator can wire the app's manifest to what this
 //! node hosts.
 
 use std::{
@@ -174,9 +174,9 @@ async fn sweep(store: &BlobStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Prints the hosted hashes in the manifest shape the client consumes, so an
+/// Prints the hosted hashes in the manifest shape the app consumes, so an
 /// operator can paste them into the `unavi-assets` manifest and verify what the
-/// server actually serves.
+/// node actually serves.
 pub fn log_manifest(hosted: &[HostedFile], data_dir: &Path) {
     if hosted.is_empty() {
         warn!(
@@ -210,7 +210,7 @@ mod tests {
 
     fn temp_dir() -> PathBuf {
         let dir = std::env::temp_dir().join(format!(
-            "unavi-server-files-test-{}-{}",
+            "unavi-node-files-test-{}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));

@@ -16,8 +16,8 @@ use tracing_subscriber::{
     layer::SubscriberExt,
     util::SubscriberInitExt,
 };
-use unavi_server::{
-    ServerOptions,
+use unavi_node::{
+    NodeOptions,
     config::{
         Config,
         registry_config,
@@ -31,7 +31,7 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug:       bool,
     /// Keeps the identity key and document store in memory, and hosts no
-    /// files. Useful for running several servers on one machine.
+    /// files. Useful for running several nodes on one machine.
     #[arg(long, default_value_t = false)]
     in_memory:   bool,
     /// Where keys, documents, hosted files and `registry.ron` live. Defaults
@@ -53,7 +53,7 @@ async fn main() -> ExitCode {
     match run(args).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
-            error!(?err, "server failed");
+            error!(?err, "node failed");
             ExitCode::FAILURE
         }
     }
@@ -80,8 +80,8 @@ async fn run(args: Args) -> anyhow::Result<()> {
         Some(registry_config(data_dir.as_deref())?)
     };
 
-    unavi_server::run_server(
-        ServerOptions {
+    unavi_node::run(
+        NodeOptions {
             domain: config.unavi_domain,
             data_dir,
             port: args.port,
@@ -93,7 +93,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
 }
 
 fn default_data_dir() -> anyhow::Result<PathBuf> {
-    ProjectDirs::from("", "UNAVI", "unavi-server")
+    ProjectDirs::from("", "UNAVI", "unavi-node")
         .map(|dirs| dirs.data_local_dir().to_path_buf())
         .context("no home directory to keep data in; pass --data-dir")
 }

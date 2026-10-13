@@ -245,8 +245,8 @@ async fn load(
     Ok(())
 }
 
-/// Keeps resolving the registries that were unreachable at startup, so a server
-/// brought up after the client is still followed without a restart.
+/// Keeps resolving the registries that were unreachable at startup, so a node
+/// brought up after the app is still followed without a restart.
 async fn retry(
     async_world: AsyncWorld,
     store: Store,

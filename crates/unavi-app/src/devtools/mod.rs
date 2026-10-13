@@ -16,7 +16,7 @@ use unavi_devtools::DevToolsPlugin;
 mod bevy_panel;
 mod event_gizmos;
 
-/// Client-side dev tools: the shared overlay plus a "Bevy" panel toggling the
+/// In-app dev tools: the shared overlay plus a "Bevy" panel toggling the
 /// engine debug views (FPS, world inspector, physics and event gizmos).
 pub struct ClientDevToolsPlugin;
 

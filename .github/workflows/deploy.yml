@@ -19,7 +19,7 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 jobs:
-  unavi-server:
+  unavi-node:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,12 +56,9 @@ jobs:
           SERVER_IP=$(jq -r '.stable.server_ipv4' infra/terraform/deploy.json)
           echo "server_ip=$SERVER_IP" >> "$GITHUB_OUTPUT"
       - name: Setup ssh
-        # Pinned instead of ssh-keyscan's trust-on-first-use: requires the
-        # DEPLOY_SSH_KNOWN_HOSTS repo (or environment) variable to hold the
-        # server's known_hosts line(s), e.g. the one-time output of
-        # `ssh-keyscan -t ed25519 <server_ip>` verified out of band. If the
-        # droplet is ever recreated with a new host key, this variable must
-        # be regenerated.
+        # Pinned, not ssh-keyscan's trust-on-first-use: DEPLOY_SSH_KNOWN_HOSTS
+        # holds the server's known_hosts line(s) and must be regenerated if the
+        # droplet is recreated with a new host key.
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_SSH_KNOWN_HOSTS: ${{ vars.DEPLOY_SSH_KNOWN_HOSTS }}

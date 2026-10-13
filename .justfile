@@ -35,7 +35,7 @@ deny:
 npm-install:
     npm install --prefix crates/unavi-script
 
-# The release workflow bumps root, launcher/ and hsd/ together (J2); this
+# The release workflow bumps root, launcher/ and hsd/ together. This
 # catches a bump that only touched one of the three before it ships a
 # launcher that loops forever trying to update itself.
 check-versions:
@@ -51,7 +51,7 @@ check-versions:
 
 ci: update-wit-deps-locked npm-install check (clippy "deny") test deny fmt-check check-versions
 
-# Build the guest HSD components into crates/unavi-client/assets/hsd.
+# Build the guest HSD components into crates/unavi-app/assets/hsd.
 hsd *ARGS:
     nu nu/build-hsd.nu {{ARGS}}
 
@@ -67,7 +67,7 @@ update-wit-deps:
 update-wit-deps-locked:
     nu nu/update-wit-deps.nu --locked
 
-# Build both web client variants (WebGL + WebGPU) into dist/. This is the
+# Build both web app variants (WebGL + WebGPU) into dist/. This is the
 # shipped build: devtools (egui inspector, bevy/debug) stay off here even
 # though the crate defaults them on for local native dev builds.
 web *ARGS:
@@ -75,7 +75,7 @@ web *ARGS:
     trunk build --dist dist-webgpu --public-url /webgpu/ --no-default-features --features webgpu {{ARGS}}
     rm -rf dist
     mkdir dist
-    cp crates/unavi-client/loader.html dist/index.html
+    cp crates/unavi-app/loader.html dist/index.html
     mv dist-webgl dist/webgl
     mv dist-webgpu dist/webgpu
 
@@ -83,18 +83,18 @@ port := "5000"
 debug := ""
 # SECRETSPEC_PROFILE is read when unavi-config expands, at compile time, so it
 # has to reach the build; at runtime it does nothing.
-dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-client"
+dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-app"
 
 dev-build:
-    {{dev_env}} cargo build -p unavi-server -p unavi-client
+    {{dev_env}} cargo build -p unavi-node -p unavi-app
 
-server: dev-build
-    {{dev_env}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-server --port {{port}}
+node: dev-build
+    {{dev_env}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-node --port {{port}}
 
-client n: dev-build
+app n: dev-build
     sleep 2
-    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-client --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
+    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-app --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
 
-# Run a server plus two clients.
+# Run a node plus two apps.
 [parallel]
-multi-client: server (client "1") (client "2")
+multi-app: node (app "1") (app "2")

@@ -36,7 +36,7 @@ fn main() {
         .run();
 }
 
-/// The client fetches its faces over iroh; this example has no network, so it
+/// The app fetches its faces over iroh; this example has no network, so it
 /// registers Noto Sans from the `notosans` crate as the primary.
 ///
 /// That face has no CJK, so the Japanese specimen draws tofu until one that

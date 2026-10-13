@@ -19,16 +19,16 @@ use bevy_vrm::first_person::{
 };
 use unavi_agent::LocalAgent;
 
-use crate::util::create_client_store;
+use crate::util::create_app_store;
 
 mod util;
 
 const SCRIPT_PATH: &str = "hsd/example_wired_agent.hsdz";
 
 fn main() {
-    let assets_path = "../unavi-client/assets/".to_string();
+    let assets_path = "../unavi-app/assets/".to_string();
 
-    let store = create_client_store();
+    let store = create_app_store();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before

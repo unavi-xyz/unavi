@@ -177,7 +177,7 @@ export async function scriptFixedUpdate(
 
 /**
  * Replaces the shim's stdout and stderr, which write straight to the
- * console, one call per write and outside the client's log filter.
+ * console, one call per write and outside the app's log filter.
  *
  * Gathering a run is this side's job because only this side knows when one
  * ends: writes are held until the microtask queue drains, which under JSPI

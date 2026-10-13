@@ -16,7 +16,7 @@
     (
         attributes: (
             image: (
-                data: "../../crates/unavi-client/assets/image/dev-white.png",
+                data: "../../crates/unavi-app/assets/image/dev-white.png",
                 address_mode_u: Repeat,
                 address_mode_v: Repeat,
                 address_mode_w: Repeat,

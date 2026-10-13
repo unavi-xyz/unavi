@@ -16,9 +16,9 @@ jobs:
       - name: Generate build matrix
         id: generate
         run: |
-          APPIMAGE_PACKAGES=("unavi-client" "unavi-launcher")
-          BUNDLE_PACKAGES=("unavi-server")
-          WEB_PACKAGES=("unavi-client-web")
+          APPIMAGE_PACKAGES=("unavi-app" "unavi-launcher")
+          BUNDLE_PACKAGES=("unavi-node")
+          WEB_PACKAGES=("unavi-app-web")
           SYSTEMS=("x86_64-linux")
 
           declare -A OS_MAP
@@ -89,14 +89,14 @@ jobs:
           path: ${{ env.ARTIFACT }}
           retention-days: 1
       - name: Export deploy cache
-        # unavi-server and unavi-client-web are the two packages deploy.yml
-        # needs; exporting their closures here lets it skip rebuilding them.
-        if: ${{ matrix.package == 'unavi-server' || matrix.package == 'unavi-client-web' }}
+        # The two packages deploy.yml needs; its nix-cache substitute skips
+        # rebuilding their closures.
+        if: ${{ matrix.package == 'unavi-node' || matrix.package == 'unavi-app-web' }}
         run: |
           mkdir nix-cache
           nix copy --to "file://$PWD/nix-cache" .#${{ matrix.package }}
       - name: Upload deploy cache artifact
-        if: ${{ matrix.package == 'unavi-server' || matrix.package == 'unavi-client-web' }}
+        if: ${{ matrix.package == 'unavi-node' || matrix.package == 'unavi-app-web' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nix-cache-${{ matrix.name }}

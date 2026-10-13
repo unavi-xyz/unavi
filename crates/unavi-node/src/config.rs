@@ -1,4 +1,4 @@
-//! Server configuration: the build-time `secretspec.toml` values, and the
+//! Node configuration: the build-time `secretspec.toml` values, and the
 //! operator's registry policy read from the data directory.
 
 use std::{

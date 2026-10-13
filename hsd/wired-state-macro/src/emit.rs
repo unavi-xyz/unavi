@@ -31,7 +31,7 @@ enum Destination {
     /// wrote each key, gone with the session.
     Session,
     /// The document: promoted by `commit` after the flush, durable only on a
-    /// client holding the document's key.
+    /// peer holding the document's key.
     Document,
 }
 

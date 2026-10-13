@@ -57,9 +57,9 @@
 
         imports = [
           inputs.treefmt-nix.flakeModule
-          ./crates/unavi-client
+          ./crates/unavi-app
           ./launcher
-          ./crates/unavi-server
+          ./crates/unavi-node
         ];
 
         flake = {
@@ -143,7 +143,7 @@
               } "mkdir $out";
             };
 
-            packages.default = config.packages.unavi-client;
+            packages.default = config.packages.unavi-app;
 
             treefmt.programs = {
               actionlint.enable = true;
@@ -239,7 +239,7 @@
                     inherit LD_LIBRARY_PATH;
 
                     # The profile whose values every locally built binary
-                    # compiles in, naming a locally run server.
+                    # compiles in, naming a locally run node.
                     SECRETSPEC_PROFILE = "development";
 
                     # WASM toolchain - clang-unwrapped avoids hardening flags,

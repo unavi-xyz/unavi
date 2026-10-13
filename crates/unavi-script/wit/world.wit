@@ -1,4 +1,4 @@
-/// The UNAVI client's own extensions to the `wired` protocol, for the shell
+/// The UNAVI app's own extensions to the `wired` protocol, for the shell
 /// and the tools it ships. Not part of the protocol: another host need not
 /// provide them, and a guest importing them runs only here.
 package unavi:host;

@@ -11270,27 +11270,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-assets"
-version = "0.0.16"
-dependencies = [
- "bevy",
- "bevy-iroh",
- "bevy-msdf",
-]
-
-[[package]]
-name = "unavi-avatar"
-version = "0.0.16"
-dependencies = [
- "bevy",
- "bevy_vrm",
- "gltf",
- "thiserror 2.0.20",
- "unavi-assets",
-]
-
-[[package]]
-name = "unavi-client"
+name = "unavi-app"
 version = "0.0.16"
 dependencies = [
  "anyhow",
@@ -11336,6 +11316,26 @@ dependencies = [
  "web-sys",
  "winit",
  "xdid",
+]
+
+[[package]]
+name = "unavi-assets"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "bevy-iroh",
+ "bevy-msdf",
+]
+
+[[package]]
+name = "unavi-avatar"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "bevy_vrm",
+ "gltf",
+ "thiserror 2.0.20",
+ "unavi-assets",
 ]
 
 [[package]]
@@ -11418,6 +11418,35 @@ dependencies = [
  "hex",
  "tempfile",
  "web-sys",
+]
+
+[[package]]
+name = "unavi-node"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "console-subscriber",
+ "directories",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "n0-future",
+ "ron",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "unavi-config",
+ "unavi-identity",
+ "unavi-local",
+ "unavi-registry",
+ "unavi-store",
+ "xdid",
 ]
 
 [[package]]
@@ -11531,35 +11560,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
- "xdid",
-]
-
-[[package]]
-name = "unavi-server"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "console-subscriber",
- "directories",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "n0-future",
- "ron",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "unavi-config",
- "unavi-identity",
- "unavi-local",
- "unavi-registry",
- "unavi-store",
  "xdid",
 ]
 

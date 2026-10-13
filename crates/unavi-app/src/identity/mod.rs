@@ -1,5 +1,5 @@
 //! This device's identity: keys, storage, and the `wired/auth` endpoint
-//! wiring every other client plugin shares.
+//! wiring every other app plugin shares.
 
 #[cfg(target_family = "wasm")] use std::path::PathBuf;
 use std::sync::Arc;
@@ -45,13 +45,13 @@ pub struct IdentityPlugin {
 /// The app's data and config directories, created on first use.
 #[cfg(not(target_family = "wasm"))]
 static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-app").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     std::fs::create_dir_all(dirs.config_dir()).expect("config dir");
     dirs
 });
 
-/// The storage every client-side plugin shares: nothing on `--in-memory`, the
+/// The storage every app plugin shares: nothing on `--in-memory`, the
 /// app's data root elsewhere — a local-storage prefix on wasm.
 pub fn key_storage(in_memory: bool) -> unavi_local::DeviceStorage {
     if in_memory {

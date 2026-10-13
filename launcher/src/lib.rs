@@ -24,12 +24,12 @@ mod update;
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-launcher").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
-    std::fs::create_dir_all(dirs.data_local_dir().join("clients")).expect("clients dir");
+    std::fs::create_dir_all(dirs.data_local_dir().join("apps")).expect("apps dir");
     dirs
 });
 
 pub static CONFIG: LazyLock<ConfigStore> = LazyLock::new(ConfigStore::new);
-pub static CLIENT_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
+pub static APP_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
 
 const ICON_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon-rounded.png"));
 

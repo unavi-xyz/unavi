@@ -97,7 +97,7 @@ fn run_on_test_thread(app: &mut App) {
     });
 }
 
-/// The client fetches its faces over iroh. A test app has no network, so text
+/// The app fetches its faces over iroh. A test app has no network, so text
 /// would lay out against an empty chain and draw nothing.
 fn register_font(app: &mut App) {
     app.world_mut()

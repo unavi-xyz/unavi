@@ -23,12 +23,12 @@ use crate::DIRS;
 
 const KEEP_VERSIONS: usize = 2;
 
-fn clients_dir() -> PathBuf {
-    DIRS.data_local_dir().join("clients")
+fn apps_dir() -> PathBuf {
+    DIRS.data_local_dir().join("apps")
 }
 
 fn current_version_file() -> PathBuf {
-    DIRS.data_local_dir().join("current_client_version.txt")
+    DIRS.data_local_dir().join("current_app_version.txt")
 }
 
 fn get_installed_version() -> Option<Version> {
@@ -37,7 +37,7 @@ fn get_installed_version() -> Option<Version> {
         .and_then(|s| Version::parse(s.trim()).ok())
 }
 
-pub fn installed_client_version() -> Option<String> {
+pub fn installed_app_version() -> Option<String> {
     get_installed_version().map(|v| v.to_string())
 }
 
@@ -46,36 +46,36 @@ fn set_installed_version(version: &Version) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn client_dir(version: &Version) -> PathBuf {
-    clients_dir().join(version.to_string())
+fn app_dir(version: &Version) -> PathBuf {
+    apps_dir().join(version.to_string())
 }
 
-fn client_exe_path(version: &Version) -> PathBuf {
-    client_dir(version).join(platform::CLIENT_EXE)
+fn app_exe_path(version: &Version) -> PathBuf {
+    app_dir(version).join(platform::APP_EXE)
 }
 
-pub fn launch_client() -> anyhow::Result<()> {
-    let version = get_installed_version().ok_or_else(|| anyhow::anyhow!("no client installed"))?;
-    let exe_path = client_exe_path(&version);
+pub fn launch_app() -> anyhow::Result<()> {
+    let version = get_installed_version().ok_or_else(|| anyhow::anyhow!("no app installed"))?;
+    let exe_path = app_exe_path(&version);
     if !exe_path.exists() {
-        anyhow::bail!("client executable not found at {}", exe_path.display());
+        anyhow::bail!("app executable not found at {}", exe_path.display());
     }
 
     info!(
-        "Launching client version {version} from {}",
+        "Launching app version {version} from {}",
         exe_path.display()
     );
-    let mut cmd = platform::client_command(&exe_path, &version)?;
+    let mut cmd = platform::app_command(&exe_path, &version)?;
     if crate::CONFIG.get().xr_mode {
         cmd.arg("--xr");
     }
-    let child = cmd.spawn().context("failed to launch client")?;
-    crate::CLIENT_PROCESS.set(child);
+    let child = cmd.spawn().context("failed to launch app")?;
+    crate::APP_PROCESS.set(child);
 
     Ok(())
 }
 
-pub async fn update_client_with_callback<F>(on_status: F) -> anyhow::Result<()>
+pub async fn update_app_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where
     F: Fn(UpdateStatus) + Send + Sync,
 {
@@ -84,7 +84,7 @@ where
     let latest = match fetch_latest_release().await {
         Ok(r) => r,
         Err(e) => {
-            // Offline is survivable only with a client already installed;
+            // Offline is survivable only with an app already installed;
             // otherwise there is nothing to launch.
             if is_network_error(&e) && get_installed_version().is_some() {
                 info!("Network unavailable, skipping update check");
@@ -95,23 +95,23 @@ where
         }
     };
 
-    info!("Latest client release: {}", latest.version);
+    info!("Latest app release: {}", latest.version);
 
     let installed_version = get_installed_version();
-    info!("Installed client version: {installed_version:?}");
+    info!("Installed app version: {installed_version:?}");
 
     if let Some(current) = &installed_version
         && !needs_update(current, &latest.version)
     {
-        info!("Client is up to date");
+        info!("App is up to date");
         on_status(UpdateStatus::UpToDate);
         return Ok(());
     }
 
-    info!("Updating client to {}", latest.version);
+    info!("Updating app to {}", latest.version);
 
-    let asset = find_asset(&latest.assets, "unavi-client", platform::CLIENT_EXT)
-        .context("client asset not found in release")?;
+    let asset = find_asset(&latest.assets, "unavi-app", platform::APP_EXT)
+        .context("app asset not found in release")?;
 
     on_status(UpdateStatus::Downloading {
         version:  latest.version.to_string(),
@@ -119,10 +119,10 @@ where
     });
 
     let tmp_dir = tempfile::Builder::new()
-        .prefix("unavi-client-update")
+        .prefix("unavi-app-update")
         .tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
-    info!("Downloading client to: {}", tmp_archive_path.display());
+    info!("Downloading app to: {}", tmp_archive_path.display());
 
     download_with_progress(
         &asset.browser_download_url,
@@ -137,12 +137,12 @@ where
     )
     .await?;
 
-    let dest_dir = client_dir(&latest.version);
+    let dest_dir = app_dir(&latest.version);
     std::fs::create_dir_all(&dest_dir)?;
-    platform::install_client(&tmp_archive_path, &dest_dir)?;
+    platform::install_app(&tmp_archive_path, &dest_dir)?;
 
     set_installed_version(&latest.version)?;
-    info!("Client updated to {}", latest.version);
+    info!("App updated to {}", latest.version);
 
     clean_old_versions(&latest.version, KEEP_VERSIONS)?;
 
@@ -151,7 +151,7 @@ where
 }
 
 fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()> {
-    let mut versions = std::fs::read_dir(clients_dir())?
+    let mut versions = std::fs::read_dir(apps_dir())?
         .filter_map(Result::ok)
         .filter_map(|entry| Version::parse(&entry.file_name().to_string_lossy()).ok())
         .collect::<Vec<_>>();
@@ -160,8 +160,8 @@ fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()
 
     for version in versions.iter().skip(keep_count) {
         if version != current {
-            let dir_to_remove = client_dir(version);
-            info!("Removing old client version: {version}");
+            let dir_to_remove = app_dir(version);
+            info!("Removing old app version: {version}");
             if let Err(e) = std::fs::remove_dir_all(&dir_to_remove) {
                 warn!("Failed to remove old version {version}: {e}");
             }

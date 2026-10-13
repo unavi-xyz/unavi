@@ -1,4 +1,4 @@
-const hsd_out = "crates/unavi-client/assets/hsd"
+const hsd_out = "crates/unavi-app/assets/hsd"
 const hsd_src = "hsd"
 
 def main [

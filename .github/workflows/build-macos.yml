@@ -24,14 +24,11 @@ jobs:
         run: nix develop .#minimal -c just npm-install
       - name: Build HSD assets
         run: nix develop .#minimal -c just hsd-release
-      # Named distinctly from build-windows.yml's own build-hsd job: both run
-      # in the same release.yml, and artifact names must be unique within a
-      # workflow run.
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets-macos
-          path: crates/unavi-client/assets/hsd
+          path: crates/unavi-app/assets/hsd
           retention-days: 1
       - name: Upload WIT deps
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -43,13 +40,12 @@ jobs:
           retention-days: 1
   build-macos:
     needs: build-hsd
-    # GitHub's default Apple Silicon image; the launcher's macOS path only
-    # ever expects one architecture (see RELEASE_TARGET in
-    # launcher/src/update/platform/macos.rs).
+    # The launcher selects its macOS asset by name alone, so a second
+    # architecture would be ambiguous.
     runs-on: macos-14
     strategy:
       matrix:
-        package: [unavi-client, unavi-launcher]
+        package: [unavi-app, unavi-launcher]
     name: ${{ matrix.package }}-aarch64-macos
     env:
       CARGO_TARGET_DIR: target
@@ -60,7 +56,7 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: assets-macos
-          path: crates/unavi-client/assets/hsd
+          path: crates/unavi-app/assets/hsd
       - name: Download WIT deps
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -69,11 +65,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
         with:
           toolchain: nightly-2026-08-14
-      - name: Build client
-        if: ${{ matrix.package == 'unavi-client' }}
-        # Shipped build: devtools (egui inspector, bevy/debug) are
-        # default-on for dev builds only.
-        run: cargo build -p unavi-client --release --no-default-features
+      - name: Build app
+        if: ${{ matrix.package == 'unavi-app' }}
+        run: cargo build -p unavi-app --release --no-default-features
       - name: Build launcher
         if: ${{ matrix.package == 'unavi-launcher' }}
         run: cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
@@ -83,14 +77,13 @@ jobs:
           if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
             cp target/release/unavi-launcher result/
           else
-            cp target/release/unavi-client result/
-            cp -r crates/unavi-client/assets result/
+            cp target/release/unavi-app result/
+            cp -r crates/unavi-app/assets result/
           fi
           cp LICENSE result
       - name: Create tar.xz
-        # The launcher's macOS install path (archive::unpack_tar_xz) expects
-        # the executable at the archive root, named exactly CLIENT_EXE /
-        # LAUNCHER_EXE (unavi-client / unavi-launcher), no nested directory.
+        # The launcher unpacks this expecting the executable at the archive
+        # root, not in a nested directory.
         run: |
           cd result
           tar -cJf ../${{ matrix.package }}-aarch64-macos.tar.xz .

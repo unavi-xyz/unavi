@@ -1,5 +1,5 @@
 //! Build-time configuration, from `secretspec.toml` under the profile
-//! `SECRETSPEC_PROFILE` names when the client is compiled.
+//! `SECRETSPEC_PROFILE` names when the app is compiled.
 
 use bevy::log::error;
 
@@ -8,7 +8,7 @@ use crate::identity::SyncConfig;
 unavi_config::config!("secretspec.toml");
 
 /// The registries to follow. A config that fails to load follows none, and
-/// the client runs peer to peer.
+/// the app runs peer to peer.
 pub fn sync_config() -> SyncConfig {
     let config = match Config::load() {
         Ok(config) => config,

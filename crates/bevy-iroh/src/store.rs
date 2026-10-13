@@ -1,4 +1,4 @@
-//! This node's store, as resources. The client or server inserts
+//! This node's store, as resources. The app or node inserts
 //! [`DataStore`] once the store is built.
 
 use bevy::prelude::*;
@@ -19,7 +19,7 @@ pub struct SyncTargets(pub Vec<EndpointAddr>);
 /// Endpoints that hold content beyond the configured sync targets.
 ///
 /// A space's document syncs from its occupants, so its content lives with them
-/// too; a fetch offered only the sync targets asks a server that may never
+/// too; a fetch offered only the sync targets asks a node that may never
 /// have seen the space.
 #[derive(Resource, Default)]
 pub struct BlobProviders(pub Vec<EndpointId>);

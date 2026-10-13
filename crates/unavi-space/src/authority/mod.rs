@@ -100,8 +100,7 @@ impl SpaceView {
     /// The space `doc` belongs to.
     ///
     /// Either the space it was registered into, or the space its pin names. A
-    /// prefab instance answers with its host's, since it has neither of its
-    /// own.
+    /// referenced document with neither answers with its host's.
     #[must_use]
     pub fn space_of(&self, doc: DocId) -> Option<SpaceId> {
         space_of(&self.policy, &self.replicas, doc)

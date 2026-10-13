@@ -455,8 +455,8 @@ impl Tree {
             .clone()
     }
 
-    /// The mote drawn at slot `index` of the current level, which is the way back
-    /// itself at slot 0 of a nested level.
+    /// The mote drawn at slot `index` of the current level, which is the way
+    /// back itself at slot 0 of a nested level.
     pub fn at_level(&mut self, index: usize) -> Option<Mote> {
         let open = self.open();
         let Some(index) = index.checked_sub(usize::from(self.is_nested())) else {
@@ -527,7 +527,8 @@ mod tests {
     }
 
     fn labels(tree: &mut Tree) -> Vec<String> {
-        tree.level_with_motes().1
+        tree.level_with_motes()
+            .1
             .into_iter()
             .map(|spec| spec.label.to_string())
             .collect()

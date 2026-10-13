@@ -91,6 +91,7 @@ impl Plugin for SpacePlugin {
             .add_observer(pinned::adopt_pinned_docs)
             .add_observer(grab::take_hold_on_grab)
             .add_observer(grab::release_hold_on_release)
+            .add_observer(replication::session::compose::stack_on_arrival)
             .add_systems(
                 PostUpdate,
                 (grid::recenter_active_space, grid::apply_anchor_offsets)
@@ -134,6 +135,7 @@ impl Plugin for SpacePlugin {
                 Update,
                 portal::sync_portal_home.before(unavi_portal::destination::resolve_destinations),
             )
+            .add_systems(Update, replication::session::compose::restack)
             .add_systems(
                 Update,
                 (

@@ -1,3 +1,12 @@
+use std::sync::{
+    Arc,
+    Mutex,
+};
+
+use bevy_hsd::document::{
+    Hsd,
+    HsdDocId,
+};
 use hsd::{
     attributes::{
         portal::{
@@ -11,7 +20,9 @@ use hsd::{
     property::{
         Payload,
         Property,
+        value::Value,
     },
+    state::HsdState,
 };
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
@@ -19,7 +30,10 @@ use unavi_local::DeviceStorage;
 use unavi_policy::{
     Policy,
     rules::Rules,
-    trust::TrustTable,
+    trust::{
+        Trust,
+        TrustTable,
+    },
 };
 use xdid::method::key::{
     DidKeyPair,
@@ -28,6 +42,10 @@ use xdid::method::key::{
 };
 
 use super::*;
+use crate::replication::{
+    session::compose::stack_on_arrival,
+    store::StateFeed,
+};
 
 fn identity() -> Identity {
     let key = P256KeyPair::generate();
@@ -60,13 +78,16 @@ fn prim() -> PrimId {
     PrimId([1; 16])
 }
 
-/// One opinion on one key, which is all these tests need of a batch.
-fn writes() -> Vec<SessionWrite> {
-    vec![SessionWrite {
+fn state_k() -> PropName {
+    hsd::prop_name!("state/k")
+}
+
+fn write(name: &PropName, value: &[u8]) -> SessionWrite {
+    SessionWrite {
         prim:  prim(),
-        name:  "state/k".to_owned(),
-        value: Some(b"v".to_vec()),
-    }]
+        name:  name.to_string(),
+        value: Some(value.to_vec()),
+    }
 }
 
 fn world() -> (World, Replicas) {
@@ -76,7 +97,34 @@ fn world() -> (World, Replicas) {
     let replicas = Replicas::new(policy, Rules::default());
     world.insert_resource(replicas.clone());
     init_indexes(&mut world);
+    world.add_observer(stack_on_arrival);
     (world, replicas)
+}
+
+/// Spawns `doc` as a live document and applies the layers queued on arrival.
+fn spawn_doc(world: &mut World, doc: DocId) -> Arc<Mutex<HsdState>> {
+    let state = Arc::new(Mutex::new(HsdState::new()));
+    world.spawn((Hsd::shared(Arc::clone(&state)), HsdDocId(doc)));
+    world.flush();
+    state
+}
+
+/// What `name` on the test prim resolves to in `state`.
+fn resolved(state: &Mutex<HsdState>, name: &PropName) -> Option<Vec<u8>> {
+    state
+        .lock()
+        .expect("lock")
+        .get(prim())
+        .and_then(|prim| prim.property(name).and_then(Value::as_attribute).cloned())
+        .map(|bytes| bytes.to_vec())
+}
+
+/// A replica that has loaded `me` and minted `doc`, so `me` authors it.
+fn minted_by(replicas: &Replicas, me: &Identity, doc: DocId) {
+    replicas
+        .attribution()
+        .set_local(me.did().clone(), TrustTable::new(DeviceStorage::memory()));
+    replicas.record_minted(doc);
 }
 
 fn local(world: &mut World, id: EndpointId, did: &Did) -> Stater {
@@ -123,59 +171,185 @@ fn a_local_pin_broadcasts_and_its_guard_releases_it() {
     replicas.unregister_stream(feed.token);
 }
 
-/// The record is where attribution and replication live; the document's
-/// session layer is where the value composes. One call has to reach both,
-/// or a peer's opinion is replicated and never drawn.
 #[test]
 fn a_session_write_composes_into_the_document_it_speaks_for() {
     let (mut world, _) = world();
     let me = identity();
     let space = space(b"compose");
-
-    world.spawn(Space(space));
-    let state = Arc::new(Mutex::new(HsdState::new()));
-    world.spawn((
-        Hsd::shared(Arc::clone(&state)),
-        bevy_hsd::document::HsdDocId(space.doc()),
-    ));
+    let state = spawn_doc(&mut world, space.doc());
 
     let stater = local(&mut world, peer(1), me.did());
-    set_session(&mut world, &stater, space.doc(), space, writes(), 1).expect("session set");
+    set_session(
+        &mut world,
+        &stater,
+        space.doc(),
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    )
+    .expect("session set");
 
-    let composed = state.lock().expect("lock").get(prim()).and_then(|p| {
-        p.property(&hsd::prop_name!("state/k"))
-            .and_then(Value::as_attribute)
-            .cloned()
-    });
     assert_eq!(
-        composed.as_deref(),
+        resolved(&state, &state_k()).as_deref(),
         Some(&b"v"[..]),
         "what a peer said has to compose in the document it said it about"
     );
 }
 
 #[test]
-fn a_cell_survives_its_writer_and_goes_with_its_document() {
+fn a_guests_script_does_not_resolve_while_the_authors_does() {
     let (mut world, replicas) = world();
-    let space = space(b"cell-lifetime");
-    let space_ent = world.spawn(Space(space)).id();
+    let (author, guest) = (identity(), identity());
+    let space = space(b"guest-script");
+    let doc = space.doc();
+    minted_by(&replicas, &author, doc);
+    let state = spawn_doc(&mut world, doc);
 
-    let stater = remote(&mut world, peer(3), None);
-    set_session(&mut world, &stater, space.doc(), space, writes(), 1).expect("session set");
-    let read = |replicas: &Replicas| {
-        replicas.session_value(space, space.doc(), prim(), &hsd::prop_name!("state/k"))
-    };
-    assert_eq!(read(&replicas), Some(b"v".to_vec()));
-
-    world.despawn(stater.entity);
+    let visitor = remote(&mut world, peer(2), Some(guest.did()));
+    let batch = vec![write(&ScriptAttr::NAME, &[2; 32]), write(&state_k(), b"v")];
+    set_session(&mut world, &visitor, doc, space, batch, 1).expect("session set");
+    assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
     assert_eq!(
-        read(&replicas),
-        Some(b"v".to_vec()),
-        "an opinion persists after the peer that wrote it goes"
+        resolved(&state, &ScriptAttr::NAME),
+        None,
+        "a guest must not decide what the author's document runs"
     );
 
-    world.despawn(space_ent);
-    assert_eq!(read(&replicas), None);
+    let owner = local(&mut world, peer(1), author.did());
+    set_session(
+        &mut world,
+        &owner,
+        doc,
+        space,
+        vec![write(&ScriptAttr::NAME, &[1; 32])],
+        2,
+    )
+    .expect("session set");
+    assert_eq!(resolved(&state, &ScriptAttr::NAME), Some(vec![1; 32]));
+}
+
+#[test]
+fn the_authors_opinion_beats_a_guests_on_an_open_key_whatever_the_stamp() {
+    let (mut world, replicas) = world();
+    let (author, guest) = (identity(), identity());
+    let space = space(b"author-wins");
+
+    for (n, guest_first) in [false, true].into_iter().enumerate() {
+        let doc = DocId([n as u8 + 1; 32]);
+        minted_by(&replicas, &author, doc);
+        let state = spawn_doc(&mut world, doc);
+        let owner = local(&mut world, peer(1), author.did());
+        let visitor = remote(&mut world, peer(2), Some(guest.did()));
+
+        let mut say = |stater: &Stater, value: &[u8], at: u64| {
+            set_session(
+                &mut world,
+                stater,
+                doc,
+                space,
+                vec![write(&state_k(), value)],
+                at,
+            )
+            .expect("session set");
+        };
+        if guest_first {
+            say(&visitor, b"guest", 9);
+            say(&owner, b"author", 1);
+        } else {
+            say(&owner, b"author", 1);
+            say(&visitor, b"guest", 9);
+        }
+        assert_eq!(
+            resolved(&state, &state_k()).as_deref(),
+            Some(&b"author"[..]),
+            "no clock outvotes the author (guest first: {guest_first})"
+        );
+    }
+}
+
+#[test]
+fn a_departing_peer_takes_its_session_layer() {
+    let (mut world, replicas) = world();
+    let space = space(b"layer-departs");
+    let doc = space.doc();
+    let state = spawn_doc(&mut world, doc);
+
+    let visitor = remote(&mut world, peer(3), None);
+    set_session(
+        &mut world,
+        &visitor,
+        doc,
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    )
+    .expect("session set");
+    assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
+    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+
+    world.despawn(visitor.entity);
+    assert_eq!(
+        resolved(&state, &state_k()),
+        None,
+        "an opinion goes with the peer that stated it"
+    );
+    assert!(
+        replicas.session_peers(doc).is_empty(),
+        "the replicas drop the layer too"
+    );
+}
+
+#[test]
+fn a_layer_goes_with_its_document() {
+    let (mut world, replicas) = world();
+    let space = space(b"layer-doc");
+    let doc = space.doc();
+    spawn_doc(&mut world, doc);
+
+    let visitor = remote(&mut world, peer(3), None);
+    set_session(
+        &mut world,
+        &visitor,
+        doc,
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    )
+    .expect("session set");
+    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+
+    let entity = world.resource::<DocIndex>().get(doc).expect("document");
+    world.despawn(entity);
+    assert!(
+        replicas.session_peers(doc).is_empty(),
+        "a layer cannot outlive the document it speaks for"
+    );
+}
+
+#[test]
+fn a_layer_stated_before_its_document_arrives_composes_once_it_does() {
+    let (mut world, replicas) = world();
+    let space = space(b"early-layer");
+    let doc = DocId([8; 32]);
+
+    let visitor = remote(&mut world, peer(3), None);
+    set_session(
+        &mut world,
+        &visitor,
+        doc,
+        space,
+        vec![write(&state_k(), b"early")],
+        1,
+    )
+    .expect("session set");
+    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+
+    let state = spawn_doc(&mut world, doc);
+    assert_eq!(
+        resolved(&state, &state_k()).as_deref(),
+        Some(&b"early"[..]),
+        "the document stacks the layers the replicas already hold"
+    );
 }
 
 #[test]
@@ -265,10 +439,40 @@ fn state_for_an_unentered_space_waits_unparented() {
     );
 }
 
+/// Rules under which an anonymous peer, the rung a test world with no
+/// [`SpaceView`](crate::authority::SpaceView) judges everyone by, may open
+/// portals.
+fn portal_rules() -> Rules {
+    let guest = Rules::default().grant(Trust::Guest).clone();
+    Rules::default().with(Trust::Anonymous, guest)
+}
+
+/// Hands the next message on `feed` to `world` as if `from` sent it.
+fn forward(feed: &StateFeed, world: &mut World, from: Entity) {
+    let Ok(ReplicationMsg::Session {
+        doc,
+        space,
+        writes,
+        at,
+    }) = feed.rx.try_recv()
+    else {
+        panic!("the visitor broadcasts its session batch");
+    };
+    apply_remote(
+        world,
+        from,
+        Remote::Session {
+            doc,
+            space,
+            writes,
+            at,
+        },
+    );
+}
+
 /// Two peers, each with its own world and replica: the visitor that opens a
 /// portal into the host's space, and the host who minted the gate there.
-/// Whatever the visitor's replica admits and broadcasts, the host's replica
-/// has to admit too, or the pair is drawn on one side only.
+/// Whatever the visitor states, both peers compose the same gate.
 #[test]
 fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     let (mut visitor_world, visitor_replicas) = world();
@@ -278,6 +482,9 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     let space = space(b"far-half");
     let gate = DocId([4; 32]);
 
+    for world in [&mut visitor_world, &mut host_world] {
+        world.insert_resource(portal_rules());
+    }
     host_replicas
         .attribution()
         .set_local(host.did().clone(), TrustTable::new(DeviceStorage::memory()));
@@ -286,12 +493,16 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
         TrustTable::new(DeviceStorage::memory()),
     );
     host_replicas.record_minted(gate);
+    let visitor_gate = spawn_doc(&mut visitor_world, gate);
+    let host_gate = spawn_doc(&mut host_world, gate);
 
     let feed = visitor_replicas.register_stream(visitor_id);
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot(_))
     ));
+    let from_visitor =
+        claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
 
     let far_half = PortalAttr {
         destination: Some(PortalDestination {
@@ -303,52 +514,44 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     }
     .encode()
     .expect("encode");
-    let pairing = vec![SessionWrite {
-        prim:  prim(),
-        name:  PortalAttr::NAME.to_string(),
-        value: Some(far_half.clone()),
-    }];
     let opener = local(&mut visitor_world, visitor_id, visitor.did());
-    set_session(&mut visitor_world, &opener, gate, space, pairing, 1).expect("pairing admitted");
+    set_session(
+        &mut visitor_world,
+        &opener,
+        gate,
+        space,
+        vec![write(&PortalAttr::NAME, &far_half)],
+        1,
+    )
+    .expect("pairing stated");
+    forward(&feed, &mut host_world, from_visitor);
 
-    let Ok(ReplicationMsg::Session {
-        doc,
-        space: sent_space,
-        writes,
-        at,
-    }) = feed.rx.try_recv()
-    else {
-        panic!("the visitor broadcasts its pairing");
-    };
-    let from_visitor =
-        claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
-    apply_remote(
-        &mut host_world,
-        from_visitor,
-        Remote::Session {
-            doc,
-            space: sent_space,
-            writes,
-            at,
-        },
-    );
-
-    for replicas in [&visitor_replicas, &host_replicas] {
+    for (side, state) in [("visitor", &visitor_gate), ("host", &host_gate)] {
         assert_eq!(
-            replicas.session_value(space, gate, prim(), &PortalAttr::NAME),
+            resolved(state, &PortalAttr::NAME),
             Some(far_half.clone()),
-            "both peers compose the far half"
+            "the {side} composes the far half"
         );
     }
+    assert_eq!(host_replicas.session_peers(gate), vec![visitor_id]);
 
-    let planted = vec![SessionWrite {
-        prim:  prim(),
-        name:  ScriptAttr::NAME.to_string(),
-        value: Some(vec![1; 32]),
-    }];
-    assert!(
-        set_session(&mut visitor_world, &opener, gate, space, planted, 2).is_err(),
-        "the visitor's own replica refuses what the host's would, so neither diverges"
-    );
+    set_session(
+        &mut visitor_world,
+        &opener,
+        gate,
+        space,
+        vec![write(&ScriptAttr::NAME, &[1; 32])],
+        2,
+    )
+    .expect("the visitor may state anything; the mask decides");
+    forward(&feed, &mut host_world, from_visitor);
+
+    for (side, state) in [("visitor", &visitor_gate), ("host", &host_gate)] {
+        assert_eq!(
+            resolved(state, &ScriptAttr::NAME),
+            None,
+            "a planted script composes on neither side (the {side})"
+        );
+    }
     visitor_replicas.unregister_stream(feed.token);
 }

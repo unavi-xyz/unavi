@@ -1,4 +1,5 @@
-//! The layers every document entity stacks above its base.
+//! The layers every document entity stacks above its base. Session layers,
+//! one per present peer, are stacked above these by whoever replicates them.
 
 use hsd::state::{
     HsdState,
@@ -14,17 +15,11 @@ use hsd::state::{
 pub const OVERRIDE: LayerId = LayerId::from_static("override");
 /// What this peer's scripts write locally. Plain writes land here.
 pub const RUNTIME: LayerId = LayerId::from_static("runtime");
-/// Live opinions present peers state.
-pub const SESSION: LayerId = LayerId::from_static("session");
 
-/// Stacks override, runtime and session above the base, weakest first, and
-/// points plain writes at runtime. A layer already present is kept.
+/// Stacks override and runtime above the base, weakest first, and points
+/// plain writes at runtime. A layer already present is kept.
 pub fn install(state: &mut HsdState) -> Result<(), StackError> {
-    for (id, merge) in [
-        (OVERRIDE, Merge::Replace),
-        (RUNTIME, Merge::Latest),
-        (SESSION, Merge::Latest),
-    ] {
+    for (id, merge) in [(OVERRIDE, Merge::Replace), (RUNTIME, Merge::Latest)] {
         match state.add_layer(id, merge, Mask::all()) {
             Ok(()) | Err(StackError::Duplicate(_)) => {}
             Err(err) => return Err(err),

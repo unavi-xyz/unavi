@@ -10,7 +10,6 @@ use unavi_policy::{
 use crate::{
     authority::SpaceView,
     link::PeerLink,
-    replication::guards,
 };
 
 /// Blocks `peer` and undoes what they contributed.
@@ -18,16 +17,12 @@ use crate::{
 /// The block is written before anything unwinds, so a reconnect arriving
 /// mid-teardown is not readmitted. A peer that proved a DID is blocked by it,
 /// durably; one that proved none is blocked by endpoint for this session.
-/// Pins and holds cascade away with the connection; session cells outlive a
-/// disconnect, so they are rolled back by hand.
+/// Pins, holds and session layers go with the connection.
 pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) {
     if set_trust(view, peer, Some(Trust::Blocked)).is_err() {
         view.trust().block_endpoint(peer);
     }
-
-    let reverted = guards::revert_session(view.replicas(), view.commands(), peer);
-    info!(reverted, "Ejected peer");
-
+    info!(%peer, "Ejected peer");
     link.disconnect(peer);
 }
 

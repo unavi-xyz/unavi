@@ -42,7 +42,10 @@ use unavi_policy::{
         Stock,
     },
 };
-use unavi_space::replication::message::SessionWrite;
+use unavi_space::replication::{
+    message::SessionWrite,
+    session,
+};
 
 use crate::{
     error::ScriptError,
@@ -362,7 +365,13 @@ pub async fn commit(
         },
     };
     let entries = doc
-        .write(|state| state.commit(&[stack::RUNTIME, stack::SESSION], &target, &props))?
+        .write(|state| {
+            state.commit(
+                &[stack::RUNTIME, session::layer_id(host.view.me())],
+                &target,
+                &props,
+            )
+        })?
         .map_err(ScriptError::internal)?;
 
     match landing {

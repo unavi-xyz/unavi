@@ -16,7 +16,7 @@ use unavi_policy::{
         Stock,
     },
 };
-use unavi_space::replication::cell::SessionError;
+use unavi_space::replication::session::SessionError;
 
 /// Why a host call failed.
 ///
@@ -73,9 +73,7 @@ impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
             SessionError::QuotaExceeded => Self::LimitReached(Stock::SessionMemory),
-            SessionError::NotAuthor | SessionError::WrongSpace | SessionError::Untrusted => {
-                Self::Forbidden
-            }
+            SessionError::WrongSpace => Self::Forbidden,
             SessionError::BadName => Self::invalid("invalid shared property name"),
             SessionError::Unavailable => Self::Internal("the world is gone".into()),
         }
@@ -105,9 +103,9 @@ mod tests {
     }
 
     #[test]
-    fn a_shared_write_by_a_non_author_is_forbidden() {
+    fn a_shared_write_into_another_space_is_forbidden() {
         assert_eq!(
-            ScriptError::from(SessionError::NotAuthor),
+            ScriptError::from(SessionError::WrongSpace),
             ScriptError::Forbidden
         );
     }

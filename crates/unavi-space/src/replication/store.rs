@@ -1,5 +1,5 @@
-//! [`Replicas`]: every peer's pins, holds and session cells, and the rules for
-//! who may state each.
+//! [`Replicas`]: every peer's pins, holds and session layers, and the rules
+//! for who may state each.
 
 use std::{
     collections::{
@@ -21,26 +21,14 @@ use bevy::prelude::{
     Resource,
     World,
 };
-use hsd::{
-    attributes::portal::PortalAttr,
-    id::{
-        DocId,
-        PrimId,
-    },
-    property::{
-        Property,
-        name::PropName,
-    },
-};
+use hsd::id::DocId;
 use iroh::EndpointId;
 use parking_lot::Mutex;
 use unavi_identity::authorship::Authorship;
 use unavi_policy::{
     Policy,
     ledger::Record,
-    permissions::HostApi,
     quota::{
-        Quota,
         Stock,
         StockLease,
     },
@@ -52,19 +40,18 @@ use crate::{
     authority::quota::Attribution,
     membership::SpaceId,
     replication::{
-        cell::{
-            Cell,
-            Restored,
-            SessionError,
-            SessionKey,
-            Standing,
-            admits_non_author,
-            cell_bytes,
-        },
         message::{
             DocSnapshot,
             ReplicationMsg,
             SessionSnapshot,
+        },
+        session::{
+            SessionError,
+            SessionKey,
+            layers::{
+                Opinion,
+                SessionLayers,
+            },
         },
         snapshot,
     },
@@ -93,9 +80,9 @@ struct PeerReplica {
     docs: HashMap<DocId, PeerDocEntry>,
 }
 
-/// Per-document state shared across peers. `refs` counts the live pins,
-/// holds and session cells keeping the presence alive; `_doc_lease`
-/// charges one `Documents` unit while the doc is known locally.
+/// Per-document state shared across peers. `refs` counts the live pins and
+/// holds keeping the presence alive; `_doc_lease` charges one `Documents`
+/// unit while the doc is known locally.
 struct DocPresence {
     space:      SpaceId,
     /// The DID a verified pin proved, fixed once set.
@@ -105,9 +92,7 @@ struct DocPresence {
     /// The peer the holder reserved the next hold for. While set, only it or
     /// the author may hold.
     hold_grant: Option<EndpointId>,
-    quota:      Arc<Quota>,
     _doc_lease: StockLease,
-    session:    HashMap<SessionKey, Cell>,
     refs:       u32,
 }
 
@@ -146,6 +131,7 @@ struct Inner {
     docs:        HashMap<DocId, DocPresence>,
     /// Documents in the world this node minted, and so authors.
     minted:      HashSet<DocId>,
+    sessions:    SessionLayers,
     senders:     HashMap<StreamToken, Outbound>,
     next_token:  u64,
 }
@@ -181,14 +167,13 @@ impl Inner {
     }
 
     /// Ensures a [`DocPresence`] for `doc` in `space`, charging one
-    /// `Documents` unit on first sight to `payer`, else to the document's own
-    /// quota. Refuses a document already present in another space.
+    /// `Documents` unit on first sight. Refuses a document already present in
+    /// another space.
     fn ensure_presence(
         &mut self,
         doc: DocId,
         space: SpaceId,
         author: Option<&Did>,
-        payer: Option<&Arc<Quota>>,
     ) -> Result<&mut DocPresence, PinRefused> {
         let author = author.cloned().or_else(|| self.author_of(doc));
         match self.docs.entry(doc) {
@@ -198,7 +183,7 @@ impl Inner {
                 let quota = self
                     .attribution
                     .document_quota(doc, Some(space), author.as_ref());
-                let Ok(lease) = payer.unwrap_or(&quota).lease(Stock::Documents, 1) else {
+                let Ok(lease) = quota.lease(Stock::Documents, 1) else {
                     forget_untracked(&self.attribution, doc);
                     return Err(PinRefused::Quota);
                 };
@@ -207,9 +192,7 @@ impl Inner {
                     author,
                     proof: None,
                     hold_grant: None,
-                    quota,
                     _doc_lease: lease,
-                    session: HashMap::new(),
                     refs: 0,
                 }))
             }
@@ -276,7 +259,7 @@ impl Inner {
         if self.author_of(doc).is_some_and(|known| known != author) {
             return Err(PinRefused::WrongAuthor);
         }
-        let presence = self.ensure_presence(doc, space, Some(&author), None)?;
+        let presence = self.ensure_presence(doc, space, Some(&author))?;
         let attributed = presence.author.is_none();
         if attributed {
             presence.author = Some(author);
@@ -357,189 +340,6 @@ impl Inner {
         }
     }
 
-    /// Whether a writer proving `did` may state `batch` on `doc`, answering
-    /// whether it is the author.
-    ///
-    /// The author may state anything. Anyone else, including every writer of
-    /// a document whose author is unknown here, may state only what
-    /// [`admits_non_author`] allows, and never over a cell the author wrote.
-    fn may_write(
-        &self,
-        did: Option<&Did>,
-        doc: DocId,
-        space: SpaceId,
-        batch: &[(SessionKey, Option<Vec<u8>>)],
-    ) -> Result<bool, SessionError> {
-        let presence = self.docs.get(&doc);
-        if presence.is_some_and(|p| p.space != space) {
-            return Err(SessionError::WrongSpace);
-        }
-        if did.is_some() && self.author_resolved(doc).as_ref() == did {
-            return Ok(true);
-        }
-        let authored = |key: &SessionKey| {
-            presence
-                .and_then(|p| p.session.get(key))
-                .is_some_and(|cell| cell.by_author)
-        };
-        if !batch
-            .iter()
-            .all(|(key, value)| admits_non_author(&key.name, value.as_deref()) && !authored(key))
-        {
-            return Err(SessionError::NotAuthor);
-        }
-        let pairs = batch.iter().any(|(key, _)| key.name == PortalAttr::NAME);
-        if pairs
-            && self
-                .attribution
-                .writer_permissions(did)
-                .require(HostApi::Portal)
-                .is_err()
-        {
-            return Err(SessionError::Untrusted);
-        }
-        Ok(false)
-    }
-
-    /// Writes a batch of cells on `doc`, all or none. Every lease is taken
-    /// before any cell changes, so a refusal leaves nothing behind.
-    ///
-    /// The author's cells charge the document. Anyone else's charge the
-    /// writer, as does the presence a non-author's first write creates, so
-    /// writing to another peer's document never spends its budget.
-    fn add_session(
-        &mut self,
-        writer: EndpointId,
-        did: Option<&Did>,
-        doc: DocId,
-        space: SpaceId,
-        batch: Vec<(SessionKey, Option<Vec<u8>>)>,
-        at: u64,
-    ) -> Result<(), SessionError> {
-        let is_author = self.may_write(did, doc, space, &batch)?;
-        let writer_quota = (!is_author).then(|| self.attribution.writer_quota(writer, did));
-        let presence = self
-            .ensure_presence(doc, space, None, writer_quota.as_ref())
-            .map_err(|err| match err {
-                PinRefused::Quota => SessionError::QuotaExceeded,
-                PinRefused::WrongSpace => SessionError::WrongSpace,
-                PinRefused::WrongAuthor => SessionError::NotAuthor,
-            })?;
-        let quota = writer_quota.unwrap_or_else(|| Arc::clone(&presence.quota));
-
-        let mut leased = Vec::with_capacity(batch.len());
-        for (key, value) in batch {
-            if presence.session.get(&key).is_some_and(|cell| at < cell.at) {
-                continue;
-            }
-            let Ok(lease) = quota.lease(Stock::SessionMemory, cell_bytes(&key, value.as_deref()))
-            else {
-                drop(leased);
-                self.prune_presence(doc);
-                return Err(SessionError::QuotaExceeded);
-            };
-            leased.push((key, value, lease));
-        }
-
-        let mut inserted = 0;
-        for (key, value, lease) in leased {
-            match presence.session.entry(key) {
-                Entry::Occupied(mut o) => {
-                    let cell = o.get_mut();
-                    // The outgoing version becomes the fallback; whatever it
-                    // replaces is dropped, releasing its lease. Depth stays
-                    // one.
-                    let displaced = Cell {
-                        at:        cell.at,
-                        peer:      cell.peer,
-                        value:     cell.value.take(),
-                        lease:     std::mem::replace(&mut cell.lease, lease),
-                        by_author: cell.by_author,
-                        prev:      None,
-                    };
-                    cell.by_author = is_author;
-                    cell.at = at;
-                    cell.peer = writer;
-                    cell.value = value;
-                    cell.prev = Some(Box::new(displaced));
-                }
-                Entry::Vacant(v) => {
-                    v.insert(Cell {
-                        at,
-                        peer: writer,
-                        value,
-                        lease,
-                        by_author: is_author,
-                        prev: None,
-                    });
-                    inserted += 1;
-                }
-            }
-        }
-        presence.refs += inserted;
-        self.prune_presence(doc);
-        Ok(())
-    }
-
-    /// Restores each cell `peer` last wrote to its prior version, or drops it
-    /// when the prior version was also theirs: a peer cannot leave its own
-    /// earlier write behind as the fallback.
-    fn revert_writes(&mut self, peer: EndpointId) -> Vec<Restored> {
-        let mut emptied = Vec::new();
-        let mut restored = Vec::new();
-
-        for (&doc, presence) in &mut self.docs {
-            let mut dropped = 0;
-            presence.session.retain(|key, cell| {
-                if cell.peer != peer {
-                    return true;
-                }
-                match cell.prev.take() {
-                    Some(prev) if prev.peer != peer => {
-                        *cell = *prev;
-                        restored.push(Restored {
-                            doc,
-                            key: key.clone(),
-                            standing: Standing::Prior {
-                                value: cell.value.clone(),
-                                at:    cell.at,
-                            },
-                        });
-                        true
-                    }
-                    _ => {
-                        dropped += 1;
-                        restored.push(Restored {
-                            doc,
-                            key: key.clone(),
-                            standing: Standing::Gone,
-                        });
-                        false
-                    }
-                }
-            });
-            if dropped > 0 {
-                emptied.push((doc, dropped));
-            }
-        }
-
-        for (doc, dropped) in emptied {
-            if let Some(p) = self.docs.get_mut(&doc) {
-                p.refs = p.refs.saturating_sub(dropped);
-            }
-            self.prune_presence(doc);
-        }
-        restored
-    }
-
-    fn remove_session(&mut self, doc: DocId, key: &SessionKey) {
-        if let Some(presence) = self.docs.get_mut(&doc)
-            && presence.session.remove(key).is_some()
-        {
-            self.dec_ref(doc);
-        }
-    }
-
     /// The peer with the earliest stamp in `field`, or the latest with
     /// `newest`, ties broken by peer id.
     fn resolve_peer(
@@ -580,17 +380,6 @@ impl Inner {
             .or_else(|| self.author_endpoint(space, doc))
     }
 
-    /// The value at `key`, or `None` for a tombstone or a key nothing wrote.
-    fn cell(&self, space: SpaceId, doc: DocId, key: &SessionKey) -> Option<Vec<u8>> {
-        self.docs
-            .get(&doc)
-            .filter(|p| p.space == space)?
-            .session
-            .get(key)?
-            .value
-            .clone()
-    }
-
     fn self_snapshot(&self, me: EndpointId) -> Vec<DocSnapshot> {
         let mut by_doc: HashMap<DocId, DocSnapshot> = HashMap::new();
         if let Some(replica) = self.peers.get(&me) {
@@ -610,28 +399,27 @@ impl Inner {
                 );
             }
         }
-        for (doc, p) in &self.docs {
-            for (key, c) in &p.session {
-                if c.peer != me {
-                    continue;
-                }
-                by_doc
-                    .entry(*doc)
-                    .or_insert_with(|| DocSnapshot {
-                        doc:     *doc,
-                        space:   p.space,
-                        pin:     None,
-                        hold:    false,
-                        session: Vec::new(),
-                    })
-                    .session
-                    .push(SessionSnapshot {
-                        prim:  key.prim,
-                        name:  key.name.to_string(),
-                        value: c.value.clone(),
-                        at:    c.at,
-                    });
-            }
+        for (doc, space, opinions) in self.sessions.of_peer(me) {
+            by_doc
+                .entry(doc)
+                .or_insert_with(|| DocSnapshot {
+                    doc,
+                    space,
+                    pin: None,
+                    hold: false,
+                    session: Vec::new(),
+                })
+                .session
+                .extend(
+                    opinions
+                        .into_iter()
+                        .map(|(key, value, at)| SessionSnapshot {
+                            prim: key.prim,
+                            name: key.name.to_string(),
+                            value,
+                            at,
+                        }),
+                );
         }
         by_doc.into_values().collect()
     }
@@ -669,6 +457,7 @@ impl Replicas {
             peers:       HashMap::new(),
             docs:        HashMap::new(),
             minted:      HashSet::new(),
+            sessions:    SessionLayers::default(),
             senders:     HashMap::new(),
             next_token:  0,
         })))
@@ -780,6 +569,8 @@ impl Replicas {
 
     /// Records a batch of session opinions by `writer`, proving `did`, all or
     /// none.
+    /// Writes a batch into `writer`'s session layer on `doc`, all or none,
+    /// charging `writer`. Answers the opinions that changed.
     pub(crate) fn add_session(
         &self,
         writer: EndpointId,
@@ -788,25 +579,29 @@ impl Replicas {
         space: SpaceId,
         batch: Vec<(SessionKey, Option<Vec<u8>>)>,
         at: u64,
-    ) -> Result<(), SessionError> {
-        self.0
-            .lock()
-            .add_session(writer, did, doc, space, batch, at)
+    ) -> Result<Vec<Opinion>, SessionError> {
+        let mut inner = self.0.lock();
+        if inner.docs.get(&doc).is_some_and(|p| p.space != space) {
+            return Err(SessionError::WrongSpace);
+        }
+        let quota = inner.attribution.writer_quota(writer, did);
+        inner.sessions.write(writer, doc, space, &quota, batch, at)
     }
 
-    pub(crate) fn remove_session(&self, doc: DocId, key: &SessionKey) {
-        self.0.lock().remove_session(doc, key);
+    /// Drops `peer`'s session layer on `doc`.
+    pub(crate) fn remove_session_layer(&self, peer: EndpointId, doc: DocId) {
+        self.0.lock().sessions.remove(peer, doc);
     }
 
-    /// Rolls back every cell whose current value came from `peer`, answering
-    /// what now stands on each key it touched.
-    ///
-    /// Pins and holds go with the peer's entity; cells live on the document,
-    /// so they need this instead, and the documents composing those keys have
-    /// to be told (see [`crate::replication::guards::revert_session`]).
+    /// Peers holding a session layer on `doc`.
     #[must_use]
-    pub(crate) fn revert_writes(&self, peer: EndpointId) -> Vec<Restored> {
-        self.0.lock().revert_writes(peer)
+    pub fn session_peers(&self, doc: DocId) -> Vec<EndpointId> {
+        self.0.lock().sessions.peers(doc)
+    }
+
+    /// `peer`'s session opinions on `doc`.
+    pub(crate) fn session_opinions(&self, peer: EndpointId, doc: DocId) -> Vec<Opinion> {
+        self.0.lock().sessions.opinions(peer, doc)
     }
 
     /// Who authors `doc`: the DID a pin proved, or this node for one it
@@ -861,45 +656,6 @@ impl Replicas {
             .docs
             .get(&doc)
             .is_some_and(|p| p.space == space)
-    }
-
-    /// What a peer said about one key of one prim, or `None` for a blocked key
-    /// or one nothing stated.
-    #[must_use]
-    pub fn session_value(
-        &self,
-        space: SpaceId,
-        doc: DocId,
-        prim: PrimId,
-        name: &PropName,
-    ) -> Option<Vec<u8>> {
-        self.0.lock().cell(
-            space,
-            doc,
-            &SessionKey {
-                prim,
-                name: name.clone(),
-            },
-        )
-    }
-
-    /// Every key of `prim` holding a live value. A blocked key is stored but
-    /// reads as absent, so it is not listed.
-    #[must_use]
-    pub fn session_keys(&self, space: SpaceId, doc: DocId, prim: PrimId) -> Vec<PropName> {
-        let inner = self.0.lock();
-        inner
-            .docs
-            .get(&doc)
-            .filter(|p| p.space == space)
-            .map_or_default(|presence| {
-                presence
-                    .session
-                    .iter()
-                    .filter(|(key, cell)| key.prim == prim && cell.value.is_some())
-                    .map(|(key, _)| key.name.clone())
-                    .collect()
-            })
     }
 
     /// Remote peers pinning `doc`, which `me` can sync it from, the author's
@@ -974,26 +730,47 @@ impl Replicas {
             .docs
             .iter()
             .map(|(doc, p)| {
-                let mut session = p
-                    .session
-                    .iter()
-                    .map(|(k, c)| snapshot::SessionCell {
-                        prim:   k.prim,
-                        name:   k.name.clone(),
-                        value:  c.value.clone(),
-                        at:     c.at,
-                        writer: c.peer,
-                    })
-                    .collect::<Vec<_>>();
-                session.sort_unstable_by(|a, b| (a.prim, &a.name).cmp(&(b.prim, &b.name)));
-                snapshot::DocState {
-                    doc: *doc,
-                    space: p.space,
-                    author: p.author.as_ref().map(ToString::to_string),
-                    session,
-                }
+                (
+                    *doc,
+                    snapshot::DocState {
+                        doc:     *doc,
+                        space:   p.space,
+                        author:  p.author.as_ref().map(ToString::to_string),
+                        session: Vec::new(),
+                    },
+                )
             })
-            .collect::<Vec<_>>();
+            .collect::<HashMap<_, _>>();
+        for (doc, writer, opinions) in inner.sessions.all() {
+            let Some(space) = inner.sessions.space_of(doc) else {
+                continue;
+            };
+            let state = docs.entry(doc).or_insert_with(|| snapshot::DocState {
+                doc,
+                space,
+                author: None,
+                session: Vec::new(),
+            });
+            state
+                .session
+                .extend(
+                    opinions
+                        .into_iter()
+                        .map(|(key, value, at)| snapshot::SessionCell {
+                            prim: key.prim,
+                            name: key.name,
+                            value,
+                            at,
+                            writer,
+                        }),
+                );
+        }
+        let mut docs = docs.into_values().collect::<Vec<_>>();
+        for doc in &mut docs {
+            doc.session.sort_unstable_by(|a, b| {
+                (a.prim, &a.name, a.writer).cmp(&(b.prim, &b.name, b.writer))
+            });
+        }
         docs.sort_unstable_by_key(|d| d.doc.0);
         drop(inner);
         snapshot::ReplicaSnapshot { peers, docs }

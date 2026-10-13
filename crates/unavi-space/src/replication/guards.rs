@@ -5,38 +5,15 @@
 //! off the document they are about and the peer that stated them, so either
 //! despawning takes the state with it.
 
-use std::{
-    collections::BTreeMap,
-    sync::{
-        Arc,
-        Mutex,
-    },
-};
+use std::collections::BTreeMap;
 
 use bevy::prelude::*;
-use bevy_async::{
-    AsyncCommands,
-    AsyncWorld,
-};
-use bevy_hsd::{
-    document::{
-        DocIndex,
-        Hsd,
-    },
-    stack,
-};
+use bevy_async::AsyncWorld;
+use bevy_hsd::document::DocIndex;
 use bevy_iroh::store::DataStore;
 use hsd::{
     id::DocId,
-    key,
-    property::{
-        name::PropName,
-        value::Value,
-    },
-    state::{
-        HsdState,
-        entry::Entry,
-    },
+    property::name::PropName,
 };
 use iroh::EndpointId;
 use unavi_identity::authorship::{
@@ -58,18 +35,20 @@ use crate::{
     },
     pinned::PinnedDoc,
     replication::{
-        cell::{
-            Restored,
-            SessionError,
-            SessionKey,
-            Standing,
-        },
         clock,
         message::{
             ReplicationMsg,
             SESSION_NAME_MAX_BYTES,
             SessionSnapshot,
             SessionWrite,
+        },
+        session::{
+            SessionError,
+            SessionKey,
+            compose::{
+                SessionLayerState,
+                compose,
+            },
         },
         store::Replicas,
     },
@@ -211,24 +190,6 @@ impl Drop for HoldState {
     }
 }
 
-/// Holds one session cell for as long as the document anchoring it lives.
-#[derive(Component)]
-pub struct CellState {
-    doc:      DocId,
-    key:      SessionKey,
-    /// Held because a drop takes no arguments.
-    replicas: Replicas,
-}
-
-impl Drop for CellState {
-    fn drop(&mut self) {
-        // Nothing goes out. An opinion belongs to the document, so it outlives
-        // the peer that wrote it; an explicit delete propagates as a blocked
-        // key at write time instead.
-        self.replicas.remove_session(self.doc, &self.key);
-    }
-}
-
 /// Who stated a change: the guard owner, the endpoint and the DID it proved.
 pub struct Stater {
     pub entity: Entity,
@@ -323,15 +284,6 @@ fn find_guard<C: Component>(
         .get::<PeerGuards>(peer_ent)?
         .iter()
         .find(|e| world.get::<C>(*e).is_some_and(&pred))
-}
-
-/// Finds the cell guard for `key` on `anchor`, if one exists.
-fn find_cell(world: &World, anchor: Entity, doc: DocId, key: &SessionKey) -> Option<Entity> {
-    world.get::<DocGuards>(anchor)?.iter().find(|e| {
-        world
-            .get::<CellState>(*e)
-            .is_some_and(|c| c.doc == doc && &c.key == key)
-    })
 }
 
 fn spawn_pin(
@@ -439,7 +391,7 @@ fn set_session(
         .collect::<Result<_, _>>()?;
 
     let replicas = world.resource::<Replicas>().clone();
-    replicas.add_session(
+    let changed = replicas.add_session(
         stater.id,
         stater.did.as_ref(),
         doc,
@@ -459,7 +411,17 @@ fn set_session(
         at,
     )?;
 
-    compose_session(world, doc, &named, at);
+    // Spawned before composing, so the new layer is ordered among the other
+    // session layers from its first opinion.
+    if find_guard::<SessionLayerState>(world, stater.entity, |layer| layer.doc == doc).is_none() {
+        let anchor = doc_anchor(world, doc, space);
+        world.spawn((
+            SessionLayerState::new(stater.id, doc, stater.did.clone(), replicas.clone()),
+            ForDoc(anchor),
+            FromPeer(stater.entity),
+        ));
+    }
+    compose(world, stater.id, stater.did.as_ref(), doc, &changed);
 
     if stater.local {
         let writes = named.iter().map(|(w, _)| w.clone()).collect();
@@ -471,25 +433,6 @@ fn set_session(
         });
     }
 
-    // Anchored to the document alone, so a disconnect leaves the cell intact.
-    // One guard per key, whoever wrote it last.
-    let anchor = doc_anchor(world, doc, space);
-    for (write, name) in named {
-        let key = SessionKey {
-            prim: write.prim,
-            name,
-        };
-        if find_cell(world, anchor, doc, &key).is_none() {
-            world.spawn((
-                CellState {
-                    doc,
-                    key,
-                    replicas: replicas.clone(),
-                },
-                ForDoc(anchor),
-            ));
-        }
-    }
     Ok(())
 }
 
@@ -500,95 +443,6 @@ fn valid_name(name: &str) -> Result<PropName, SessionError> {
         return Err(SessionError::BadName);
     }
     name.parse().map_err(|_| SessionError::BadName)
-}
-
-/// The live state of a document in the world, or `None` for one this node is
-/// not holding open.
-fn doc_state(world: &World, doc: DocId) -> Option<Arc<Mutex<HsdState>>> {
-    let entity = world.get_resource::<DocIndex>()?.get(doc)?;
-    world.get::<Hsd>(entity).map(Hsd::handle)
-}
-
-/// Rolls back every session opinion `peer` wrote and composes whatever was
-/// underneath back into the documents that held it.
-///
-/// Answers how many keys it touched. The composition is queued rather than
-/// awaited: the record is already correct by the time this returns.
-#[must_use]
-pub fn revert_session(replicas: &Replicas, commands: AsyncCommands, peer: EndpointId) -> usize {
-    let restored = replicas.revert_writes(peer);
-    let touched = restored.len();
-    let _ = commands
-        .push(move |world: &mut World| {
-            for one in restored {
-                restore_session(world, one);
-            }
-        })
-        .try_send();
-    touched
-}
-
-fn restore_session(world: &World, restored: Restored) {
-    let Some(state) = doc_state(world, restored.doc) else {
-        return;
-    };
-    let Ok(mut state) = state.lock() else {
-        warn!("scene state poisoned");
-        return;
-    };
-
-    // The reverted peer's opinion carries the newer stamp, so it is dropped
-    // rather than written over: an older write is refused, and rightly.
-    if let Err(err) = state.clear(&stack::SESSION, restored.key.prim, &restored.key.name) {
-        warn!(?err, "reverted opinion not cleared");
-    }
-    if let Standing::Prior { value, at } = restored.standing {
-        let bytes = value.map_or_default(|bytes| Value::Attribute(bytes.into()).encode());
-        if let Err(err) = state.apply(
-            &stack::SESSION,
-            &Entry::new(
-                key::Key::prop(restored.key.prim, &restored.key.name).to_string(),
-                bytes,
-                at,
-            ),
-        ) {
-            warn!(?err, "restored opinion refused by the document");
-        }
-    }
-}
-
-/// Writes the batch into the document's session layer, where it composes with
-/// what the document and the scripts say.
-///
-/// A document not in the world yet composes nothing; the record carries the
-/// opinion until the document arrives and [`Replicas::session_value`] answers
-/// for it.
-fn compose_session(world: &World, doc: DocId, writes: &[(SessionWrite, PropName)], at: u64) {
-    let Some(state) = doc_state(world, doc) else {
-        return;
-    };
-    let Ok(mut state) = state.lock() else {
-        warn!("scene state poisoned");
-        return;
-    };
-
-    state.open_tick();
-    for (write, name) in writes {
-        // A guest states an opaque payload, which is what an attribute is:
-        // the same encoding the document uses, so a session opinion on
-        // `xform` is interchangeable with the one the document holds.
-        let value = write
-            .value
-            .as_ref()
-            .map_or_default(|bytes| Value::Attribute(bytes.clone().into()).encode());
-        if let Err(err) = state.apply(
-            &stack::SESSION,
-            &Entry::new(key::Key::prop(write.prim, name).to_string(), value, at),
-        ) {
-            warn!(?err, "session opinion refused by the document");
-        }
-    }
-    state.close_tick();
 }
 
 /// Why this node could not pin a document.

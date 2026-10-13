@@ -1,7 +1,7 @@
 [unavi-host]
 path = "../../../crates/unavi-script/wit"
-sha256 = "acf2ecbea206c46e1920aeb9c8bcc278dc044c6dd82cbf23b54fdce3efc37639"
-sha512 = "daef985196d6f38a340fff30dd282d6c13730dda9ea004635596a147f3d14aa4a8aabb922beb59d4dc55231f533982f7fe0d57cd2fad4afd98bd550330359965"
+sha256 = "4b35be8e0f6d7a89a85ab108a5cfb157d652b2bb74c93c0f44f1ae4e9f3de8fc"
+sha512 = "25ff3d082650c5f12ecf132502d30ff0a7c543e20af45983857dfeffffd5890f5365a82f3a4bbeac0193dafceecc766ea9ec4057e47a4fd0edb884511ae576bd"
 
 [unavi-shapes]
 path = "../../unavi-shapes/wit"

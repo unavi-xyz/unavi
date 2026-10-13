@@ -14,6 +14,7 @@ use crate::{
 const SIMPLE_PROFILE: &str = "/interaction_profiles/khr/simple_controller";
 const TOUCH_PROFILE: &str = "/interaction_profiles/oculus/touch_controller";
 const INDEX_PROFILE: &str = "/interaction_profiles/valve/index_controller";
+const FRAME_PROFILE: &str = "/interaction_profiles/valve/frame_controller_valve";
 const VIVE_PROFILE: &str = "/interaction_profiles/htc/vive_controller";
 const WMR_PROFILE: &str = "/interaction_profiles/microsoft/motion_controller";
 
@@ -157,35 +158,39 @@ fn xr(side: &str, bindings: &[(&str, &str)]) -> Vec<XrBinding> {
         .collect()
 }
 
-const STICK: [(&str, &str); 4] = [
+const STICK: [(&str, &str); 5] = [
     (TOUCH_PROFILE, "input/thumbstick"),
     (INDEX_PROFILE, "input/thumbstick"),
+    (FRAME_PROFILE, "input/thumbstick"),
     (WMR_PROFILE, "input/thumbstick"),
     (VIVE_PROFILE, "input/trackpad"),
 ];
 
 /// The one input every headset has under the index finger. Analogue where the
 /// runtime reports a pull, so a light touch reads as one.
-const TRIGGER: [(&str, &str); 5] = [
+const TRIGGER: [(&str, &str); 6] = [
     (SIMPLE_PROFILE, "input/select/click"),
     (TOUCH_PROFILE, "input/trigger/value"),
     (INDEX_PROFILE, "input/trigger/value"),
+    (FRAME_PROFILE, "input/trigger/value"),
     (WMR_PROFILE, "input/trigger/value"),
     (VIVE_PROFILE, "input/trigger/value"),
 ];
 
 /// Closing the hand. The simple profile has no second button to spare, so a
 /// controller UNAVI ships no bindings for can act but not carry.
-const GRIP: [(&str, &str); 4] = [
+const GRIP: [(&str, &str); 5] = [
     (TOUCH_PROFILE, "input/squeeze/value"),
     (INDEX_PROFILE, "input/squeeze/value"),
+    (FRAME_PROFILE, "input/squeeze/value"),
     (WMR_PROFILE, "input/squeeze/click"),
     (VIVE_PROFILE, "input/squeeze/click"),
 ];
 
-const JUMP: [(&str, &str); 4] = [
+const JUMP: [(&str, &str); 5] = [
     (TOUCH_PROFILE, "input/a/click"),
     (INDEX_PROFILE, "input/a/click"),
+    (FRAME_PROFILE, "input/a/click"),
     (WMR_PROFILE, "input/trackpad/click"),
     (VIVE_PROFILE, "input/trackpad/click"),
 ];
@@ -193,9 +198,10 @@ const JUMP: [(&str, &str); 4] = [
 /// A wand has a trigger, a grip, a menu and a trackpad and nothing else, so
 /// once the first three are spoken for and the fourth is walking there is no
 /// button left to sprint with.
-const SPRINT: [(&str, &str); 3] = [
+const SPRINT: [(&str, &str); 4] = [
     (TOUCH_PROFILE, "input/thumbstick/click"),
     (INDEX_PROFILE, "input/thumbstick/click"),
+    (FRAME_PROFILE, "input/thumbstick/click"),
     (WMR_PROFILE, "input/thumbstick/click"),
 ];
 
@@ -298,14 +304,17 @@ fn grip() -> PerPointer<ButtonBinding> {
     }
 }
 
-/// Touch is the odd one out: its second face button is `y` on the left hand
-/// and `b` on the right.
+/// The menu opens on a different button on each hand, and the two profiles
+/// that care disagree about which: Touch's second face button is `y` on the
+/// left and `b` on the right, while Frame keeps a dedicated View on the left
+/// and Menu on the right.
 fn menu() -> PerPointer<ButtonBinding> {
-    let common = |touch| {
+    let common = |touch, frame| {
         [
             (SIMPLE_PROFILE, "input/menu/click"),
             (TOUCH_PROFILE, touch),
             (INDEX_PROFILE, "input/b/click"),
+            (FRAME_PROFILE, frame),
             (WMR_PROFILE, "input/menu/click"),
             (VIVE_PROFILE, "input/menu/click"),
         ]
@@ -318,11 +327,11 @@ fn menu() -> PerPointer<ButtonBinding> {
             ..default()
         },
         left_hand:  ButtonBinding {
-            xr: xr(LEFT, &common("input/y/click")),
+            xr: xr(LEFT, &common("input/y/click", "input/view/click")),
             ..default()
         },
         right_hand: ButtonBinding {
-            xr: xr(RIGHT, &common("input/b/click")),
+            xr: xr(RIGHT, &common("input/b/click", "input/menu/click")),
             ..default()
         },
     }
@@ -348,10 +357,11 @@ impl Default for Bindings {
 mod tests {
     use super::*;
 
-    const PROFILES: [&str; 5] = [
+    const PROFILES: [&str; 6] = [
         SIMPLE_PROFILE,
         TOUCH_PROFILE,
         INDEX_PROFILE,
+        FRAME_PROFILE,
         VIVE_PROFILE,
         WMR_PROFILE,
     ];

@@ -85,7 +85,12 @@ impl Plugin for UnaviPlugin {
                     default_plugins.disable::<bevy::asset::io::web::WebAssetPlugin>();
                 if self.xr {
                     app.add_plugins((
-                        bevy_mod_openxr::add_xr_plugins(default_plugins),
+                        bevy_mod_openxr::add_xr_plugins(default_plugins).set(
+                            bevy_mod_openxr::init::OxrInitPlugin {
+                                exts: xr::extensions(),
+                                ..default()
+                            },
+                        ),
                         xr::XrPlugin,
                     ));
                 } else {

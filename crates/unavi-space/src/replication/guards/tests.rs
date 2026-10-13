@@ -1,4 +1,11 @@
-use hsd::id::PrimId;
+use hsd::{
+    attributes::{
+        portal::PortalAttr,
+        script::ScriptAttr,
+    },
+    id::PrimId,
+    property::Property,
+};
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
 use unavi_policy::Policy;
@@ -45,7 +52,7 @@ fn prim() -> PrimId {
 fn writes() -> Vec<SessionWrite> {
     vec![SessionWrite {
         prim:  prim(),
-        name:  "test/k".to_owned(),
+        name:  "state/k".to_owned(),
         value: Some(b"v".to_vec()),
     }]
 }
@@ -124,7 +131,7 @@ fn a_session_write_composes_into_the_document_it_speaks_for() {
     set_session(&mut world, &stater, space.doc(), space, writes(), 1).expect("session set");
 
     let composed = state.lock().expect("lock").get(prim()).and_then(|p| {
-        p.property(&hsd::prop_name!("test/k"))
+        p.property(&hsd::prop_name!("state/k"))
             .and_then(Value::as_attribute)
             .cloned()
     });
@@ -144,7 +151,7 @@ fn a_cell_survives_its_writer_and_goes_with_its_document() {
     let stater = remote(&mut world, peer(3), None);
     set_session(&mut world, &stater, space.doc(), space, writes(), 1).expect("session set");
     let read = |replicas: &Replicas| {
-        replicas.session_value(space, space.doc(), prim(), &hsd::prop_name!("test/k"))
+        replicas.session_value(space, space.doc(), prim(), &hsd::prop_name!("state/k"))
     };
     assert_eq!(read(&replicas), Some(b"v".to_vec()));
 
@@ -244,4 +251,78 @@ fn state_for_an_unentered_space_waits_unparented() {
         world.get::<PinnedDoc>(tracker).map(|d| d.space),
         Some(space)
     );
+}
+
+/// Two peers, each with its own world and replica: the visitor that opens a
+/// portal into the host's space, and the host who minted the gate there.
+/// Whatever the visitor's replica admits and broadcasts, the host's replica
+/// has to admit too, or the pair is drawn on one side only.
+#[test]
+fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
+    let (mut visitor_world, visitor_replicas) = world();
+    let (mut host_world, host_replicas) = world();
+    let (visitor, host) = (identity(), identity());
+    let visitor_id = peer(1);
+    let space = space(b"far-half");
+    let gate = DocId([4; 32]);
+
+    host_replicas.attribution().set_local(
+        host.did().clone(),
+        unavi_policy::trust::TrustTable::new(unavi_local::DeviceStorage::memory()),
+    );
+    host_replicas.record_minted(gate);
+
+    let feed = visitor_replicas.register_stream(visitor_id);
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+
+    let pairing = vec![SessionWrite {
+        prim:  prim(),
+        name:  PortalAttr::NAME.to_string(),
+        value: Some(b"dest".to_vec()),
+    }];
+    let opener = local(&mut visitor_world, visitor_id, visitor.did());
+    set_session(&mut visitor_world, &opener, gate, space, pairing, 1).expect("pairing admitted");
+
+    let Ok(ReplicationMsg::Session {
+        doc,
+        space: sent_space,
+        writes,
+        at,
+    }) = feed.rx.try_recv()
+    else {
+        panic!("the visitor broadcasts its pairing");
+    };
+    let from_visitor = claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
+    apply_remote(
+        &mut host_world,
+        from_visitor,
+        Remote::Session {
+            doc,
+            space: sent_space,
+            writes,
+            at,
+        },
+    );
+
+    for replicas in [&visitor_replicas, &host_replicas] {
+        assert_eq!(
+            replicas.session_value(space, gate, prim(), &PortalAttr::NAME),
+            Some(b"dest".to_vec()),
+            "both peers compose the far half"
+        );
+    }
+
+    let planted = vec![SessionWrite {
+        prim:  prim(),
+        name:  ScriptAttr::NAME.to_string(),
+        value: Some(vec![1; 32]),
+    }];
+    assert!(
+        set_session(&mut visitor_world, &opener, gate, space, planted, 2).is_err(),
+        "the visitor's own replica refuses what the host's would, so neither diverges"
+    );
+    visitor_replicas.unregister_stream(feed.token);
 }

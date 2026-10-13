@@ -129,7 +129,7 @@ impl SpaceView {
     /// the caller reads that as the guest floor, never as this node.
     #[must_use]
     pub fn author(&self, doc: DocId) -> Option<Did> {
-        self.replicas.author(self.policy.root(doc))
+        self.replicas.author(doc)
     }
 
     /// Whether this node authored `doc`.

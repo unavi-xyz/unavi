@@ -1,3 +1,10 @@
+use hsd::{
+    attributes::{
+        portal::PortalAttr,
+        script::ScriptAttr,
+    },
+    property::Property,
+};
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
 use xdid::method::key::{
@@ -36,7 +43,7 @@ fn prim() -> PrimId {
 }
 
 fn name(field: &str) -> PropName {
-    format!("test/{field}").parse().expect("valid prop name")
+    format!("state/{field}").parse().expect("valid prop name")
 }
 
 fn write(field: &str, value: &[u8]) -> Vec<(SessionKey, Option<Vec<u8>>)> {
@@ -157,8 +164,19 @@ fn anyone_may_hold_until_the_holder_reserves_the_next() {
     );
 }
 
+/// A property the engine applies, which only the author may state.
+fn script_write() -> Vec<(SessionKey, Option<Vec<u8>>)> {
+    vec![(
+        SessionKey {
+            prim: prim(),
+            name: ScriptAttr::NAME,
+        },
+        Some(vec![1; 32]),
+    )]
+}
+
 #[test]
-fn an_authored_documents_session_is_the_authors_alone() {
+fn only_the_author_states_what_the_engine_applies() {
     let replicas = replicas();
     let alice = identity();
     let (doc, proof) = authored(5, &alice);
@@ -169,12 +187,13 @@ fn an_authored_documents_session_is_the_authors_alone() {
         .add_pin(peer(1), doc, space, alice.did().clone(), proof, 1)
         .expect("pin");
     assert_eq!(
-        replicas.add_session(peer(1), Some(alice.did()), doc, space, write("k", b"v"), 2),
+        replicas.add_session(peer(1), Some(alice.did()), doc, space, script_write(), 2),
         Ok(())
     );
     assert_eq!(
-        replicas.add_session(peer(2), Some(&stranger), doc, space, write("k", b"x"), 3),
-        Err(SessionError::NotAuthor)
+        replicas.add_session(peer(2), Some(&stranger), doc, space, script_write(), 3),
+        Err(SessionError::NotAuthor),
+        "a guest must not decide what the author''s document runs"
     );
     assert_eq!(
         replicas.add_session(
@@ -182,17 +201,117 @@ fn an_authored_documents_session_is_the_authors_alone() {
             Some(alice.did()),
             doc,
             SpaceId([0; 32]),
-            write("k", b"x"),
+            script_write(),
             4
         ),
-        Err(SessionError::NotAuthor),
+        Err(SessionError::WrongSpace),
         "a document present in one space is not writable through another"
     );
+}
+
+#[test]
+fn a_spaces_own_document_is_no_exception() {
+    let replicas = replicas();
+    let space = space(b"home");
     assert_eq!(
-        replicas
-            .session_value(space, doc, prim(), &name("k"))
-            .as_deref(),
-        Some(&b"v"[..])
+        replicas.add_session(peer(2), None, space.doc(), space, script_write(), 1),
+        Err(SessionError::NotAuthor),
+        "a guest in someone''s home must not plant a script on it"
+    );
+}
+
+#[test]
+fn an_unknown_author_admits_only_open_properties() {
+    let replicas = replicas();
+    let space = space(b"unknown");
+    let doc = DocId([7; 32]);
+    let anyone: Did = "did:web:anyone.example".parse().expect("did");
+
+    assert_eq!(
+        replicas.add_session(peer(2), Some(&anyone), doc, space, script_write(), 1),
+        Err(SessionError::NotAuthor),
+        "a document nobody proved an author for must not be open to everything"
+    );
+    assert_eq!(
+        replicas.add_session(peer(2), Some(&anyone), doc, space, write("k", b"v"), 2),
+        Ok(())
+    );
+}
+
+#[test]
+fn anyone_present_may_pair_a_portal() {
+    let replicas = replicas();
+    let alice = identity();
+    let (gate, proof) = authored(6, &alice);
+    let space = space(b"target");
+    let visitor: Did = "did:web:visitor.example".parse().expect("did");
+
+    replicas
+        .add_pin(peer(1), gate, space, alice.did().clone(), proof, 1)
+        .expect("pin");
+    let pairing = vec![(
+        SessionKey {
+            prim: prim(),
+            name: PortalAttr::NAME,
+        },
+        Some(vec![2; 8]),
+    )];
+    assert_eq!(
+        replicas.add_session(peer(2), Some(&visitor), gate, space, pairing, 2),
+        Ok(()),
+        "the far half of a portal is written by a peer in the source space"
+    );
+}
+
+#[test]
+fn a_reference_is_judged_by_its_hosts_author() {
+    let policy = Policy::new();
+    let replicas = Replicas::new(policy.clone());
+    let alice = identity();
+    let (host, proof) = authored(8, &alice);
+    let reference = DocId([9; 32]);
+    let space = space(b"host-chain");
+    policy.update(reference, |record| record.host = Some(host));
+
+    replicas
+        .add_pin(peer(1), host, space, alice.did().clone(), proof, 1)
+        .expect("pin");
+    assert_eq!(
+        replicas.add_session(peer(1), Some(alice.did()), reference, space, script_write(), 2),
+        Ok(()),
+        "the host''s author authors what it references"
+    );
+    let stranger: Did = "did:web:stranger.example".parse().expect("did");
+    assert_eq!(
+        replicas.add_session(peer(2), Some(&stranger), reference, space, script_write(), 3),
+        Err(SessionError::NotAuthor),
+        "every peer must give the same answer, whether or not it minted the reference"
+    );
+}
+
+#[test]
+fn a_guests_cells_charge_the_guest() {
+    let replicas = replicas();
+    let alice = identity();
+    let (doc, proof) = authored(10, &alice);
+    let space = space(b"charge");
+    let guest = identity();
+
+    replicas
+        .add_pin(peer(1), doc, space, alice.did().clone(), proof, 1)
+        .expect("pin");
+    replicas
+        .add_session(peer(2), Some(guest.did()), doc, space, write("k", &[0; 64]), 2)
+        .expect("open property");
+
+    let attribution = replicas.attribution();
+    assert!(attribution.author_quota(guest.did()).usage(Stock::SessionMemory) > 0);
+    assert_eq!(
+        attribution
+            .author_quota(alice.did())
+            .usage(Stock::SessionMemory),
+        0,
+        "a guest writing to the author''s document must not spend the author''s budget"
     );
 }
 

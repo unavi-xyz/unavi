@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use hsd::id::DocId;
+use iroh::EndpointId;
 use parking_lot::RwLock;
 use unavi_policy::{
     Policy,
@@ -90,6 +91,19 @@ impl Attribution {
         let trust = self.trust_of_did(author);
         self.policy
             .peer_quota(&PeerKey::Did(author.clone()), || Limits::for_trust(trust))
+    }
+
+    /// What `writer`'s own session cells on documents it does not author
+    /// charge: its DID's budget, else its endpoint's at the anonymous rung.
+    #[must_use]
+    pub fn writer_quota(&self, writer: EndpointId, did: Option<&Did>) -> Arc<Quota> {
+        did.map_or_else(
+            || {
+                self.policy
+                    .peer_quota(&PeerKey::Endpoint(writer), || Limits::for_trust(Trust::Anonymous))
+            },
+            |did| self.author_quota(did),
+        )
     }
 
     /// The budget `doc` rolls up into. A space's own document always charges

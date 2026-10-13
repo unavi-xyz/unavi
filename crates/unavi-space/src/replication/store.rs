@@ -53,6 +53,7 @@ use crate::{
             SessionKey,
             Standing,
             cell_bytes,
+            open_to_any_writer,
         },
         message::{
             DocSnapshot,
@@ -166,6 +167,13 @@ impl Inner {
         None
     }
 
+    /// `doc`'s author as permissions and quota resolve it: the author of the
+    /// document at the top of its host chain, else its own.
+    fn author_resolved(&self, doc: DocId) -> Option<Did> {
+        let root = self.attribution.policy().root(doc);
+        self.author_of(root).or_else(|| self.author_of(doc))
+    }
+
     /// Ensures a [`DocPresence`] for `doc` in `space`, charging one
     /// `Documents` unit on first sight. Refuses a document already present in
     /// another space.
@@ -174,45 +182,30 @@ impl Inner {
         doc: DocId,
         space: SpaceId,
         author: Option<&Did>,
-    ) -> Result<(), PinRefused> {
-        if let Some(presence) = self.docs.get(&doc) {
-            return if presence.space == space {
-                Ok(())
-            } else {
-                Err(PinRefused::WrongSpace)
-            };
-        }
-
+    ) -> Result<&mut DocPresence, PinRefused> {
         let author = author.cloned().or_else(|| self.author_of(doc));
-        let quota = self
-            .attribution
-            .document_quota(doc, Some(space), author.as_ref());
-        let Ok(lease) = quota.lease(Stock::Documents, 1) else {
-            self.forget_untracked(doc);
-            return Err(PinRefused::Quota);
-        };
-        self.docs.insert(
-            doc,
-            DocPresence {
-                space,
-                author,
-                proof: None,
-                hold_grant: None,
-                quota,
-                _doc_lease: lease,
-                session: HashMap::new(),
-                refs: 0,
-            },
-        );
-        Ok(())
-    }
-
-    /// Drops the quota a document never in the world was given, so refused or
-    /// departed documents do not accumulate principals.
-    fn forget_untracked(&self, doc: DocId) {
-        let policy = self.attribution.policy();
-        if policy.get(doc) == Record::default() {
-            policy.forget_document(doc);
+        match self.docs.entry(doc) {
+            Entry::Occupied(o) if o.get().space == space => Ok(o.into_mut()),
+            Entry::Occupied(_) => Err(PinRefused::WrongSpace),
+            Entry::Vacant(v) => {
+                let quota = self
+                    .attribution
+                    .document_quota(doc, Some(space), author.as_ref());
+                let Ok(lease) = quota.lease(Stock::Documents, 1) else {
+                    forget_untracked(&self.attribution, doc);
+                    return Err(PinRefused::Quota);
+                };
+                Ok(v.insert(DocPresence {
+                    space,
+                    author,
+                    proof: None,
+                    hold_grant: None,
+                    quota,
+                    _doc_lease: lease,
+                    session: HashMap::new(),
+                    refs: 0,
+                }))
+            }
         }
     }
 
@@ -227,7 +220,7 @@ impl Inner {
             && p.get().refs == 0
         {
             p.remove();
-            self.forget_untracked(doc);
+            forget_untracked(&self.attribution, doc);
         }
     }
 
@@ -276,9 +269,7 @@ impl Inner {
         if self.author_of(doc).is_some_and(|known| known != author) {
             return Err(PinRefused::WrongAuthor);
         }
-        self.ensure_presence(doc, space, Some(&author))?;
-
-        let presence = self.docs.get_mut(&doc).expect("presence ensured");
+        let presence = self.ensure_presence(doc, space, Some(&author))?;
         let attributed = presence.author.is_none();
         if attributed {
             presence.author = Some(author);
@@ -359,24 +350,34 @@ impl Inner {
         }
     }
 
-    /// Whether a writer proving `did` may state session cells on `doc`: anyone
-    /// on a space's own document or one with no author, only its author
-    /// otherwise, and nobody on a document present in another space.
-    fn may_write(&self, did: Option<&Did>, doc: DocId, space: SpaceId) -> Result<(), SessionError> {
+    /// Whether a writer proving `did` may state `keys` on `doc`.
+    ///
+    /// The author may state anything. Anyone else, including every writer of
+    /// a document whose author is unknown here, may state only properties
+    /// open to any writer.
+    fn may_write<'a>(
+        &self,
+        did: Option<&Did>,
+        doc: DocId,
+        space: SpaceId,
+        mut keys: impl Iterator<Item = &'a SessionKey>,
+    ) -> Result<bool, SessionError> {
         if self.docs.get(&doc).is_some_and(|p| p.space != space) {
-            return Err(SessionError::NotAuthor);
+            return Err(SessionError::WrongSpace);
         }
-        if doc == space.doc() {
-            return Ok(());
-        }
-        match self.author_of(doc) {
-            Some(author) if did != Some(&author) => Err(SessionError::NotAuthor),
-            _ => Ok(()),
+        let is_author = did.is_some() && self.author_resolved(doc).as_ref() == did;
+        if is_author || keys.all(|key| open_to_any_writer(&key.name)) {
+            Ok(is_author)
+        } else {
+            Err(SessionError::NotAuthor)
         }
     }
 
     /// Writes a batch of cells on `doc`, all or none. Every lease is taken
     /// before any cell changes, so a refusal leaves nothing behind.
+    ///
+    /// The author's cells charge the document. Anyone else's charge the
+    /// writer, so writing to another peer's document never spends its budget.
     fn add_session(
         &mut self,
         writer: EndpointId,
@@ -386,22 +387,23 @@ impl Inner {
         batch: Vec<(SessionKey, Option<Vec<u8>>)>,
         at: u64,
     ) -> Result<(), SessionError> {
-        self.may_write(did, doc, space)?;
-        self.ensure_presence(doc, space, None)
+        let is_author = self.may_write(did, doc, space, batch.iter().map(|(key, _)| key))?;
+        let writer_quota = (!is_author).then(|| self.attribution.writer_quota(writer, did));
+        let presence = self
+            .ensure_presence(doc, space, None)
             .map_err(|err| match err {
                 PinRefused::Quota => SessionError::QuotaExceeded,
-                PinRefused::WrongSpace | PinRefused::WrongAuthor => SessionError::NotAuthor,
+                PinRefused::WrongSpace => SessionError::WrongSpace,
+                PinRefused::WrongAuthor => SessionError::NotAuthor,
             })?;
+        let quota = writer_quota.unwrap_or_else(|| Arc::clone(&presence.quota));
 
-        let presence = self.docs.get(&doc).expect("presence ensured");
         let mut leased = Vec::with_capacity(batch.len());
         for (key, value) in batch {
             if presence.session.get(&key).is_some_and(|cell| at < cell.at) {
                 continue;
             }
-            let Ok(lease) = presence
-                .quota
-                .lease(Stock::SessionMemory, cell_bytes(&key, value.as_deref()))
+            let Ok(lease) = quota.lease(Stock::SessionMemory, cell_bytes(&key, value.as_deref()))
             else {
                 drop(leased);
                 self.prune_presence(doc);
@@ -410,7 +412,6 @@ impl Inner {
             leased.push((key, value, lease));
         }
 
-        let presence = self.docs.get_mut(&doc).expect("presence ensured");
         let mut inserted = 0;
         for (key, value, lease) in leased {
             match presence.session.entry(key) {
@@ -604,6 +605,15 @@ impl Inner {
     }
 }
 
+/// Drops the quota a document never in the world was given, so refused or
+/// departed documents do not accumulate principals.
+fn forget_untracked(attribution: &Attribution, doc: DocId) {
+    let policy = attribution.policy();
+    if policy.get(doc) == Record::default() {
+        policy.forget_document(doc);
+    }
+}
+
 /// Every peer's replicated view of the documents in play: who pins what, who
 /// holds each document, and the session cells the documents carry.
 ///
@@ -763,11 +773,12 @@ impl Replicas {
         self.0.lock().revert_writes(peer)
     }
 
-    /// Who authors `doc`: the DID its pin proved, or this node for one it
-    /// minted. `None` when nothing proved one.
+    /// Who authors `doc`: the DID a pin proved, or this node for one it
+    /// minted, for the document at the top of its host chain and else for
+    /// `doc` itself. `None` when nothing proved one.
     #[must_use]
     pub fn author(&self, doc: DocId) -> Option<Did> {
-        self.0.lock().author_of(doc)
+        self.0.lock().author_resolved(doc)
     }
 
     /// Records that this node minted `doc`, and so authors it.

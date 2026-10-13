@@ -1,11 +1,15 @@
 //! One session opinion and what reverting it leaves behind.
 
 use hsd::{
+    attributes::portal::PortalAttr,
     id::{
         DocId,
         PrimId,
     },
-    property::name::PropName,
+    property::{
+        Property,
+        name::PropName,
+    },
 };
 use iroh::EndpointId;
 use unavi_policy::quota::StockLease;
@@ -42,6 +46,20 @@ pub(crate) struct Cell {
     pub(crate) prev:  Option<Box<Self>>,
 }
 
+/// The group guest scripts keep their own session state under. It carries no
+/// meaning to the engine.
+const SCRIPT_STATE_GROUP: &str = "state";
+
+/// Whether a peer other than the document's author may state `name`.
+///
+/// Every other property is composed and applied as if authored, so a
+/// non-author stating one would decide what the author's document runs,
+/// references or simulates. A portal is open so that a peer in another space
+/// can pair with it.
+pub(crate) fn open_to_any_writer(name: &PropName) -> bool {
+    *name == PortalAttr::NAME || name.group() == SCRIPT_STATE_GROUP
+}
+
 pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
     (key.name.as_str().len() + value.map_or(0, <[u8]>::len)) as u64
 }
@@ -50,10 +68,12 @@ pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
 pub enum SessionError {
     #[error("session property name is invalid or too long")]
     BadName,
-    /// The document has an author and the writer is not it, or the document
-    /// belongs to another space.
-    #[error("session write to an authored document by someone else")]
+    /// The writer is not the document's author, or no author is known, and
+    /// the batch names a property only the author may state.
+    #[error("session write to a property only the document's author may state")]
     NotAuthor,
+    #[error("session write to a document present in another space")]
+    WrongSpace,
     #[error("session write exceeds quota")]
     QuotaExceeded,
     /// The world the replica lives in is gone.

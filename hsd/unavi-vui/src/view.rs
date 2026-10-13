@@ -63,16 +63,6 @@ impl PageView {
     pub const fn is_paged(&self) -> bool {
         self.count > 1
     }
-
-    #[must_use]
-    pub const fn has_previous(&self) -> bool {
-        self.index > 0
-    }
-
-    #[must_use]
-    pub const fn has_next(&self) -> bool {
-        self.index + 1 < self.count
-    }
 }
 
 /// Where the pointer is, in the surface's own coordinates and in the world.

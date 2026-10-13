@@ -974,7 +974,8 @@ mod tests {
             vec![9],
             "a short last page draws what is left rather than wrapping"
         );
-        assert!(!surface.page().has_next());
+        let page = surface.page();
+        assert_eq!(page.index + 1, page.count, "on the last page");
     }
 
     #[test]
@@ -1029,8 +1030,7 @@ mod tests {
         let specs = [named("a"), named("b")];
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
         assert!(!surface.page().is_paged());
-        assert!(!surface.page().has_next());
-        assert!(!surface.page().has_previous());
+        assert_eq!(surface.page().index, 0);
     }
 
     #[test]
@@ -1344,8 +1344,9 @@ mod tests {
             vec![8],
             "the last page is as short as it is"
         );
-        assert!(!surface.page().has_next());
-        assert!(surface.page().has_previous());
+        let page = surface.page();
+        assert_eq!(page.index + 1, page.count, "on the last page");
+        assert!(page.index > 0);
     }
 
     #[test]

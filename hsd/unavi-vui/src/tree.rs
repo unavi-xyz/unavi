@@ -411,13 +411,8 @@ impl Tree {
         std::iter::once(open).chain(children).collect()
     }
 
-    /// What [`Tree::level_motes`] draws as, slot for slot.
-    pub fn level(&mut self) -> Vec<MoteSpec> {
-        self.level_with_motes().1
-    }
-
-    /// [`Tree::level_motes`] and [`Tree::level`] together, in one pass: a
-    /// caller that needs both should not walk the tree twice to get them.
+    /// [`Tree::level_motes`] and what each draws as, slot for slot, in one
+    /// pass.
     pub fn level_with_motes(&mut self) -> (Vec<Mote>, Vec<MoteSpec>) {
         let depth = self.depth();
         let back = (depth > 0).then(|| self.back(depth));
@@ -460,7 +455,7 @@ impl Tree {
             .clone()
     }
 
-    /// The mote drawn at `index` of [`Tree::level`], which is the way back
+    /// The mote drawn at slot `index` of the current level, which is the way back
     /// itself at slot 0 of a nested level.
     pub fn at_level(&mut self, index: usize) -> Option<Mote> {
         let open = self.open();
@@ -532,7 +527,7 @@ mod tests {
     }
 
     fn labels(tree: &mut Tree) -> Vec<String> {
-        tree.level()
+        tree.level_with_motes().1
             .into_iter()
             .map(|spec| spec.label.to_string())
             .collect()
@@ -550,7 +545,7 @@ mod tests {
         let mut tree = tree();
         assert!(matches!(tree.select(1), Navigation::Bloomed(mote) if mote.label() == "Places"));
         assert_eq!(labels(&mut tree), vec!["Back", "Atrium", "Club"]);
-        assert_eq!(tree.level()[0].role, Role::Parent { depth: 1 });
+        assert_eq!(tree.level_with_motes().1[0].role, Role::Parent { depth: 1 });
     }
 
     #[test]
@@ -558,7 +553,7 @@ mod tests {
         let mut tree = tree();
         tree.select(1);
 
-        let back = &tree.level()[0];
+        let back = &tree.level_with_motes().1[0];
         assert_eq!(back.label, "Back", "a name, not the group's");
         assert!(!back.icon, "and not the group's glyph either");
         assert_eq!(back.tint, None);
@@ -571,7 +566,7 @@ mod tests {
         tree.select(0);
 
         assert_eq!(
-            tree.level()[0].description.as_deref(),
+            tree.level_with_motes().1[0].description.as_deref(),
             Some("Back to Produce."),
             "the level it leaves is named where it can be read, not worn"
         );
@@ -589,7 +584,7 @@ mod tests {
         let mut tree = Tree::new(holding("Outer", vec![inner]));
         tree.select(0);
 
-        assert_eq!(tree.level()[0].tint, None);
+        assert_eq!(tree.level_with_motes().1[0].tint, None);
     }
 
     #[test]

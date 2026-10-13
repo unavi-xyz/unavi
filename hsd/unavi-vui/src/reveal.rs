@@ -34,11 +34,6 @@ impl Reveal {
         open: false,
     };
 
-    pub const OPEN: Self = Self {
-        t:    1.0,
-        open: true,
-    };
-
     /// Shut, and on its way open. Where a surface starts: one is put up to be
     /// seen, and arriving is how it gets there.
     pub const ARRIVING: Self = Self {
@@ -152,7 +147,8 @@ mod tests {
 
     #[test]
     fn closing_settles_shut_and_then_stops_asking_for_frames() {
-        let mut reveal = Reveal::OPEN;
+        let mut reveal = opened();
+        settle(&mut reveal);
         reveal.set_open(false);
         assert!(reveal.is_visible(), "still on its way out");
         settle(&mut reveal);

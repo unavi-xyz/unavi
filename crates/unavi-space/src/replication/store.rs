@@ -67,13 +67,30 @@ const OUTBOUND_QUEUE: usize = 256;
 #[derive(Default)]
 struct PeerDocEntry {
     pin:  Option<u64>,
+    /// Set while the peer keeps a document whose author left.
+    keep: Option<u64>,
     hold: Option<u64>,
 }
 
 impl PeerDocEntry {
     const fn is_empty(&self) -> bool {
-        self.pin.is_none() && self.hold.is_none()
+        self.pin.is_none() && self.keep.is_none() && self.hold.is_none()
     }
+}
+
+/// An authorship proof whose namespace signature checked out, with the DID it
+/// names.
+pub struct Proven {
+    pub author: Did,
+    pub proof:  Authorship,
+}
+
+/// How a peer states that a document stays present: as its author, or as a
+/// peer keeping it after the author left.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Claim {
+    Pin,
+    Keep,
 }
 
 #[derive(Default)]
@@ -246,15 +263,15 @@ impl Inner {
             .or_default()
     }
 
-    /// Records `peer`'s pin. The caller has checked that `peer` proved
-    /// `author`, and that `proof` names it.
-    fn add_pin(
+    /// Records `peer`'s pin or keep. The caller has checked that the proof
+    /// names its author, and for a pin that `peer` proved it.
+    fn add_claim(
         &mut self,
+        claim: Claim,
         peer: EndpointId,
         doc: DocId,
         space: SpaceId,
-        author: Did,
-        proof: Authorship,
+        Proven { author, proof }: Proven,
         at: u64,
     ) -> Result<bool, PinRefused> {
         if self.author_of(doc).is_some_and(|known| known != author) {
@@ -270,17 +287,26 @@ impl Inner {
         }
 
         let entry = self.entry(peer, doc);
-        if entry.pin.is_none() {
-            entry.pin = Some(at);
+        let slot = match claim {
+            Claim::Pin => &mut entry.pin,
+            Claim::Keep => &mut entry.keep,
+        };
+        if slot.is_none() {
+            *slot = Some(at);
             self.inc_ref(doc);
         }
         Ok(attributed)
     }
 
-    fn remove_pin(&mut self, peer: EndpointId, doc: DocId) {
-        if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
-            && entry.pin.take().is_some()
-        {
+    fn remove_claim(&mut self, claim: Claim, peer: EndpointId, doc: DocId) {
+        let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) else {
+            return;
+        };
+        let slot = match claim {
+            Claim::Pin => &mut entry.pin,
+            Claim::Keep => &mut entry.keep,
+        };
+        if slot.take().is_some() {
             self.prune_entry(peer, doc);
             self.dec_ref(doc);
         }
@@ -394,6 +420,7 @@ impl Inner {
                         doc:     *doc,
                         space:   presence.space,
                         pin:     e.pin.and_then(|_| presence.proof.clone()),
+                        keep:    e.keep.and_then(|_| presence.proof.clone()),
                         hold:    e.hold.is_some(),
                         session: Vec::new(),
                     },
@@ -407,6 +434,7 @@ impl Inner {
                     doc,
                     space,
                     pin: None,
+                    keep: None,
                     hold: false,
                     session: Vec::new(),
                 })
@@ -523,8 +551,36 @@ impl Replicas {
         proof: Authorship,
         at: u64,
     ) -> Result<(), PinRefused> {
+        self.add_claim(Claim::Pin, peer, doc, space, Proven { author, proof }, at)
+    }
+
+    /// Records that `peer` keeps `doc`, authored by `author`, after the
+    /// author left. The caller has checked that `proof` names `author`.
+    /// Idempotent.
+    pub fn add_keep(
+        &self,
+        peer: EndpointId,
+        doc: DocId,
+        space: SpaceId,
+        author: Did,
+        proof: Authorship,
+        at: u64,
+    ) -> Result<(), PinRefused> {
+        self.add_claim(Claim::Keep, peer, doc, space, Proven { author, proof }, at)
+    }
+
+    fn add_claim(
+        &self,
+        claim: Claim,
+        peer: EndpointId,
+        doc: DocId,
+        space: SpaceId,
+        proven: Proven,
+        at: u64,
+    ) -> Result<(), PinRefused> {
+        let author = proven.author.clone();
         let mut inner = self.0.lock();
-        let attributed = inner.add_pin(peer, doc, space, author.clone(), proof, at)?;
+        let attributed = inner.add_claim(claim, peer, doc, space, proven, at)?;
         let attribution = inner.attribution.clone();
         drop(inner);
         if attributed {
@@ -534,7 +590,49 @@ impl Replicas {
     }
 
     pub fn remove_pin(&self, peer: EndpointId, doc: DocId) {
-        self.0.lock().remove_pin(peer, doc);
+        self.0.lock().remove_claim(Claim::Pin, peer, doc);
+    }
+
+    pub fn remove_keep(&self, peer: EndpointId, doc: DocId) {
+        self.0.lock().remove_claim(Claim::Keep, peer, doc);
+    }
+
+    /// The documents `peer` pins, with the space and the proof each pin
+    /// carried.
+    #[must_use]
+    pub fn pins_of(&self, peer: EndpointId) -> Vec<(DocId, SpaceId, Proven)> {
+        let inner = self.0.lock();
+        let Some(replica) = inner.peers.get(&peer) else {
+            return Vec::new();
+        };
+        let pins = replica
+            .docs
+            .iter()
+            .filter(|(_, entry)| entry.pin.is_some())
+            .filter_map(|(doc, _)| {
+                let presence = inner.docs.get(doc)?;
+                Some((
+                    *doc,
+                    presence.space,
+                    Proven {
+                        author: presence.author.clone()?,
+                        proof:  presence.proof.clone()?,
+                    },
+                ))
+            })
+            .collect();
+        drop(inner);
+        pins
+    }
+
+    /// Whether any peer keeps `doc` after its author left.
+    #[must_use]
+    pub fn is_kept(&self, doc: DocId) -> bool {
+        self.0
+            .lock()
+            .peers
+            .values()
+            .any(|r| r.docs.get(&doc).is_some_and(|e| e.keep.is_some()))
     }
 
     /// Whether `peer`, proving `did`, may hold `doc`.
@@ -611,6 +709,15 @@ impl Replicas {
         self.0.lock().sessions.peers(doc)
     }
 
+    /// Every document `peer` holds a session layer on, with its space and
+    /// opinions.
+    pub(crate) fn session_layers_of(
+        &self,
+        peer: EndpointId,
+    ) -> Vec<(DocId, SpaceId, Vec<Opinion>)> {
+        self.0.lock().sessions.of_peer(peer)
+    }
+
     /// `peer`'s session opinions on `doc`.
     pub(crate) fn session_opinions(&self, peer: EndpointId, doc: DocId) -> Vec<Opinion> {
         self.0.lock().sessions.opinions(peer, doc)
@@ -670,8 +777,8 @@ impl Replicas {
             .is_some_and(|p| p.space == space)
     }
 
-    /// Remote peers pinning `doc`, which `me` can sync it from, the author's
-    /// endpoint first.
+    /// Remote peers pinning or keeping `doc`, which `me` can sync it from, the
+    /// author's endpoint first.
     #[must_use]
     pub fn sync_sources(&self, doc: DocId, me: EndpointId) -> Vec<EndpointId> {
         let inner = self.0.lock();
@@ -685,7 +792,9 @@ impl Replicas {
             .filter(|(pid, r)| {
                 **pid != me
                     && Some(**pid) != author_endpoint
-                    && r.docs.get(&doc).is_some_and(|e| e.pin.is_some())
+                    && r.docs
+                        .get(&doc)
+                        .is_some_and(|e| e.pin.is_some() || e.keep.is_some())
             })
             .map(|(pid, _)| *pid)
             .collect::<Vec<_>>();

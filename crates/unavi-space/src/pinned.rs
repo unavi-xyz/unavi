@@ -1,5 +1,6 @@
-//! Documents peers pin into a space: fetched once a pinner is reachable,
-//! instanced under the space, and despawned a while after the last pin goes.
+//! Documents peers pin into a space: fetched once a pinner or keeper is
+//! reachable, instanced under the space, and despawned once nothing keeps it
+//! present for this viewer.
 
 use std::time::Duration;
 
@@ -71,9 +72,6 @@ impl Indexed for PinnedDoc {
     }
 }
 
-/// How long an instanced, no-longer-pinned document lingers before despawn.
-const UNPIN_TTL: Duration = Duration::from_mins(3);
-
 /// Delay before re-attempting a fetch whose retries were exhausted.
 const REFETCH_DELAY: Duration = Duration::from_secs(10);
 
@@ -89,9 +87,6 @@ pub struct PendingPinnedDoc {
 /// Earliest time the next fetch attempt may run, set after a failed fetch.
 #[derive(Component)]
 pub struct FetchBackoff(Duration);
-
-#[derive(Component)]
-pub struct UnpinnedAt(Duration);
 
 /// Reparents unparented trackers under a space once it is entered, so state
 /// replicated for not-yet-visited spaces anchors correctly on join.
@@ -142,7 +137,7 @@ pub fn fetch_pinned_docs(
         if backoff.is_some_and(|b| now < b.0) {
             continue;
         }
-        if !replicas.is_pinned(doc.doc) {
+        if !replicas.is_pinned(doc.doc) && !view.as_deref().is_some_and(|v| v.keeps(doc.doc)) {
             continue;
         }
 
@@ -225,28 +220,23 @@ pub fn instance_pinned_docs(
     }
 }
 
-/// Reconciles trackers to their pin state: instanced docs that go unpinned
-/// despawn after [`UNPIN_TTL`]; trackers left with no state at all are dropped
-/// immediately.
+/// Reconciles trackers to their pin state.
+///
+/// An instanced document stays while its author pins it, or while a peer
+/// keeps it and the local rules adopt its author's rung; otherwise it
+/// despawns. A tracker left with no state at all is dropped.
 pub fn prune_pinned_docs(
-    time: Res<Time>,
-    instanced: Query<(Entity, &PinnedDoc, Option<&UnpinnedAt>), With<Hsd>>,
+    instanced: Query<(Entity, &PinnedDoc), With<Hsd>>,
     trackers: Query<(Entity, Option<&DocGuards>), (With<PinnedDoc>, Without<Hsd>)>,
     replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
-    let now = time.elapsed();
-    for (entity, doc, unpinned) in &instanced {
-        if replicas.is_pinned(doc.doc) {
-            if unpinned.is_some() {
-                commands.entity(entity).remove::<UnpinnedAt>();
-            }
-        } else if let Some(unpinned) = unpinned {
-            if now.saturating_sub(unpinned.0) >= UNPIN_TTL {
-                commands.entity(entity).despawn();
-            }
-        } else {
-            commands.entity(entity).try_insert(UnpinnedAt(now));
+    for (entity, doc) in &instanced {
+        let present =
+            replicas.is_pinned(doc.doc) || view.as_deref().is_some_and(|v| v.keeps(doc.doc));
+        if !present {
+            commands.entity(entity).despawn();
         }
     }
 

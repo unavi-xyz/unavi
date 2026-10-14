@@ -30,7 +30,10 @@ use hsd::{
     },
 };
 use iroh_docs::NamespaceSecret;
-use unavi_identity::identity::Identity;
+use unavi_identity::{
+    authorship::Authorship,
+    identity::Identity,
+};
 use unavi_local::DeviceStorage;
 use unavi_policy::{
     Policy,
@@ -701,4 +704,117 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
         "a commit's clear has to reach every peer still drawing the old opinion"
     );
     replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn adopting_a_departing_peer_restates_its_opinions_and_keeps_its_documents() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let (doc, proven) = authored(31, &alice);
+    let space = space(b"adopted");
+    let state = spawn_doc(&mut world, doc);
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+
+    let author = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    set_session(
+        &mut world,
+        &author,
+        doc,
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    )
+    .expect("session set");
+
+    let viewer = local(&mut world, peer(1), me.did());
+    adopt(&mut world, peer(2), &viewer);
+    world.despawn(author.entity);
+
+    assert_eq!(
+        resolved(&state, &state_k()).as_deref(),
+        Some(&b"v"[..]),
+        "an adopted opinion outlives the peer that stated it"
+    );
+    assert_eq!(
+        replicas
+            .session_opinions(peer(1), doc)
+            .into_iter()
+            .map(|(_, value, _)| value)
+            .collect::<Vec<_>>(),
+        vec![Some(b"v".to_vec())],
+        "the opinion is restated as the viewer's own"
+    );
+    assert!(
+        replicas.is_kept(doc),
+        "the document is kept with its author gone"
+    );
+    let sent = std::iter::from_fn(|| feed.rx.try_recv().ok()).collect::<Vec<_>>();
+    assert!(
+        sent.iter()
+            .any(|msg| matches!(msg, ReplicationMsg::Keep { doc: d, .. } if *d == doc)),
+        "the keep reaches peers that join later"
+    );
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn adoption_leaves_the_viewers_own_opinions_alone() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"adopt-own");
+    let doc = space.doc();
+    spawn_doc(&mut world, doc);
+
+    let viewer = local(&mut world, peer(1), me.did());
+    set_session(
+        &mut world,
+        &viewer,
+        doc,
+        space,
+        vec![write(&state_k(), b"mine")],
+        1,
+    )
+    .expect("session set");
+    let other = remote(&mut world, peer(2), None);
+    set_session(
+        &mut world,
+        &other,
+        doc,
+        space,
+        vec![write(&state_k(), b"theirs")],
+        2,
+    )
+    .expect("session set");
+
+    adopt(&mut world, peer(2), &viewer);
+    assert_eq!(
+        replicas
+            .session_opinions(peer(1), doc)
+            .into_iter()
+            .map(|(_, value, _)| value)
+            .collect::<Vec<_>>(),
+        vec![Some(b"mine".to_vec())]
+    );
+}
+
+#[test]
+fn a_kept_document_stays_present_after_its_author_leaves() {
+    let (mut world, replicas) = world();
+    let alice = identity();
+    let (doc, proven) = authored(32, &alice);
+    let space = space(b"kept");
+
+    let keeper = remote(&mut world, peer(3), None);
+    spawn_keep(&mut world, &keeper, doc, space, proven);
+    assert!(replicas.is_kept(doc));
+    assert_eq!(replicas.author(doc).as_ref(), Some(alice.did()));
+    assert_eq!(replicas.sync_sources(doc, peer(1)), vec![peer(3)]);
+
+    world.despawn(keeper.entity);
+    assert!(!replicas.is_kept(doc), "a keep goes with its keeper");
 }

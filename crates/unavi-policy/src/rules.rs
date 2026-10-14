@@ -21,6 +21,10 @@ const MYSELF_SHARE: f64 = 4.0;
 pub struct Grant {
     pub permissions: Permissions,
     pub limits:      Limits,
+    /// Whether a peer at this rung that leaves has its live state adopted:
+    /// its session opinions copied into the viewer's own, and the documents
+    /// it authored kept loaded.
+    pub adopts:      bool,
 }
 
 /// The only mapping from a trust rung to its grant.
@@ -61,22 +65,27 @@ impl Default for Rules {
             Grant {
                 permissions: Permissions::none(),
                 limits:      peer.scaled(0.0),
+                adopts:      false,
             },
             Grant {
                 permissions: anonymous,
                 limits:      peer.scaled(0.05),
+                adopts:      false,
             },
             Grant {
                 permissions: guest,
                 limits:      peer.scaled(0.25),
+                adopts:      true,
             },
             Grant {
                 permissions: trusted,
                 limits:      peer.scaled(1.0),
+                adopts:      true,
             },
             Grant {
                 permissions: myself,
                 limits:      peer.scaled(MYSELF_SHARE),
+                adopts:      true,
             },
         ]))
     }
@@ -281,6 +290,7 @@ mod tests {
         let grant = Grant {
             permissions: Permissions::of(&[HostApi::Event]),
             limits:      Limits::default(),
+            adopts:      true,
         };
         let rules = Rules::default().with(Trust::Guest, grant);
 
@@ -303,10 +313,23 @@ mod tests {
         let grant = Grant {
             permissions: Permissions::of(&ALL),
             limits:      Limits::peer(),
+            adopts:      true,
         };
         let rules = Rules::default().with(Trust::Blocked, grant);
 
         assert_eq!(rules.permissions(Trust::Blocked), Permissions::none());
         assert_eq!(rules.limits(Trust::Blocked).stock[&Stock::Prims], 0);
+        assert!(!rules.grant(Trust::Blocked).adopts);
+    }
+
+    #[test]
+    fn a_departing_peer_is_adopted_from_guest_up() {
+        let rules = Rules::default();
+        let adopted = LADDER.map(|trust| rules.grant(trust).adopts);
+        assert_eq!(
+            adopted,
+            [false, false, true, true, true],
+            "an unproven or blocked peer leaves nothing behind"
+        );
     }
 }

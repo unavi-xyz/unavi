@@ -40,11 +40,11 @@ use crate::{
         clock,
         guards::{
             self,
-            Proven,
             Remote,
             RemoteDoc,
         },
         message::ReplicationMsg,
+        store::Proven,
     },
 };
 
@@ -112,7 +112,7 @@ pub async fn recv_state_stream(
         .context("claim remote peer")?;
 
     let res = recv_loop(link, peer_ent, peer, did.as_ref(), &mut rx).await;
-    let _ = link
+    let released = link
         .view()
         .commands()
         .push(move |world: &mut World| {
@@ -120,6 +120,9 @@ pub async fn recv_state_stream(
         })
         .send()
         .await;
+    if released.is_err() {
+        debug!(%peer, "the world is gone; nothing to release");
+    }
     res
 }
 
@@ -186,16 +189,21 @@ async fn recv_loop(
     }
 }
 
-/// Checks each authorship proof against the DID the sender proved, and drops
-/// whatever names a space the sender is not present in.
+/// Checks each authorship proof, and drops whatever names a space the sender
+/// is not present in. A pin's proof must name the sender; a keep relays
+/// someone else's.
 fn prove(msg: ReplicationMsg, did: Option<&Did>, present: &HashSet<SpaceId>) -> Option<Remote> {
-    let proven = |doc: hsd::id::DocId, proof: unavi_identity::authorship::Authorship| {
+    let relayed = |doc: hsd::id::DocId, proof: unavi_identity::authorship::Authorship| {
         let author = proof.verify_namespace(NamespaceId::from(&doc.0)).ok()?;
-        if did != Some(&author) {
+        Some(Proven { author, proof })
+    };
+    let proven = |doc: hsd::id::DocId, proof: unavi_identity::authorship::Authorship| {
+        let proven = relayed(doc, proof)?;
+        if did != Some(&proven.author) {
             debug!(%doc, "pin from a peer that is not the document's author; dropped");
             return None;
         }
-        Some(Proven { author, proof })
+        Some(proven)
     };
 
     Some(match msg {
@@ -206,6 +214,7 @@ fn prove(msg: ReplicationMsg, did: Option<&Did>, present: &HashSet<SpaceId>) -> 
                     doc:     d.doc,
                     space:   d.space,
                     pin:     d.pin.and_then(|proof| proven(d.doc, proof)),
+                    keep:    d.keep.and_then(|proof| relayed(d.doc, proof)),
                     hold:    d.hold,
                     session: d.session,
                 })
@@ -222,6 +231,17 @@ fn prove(msg: ReplicationMsg, did: Option<&Did>, present: &HashSet<SpaceId>) -> 
             }
         }
         ReplicationMsg::Unpin { doc } => Remote::Unpin { doc },
+        ReplicationMsg::Keep { doc, space, author } => {
+            if !present.contains(&space) {
+                return None;
+            }
+            Remote::Keep {
+                doc,
+                space,
+                proof: relayed(doc, author)?,
+            }
+        }
+        ReplicationMsg::Unkeep { doc } => Remote::Unkeep { doc },
         ReplicationMsg::Hold { doc, space } => {
             if !present.contains(&space) {
                 return None;

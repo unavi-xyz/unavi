@@ -126,6 +126,16 @@ impl SpaceView {
         }
     }
 
+    /// Whether `doc` stays loaded with its author gone: some peer keeps it,
+    /// and the local rules adopt its author's rung.
+    #[must_use]
+    pub fn keeps(&self, doc: DocId) -> bool {
+        self.replicas.is_kept(doc)
+            && self
+                .author(doc)
+                .is_some_and(|did| self.rules.grant(self.trust_of_did(&did)).adopts)
+    }
+
     /// Who authored `doc`, resolved through the document that composed it.
     ///
     /// `None` where nothing proved an author, such as a space's own content;

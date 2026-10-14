@@ -43,6 +43,17 @@ pub enum ReplicationMsg {
     Unpin {
         doc: DocId,
     },
+    /// The sender keeps `doc` in `space` after its author left, and relays
+    /// the author's proof. Each receiver decides by its own trust in the
+    /// author whether to keep it too.
+    Keep {
+        doc:    DocId,
+        space:  SpaceId,
+        author: Authorship,
+    },
+    Unkeep {
+        doc: DocId,
+    },
     /// Takes transform and simulation authority over `doc`'s rigid bodies.
     /// Honoured from the author, or from the peer the holder released to.
     Hold {
@@ -94,6 +105,8 @@ pub struct DocSnapshot {
     pub space:   SpaceId,
     /// The sender's authorship proof, if it pins the document.
     pub pin:     Option<Authorship>,
+    /// The author's proof the sender relays, if it keeps the document.
+    pub keep:    Option<Authorship>,
     /// Whether the sender holds the document.
     pub hold:    bool,
     pub session: Vec<SessionSnapshot>,
@@ -124,10 +137,11 @@ impl ReplicationMsg {
         let (one, many) = match self {
             Self::Snapshot(docs) => (None, Some(docs.iter().map(|d| d.space))),
             Self::Pin { space, .. }
+            | Self::Keep { space, .. }
             | Self::Hold { space, .. }
             | Self::Session { space, .. }
             | Self::SessionClear { space, .. } => (Some(*space), None),
-            Self::Unpin { .. } | Self::ReleaseHold { .. } => (None, None),
+            Self::Unpin { .. } | Self::Unkeep { .. } | Self::ReleaseHold { .. } => (None, None),
         };
         one.into_iter().chain(many.into_iter().flatten())
     }
@@ -168,6 +182,8 @@ impl ReplicationMsg {
                 }
             }
             Self::Pin { .. }
+            | Self::Keep { .. }
+            | Self::Unkeep { .. }
             | Self::Unpin { .. }
             | Self::Hold { .. }
             | Self::ReleaseHold { .. } => {}

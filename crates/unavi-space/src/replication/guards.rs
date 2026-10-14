@@ -5,7 +5,10 @@
 //! off the document they are about and the peer that stated them, so either
 //! despawning takes the state with it.
 
-use std::collections::BTreeMap;
+use std::collections::{
+    BTreeMap,
+    HashSet,
+};
 
 use bevy::prelude::*;
 use bevy_async::AsyncWorld;
@@ -16,13 +19,12 @@ use hsd::{
     property::name::PropName,
 };
 use iroh::EndpointId;
-use unavi_identity::authorship::{
-    self,
-    Authorship,
-};
+use unavi_identity::authorship;
+use unavi_policy::rules::Rules;
 use xdid::core::did::Did;
 
 use crate::{
+    authority::SpaceView,
     identity::LocalIdentity,
     index::{
         self,
@@ -52,7 +54,10 @@ use crate::{
                 uncompose,
             },
         },
-        store::Replicas,
+        store::{
+            Proven,
+            Replicas,
+        },
     },
 };
 
@@ -137,13 +142,75 @@ pub fn claim_remote_peer(
         .id()
 }
 
-/// Despawns the peer's state entity only if `generation` still owns it.
+/// Despawns the peer's state entity only if `generation` still owns it,
+/// adopting what it leaves behind first.
 pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64) {
     if world
         .get::<StreamGen>(peer_ent)
         .is_some_and(|g| g.0 == generation)
     {
+        adopt_departing(world, peer_ent);
         world.despawn(peer_ent);
+    }
+}
+
+/// Adopts what a departing peer leaves, when the local rules adopt its rung.
+///
+/// The documents it pinned are kept, and its session opinions are restated as
+/// this peer's own, so they outlive it for everyone this peer reaches. Every
+/// viewer judges the restated opinions by this peer's standing, so adoption
+/// never lets an opinion reach further than this peer could state it.
+fn adopt_departing(world: &mut World, peer_ent: Entity) {
+    let Some(peer) = world.get::<RemotePeer>(peer_ent).map(|remote| remote.id) else {
+        return;
+    };
+    let Some(view) = world.get_resource::<SpaceView>().cloned() else {
+        return;
+    };
+    let rules = world.get_resource::<Rules>().cloned().unwrap_or_default();
+    if !rules.grant(view.trust_of(peer)).adopts {
+        return;
+    }
+    let me = Stater {
+        entity: local_peer_entity(world),
+        id:     view.me(),
+        did:    Some(view.did().clone()),
+        local:  true,
+    };
+    adopt(world, peer, &me);
+}
+
+/// Keeps every document `peer` pins and restates its session opinions as
+/// `me`'s, leaving any key `me` already states alone.
+fn adopt(world: &mut World, peer: EndpointId, me: &Stater) {
+    let replicas = world.resource::<Replicas>().clone();
+
+    for (doc, space, proven) in replicas.pins_of(peer) {
+        spawn_keep(world, me, doc, space, proven);
+    }
+
+    let at = clock::current_micros();
+    for (doc, space, opinions) in replicas.session_layers_of(peer) {
+        let mine = replicas
+            .session_opinions(me.id, doc)
+            .into_iter()
+            .map(|(key, ..)| key)
+            .collect::<HashSet<_>>();
+        let writes = opinions
+            .into_iter()
+            .filter(|(key, ..)| !mine.contains(key))
+            .map(|(key, value, _)| SessionWrite {
+                prim: key.prim,
+                name: key.name.to_string(),
+                value,
+            })
+            .collect::<Vec<_>>();
+        if writes.is_empty() {
+            continue;
+        }
+        if let Err(err) = set_session(world, me, doc, space, writes, at) {
+            debug!(%doc, ?err, "departing peer's session opinions not adopted");
+        }
     }
 }
 
@@ -162,6 +229,27 @@ impl Drop for PinState {
         if self.local {
             self.replicas
                 .broadcast(&ReplicationMsg::Unpin { doc: self.doc });
+        }
+    }
+}
+
+/// A peer keeping a document after its author left. The local peer's keep
+/// lasts until the document's anchor goes.
+#[derive(Component)]
+pub struct KeepState {
+    peer:     EndpointId,
+    doc:      DocId,
+    local:    bool,
+    /// Held because a drop takes no arguments.
+    replicas: Replicas,
+}
+
+impl Drop for KeepState {
+    fn drop(&mut self) {
+        self.replicas.remove_keep(self.peer, self.doc);
+        if self.local {
+            self.replicas
+                .broadcast(&ReplicationMsg::Unkeep { doc: self.doc });
         }
     }
 }
@@ -212,6 +300,14 @@ pub enum Remote {
     Unpin {
         doc: DocId,
     },
+    Keep {
+        doc:   DocId,
+        space: SpaceId,
+        proof: Proven,
+    },
+    Unkeep {
+        doc: DocId,
+    },
     Hold {
         doc:   DocId,
         space: SpaceId,
@@ -238,15 +334,9 @@ pub struct RemoteDoc {
     pub doc:     DocId,
     pub space:   SpaceId,
     pub pin:     Option<Proven>,
+    pub keep:    Option<Proven>,
     pub hold:    bool,
     pub session: Vec<SessionSnapshot>,
-}
-
-/// An authorship proof whose namespace signature checked out and whose DID is
-/// the one its sender proved.
-pub struct Proven {
-    pub author: Did,
-    pub proof:  Authorship,
 }
 
 fn space_entity(world: &World, space: SpaceId) -> Option<Entity> {
@@ -374,6 +464,44 @@ fn release_hold(world: &mut World, stater: &Stater, doc: DocId, to: Option<Endpo
 
 fn clear_pin(world: &mut World, peer_ent: Entity, doc: DocId) {
     if let Some(e) = find_guard::<PinState>(world, peer_ent, |p| p.doc == doc) {
+        world.despawn(e);
+    }
+}
+
+/// Records that the stater keeps `doc` after its author left.
+fn spawn_keep(world: &mut World, stater: &Stater, doc: DocId, space: SpaceId, proven: Proven) {
+    if find_guard::<KeepState>(world, stater.entity, |k| k.doc == doc).is_some() {
+        return;
+    }
+    let replicas = world.resource::<Replicas>().clone();
+    let msg = stater.local.then(|| ReplicationMsg::Keep {
+        doc,
+        space,
+        author: proven.proof.clone(),
+    });
+    let at = clock::current_micros();
+    if let Err(err) = replicas.add_keep(stater.id, doc, space, proven.author, proven.proof, at) {
+        debug!(%doc, %err, "keep refused");
+        return;
+    }
+    if let Some(msg) = msg {
+        replicas.broadcast(&msg);
+    }
+    let anchor = doc_anchor(world, doc, space);
+    world.spawn((
+        KeepState {
+            peer: stater.id,
+            doc,
+            local: stater.local,
+            replicas,
+        },
+        ForDoc(anchor),
+        FromPeer(stater.entity),
+    ));
+}
+
+fn clear_keep(world: &mut World, peer_ent: Entity, doc: DocId) {
+    if let Some(e) = find_guard::<KeepState>(world, peer_ent, |k| k.doc == doc) {
         world.despawn(e);
     }
 }
@@ -653,6 +781,10 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
             spawn_pin(world, &stater, doc, space, proof);
         }
         Remote::Unpin { doc } => clear_pin(world, peer_ent, doc),
+        Remote::Keep { doc, space, proof } => {
+            spawn_keep(world, &stater, doc, space, proof);
+        }
+        Remote::Unkeep { doc } => clear_keep(world, peer_ent, doc),
         Remote::Hold { doc, space } => {
             spawn_hold(world, &stater, doc, space);
         }
@@ -678,6 +810,9 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
 fn apply_snapshot_doc(world: &mut World, stater: &Stater, doc: RemoteDoc) {
     if let Some(proof) = doc.pin {
         spawn_pin(world, stater, doc.doc, doc.space, proof);
+    }
+    if let Some(proof) = doc.keep {
+        spawn_keep(world, stater, doc.doc, doc.space, proof);
     }
     if doc.hold {
         spawn_hold(world, stater, doc.doc, doc.space);

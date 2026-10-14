@@ -24,10 +24,7 @@ impl ScriptBehavior for Script {
         Ok(Self { subscription })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         for message in self.subscription.drain(32) {
             println!(
                 "-> Got message on {}: {:?}",

@@ -49,12 +49,5 @@ def main [
         msg: $"HSD build failed for ($crate): ($build.stderr | str trim)"
       }
     }
-
-    let fmt = (cargo run --quiet -p hsd-cli --release -- format $hsda | complete)
-    if $fmt.exit_code != 0 {
-      error make {
-        msg: $"HSD format failed for ($crate): ($fmt.stderr | str trim)"
-      }
-    }
   }
 }

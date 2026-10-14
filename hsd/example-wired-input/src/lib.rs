@@ -14,10 +14,7 @@ impl ScriptBehavior for Script {
         Ok(Self { input })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         for event in self.input.drain(32) {
             println!("got input: {event:#?}");
         }

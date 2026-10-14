@@ -204,10 +204,7 @@ impl ScriptBehavior for Script {
         })))
     }
 
-    fn fixed_update(
-        &mut self,
-        tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, tick: Tick) -> anyhow::Result<()> {
         self.0
             .as_mut()
             .map_or_else(|| Ok(()), |beacon| beacon.fixed_update(tick.dt))

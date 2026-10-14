@@ -137,10 +137,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         for message in self.beacon_rx.drain(8) {
             let Some(target) = as_document_id(&message.payload) else {
                 continue;

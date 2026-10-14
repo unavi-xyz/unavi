@@ -51,10 +51,7 @@ impl ScriptBehavior for Script {
         Ok(Self { doc })
     }
 
-    fn fixed_update(
-        &mut self,
-        tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, tick: Tick) -> anyhow::Result<()> {
         let offset = Vec3::new(0.0, (tick.time as f32).sin() * 0.1, 0.0);
 
         wired::agent::local::attach(

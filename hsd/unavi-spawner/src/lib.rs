@@ -44,10 +44,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
                 ToolEvent::Activate => self.active.set(true),
@@ -73,7 +70,7 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn update(&mut self, tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+    fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
         let art_t = approach(self.art_t.get(), self.active.get(), tick.dt * ART_SPEED);
         self.art_t.set(art_t);
         self.preview

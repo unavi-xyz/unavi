@@ -174,10 +174,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
         self.home.fixed_update();
         self.hand.fixed_update(&self.root.tools);
@@ -192,7 +189,7 @@ impl ScriptBehavior for Script {
         self.apply(walked_away)
     }
 
-    fn update(&mut self, tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+    fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
         api::update(tick.dt)?;
 
         let Some(eye) = camera_pose() else {

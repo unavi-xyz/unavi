@@ -63,10 +63,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
                 ToolEvent::Activate => self.active.set(true),
@@ -110,7 +107,7 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn update(&mut self, _tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+    fn update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         let Some(cam) = camera_pose() else {
             return Ok(());
         };

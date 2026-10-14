@@ -290,15 +290,12 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn fixed_update(
-        &mut self,
-        _tick: exports::wired::script::lifecycle::Tick,
-    ) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
         Ok(())
     }
 
-    fn update(&mut self, tick: exports::wired::script::lifecycle::Tick) -> anyhow::Result<()> {
+    fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
         api::update(tick.dt)?;
         self.thrown.retain_mut(Throw::apply);
 

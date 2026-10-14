@@ -235,6 +235,11 @@ macro_rules! generate_script {
     ($script:ident) => {
         $crate::generate!();
 
+        /// The `tick` a lifecycle export carries. The export type lives at
+        /// `exports::wired::script::lifecycle::Tick`; this names it at the
+        /// crate root so a signature is `tick: Tick`, not the full path.
+        pub use exports::wired::script::lifecycle::Tick;
+
         /// A script's state. `init` runs once; `update` and `fixed_update`
         /// each carry the `tick` that triggered them.
         pub trait ScriptBehavior: ::core::marker::Sized {
@@ -245,20 +250,14 @@ macro_rules! generate_script {
             /// Called at the host's fixed rate. Input, messages and
             /// simulation belong here.
             #[expect(unused_variables)]
-            fn fixed_update(
-                &mut self,
-                tick: exports::wired::script::lifecycle::Tick,
-            ) -> ::anyhow::Result<()> {
+            fn fixed_update(&mut self, tick: Tick) -> ::anyhow::Result<()> {
                 ::core::result::Result::Ok(())
             }
 
             /// Called once per rendered frame. Drawing and animation belong
             /// here.
             #[expect(unused_variables)]
-            fn update(
-                &mut self,
-                tick: exports::wired::script::lifecycle::Tick,
-            ) -> ::anyhow::Result<()> {
+            fn update(&mut self, tick: Tick) -> ::anyhow::Result<()> {
                 ::core::result::Result::Ok(())
             }
         }
@@ -283,7 +282,7 @@ macro_rules! generate_script {
                 }
             }
 
-            fn fixed_update(tick: exports::wired::script::lifecycle::Tick) {
+            fn fixed_update(tick: Tick) {
                 __SCRIPT.with(|s| {
                     if let ::core::option::Option::Some(state) = s.borrow_mut().as_mut()
                         && let ::core::result::Result::Err(err) = state.fixed_update(tick)
@@ -293,7 +292,7 @@ macro_rules! generate_script {
                 });
             }
 
-            fn update(tick: exports::wired::script::lifecycle::Tick) {
+            fn update(tick: Tick) {
                 __SCRIPT.with(|s| {
                     if let ::core::option::Option::Some(state) = s.borrow_mut().as_mut()
                         && let ::core::result::Result::Err(err) = state.update(tick)

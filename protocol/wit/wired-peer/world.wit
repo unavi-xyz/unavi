@@ -26,8 +26,8 @@ interface authority {
   /// author. `none` outside a space.
   holder: func(document: borrow<document>) -> result<option<did>, error>;
 
-  /// Whether the local user authors `document`, which is what lets this
-  /// peer's `shared` writes to it land.
+  /// Whether the local user authors `document`, whose `shared` layer every
+  /// viewer applies in full.
   is-author: func(document: borrow<document>) -> result<bool, error>;
   /// Whether this peer holds `document` now.
   is-holder: func(document: borrow<document>) -> result<bool, error>;

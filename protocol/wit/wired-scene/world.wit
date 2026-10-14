@@ -4,7 +4,8 @@
 /// about it, from its place in the tree to its mesh, is a property. Each
 /// property is composed from layers, strongest first:
 ///
-/// - `shared`: what peers present in the space state for this session.
+/// - `shared`: what each peer present in the space states, one layer per
+///   peer, the author's strongest.
 /// - `local`: what this peer states, for itself only.
 /// - the document's durable value, which `commit` writes.
 ///
@@ -310,13 +311,14 @@ interface document {
     /// seen everywhere without being sent anywhere. Reach for `shared` when
     /// the value depends on one peer, such as user input.
     local,
-    /// Every peer present in the space, live, for the rest of the session.
+    /// Every peer present in the space, live, until this peer leaves.
     ///
-    /// Peers accept a document's shared state only from its author, so a
-    /// shared write succeeds only on the peer whose user authors the document,
-    /// and fails with `forbidden` on every other. A document no author has
-    /// proven, such as a space's own content, takes shared writes from anyone
-    /// present. Relations cannot be shared.
+    /// Each peer's shared writes form its own layer on the document, and each
+    /// viewer decides what that layer contributes. The author's layer
+    /// contributes every property and is the strongest. Any other peer's
+    /// contributes only properties in the `state` group, and a portal pairing
+    /// when the viewer trusts that peer to open portals. Its other writes are
+    /// kept but have no effect. Relations cannot be shared.
     shared,
   }
 

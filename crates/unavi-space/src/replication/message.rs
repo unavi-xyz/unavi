@@ -27,6 +27,7 @@ use crate::{
     membership::SpaceId,
     replication::{
         clock,
+        frames,
         record::{
             PinRecord,
             Record,
@@ -57,18 +58,14 @@ pub const MAX_BATCHES_PER_LAYER: usize = 1024;
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ReplicationMsg {
     /// Everything the sender states, replacing whatever it stated before. A
-    /// snapshot too large for one frame continues in [`Self::SnapshotMore`].
-    Snapshot(Vec<DocSnapshot>),
-    /// Further documents, or further layers of documents already sent, of the
-    /// snapshot in progress.
-    SnapshotMore(Vec<DocSnapshot>),
+    /// snapshot too large for one frame is sent as consecutive frames, each
+    /// but the last with `more` set, and is applied once the last arrives.
+    Snapshot { docs: Vec<DocSnapshot>, more: bool },
     /// The sender holds `doc` in `space`. `author` is the author's proof,
     /// whoever sends it; each receiver records whether the sender is the
     /// author. `record` is the newest record of the author's the sender
     /// holds, and says the document is pinned.
     Pin {
-        doc:    DocId,
-        space:  SpaceId,
         author: Authorship,
         record: Signed<PinRecord>,
     },
@@ -80,13 +77,23 @@ pub enum ReplicationMsg {
         withdrawal: Option<Signed<PinRecord>>,
     },
     /// Takes transform and simulation authority over `doc`'s rigid bodies.
-    /// Honoured from the author, or from the peer the holder released to.
-    Hold { doc: DocId, space: SpaceId },
-    /// Drops the sender's hold on `doc`. With `to`, the sender, if it holds
-    /// `doc`, lets that peer take hold next.
-    ReleaseHold { doc: DocId, to: Option<EndpointId> },
+    /// `at` is the sender's clock in microseconds. The highest `(at, sender)`
+    /// among every peer's holds resolves the holder, and a receiver refuses
+    /// a hold stamped past its skew allowance.
+    Hold(HoldClaim),
+    /// Drops the sender's hold on `doc`.
+    ReleaseHold { doc: DocId },
     /// One batch of the sender's own session opinions.
     Session(Signed<SessionBatch>),
+}
+
+/// A peer's claim to simulate `doc`'s rigid bodies, stamped `at` in
+/// microseconds by its clock.
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct HoldClaim {
+    pub doc:   DocId,
+    pub space: SpaceId,
+    pub at:    u64,
 }
 
 /// What a writer says about `doc`'s prims this session, as one atomic batch:
@@ -114,6 +121,30 @@ impl Signable for SessionBatch {
     const SIGNING_CONTEXT: &'static str = "wired/space/session";
 }
 
+impl SessionBatch {
+    /// The bounds every batch is held to, by its writer before signing and by
+    /// every receiver.
+    pub fn check(&self) -> Result<(), Rejected> {
+        if self.clears.len() > MAX_WRITES_PER_BATCH || !frames::fits_one_batch(&self.writes) {
+            return Err(Rejected::BatchTooLarge);
+        }
+        for write in &self.writes {
+            check_name(&write.name)?;
+            if write
+                .value
+                .as_ref()
+                .is_some_and(|value| value.len() > MAX_VALUE_BYTES)
+            {
+                return Err(Rejected::ValueTooLarge);
+            }
+        }
+        for clear in &self.clears {
+            check_name(&clear.name)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ClearedKey {
     pub prim: PrimId,
@@ -133,8 +164,8 @@ pub struct DocSnapshot {
     pub space:      SpaceId,
     /// The sender's own pin, if it pins the document.
     pub pin:        Option<PinSnapshot>,
-    /// Whether the sender holds the document.
-    pub hold:       bool,
+    /// The stamp of the sender's hold on the document.
+    pub hold:       Option<u64>,
     /// The newest withdrawal the sender knows for the document, listed even
     /// when the sender holds nothing else of it.
     pub withdrawal: Option<Signed<PinRecord>>,
@@ -200,6 +231,8 @@ pub enum Rejected {
     ValueTooLarge,
     #[error("session batch is malformed")]
     Malformed,
+    #[error("hold stamped past the allowed clock skew")]
+    FutureHold,
     #[error("snapshot layer mixes writers, documents or spaces")]
     Mismatched,
 }
@@ -228,24 +261,7 @@ impl Batch {
 
     fn received(signed: Signed<SessionBatch>, recv: u64) -> Result<Self, Rejected> {
         let payload = signed.payload().map_err(|_| Rejected::Malformed)?;
-        if payload.writes.len() > MAX_WRITES_PER_BATCH
-            || payload.clears.len() > MAX_WRITES_PER_BATCH
-        {
-            return Err(Rejected::BatchTooLarge);
-        }
-        for write in &payload.writes {
-            check_name(&write.name)?;
-            if write
-                .value
-                .as_ref()
-                .is_some_and(|value| value.len() > MAX_VALUE_BYTES)
-            {
-                return Err(Rejected::ValueTooLarge);
-            }
-        }
-        for clear in &payload.clears {
-            check_name(&clear.name)?;
-        }
+        payload.check()?;
         Ok(Self {
             stamp: clock::clamp_to(payload.at, recv),
             signed,
@@ -283,7 +299,7 @@ pub struct ReceivedDoc {
     pub doc:        DocId,
     pub space:      SpaceId,
     pub pin:        Option<ReceivedPin>,
-    pub hold:       bool,
+    pub hold:       Option<u64>,
     /// Decoded, not yet checked against the document's namespace.
     pub withdrawal: Option<Record>,
     /// Each layer's batches, all naming one writer and DID.
@@ -293,11 +309,11 @@ pub struct ReceivedDoc {
 /// A [`ReplicationMsg`] that passed every bound. Records are decoded but not
 /// yet checked against their document's namespace.
 pub enum Received {
-    Snapshot(Vec<ReceivedDoc>),
-    SnapshotMore(Vec<ReceivedDoc>),
+    Snapshot {
+        docs: Vec<ReceivedDoc>,
+        more: bool,
+    },
     Pin {
-        doc:    DocId,
-        space:  SpaceId,
         author: Authorship,
         record: Record,
     },
@@ -305,13 +321,9 @@ pub enum Received {
         doc:        DocId,
         withdrawal: Option<Record>,
     },
-    Hold {
-        doc:   DocId,
-        space: SpaceId,
-    },
+    Hold(HoldClaim),
     ReleaseHold {
         doc: DocId,
-        to:  Option<EndpointId>,
     },
     Session(Batch),
 }
@@ -322,17 +334,12 @@ impl ReplicationMsg {
     /// the allowed skew.
     pub fn validate(self, recv: u64) -> Result<Received, Rejected> {
         Ok(match self {
-            Self::Snapshot(docs) => Received::Snapshot(check_docs(docs, recv)?),
-            Self::SnapshotMore(docs) => Received::SnapshotMore(check_docs(docs, recv)?),
+            Self::Snapshot { docs, more } => Received::Snapshot {
+                docs: check_docs(docs, recv)?,
+                more,
+            },
             Self::Session(signed) => Received::Session(Batch::received(signed, recv)?),
-            Self::Pin {
-                doc,
-                space,
-                author,
-                record,
-            } => Received::Pin {
-                doc,
-                space,
+            Self::Pin { author, record } => Received::Pin {
                 author,
                 record: Record::decode(record, recv)?,
             },
@@ -342,8 +349,13 @@ impl ReplicationMsg {
                     .map(|record| Record::decode(record, recv))
                     .transpose()?,
             },
-            Self::Hold { doc, space } => Received::Hold { doc, space },
-            Self::ReleaseHold { doc, to } => Received::ReleaseHold { doc, to },
+            Self::Hold(hold) => {
+                if !clock::within_skew(hold.at, recv) {
+                    return Err(Rejected::FutureHold);
+                }
+                Received::Hold(hold)
+            }
+            Self::ReleaseHold { doc } => Received::ReleaseHold { doc },
         })
     }
 }
@@ -396,6 +408,13 @@ impl ReceivedDoc {
                 author: pin.author,
                 record: decode(pin.record)?,
             })
+        });
+        let hold = hold.filter(|at| {
+            let current = clock::within_skew(*at, recv);
+            if !current {
+                debug!(%doc, "snapshot hold stamped past the allowed skew; skipped");
+            }
+            current
         });
         Ok(Self {
             doc,
@@ -500,14 +519,17 @@ mod tests {
     }
 
     fn snapshot(batches: Vec<RetainedBatch>) -> ReplicationMsg {
-        ReplicationMsg::Snapshot(vec![DocSnapshot {
-            doc:        DocId([1; 32]),
-            space:      SpaceId([2; 32]),
-            pin:        None,
-            hold:       false,
-            withdrawal: None,
-            layers:     vec![LayerSnapshot { batches }],
-        }])
+        ReplicationMsg::Snapshot {
+            docs: vec![DocSnapshot {
+                doc:        DocId([1; 32]),
+                space:      SpaceId([2; 32]),
+                pin:        None,
+                hold:       None,
+                withdrawal: None,
+                layers:     vec![LayerSnapshot { batches }],
+            }],
+            more: false,
+        }
     }
 
     fn clearing_batch(who: &Identity, count: usize) -> Signed<SessionBatch> {
@@ -551,7 +573,7 @@ mod tests {
     }
 
     fn layers_of(msg: ReplicationMsg) -> Vec<usize> {
-        let Ok(Received::Snapshot(docs)) = msg.validate(0) else {
+        let Ok(Received::Snapshot { docs, .. }) = msg.validate(0) else {
             panic!("a bad layer does not reject the message");
         };
         docs[0].layers.iter().map(Vec::len).collect()
@@ -586,48 +608,28 @@ mod tests {
         ];
         let too_many = (0..=MAX_BATCHES_PER_LAYER).map(|_| good.clone()).collect();
         let layer = |batches| LayerSnapshot { batches };
-        let msg = ReplicationMsg::Snapshot(vec![DocSnapshot {
-            doc:        DocId([1; 32]),
-            space:      SpaceId([2; 32]),
-            pin:        None,
-            hold:       true,
-            withdrawal: None,
-            layers:     vec![
-                layer(vec![bad_index]),
-                layer(vec![bad_clear_index]),
-                layer(two_writers.to_vec()),
-                layer(too_many),
-                layer(vec![good]),
-            ],
-        }]);
-        let Ok(Received::Snapshot(docs)) = msg.validate(0) else {
+        let msg = ReplicationMsg::Snapshot {
+            docs: vec![DocSnapshot {
+                doc:        DocId([1; 32]),
+                space:      SpaceId([2; 32]),
+                pin:        None,
+                hold:       Some(1),
+                withdrawal: None,
+                layers:     vec![
+                    layer(vec![bad_index]),
+                    layer(vec![bad_clear_index]),
+                    layer(two_writers.to_vec()),
+                    layer(too_many),
+                    layer(vec![good]),
+                ],
+            }],
+            more: false,
+        };
+        let Ok(Received::Snapshot { docs, .. }) = msg.validate(0) else {
             panic!("a bad layer does not reject the message");
         };
-        assert!(docs[0].hold, "the document's hold survives");
+        assert!(docs[0].hold.is_some(), "the document's hold survives");
         assert_eq!(docs[0].layers.len(), 1, "only the good layer remains");
-    }
-
-    #[test]
-    fn a_snapshot_continuation_is_checked_like_a_snapshot() {
-        let alice = identity();
-        let msg = ReplicationMsg::SnapshotMore(vec![DocSnapshot {
-            doc:        DocId([1; 32]),
-            space:      SpaceId([2; 32]),
-            pin:        None,
-            hold:       false,
-            withdrawal: None,
-            layers:     vec![LayerSnapshot {
-                batches: vec![RetainedBatch {
-                    batch:       batch_of(&alice, writer(), 0, 1),
-                    live:        vec![0],
-                    live_clears: Vec::new(),
-                }],
-            }],
-        }]);
-        let Ok(Received::SnapshotMore(docs)) = msg.validate(0) else {
-            panic!("a continuation validates");
-        };
-        assert_eq!(docs[0].layers.len(), 1);
     }
 
     #[test]
@@ -670,5 +672,39 @@ mod tests {
             ReplicationMsg::Session(signed).validate(0).err(),
             Some(Rejected::ValueTooLarge)
         );
+    }
+
+    #[test]
+    fn a_hold_stamped_past_the_skew_is_refused() {
+        let recv = 1_000_000_000;
+        let hold = |at| {
+            ReplicationMsg::Hold(HoldClaim {
+                doc: DocId([1; 32]),
+                space: SpaceId([2; 32]),
+                at,
+            })
+        };
+        let limit = recv + clock::MAX_SKEW_MICROS;
+        assert!(hold(limit).validate(recv).is_ok());
+        assert_eq!(
+            hold(limit + 1).validate(recv).err(),
+            Some(Rejected::FutureHold)
+        );
+
+        let msg = ReplicationMsg::Snapshot {
+            docs: vec![DocSnapshot {
+                doc:        DocId([1; 32]),
+                space:      SpaceId([2; 32]),
+                pin:        None,
+                hold:       Some(u64::MAX),
+                withdrawal: None,
+                layers:     Vec::new(),
+            }],
+            more: false,
+        };
+        let Ok(Received::Snapshot { docs, .. }) = msg.validate(recv) else {
+            panic!("a future hold costs the document only its hold");
+        };
+        assert_eq!(docs[0].hold, None);
     }
 }

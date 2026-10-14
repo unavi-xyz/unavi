@@ -272,7 +272,7 @@ pub fn reconcile_local_pins(
         return;
     };
     for (entity, doc) in &loaded {
-        let (id, space) = (doc.doc, doc.space);
+        let id = doc.doc;
         if replicas.pins_by(view.me(), id) || replicas.is_withdrawn(id) {
             continue;
         }
@@ -287,7 +287,7 @@ pub fn reconcile_local_pins(
             continue;
         }
         commands.queue(move |world: &mut World| {
-            if !guards::pins::pin_loaded(world, id, space)
+            if !guards::pins::pin_loaded(world, id)
                 && let Ok(mut doc) = world.get_entity_mut(entity)
             {
                 doc.insert(NoLocalPin);

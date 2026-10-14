@@ -5,8 +5,6 @@ use std::{
     sync::Arc,
 };
 
-use tracing::debug;
-
 use hsd::{
     attributes::portal::{
         LinkId,
@@ -22,6 +20,7 @@ use hsd::{
         Property,
     },
 };
+use tracing::debug;
 use unavi_policy::{
     permissions::HostApi,
     quota::{

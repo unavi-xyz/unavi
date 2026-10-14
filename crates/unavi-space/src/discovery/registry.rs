@@ -101,26 +101,31 @@ pub fn publish_spaces(
         };
         let store = store.0.clone();
         let identity = Arc::clone(&local.identity);
-
-        for registry in &registries {
-            let registry = registry.clone();
-            let submission = submission.clone();
-            let store = store.clone();
-            let identity = Arc::clone(&identity);
-            task::spawn(async move {
-                // Only a write-key holder may submit, so a public flag on
-                // someone else's space does nothing here.
-                let Ok(Some(key)) = store.write_key(ns).await else {
+        let registries = registries.clone();
+        task::spawn(async move {
+            // Only a write-key holder may submit, so a public flag on someone
+            // else's space does nothing here.
+            let key = match store.write_key(ns).await {
+                Ok(Some(key)) => key,
+                Ok(None) => return,
+                Err(err) => {
+                    warn!(?err, %ns, "Write key not read; space not published");
                     return;
-                };
-                let Ok(authorship) = Authorship::sign(&key, &identity) else {
+                }
+            };
+            let authorship = match Authorship::sign(&key, &identity) {
+                Ok(authorship) => authorship,
+                Err(err) => {
+                    warn!(?err, %ns, "Authorship not signed; space not published");
                     return;
-                };
-                if let Err(err) = registry.submit(&submission, authorship).await {
+                }
+            };
+            for registry in registries {
+                if let Err(err) = registry.submit(&submission, authorship.clone()).await {
                     warn!(?err, %ns, "Failed to publish space");
                 }
-            });
-        }
+            }
+        });
     }
 }
 

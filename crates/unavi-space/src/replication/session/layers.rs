@@ -24,7 +24,10 @@ use xdid::core::did::Did;
 use crate::{
     membership::SpaceId,
     replication::{
-        frames::MAX_BATCH_BYTES,
+        frames::{
+            MAX_BATCH_BYTES,
+            WRITE_OVERHEAD_BYTES,
+        },
         message::{
             Batch,
             LayerSnapshot,
@@ -49,10 +52,6 @@ pub const MAX_LAYERS_PER_DOC: usize = 48;
 /// Further layers past [`MAX_LAYERS_PER_DOC`] only the document's author and
 /// the local peer may take, so a crowd of strangers cannot lock them out.
 pub const RESERVED_LAYERS: usize = 8;
-
-/// Bytes a write's prim id and length prefixes take in an encoded batch, which
-/// its key and value bytes do not count.
-const WRITE_OVERHEAD_BYTES: u64 = 20;
 
 /// Encoded bytes a layer's retained batches may exceed twice its live bytes
 /// by before it is due a checkpoint.
@@ -411,7 +410,7 @@ impl Plan {
 }
 
 fn live_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
-    cell_bytes(key, value) + WRITE_OVERHEAD_BYTES
+    cell_bytes(key, value) + WRITE_OVERHEAD_BYTES as u64
 }
 
 /// Who writes a batch, and what it is charged to.

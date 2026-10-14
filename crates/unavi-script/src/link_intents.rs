@@ -7,7 +7,6 @@ use std::collections::{
 };
 
 use bevy::prelude::*;
-use tracing::debug;
 use bevy_hsd::{
     attributes::portal::PortalConfig,
     document::HsdDocId,
@@ -17,6 +16,7 @@ use hsd::{
     attributes::portal::LinkId,
     id::DocId,
 };
+use tracing::debug;
 use unavi_space::authority::SpaceView;
 
 use crate::host::shared_state::link_intents::{

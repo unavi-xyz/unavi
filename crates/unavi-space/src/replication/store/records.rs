@@ -255,20 +255,6 @@ impl Replicas {
         self.0.lock().observe(record.clone(), source);
     }
 
-    /// Keeps `record` as the one `peer`'s pin on `doc` states, and as a
-    /// record heard from `peer`.
-    pub fn attach_record(&self, peer: EndpointId, doc: DocId, record: &Record) {
-        let mut inner = self.0.lock();
-        if let Some(entry) = inner
-            .peers
-            .get_mut(&peer)
-            .and_then(|r| r.docs.get_mut(&doc))
-        {
-            entry.record = Some(record.clone());
-        }
-        inner.observe(record.clone(), peer);
-    }
-
     /// The newest record of the author's for `doc`, if it says the author
     /// pinned it.
     #[must_use]
@@ -332,19 +318,6 @@ impl Replicas {
     #[must_use]
     pub fn in_space(&self, space: SpaceId) -> bool {
         self.0.lock().in_space(space)
-    }
-
-    /// Whether `peer`'s pin on `doc` is the only one by the author.
-    #[must_use]
-    pub fn is_sole_author_pin(&self, peer: EndpointId, doc: DocId) -> bool {
-        let inner = self.0.lock();
-        let by_author = inner
-            .peers
-            .get(&peer)
-            .and_then(|r| r.docs.get(&doc))
-            .and_then(|e| e.pin)
-            .is_some_and(|p| p.by_author);
-        by_author && inner.docs.get(&doc).is_some_and(|p| p.author_pins == 1)
     }
 
     #[cfg(test)]

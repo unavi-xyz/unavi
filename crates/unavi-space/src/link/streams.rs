@@ -213,10 +213,10 @@ async fn recv_streams(
     loop {
         while let Some(Some(_)) = n0_future::future::now_or_never(streams.join_next()) {}
 
-        let (tx, mut rx) = match connection.accept_bi().await {
-            Ok(pair) => pair,
+        let mut rx = match connection.accept_uni().await {
+            Ok(rx) => rx,
             Err(err) if is_graceful_close(&err) => return Ok(()),
-            Err(err) => return Err(err).context("accept_bi"),
+            Err(err) => return Err(err).context("accept_uni"),
         };
 
         if streams.len() >= MAX_STREAMS {
@@ -242,7 +242,7 @@ async fn recv_streams(
                     let _ = rx.stop(VarInt::from_u32(1));
                     return;
                 };
-                if let Err(err) = recv_stream(&link, peer, did, kind, tx, rx).await {
+                if let Err(err) = recv_stream(&link, peer, did, kind, rx).await {
                     error!(?err);
                 }
             }
@@ -256,7 +256,6 @@ async fn recv_stream(
     peer: EndpointId,
     did: Option<Did>,
     kind: StreamKind,
-    _tx: SendStream,
     rx: RecvStream,
 ) -> anyhow::Result<()> {
     match kind {

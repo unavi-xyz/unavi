@@ -44,11 +44,7 @@ impl authority::Host for HostCtx {
         peer::take_hold(&self.host, doc.rep())
     }
 
-    fn release_hold(
-        &mut self,
-        doc: Resource<DocumentRes>,
-        to: Option<String>,
-    ) -> Result<(), ScriptError> {
-        peer::release_hold(&self.host, doc.rep(), to.as_deref())
+    fn release_hold(&mut self, doc: Resource<DocumentRes>) -> Result<(), ScriptError> {
+        peer::release_hold(&self.host, doc.rep())
     }
 }

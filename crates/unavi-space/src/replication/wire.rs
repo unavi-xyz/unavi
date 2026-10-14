@@ -45,6 +45,7 @@ use crate::{
         clock,
         frames::{
             self,
+            MAX_SNAPSHOT_FRAMES,
             MAX_STATE_FRAME,
         },
         guards::{
@@ -74,7 +75,7 @@ const READ_CHUNK: usize = 16 * 1024;
 const RESOLVE_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub async fn send_state_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
-    let (mut tx, _rx) = connection.open_bi().await?;
+    let mut tx = connection.open_uni().await?;
     StreamKind::State.write(&mut tx).await?;
 
     let me = link.view().me();
@@ -150,6 +151,10 @@ async fn recv_loop(
     did: Option<&Did>,
     rx: &mut RecvStream,
 ) -> anyhow::Result<()> {
+    // A snapshot split across frames is applied once its last frame arrives,
+    // so the world never sees the sender's state half restated.
+    let mut snapshot = Vec::new();
+    let mut snapshot_frames = 0;
     loop {
         let len = match rx.read_u32().await {
             Ok(len) => len as usize,
@@ -171,17 +176,38 @@ async fn recv_loop(
         }
 
         let msg = postcard::from_bytes::<ReplicationMsg>(&buf).context("parse msg")?;
+        let is_snapshot = matches!(msg, ReplicationMsg::Snapshot { .. });
+        if snapshot_frames > 0 && !is_snapshot {
+            bail!("state message interleaved with a snapshot");
+        }
         let msg = match msg.validate(clock::current_micros()) {
             Ok(msg) => msg,
+            Err(err) if is_snapshot => bail!("snapshot frame rejected: {err}"),
             Err(err) => {
                 warn!(%peer, %err, "state message rejected");
                 continue;
             }
         };
+        let more = matches!(msg, Received::Snapshot { more: true, .. });
 
         let mut sender = Sender::new(peer, did, &link.view().identity().resolver);
         let Some(change) = prove(msg, &mut sender).await else {
             continue;
+        };
+        let change = match change {
+            Remote::Snapshot(docs) => {
+                snapshot.extend(docs);
+                snapshot_frames += 1;
+                if snapshot_frames > MAX_SNAPSHOT_FRAMES {
+                    bail!("snapshot exceeds {MAX_SNAPSHOT_FRAMES} frames");
+                }
+                if more {
+                    continue;
+                }
+                snapshot_frames = 0;
+                Remote::Snapshot(std::mem::take(&mut snapshot))
+            }
+            change => change,
         };
 
         // Awaited rather than tried: a full queue holds this stream back,
@@ -256,18 +282,11 @@ async fn resolve(resolver: &Resolver, did: &Did) -> Option<Document> {
 /// signature is refused at the first hop and no holder diverges.
 async fn prove(msg: Received, sender: &mut Sender<'_>) -> Option<Remote> {
     Some(match msg {
-        Received::Snapshot(docs) => Remote::Snapshot(prove_docs(docs, sender).await),
-        Received::SnapshotMore(docs) => Remote::SnapshotMore(prove_docs(docs, sender).await),
-        Received::Pin {
-            doc,
-            space,
-            author,
-            record,
-        } => Remote::Pin {
-            doc,
-            space,
-            claim: claim(proven(doc, author)?, checked(record, doc, space)?)?,
-        },
+        Received::Snapshot { docs, .. } => Remote::Snapshot(prove_docs(docs, sender).await),
+        Received::Pin { author, record } => {
+            let (doc, space) = (record.payload.doc, record.payload.space);
+            Remote::Pin(claim(proven(doc, author)?, checked(record, doc, space)?)?)
+        }
         Received::Unpin { doc, withdrawal } => Remote::Unpin {
             doc,
             withdrawal: withdrawal
@@ -277,8 +296,8 @@ async fn prove(msg: Received, sender: &mut Sender<'_>) -> Option<Remote> {
                 })
                 .filter(|record| !record.payload.pinned),
         },
-        Received::Hold { doc, space } => Remote::Hold { doc, space },
-        Received::ReleaseHold { doc, to } => Remote::ReleaseHold { doc, to },
+        Received::Hold(hold) => Remote::Hold(hold),
+        Received::ReleaseHold { doc } => Remote::ReleaseHold { doc },
         Received::Session(batch) => {
             if !sender.owns(&batch) {
                 debug!(peer = %sender.id, "session batch not from its writer; dropped");
@@ -446,8 +465,6 @@ mod tests {
         let ns = namespace();
         let doc = DocId(*ns.id().as_bytes());
         Received::Pin {
-            doc,
-            space,
             author: Authorship::sign(&ns, author).expect("sign"),
             record: record(&ns, doc, space, 1, true),
         }
@@ -475,18 +492,21 @@ mod tests {
     }
 
     fn snapshot_of(batch: Batch, space: SpaceId) -> Received {
-        Received::Snapshot(vec![ReceivedDoc {
-            doc: batch.payload.doc,
-            space,
-            pin: None,
-            hold: false,
-            withdrawal: None,
-            layers: vec![vec![Retained {
-                batch,
-                live: vec![0],
-                live_clears: Vec::new(),
-            }]],
-        }])
+        Received::Snapshot {
+            docs: vec![ReceivedDoc {
+                doc: batch.payload.doc,
+                space,
+                pin: None,
+                hold: None,
+                withdrawal: None,
+                layers: vec![vec![Retained {
+                    batch,
+                    live: vec![0],
+                    live_clears: Vec::new(),
+                }]],
+            }],
+            more: false,
+        }
     }
 
     fn relayed_layers(remote: Option<Remote>) -> usize {
@@ -501,7 +521,7 @@ mod tests {
         let alice = identity();
         let space = SpaceId([1; 32]);
 
-        let Some(Remote::Pin { claim, .. }) = prove_as(pin(&alice, space), peer(1), None) else {
+        let Some(Remote::Pin(claim)) = prove_as(pin(&alice, space), peer(1), None) else {
             panic!("a proof that verifies is accepted whoever sends it");
         };
         assert_eq!(&claim.proven.author, alice.did());
@@ -511,21 +531,15 @@ mod tests {
     fn a_proof_for_another_namespace_is_dropped() {
         let alice = identity();
         let space = SpaceId([1; 32]);
-        let Received::Pin {
-            author,
-            space,
-            record,
-            ..
-        } = pin(&alice, space)
-        else {
+        let Received::Pin { author, .. } = pin(&alice, space) else {
             unreachable!();
         };
+        let other = NamespaceSecret::from_bytes(&[9; 32]);
+        let other_doc = DocId(*other.id().as_bytes());
 
         let msg = Received::Pin {
-            doc: DocId([9; 32]),
-            space,
             author,
-            record,
+            record: record(&other, other_doc, space, 1, true),
         };
         assert!(prove_as(msg, peer(1), None).is_none());
     }
@@ -541,8 +555,6 @@ mod tests {
             unreachable!();
         };
         let with = |record: Record| Received::Pin {
-            doc,
-            space,
             author: author.clone(),
             record,
         };
@@ -565,15 +577,6 @@ mod tests {
             )
             .is_none(),
             "a record the namespace signed for another document id"
-        );
-        assert!(
-            prove_as(
-                with(record(&ns, doc, SpaceId([2; 32]), 2, true)),
-                peer(1),
-                None
-            )
-            .is_none(),
-            "a record for another space"
         );
         assert!(
             prove_as(with(record(&ns, doc, space, 2, false)), peer(1), None).is_none(),
@@ -620,17 +623,20 @@ mod tests {
         let doc = DocId(*ns.id().as_bytes());
         let proof = Authorship::sign(&ns, &alice).expect("sign");
         let snapshot = |pin: Option<Record>, withdrawal: Option<Record>| {
-            let msg = Received::Snapshot(vec![ReceivedDoc {
-                doc,
-                space,
-                pin: pin.map(|record| ReceivedPin {
-                    author: proof.clone(),
-                    record,
-                }),
-                hold: false,
-                withdrawal,
-                layers: Vec::new(),
-            }]);
+            let msg = Received::Snapshot {
+                docs: vec![ReceivedDoc {
+                    doc,
+                    space,
+                    pin: pin.map(|record| ReceivedPin {
+                        author: proof.clone(),
+                        record,
+                    }),
+                    hold: None,
+                    withdrawal,
+                    layers: Vec::new(),
+                }],
+                more: false,
+            };
             let Some(Remote::Snapshot(mut docs)) = prove_as(msg, peer(1), None) else {
                 panic!("a snapshot is accepted");
             };
@@ -693,24 +699,27 @@ mod tests {
     fn a_snapshot_keeps_its_layers_and_occupancy() {
         let alice = identity();
         let space = SpaceId([1; 32]);
-        let msg = Received::Snapshot(vec![ReceivedDoc {
-            doc: DocId([4; 32]),
-            space,
-            pin: None,
-            hold: true,
-            withdrawal: None,
-            layers: vec![vec![Retained {
-                batch: batch(peer(1), &alice, &alice, space),
-                live: vec![0],
-                live_clears: Vec::new(),
-            }]],
-        }]);
+        let msg = Received::Snapshot {
+            docs: vec![ReceivedDoc {
+                doc: DocId([4; 32]),
+                space,
+                pin: None,
+                hold: Some(1),
+                withdrawal: None,
+                layers: vec![vec![Retained {
+                    batch:       batch(peer(1), &alice, &alice, space),
+                    live:        vec![0],
+                    live_clears: Vec::new(),
+                }]],
+            }],
+            more: false,
+        };
 
         let Some(Remote::Snapshot(docs)) = prove_as(msg, peer(1), Some(alice.did())) else {
             panic!("a snapshot is accepted");
         };
         assert_eq!(docs[0].layers.len(), 1);
-        assert!(docs[0].hold, "occupancy is not gated on presence");
+        assert_eq!(docs[0].hold, Some(1), "occupancy is not gated on presence");
     }
 
     #[test]

@@ -72,7 +72,7 @@ const _: () = assert!(AgentMsg::POSTCARD_MAX_SIZE <= u8::MAX as usize);
 const KEYFRAME_INTERVAL: Duration = Duration::from_secs(5);
 
 pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
-    let (mut tx, _rx) = connection.open_bi().await?;
+    let mut tx = connection.open_uni().await?;
     StreamKind::Avatar.write(&mut tx).await?;
 
     let (pose_tx, pose_rx) = async_channel::bounded::<OutgoingPose>(1);

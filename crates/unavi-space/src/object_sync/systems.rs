@@ -79,6 +79,7 @@ pub fn send_object_poses(
         .iter()
         .map(|(space, gt)| (space.id(), gt.translation()))
         .collect::<HashMap<_, _>>();
+    let mut held = HashMap::new();
 
     let outgoing = prims
         .iter()
@@ -87,10 +88,11 @@ pub fn send_object_poses(
                 return None;
             }
             let doc = roots.get(child_of.0).ok()?.0;
-            let space = view.space_of(doc)?;
-            if !view.replicas().is_holder(space, doc, me) {
-                return None;
-            }
+            let space = *held.entry(doc).or_insert_with(|| {
+                view.space_of(doc)
+                    .filter(|space| view.replicas().is_holder(*space, doc, me))
+            });
+            let space = space?;
             let origin = space_origins.get(&space)?;
             let world = global.compute_transform();
             Some(OutgoingObject {
@@ -158,6 +160,7 @@ pub fn apply_remote_objects(
     roots: Query<&PrimIndex>,
     doc_index: Res<DocIndex>,
     spaces: Res<Index<Space>>,
+    bodies: Query<(&RigidBody, Has<ReplicaObject>)>,
     mut interps: Query<&mut ObjectInterp>,
     view: Option<Res<SpaceView>>,
     link: Option<Res<PeerLink>>,
@@ -167,11 +170,14 @@ pub fn apply_remote_objects(
         return;
     };
     let updates = link.objects().drain();
+    let mut holders = HashMap::new();
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current holder may move it, and never the
         // local peer.
-        let holder = view.replicas().holder(resolved.space, doc);
+        let holder = *holders
+            .entry((resolved.space, doc))
+            .or_insert_with(|| view.replicas().holder(resolved.space, doc));
         if holder != Some(peer) || holder == Some(view.me()) {
             continue;
         }
@@ -182,6 +188,14 @@ pub fn apply_remote_objects(
         else {
             continue;
         };
+        // The holder streams only dynamic bodies, so nothing else is moved
+        // for it.
+        let movable = bodies
+            .get(prim_entity)
+            .is_ok_and(|(body, replica)| replica || matches!(body, RigidBody::Dynamic));
+        if !movable {
+            continue;
+        }
         let Some(space) = spaces.get(resolved.space) else {
             continue;
         };
@@ -257,13 +271,16 @@ pub fn reconcile_object_holds(
     let Some(view) = view else {
         return;
     };
+    let mut remote = HashMap::new();
     for (entity, child_of, body, is_replica) in &prims {
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
-        let remote_controlled = view.space_of(doc).is_some_and(|space| {
-            let holder = view.replicas().holder(space, doc);
-            holder.is_some() && holder != Some(view.me())
+        let remote_controlled = *remote.entry(doc).or_insert_with(|| {
+            view.space_of(doc).is_some_and(|space| {
+                let holder = view.replicas().holder(space, doc);
+                holder.is_some() && holder != Some(view.me())
+            })
         });
 
         match (remote_controlled, is_replica) {

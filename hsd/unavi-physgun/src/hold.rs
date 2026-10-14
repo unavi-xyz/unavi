@@ -213,7 +213,7 @@ impl Held {
         {
             eprintln!("physgun: could not restore gravity on the held prop: {err:?}");
         }
-        if let Err(err) = release_hold(&self.doc, None) {
+        if let Err(err) = release_hold(&self.doc) {
             eprintln!("physgun: release_hold: {err:?}");
         }
     }

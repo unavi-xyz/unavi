@@ -33,10 +33,9 @@ interface authority {
   is-holder: func(document: borrow<document>) -> result<bool, error>;
 
   /// Takes hold of a document the script may write, so this peer drives its
-  /// motion. Anyone may hold; a standing reservation narrows that to the
-  /// reserved user or the author.
+  /// motion. The latest hold taken outranks every earlier one.
   take-hold: func(document: borrow<document>) -> result<_, error>;
-  /// Gives up this peer's hold, opening it to anyone, or reserving the next
-  /// hold for `to` while it stands unclaimed.
-  release-hold: func(document: borrow<document>, to: option<did>) -> result<_, error>;
+  /// Gives up this peer's hold. The next-ranked hold, else the author's
+  /// device, drives the document.
+  release-hold: func(document: borrow<document>) -> result<_, error>;
 }

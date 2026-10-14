@@ -21,11 +21,13 @@ pub struct SessionCell {
     pub writer: EndpointId,
 }
 
-/// What one peer contributes to a document, stamped with local receive times.
+/// What one peer contributes to a document.
 pub struct PeerDoc {
     pub doc:   DocId,
     pub space: SpaceId,
+    /// The signed stamp of the record the peer's pin states.
     pub pin:   Option<u64>,
+    /// The stamp of the peer's hold.
     pub hold:  Option<u64>,
 }
 

@@ -22,7 +22,7 @@ use crate::{
             LocalPeer,
             LocalReplica,
             PeerGuards,
-            Stater,
+            Source,
             doc_anchor,
             find_guard,
             local_peer_entity,
@@ -39,39 +39,37 @@ use crate::{
     },
 };
 
+/// A peer's pin on a document, unpinned when the guard drops.
 #[derive(Component)]
 pub struct PinState {
-    peer:       EndpointId,
-    doc:        DocId,
-    space:      SpaceId,
-    local:      bool,
+    peer:           EndpointId,
+    pub(super) doc: DocId,
+    space:          SpaceId,
+    local:          bool,
+    /// Whether the pinner proved the document's author.
+    by_author:      bool,
     /// Signs and sends the author's withdrawal when this pin is the last of
     /// the author's to go.
-    signer:     Option<LocalReplica>,
+    signer:         Option<LocalReplica>,
     /// The withdrawal a non-author pin relays when it drops.
-    withdrawal: Option<Record>,
+    withdrawal:     Option<Record>,
     /// Held because a drop takes no arguments.
-    replicas:   Replicas,
+    replicas:       Replicas,
 }
 
 impl Drop for PinState {
     fn drop(&mut self) {
-        let by_author = self.replicas.pins_as_author(self.peer, self.doc);
-        let last = self.replicas.is_sole_author_pin(self.peer, self.doc);
-        self.replicas.remove_pin(self.peer, self.doc);
+        let last_author_pin = self.replicas.remove_pin(self.peer, self.doc);
         if !self.local {
             return;
         }
-        if by_author
-            && last
-            && let Some(signer) = self.signer.take()
-        {
+        if last_author_pin && let Some(signer) = self.signer.take() {
             // Whether the author removed the document or left its space is
             // known only once the despawn that dropped this pin is over.
             signer.withdraw(self.doc, self.space);
             return;
         }
-        let withdrawal = if by_author {
+        let withdrawal = if self.by_author {
             None
         } else {
             self.withdrawal.take()
@@ -92,58 +90,45 @@ pub struct PinClaim {
     pub signer: Option<LocalReplica>,
 }
 
-pub(super) fn spawn_pin(
-    world: &mut World,
-    stater: &Stater,
-    doc: DocId,
-    space: SpaceId,
-    claim: PinClaim,
-) -> bool {
-    if find_guard::<PinState>(world, stater.entity, |p| p.doc == doc).is_some() {
-        return true;
-    }
+/// Records or restates `source`'s pin on `doc`, spawning its guard the
+/// first time. `false` if the pin was refused.
+pub(super) fn spawn_pin(world: &mut World, source: &Source, claim: PinClaim) -> bool {
     let PinClaim {
-        proven: Proven { author, proof },
+        proven,
         record,
         signer,
     } = claim;
+    let (doc, space) = (record.payload.doc, record.payload.space);
+    let by_author = source.did.as_ref() == Some(&proven.author);
     let replicas = world.resource::<Replicas>().clone();
-    let msg = stater.local.then(|| ReplicationMsg::Pin {
-        doc,
-        space,
-        author: proof.clone(),
+    let msg = source.local.then(|| ReplicationMsg::Pin {
+        author: proven.proof.clone(),
         record: record.signed.clone(),
     });
-    let at = clock::current_micros();
-    if let Err(err) = replicas.add_pin(
-        stater.id,
-        stater.did.as_ref(),
-        doc,
-        space,
-        author,
-        proof,
-        at,
-    ) {
+    if let Err(err) = replicas.add_pin(source.id, source.did.as_ref(), proven, record) {
         warn!(%doc, %err, "pin refused");
         return false;
     }
-    replicas.attach_record(stater.id, doc, &record);
     if let Some(msg) = msg {
         replicas.broadcast(&msg);
+    }
+    if find_guard::<PinState>(world, source.entity, |p| p.doc == doc).is_some() {
+        return true;
     }
     let anchor = doc_anchor(world, doc, space);
     world.spawn((
         PinState {
-            peer: stater.id,
+            peer: source.id,
             doc,
             space,
-            local: stater.local,
+            local: source.local,
+            by_author,
             signer,
             withdrawal: None,
             replicas,
         },
         ForDoc(anchor),
-        FromPeer(stater.entity),
+        FromPeer(source.entity),
     ));
     true
 }
@@ -157,7 +142,7 @@ pub(super) fn clear_pin(world: &mut World, peer_ent: Entity, doc: DocId) {
 /// Pins a document the local peer has loaded, carrying the proof the
 /// document's first pin did. The pin goes, and is unpinned to everyone, when
 /// the document's anchor does. `false` if the pin was refused.
-pub(crate) fn pin_loaded(world: &mut World, doc: DocId, space: SpaceId) -> bool {
+pub(crate) fn pin_loaded(world: &mut World, doc: DocId) -> bool {
     let Some(view) = world.get_resource::<SpaceView>().cloned() else {
         return true;
     };
@@ -167,7 +152,7 @@ pub(crate) fn pin_loaded(world: &mut World, doc: DocId, space: SpaceId) -> bool 
     let Some(record) = view.replicas().pinned_record(doc) else {
         return true;
     };
-    let me = Stater {
+    let me = Source {
         entity: local_peer_entity(world),
         id:     view.me(),
         did:    Some(view.did().clone()),
@@ -178,7 +163,7 @@ pub(crate) fn pin_loaded(world: &mut World, doc: DocId, space: SpaceId) -> bool 
         record,
         signer: None,
     };
-    spawn_pin(world, &me, doc, space, claim)
+    spawn_pin(world, &me, claim)
 }
 
 /// The local peer's pin guards on documents it does not author.
@@ -193,7 +178,7 @@ fn local_non_author_pins(world: &World) -> Vec<(Entity, DocId)> {
         .iter()
         .filter_map(|e| {
             let pin = world.get::<PinState>(e)?;
-            (!pin.replicas.pins_as_author(pin.peer, pin.doc)).then_some((e, pin.doc))
+            (!pin.by_author).then_some((e, pin.doc))
         })
         .collect()
 }

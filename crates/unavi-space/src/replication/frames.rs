@@ -13,14 +13,17 @@ use crate::replication::message::{
 
 /// Largest frame either side sends or accepts.
 pub const MAX_STATE_FRAME: usize = 256 * 1024;
+/// Most frames one snapshot may span, which bounds what a receiver buffers
+/// before applying it.
+pub const MAX_SNAPSHOT_FRAMES: usize = 256;
 
 /// Most write content one batch carries, which keeps a signed batch well
 /// inside a frame.
 pub(crate) const MAX_BATCH_BYTES: usize = 64 * 1024;
 
-/// Bytes a write takes beyond its name and value: the prim id and the
-/// length prefixes.
-const WRITE_OVERHEAD_BYTES: usize = 24;
+/// Bytes a write takes in an encoded batch beyond its name and value: the prim
+/// id and the length prefixes.
+pub(crate) const WRITE_OVERHEAD_BYTES: usize = 24;
 
 /// Encoded bytes a frame spends outside the documents it carries.
 const FRAME_OVERHEAD_BYTES: usize = 16;
@@ -63,10 +66,11 @@ pub fn chunk_writes(writes: Vec<SessionWrite>) -> Vec<Vec<SessionWrite>> {
 }
 
 /// The frames `msg` goes out as, none larger than `limit` encoded bytes. Only
-/// a snapshot splits: its first frame is a `Snapshot` and the rest are
-/// `SnapshotMore`. A batch too large for any frame is skipped.
+/// a snapshot splits, and every frame of it but the last sets `more`. A batch
+/// too large for any frame is skipped.
+#[must_use]
 pub fn split(msg: ReplicationMsg, limit: usize) -> Vec<ReplicationMsg> {
-    let ReplicationMsg::Snapshot(docs) = msg else {
+    let ReplicationMsg::Snapshot { docs, .. } = msg else {
         return vec![msg];
     };
     let mut packer = Packer {
@@ -82,10 +86,18 @@ pub fn split(msg: ReplicationMsg, limit: usize) -> Vec<ReplicationMsg> {
     }
     packer.flush();
 
-    let mut frames = packer.frames.into_iter();
-    let first = frames.next().unwrap_or_default();
-    std::iter::once(ReplicationMsg::Snapshot(first))
-        .chain(frames.map(ReplicationMsg::SnapshotMore))
+    if packer.frames.is_empty() {
+        packer.frames.push(Vec::new());
+    }
+    let last = packer.frames.len() - 1;
+    packer
+        .frames
+        .into_iter()
+        .enumerate()
+        .map(|(index, docs)| ReplicationMsg::Snapshot {
+            docs,
+            more: index < last,
+        })
         .collect()
 }
 
@@ -136,7 +148,7 @@ impl Packer {
             doc,
             space,
             pin: None,
-            hold: false,
+            hold: None,
             withdrawal: None,
             layers,
         };
@@ -146,7 +158,7 @@ impl Packer {
             withdrawal,
             ..piece(Vec::new())
         };
-        if (head.pin.is_some() || head.hold || head.withdrawal.is_some())
+        if (head.pin.is_some() || head.hold.is_some() || head.withdrawal.is_some())
             && self.push(head).is_err()
         {
             warn!(%doc, "pin, hold and withdrawal too large for a frame; skipped");
@@ -219,7 +231,7 @@ mod tests {
             doc,
             space: SpaceId([2; 32]),
             pin: None,
-            hold: false,
+            hold: None,
             withdrawal: None,
             layers: vec![LayerSnapshot {
                 batches: batches
@@ -234,7 +246,7 @@ mod tests {
         frames
             .iter()
             .map(|frame| match frame {
-                ReplicationMsg::Snapshot(docs) | ReplicationMsg::SnapshotMore(docs) => docs
+                ReplicationMsg::Snapshot { docs, .. } => docs
                     .iter()
                     .flat_map(|doc| &doc.layers)
                     .map(|layer| layer.batches.len())
@@ -242,6 +254,10 @@ mod tests {
                 _ => 0,
             })
             .sum()
+    }
+
+    fn snapshot(docs: Vec<DocSnapshot>) -> ReplicationMsg {
+        ReplicationMsg::Snapshot { docs, more: false }
     }
 
     fn identity() -> Identity {
@@ -253,12 +269,12 @@ mod tests {
     #[test]
     fn a_small_snapshot_is_one_frame() {
         let who = identity();
-        let frames = split(
-            ReplicationMsg::Snapshot(vec![doc_of(&who, 1, vec![10])]),
-            4096,
-        );
+        let frames = split(snapshot(vec![doc_of(&who, 1, vec![10])]), 4096);
         assert_eq!(frames.len(), 1);
-        assert!(matches!(frames[0], ReplicationMsg::Snapshot(_)));
+        assert!(matches!(
+            frames[0],
+            ReplicationMsg::Snapshot { more: false, .. }
+        ));
     }
 
     #[test]
@@ -268,15 +284,16 @@ mod tests {
         let docs = (0..12)
             .map(|seed| doc_of(&who, seed, vec![1000, 1000]))
             .collect();
-        let frames = split(ReplicationMsg::Snapshot(docs), limit);
+        let frames = split(snapshot(docs), limit);
 
         assert!(frames.len() > 1);
-        assert!(matches!(frames[0], ReplicationMsg::Snapshot(_)));
+        let (last, rest) = frames.split_last().expect("frames");
         assert!(
-            frames[1..]
-                .iter()
-                .all(|f| matches!(f, ReplicationMsg::SnapshotMore(_)))
+            rest.iter()
+                .all(|f| matches!(f, ReplicationMsg::Snapshot { more: true, .. })),
+            "every frame but the last says more follows"
         );
+        assert!(matches!(last, ReplicationMsg::Snapshot { more: false, .. }));
         for frame in &frames {
             let len = postcard::to_allocvec(frame).expect("encode").len();
             assert!(len <= limit, "a frame of {len} bytes exceeds {limit}");
@@ -289,7 +306,7 @@ mod tests {
         let who = identity();
         let limit = 4096;
         let frames = split(
-            ReplicationMsg::Snapshot(vec![doc_of(&who, 1, vec![1500, 1500, 1500, 1500])]),
+            snapshot(vec![doc_of(&who, 1, vec![1500, 1500, 1500, 1500])]),
             limit,
         );
         assert!(frames.len() > 1);
@@ -302,10 +319,7 @@ mod tests {
     #[test]
     fn a_batch_too_large_for_any_frame_is_skipped_and_the_rest_sent() {
         let who = identity();
-        let frames = split(
-            ReplicationMsg::Snapshot(vec![doc_of(&who, 1, vec![5000, 100])]),
-            2048,
-        );
+        let frames = split(snapshot(vec![doc_of(&who, 1, vec![5000, 100])]), 2048);
         assert_eq!(batches_in(&frames), 1);
     }
 

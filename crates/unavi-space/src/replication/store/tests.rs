@@ -15,10 +15,14 @@ use xdid::method::key::{
     p256::P256KeyPair,
 };
 
-use super::*;
+use super::{
+    holds::MAX_HOLDS_PER_PEER,
+    *,
+};
 use crate::replication::{
     message::{
         ClearedKey,
+        HoldClaim,
         Live,
         MAX_BATCHES_PER_LAYER,
         RetainedBatch,
@@ -37,6 +41,22 @@ fn authored(seed: u8, author: &Identity) -> (DocId, Authorship) {
     let ns = NamespaceSecret::from_bytes(&[seed; 32]);
     let proof = Authorship::sign(&ns, author).expect("sign");
     (DocId(*ns.id().as_bytes()), proof)
+}
+
+/// A record saying `doc` is pinned into `space` as of `at`. The store takes
+/// records as verified, so any key signs it.
+fn pin_record(doc: DocId, space: SpaceId, at: u64) -> Record {
+    let key = NamespaceSecret::from_bytes(&[0xAA; 32]);
+    Record::sign(
+        &key,
+        PinRecord {
+            doc,
+            space,
+            at,
+            pinned: true,
+        },
+    )
+    .expect("sign")
 }
 
 fn identity() -> Identity {
@@ -148,7 +168,7 @@ fn say(
 /// The retained batches `writer`'s layer would be relayed as.
 fn relayed_layer(replicas: &Replicas, writer: EndpointId) -> Vec<RetainedBatch> {
     let feed = replicas.register_stream(writer);
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     replicas.unregister_stream(feed.token);
@@ -199,30 +219,33 @@ fn the_author_endpoint_is_the_authors_first_device_to_pin() {
         .add_pin(
             phone,
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof.clone(),
-            20,
+            Proven {
+                author: alice.did().clone(),
+                proof:  proof.clone(),
+            },
+            pin_record(doc, space, 20),
         )
         .expect("pin");
     replicas
         .add_pin(
             laptop,
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            30,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 30),
         )
         .expect("pin");
     assert_eq!(replicas.author_endpoint(space, doc), Some(phone));
     assert_eq!(replicas.author(doc).as_ref(), Some(alice.did()));
 
-    replicas.remove_pin(phone, doc);
+    assert!(
+        !replicas.remove_pin(phone, doc),
+        "the laptop still pins as author"
+    );
     assert_eq!(replicas.author_endpoint(space, doc), Some(laptop));
-    replicas.remove_pin(laptop, doc);
+    assert!(replicas.remove_pin(laptop, doc));
     assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(!replicas.has_doc(space, doc));
 }
@@ -239,22 +262,22 @@ fn a_second_author_cannot_claim_a_pinned_document() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            alice_proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof:  alice_proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     assert_eq!(
         replicas.add_pin(
             peer(2),
             Some(mallory.did()),
-            doc,
-            space,
-            mallory.did().clone(),
-            mallory_proof,
-            0
+            Proven {
+                author: mallory.did().clone(),
+                proof:  mallory_proof,
+            },
+            pin_record(doc, space, 0)
         ),
         Err(PinRefused::WrongAuthor)
     );
@@ -273,22 +296,22 @@ fn a_pin_naming_another_space_is_refused() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            real,
-            alice.did().clone(),
-            proof.clone(),
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof:  proof.clone(),
+            },
+            pin_record(doc, real, 1),
         )
         .expect("pin");
     assert_eq!(
         replicas.add_pin(
             peer(2),
             Some(alice.did()),
-            doc,
-            bogus,
-            alice.did().clone(),
-            proof,
-            2
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, bogus, 2)
         ),
         Err(PinRefused::WrongSpace)
     );
@@ -296,54 +319,84 @@ fn a_pin_naming_another_space_is_refused() {
 }
 
 #[test]
-fn anyone_may_hold_until_the_holder_reserves_the_next() {
+fn a_hold_heard_before_the_pin_counts_once_the_document_is_present() {
     let replicas = replicas();
     let alice = identity();
     let (doc, proof) = authored(4, &alice);
     let space = space(b"hold");
-    let (author_device, guest, other) = (peer(1), peer(2), peer(3));
-    let guest_did: Did = "did:web:guest.example".parse().expect("did");
+    let (author_device, guest) = (peer(1), peer(2));
+
+    assert!(replicas.add_hold(guest, HoldClaim { doc, space, at: 5 }));
+    assert_eq!(
+        replicas.holder(space, doc),
+        None,
+        "nothing holds an absent document"
+    );
 
     replicas
         .add_pin(
             author_device,
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
-    assert_eq!(replicas.holder(space, doc), Some(author_device));
-
-    assert!(
-        replicas.add_hold(guest, Some(&guest_did), doc, space, 2),
-        "anyone may take physics authority by default"
-    );
     assert_eq!(replicas.holder(space, doc), Some(guest));
 
-    replicas.remove_hold(guest, doc, Some(other));
-    assert!(!replicas.add_hold(guest, Some(&guest_did), doc, space, 3));
-    assert!(replicas.add_hold(other, None, doc, space, 4));
-    assert_eq!(replicas.holder(space, doc), Some(other));
-
-    replicas.remove_hold(other, doc, None);
+    replicas.remove_hold(guest, doc);
     assert_eq!(replicas.holder(space, doc), Some(author_device));
-    assert!(
-        replicas.add_hold(guest, Some(&guest_did), doc, space, 5),
-        "a spent reservation opens the document again"
-    );
+}
 
-    replicas.remove_hold(guest, doc, Some(other));
+#[test]
+fn a_peer_holds_a_bounded_number_of_documents() {
+    let replicas = replicas();
+    let space = space(b"hold-cap");
+    let doc = |n: usize| {
+        let mut bytes = [0; 32];
+        bytes[..8].copy_from_slice(&(n as u64).to_le_bytes());
+        DocId(bytes)
+    };
+    for n in 0..MAX_HOLDS_PER_PEER {
+        assert!(replicas.add_hold(
+            peer(1),
+            HoldClaim {
+                doc: doc(n),
+                space,
+                at: 1,
+            }
+        ));
+    }
+    assert!(!replicas.add_hold(
+        peer(1),
+        HoldClaim {
+            doc: doc(MAX_HOLDS_PER_PEER),
+            space,
+            at: 1,
+        }
+    ));
     assert!(
-        replicas.add_hold(author_device, Some(alice.did()), doc, space, 7),
-        "the author holds through a reservation"
+        replicas.add_hold(
+            peer(1),
+            HoldClaim {
+                doc: doc(0),
+                space,
+                at: 2,
+            }
+        ),
+        "restating a held document is not a new hold"
     );
-    assert!(
-        replicas.add_hold(other, None, doc, space, 8),
-        "the author's hold clears the reservation"
-    );
+    replicas.remove_hold(peer(1), doc(0));
+    assert!(replicas.add_hold(
+        peer(1),
+        HoldClaim {
+            doc: doc(MAX_HOLDS_PER_PEER),
+            space,
+            at: 1,
+        }
+    ));
 }
 
 #[test]
@@ -466,11 +519,11 @@ fn the_writer_pays_for_its_layer_on_an_authored_document() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     let attribution = replicas.attribution();
@@ -516,11 +569,11 @@ fn a_write_naming_another_space_than_the_documents_is_refused() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            real,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, real, 1),
         )
         .expect("pin");
     assert_eq!(
@@ -1108,22 +1161,22 @@ fn a_non_author_pin_keeps_presence_but_never_resolves_the_author_endpoint() {
         .add_pin(
             relayer,
             Some(bob.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof.clone(),
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof:  proof.clone(),
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     replicas
         .add_pin(
             anonymous,
             None,
-            doc,
-            space,
-            alice.did().clone(),
-            proof.clone(),
-            2,
+            Proven {
+                author: alice.did().clone(),
+                proof:  proof.clone(),
+            },
+            pin_record(doc, space, 2),
         )
         .expect("pin");
     assert!(replicas.is_pinned(doc));
@@ -1140,11 +1193,11 @@ fn a_non_author_pin_keeps_presence_but_never_resolves_the_author_endpoint() {
         .add_pin(
             author_device,
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            9,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 9),
         )
         .expect("pin");
     assert!(replicas.pins_as_author(author_device, doc));
@@ -1155,7 +1208,7 @@ fn a_non_author_pin_keeps_presence_but_never_resolves_the_author_endpoint() {
     );
     assert_eq!(replicas.holder(space, doc), Some(author_device));
 
-    replicas.remove_pin(author_device, doc);
+    assert!(replicas.remove_pin(author_device, doc));
     assert!(!replicas.is_author_pinned(doc));
     assert!(replicas.is_pinned(doc), "the other pins keep it present");
     assert_eq!(replicas.author_endpoint(space, doc), None);
@@ -1175,11 +1228,11 @@ fn sync_sources_include_non_author_pinners() {
         .add_pin(
             relayer,
             Some(bob.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     assert_eq!(replicas.sync_sources(doc, me), vec![relayer]);
@@ -1494,11 +1547,11 @@ fn the_newest_record_wins_and_a_withdrawal_wins_a_tie() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
 
@@ -1534,18 +1587,21 @@ fn a_record_for_another_space_than_the_documents_is_ignored() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            real,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, real, 1),
         )
         .expect("pin");
 
     replicas.observe_record(&record_for(12, other, 9, true), peer(1));
     replicas.observe_record(&record_for(12, other, 9, false), peer(1));
 
-    assert!(!replicas.is_pin_current(doc));
+    assert!(
+        replicas.is_pin_current(doc),
+        "the pin's own record stands over another space's newer withdrawal"
+    );
     assert!(!replicas.is_withdrawn(doc));
 }
 
@@ -1603,11 +1659,11 @@ fn hearsay_becomes_known_when_the_document_gains_presence() {
         .add_pin(
             peer(3),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("a stale pin");
     replicas.observe_record(&record_for(15, space, 1, true), peer(3));
@@ -1637,18 +1693,18 @@ fn a_known_record_outlives_its_presence_and_a_recreated_one_cannot_regress() {
             .add_pin(
                 peer(1),
                 Some(alice.did()),
-                doc,
-                space,
-                alice.did().clone(),
-                proof.clone(),
-                at,
+                Proven {
+                    author: alice.did().clone(),
+                    proof:  proof.clone(),
+                },
+                pin_record(doc, space, at),
             )
             .expect("pin");
     };
 
     pin(1);
     replicas.observe_record(&record_for(16, space, 5, true), peer(1));
-    replicas.remove_pin(peer(1), doc);
+    assert!(replicas.remove_pin(peer(1), doc));
     assert!(!replicas.has_doc(space, doc), "the presence is gone");
     assert_eq!(
         replicas.newest_record_at(doc),
@@ -1676,11 +1732,11 @@ fn a_record_is_not_kept_past_the_presence_of_a_space_the_peer_is_not_in() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     replicas.observe_record(&record_for(17, space, 5, true), peer(1));
@@ -1690,7 +1746,7 @@ fn a_record_is_not_kept_past_the_presence_of_a_space_the_peer_is_not_in() {
         "a present document keeps its record"
     );
 
-    replicas.remove_pin(peer(1), doc);
+    assert!(replicas.remove_pin(peer(1), doc));
     assert_eq!(replicas.newest_record_at(doc), None);
 }
 
@@ -1705,15 +1761,15 @@ fn a_flood_of_hearsay_does_not_evict_a_known_withdrawal() {
         .add_pin(
             peer(1),
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
     replicas.observe_record(&record_for(18, space, 5, false), peer(1));
-    replicas.remove_pin(peer(1), doc);
+    assert!(replicas.remove_pin(peer(1), doc));
 
     for seed in 20..=u8::MAX {
         replicas.observe_record(&record_for(seed, space, 2, false), peer(9));
@@ -1732,14 +1788,14 @@ fn a_withdrawal_is_listed_in_snapshots_only_while_the_peer_is_in_its_space() {
 
     let listed = |replicas: &Replicas| {
         let feed = replicas.register_stream(peer(1));
-        let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+        let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
             panic!("a stream opens with a snapshot");
         };
         replicas.unregister_stream(feed.token);
         docs.into_iter().find(|d| d.doc == doc_of(13))
     };
     let doc = listed(&replicas).expect("a withdrawn doc with no presence is still listed");
-    assert!(doc.pin.is_none() && !doc.hold);
+    assert!(doc.pin.is_none() && doc.hold.is_none());
     assert!(doc.withdrawal.is_some());
 
     replicas
@@ -1770,18 +1826,17 @@ fn a_pin_snapshot_carries_the_pins_own_record_and_the_withdrawal_apart() {
         .add_pin(
             me,
             Some(alice.did()),
-            doc,
-            space,
-            alice.did().clone(),
-            proof,
-            1,
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
         )
         .expect("pin");
-    replicas.attach_record(me, doc, &record_for(19, space, 2, true));
     replicas.observe_record(&record_for(19, space, 9, false), peer(2));
 
     let feed = replicas.register_stream(me);
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     replicas.unregister_stream(feed.token);

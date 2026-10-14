@@ -35,7 +35,16 @@ use xdid::method::key::{
 };
 
 use super::*;
-use crate::identity::LocalIdentity;
+use crate::{
+    identity::LocalIdentity,
+    replication::{
+        record::{
+            PinRecord,
+            Record,
+        },
+        store::Proven,
+    },
+};
 
 fn identity() -> Identity {
     let key = P256KeyPair::generate();
@@ -118,16 +127,22 @@ fn fixture() -> Fixture {
 
     let policy = Policy::new();
     let replicas = Replicas::new(policy.clone(), Rules::default());
-    replicas
-        .add_pin(
-            other_device,
-            Some(alice.did()),
+    let record = Record::sign(
+        &write_key,
+        PinRecord {
             doc,
             space,
-            alice.did().clone(),
-            proof,
-            1,
-        )
+            at: 1,
+            pinned: true,
+        },
+    )
+    .expect("sign pin record");
+    let proven = Proven {
+        author: alice.did().clone(),
+        proof,
+    };
+    replicas
+        .add_pin(other_device, Some(alice.did()), proven, record)
         .expect("this node's own pin of its own document is never refused");
 
     let local_identity = LocalIdentity {
@@ -143,6 +158,7 @@ fn fixture() -> Fixture {
         .init_resource::<TakenHolds>()
         .add_observer(take_hold_on_grab)
         .add_observer(release_hold_on_release);
+    crate::replication::guards::init_indexes(app.world_mut());
 
     let async_world = app.world().resource::<bevy_async::AsyncWorld>().clone();
     let trust = TrustTable::new(DeviceStorage::memory());

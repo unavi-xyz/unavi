@@ -205,8 +205,8 @@ fn minted_by(replicas: &Replicas, me: &Identity, doc: DocId) {
     replicas.record_minted(doc);
 }
 
-fn local(world: &mut World, id: EndpointId, did: &Did) -> Stater {
-    Stater {
+fn local(world: &mut World, id: EndpointId, did: &Did) -> Source {
+    Source {
         entity: local_peer_entity(world),
         id,
         did: Some(did.clone()),
@@ -214,9 +214,9 @@ fn local(world: &mut World, id: EndpointId, did: &Did) -> Stater {
     }
 }
 
-fn remote(world: &mut World, id: EndpointId, did: Option<&Did>) -> Stater {
+fn remote(world: &mut World, id: EndpointId, did: Option<&Did>) -> Source {
     let entity = claim_remote_peer(world, id, did.cloned(), 0);
-    Stater {
+    Source {
         entity,
         id,
         did: did.cloned(),
@@ -224,9 +224,9 @@ fn remote(world: &mut World, id: EndpointId, did: Option<&Did>) -> Stater {
     }
 }
 
-/// A signed batch from `stater`, whose layer names `who`'s DID.
+/// A signed batch from `source`, whose layer names `who`'s DID.
 fn batch_from(
-    stater: &Stater,
+    source: &Source,
     who: &Identity,
     doc: DocId,
     space: SpaceId,
@@ -235,7 +235,7 @@ fn batch_from(
 ) -> Batch {
     Batch::sign(
         SessionBatch {
-            writer: stater.id,
+            writer: source.id,
             did: who.did().clone(),
             doc,
             space,
@@ -248,18 +248,18 @@ fn batch_from(
     .expect("sign")
 }
 
-/// States `writes` as `stater`, a peer proving `who`'s DID.
+/// States `writes` as `source`, a peer proving `who`'s DID.
 fn say(
     world: &mut World,
-    stater: &Stater,
+    source: &Source,
     who: &Identity,
     doc: DocId,
     space: SpaceId,
     writes: Vec<SessionWrite>,
     at: u64,
 ) -> Result<(), SessionError> {
-    let batch = batch_from(stater, who, doc, space, writes, at);
-    apply_batch(world, stater, &batch, None)
+    let batch = batch_from(source, who, doc, space, writes, at);
+    apply_batch(world, source, &batch, None)
 }
 
 #[test]
@@ -272,13 +272,15 @@ fn a_local_pin_broadcasts_and_its_guard_releases_it() {
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
 
-    let stater = local(&mut world, peer(1), me.did());
-    assert!(spawn_pin(&mut world, &stater, doc, space, proven));
+    let source = local(&mut world, peer(1), me.did());
+    assert!(spawn_pin(&mut world, &source, proven));
     assert_eq!(replicas.author_endpoint(space, doc), Some(peer(1)));
-    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
+    assert!(
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { record, .. }) if record.payload().is_ok_and(|r| r.doc == doc))
+    );
 
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     world.despawn(tracker);
@@ -294,10 +296,10 @@ fn a_session_write_composes_into_the_document_it_speaks_for() {
     let space = space(b"compose");
     let state = spawn_doc(&mut world, space.doc());
 
-    let stater = local(&mut world, peer(1), me.did());
+    let source = local(&mut world, peer(1), me.did());
     say(
         &mut world,
-        &stater,
+        &source,
         &me,
         space.doc(),
         space,
@@ -359,10 +361,10 @@ fn the_authors_opinion_beats_a_guests_on_an_open_key_whatever_the_stamp() {
         let owner = local(&mut world, peer(1), author.did());
         let visitor = remote(&mut world, peer(2), Some(guest.did()));
 
-        let mut speak = |stater: &Stater, who: &Identity, value: &[u8], at: u64| {
+        let mut speak = |source: &Source, who: &Identity, value: &[u8], at: u64| {
             say(
                 &mut world,
-                stater,
+                source,
                 who,
                 doc,
                 space,
@@ -484,39 +486,81 @@ fn a_departing_peer_takes_its_pins() {
     let space = space(b"cascade-peer");
     let (doc, proven) = authored(2, &alice, space);
 
-    let stater = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &stater, doc, space, proven));
+    let source = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &source, proven));
     assert_eq!(replicas.author_endpoint(space, doc), Some(peer(2)));
 
-    world.despawn(stater.entity);
+    world.despawn(source.entity);
     assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(!replicas.has_doc(space, doc));
 }
 
+/// Two viewers hearing the same two grabs in opposite orders name the same
+/// holder, and fall back to the author endpoint together.
 #[test]
-fn a_guest_holds_and_reserves_the_next() {
-    let (mut world, replicas) = world();
+fn holds_heard_in_any_order_resolve_one_holder() {
     let alice = identity();
     let space = space(b"hold");
-    let (doc, proven) = authored(3, &alice, space);
+    let viewer = |first: (EndpointId, u64), second: (EndpointId, u64)| {
+        let (mut world, replicas) = world();
+        let (doc, proven) = authored(3, &alice, space);
+        let author_device = remote(&mut world, peer(1), Some(alice.did()));
+        assert!(spawn_pin(&mut world, &author_device, proven));
+        assert_eq!(replicas.holder(space, doc), Some(peer(1)));
+        for (id, at) in [first, second] {
+            let grabber = remote(&mut world, id, None);
+            spawn_hold(&mut world, &grabber, HoldClaim { doc, space, at });
+        }
+        (world, replicas, doc)
+    };
+    let (early, late) = ((peer(2), 10), (peer(3), 20));
+    let (mut world_a, replicas_a, doc) = viewer(early, late);
+    let (_world_b, replicas_b, _) = viewer(late, early);
+    assert_eq!(replicas_a.holder(space, doc), Some(peer(3)));
+    assert_eq!(replicas_b.holder(space, doc), Some(peer(3)));
 
-    let author_device = remote(&mut world, peer(1), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author_device, doc, space, proven));
-    assert_eq!(replicas.holder(space, doc), Some(peer(1)));
+    let (_tie_world, tie, _) = viewer((peer(2), 30), (peer(3), 30));
+    assert_eq!(
+        tie.holder(space, doc),
+        Some(peer(2).max(peer(3))),
+        "a tied stamp goes to the greater endpoint"
+    );
 
-    let guest = remote(&mut world, peer(2), None);
-    assert!(spawn_hold(&mut world, &guest, doc, space));
-    assert_eq!(replicas.holder(space, doc), Some(peer(2)));
+    let late_entity = index::lookup::<RemotePeer>(&world_a, peer(3)).expect("late grabber");
+    world_a.despawn(late_entity);
+    assert_eq!(replicas_a.holder(space, doc), Some(peer(2)));
+    let early_entity = index::lookup::<RemotePeer>(&world_a, peer(2)).expect("early grabber");
+    let early_source = Source {
+        entity: early_entity,
+        id:     peer(2),
+        did:    None,
+        local:  false,
+    };
+    release_hold(&mut world_a, &early_source, doc);
+    assert_eq!(replicas_a.holder(space, doc), Some(peer(1)));
+}
 
-    release_hold(&mut world, &guest, doc, Some(peer(3)));
-    assert_eq!(replicas.holder(space, doc), Some(peer(1)));
-
-    let other = remote(&mut world, peer(3), None);
-    assert!(spawn_hold(&mut world, &other, doc, space));
-    assert_eq!(replicas.holder(space, doc), Some(peer(3)));
-
-    world.despawn(other.entity);
-    assert_eq!(replicas.holder(space, doc), Some(peer(1)));
+/// The author endpoint is the author device whose pin record is stamped
+/// earliest, whichever pin a viewer heard first.
+#[test]
+fn author_pins_heard_in_any_order_resolve_one_author_endpoint() {
+    let alice = identity();
+    let space = space(b"author-order");
+    let viewer = |order: [(EndpointId, u64); 2]| {
+        let (mut world, replicas) = world();
+        let mut doc = None;
+        for (id, at) in order {
+            let (id_doc, claim) = authored_at(4, &alice, space, at);
+            let device = remote(&mut world, id, Some(alice.did()));
+            assert!(spawn_pin(&mut world, &device, claim));
+            doc = Some(id_doc);
+        }
+        let doc = doc.expect("pinned");
+        replicas.author_endpoint(space, doc)
+    };
+    let (phone, laptop) = ((peer(1), 5), (peer(2), 9));
+    assert_eq!(viewer([phone, laptop]), Some(peer(1)));
+    assert_eq!(viewer([laptop, phone]), Some(peer(1)));
 }
 
 #[test]
@@ -527,13 +571,13 @@ fn a_superseded_stream_leaves_the_peers_state() {
     let (doc, proven) = authored(4, &alice, space);
 
     let e0 = claim_remote_peer(&mut world, peer(2), Some(alice.did().clone()), 0);
-    let stater = Stater {
+    let source = Source {
         entity: e0,
         id:     peer(2),
         did:    Some(alice.did().clone()),
         local:  false,
     };
-    assert!(spawn_pin(&mut world, &stater, doc, space, proven));
+    assert!(spawn_pin(&mut world, &source, proven));
 
     let e1 = claim_remote_peer(&mut world, peer(2), Some(alice.did().clone()), 1);
     assert_eq!(e0, e1);
@@ -546,14 +590,66 @@ fn a_superseded_stream_leaves_the_peers_state() {
 }
 
 #[test]
+fn a_snapshot_keeps_what_it_restates_and_drops_the_rest() {
+    let (mut world, replicas) = world();
+    let alice = identity();
+    let space = space(b"restate");
+    let (kept, kept_claim) = authored(6, &alice, space);
+    let (dropped, dropped_claim) = authored(7, &alice, space);
+    let device = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &device, kept_claim));
+    assert!(spawn_pin(&mut world, &device, dropped_claim));
+    spawn_hold(
+        &mut world,
+        &device,
+        HoldClaim {
+            doc: kept,
+            space,
+            at: 3,
+        },
+    );
+    let guard = |world: &World, doc: DocId| {
+        world.get::<PeerGuards>(device.entity).and_then(|guards| {
+            guards
+                .iter()
+                .find(|e| world.get::<PinState>(*e).is_some_and(|pin| pin.doc == doc))
+        })
+    };
+    let before = guard(&world, kept).expect("pin guard");
+
+    let (_, restated) = authored(6, &alice, space);
+    apply_remote(
+        &mut world,
+        device.entity,
+        Remote::Snapshot(vec![RemoteDoc {
+            doc: kept,
+            space,
+            pin: Some(restated),
+            hold: Some(3),
+            withdrawal: None,
+            layers: Vec::new(),
+        }]),
+    );
+
+    assert_eq!(
+        guard(&world, kept),
+        Some(before),
+        "a restated pin keeps its guard rather than being released and taken again"
+    );
+    assert!(guard(&world, dropped).is_none());
+    assert!(!replicas.pins_by(peer(2), dropped));
+    assert_eq!(replicas.holder(space, kept), Some(peer(2)));
+}
+
+#[test]
 fn state_for_an_unentered_space_waits_unparented() {
     let (mut world, replicas) = world();
     let alice = identity();
     let space = space(b"unentered");
     let (doc, proven) = authored(5, &alice, space);
 
-    let stater = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &stater, doc, space, proven));
+    let source = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &source, proven));
     assert_eq!(replicas.author_endpoint(space, doc), Some(peer(2)));
 
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
@@ -614,7 +710,7 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     let feed = visitor_replicas.register_stream(visitor_id);
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
     let from_visitor =
         claim_remote_peer(&mut host_world, visitor_id, Some(visitor.did().clone()), 0);
@@ -750,7 +846,7 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
 
     let batch = |at: u64, writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| SessionBatch {
@@ -821,7 +917,7 @@ fn a_checkpoint_replaces_batches_that_outgrew_their_content() {
     );
 
     let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     let layers = &docs[0].layers;
@@ -892,7 +988,7 @@ fn tombstones_survive_a_checkpoint() {
     assert_eq!(tombstones.len(), 1);
     assert_eq!(&tombstones[0].0.name, a, "the clear is restated");
     let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     let batches = &docs[0].layers[0].batches;
@@ -958,7 +1054,7 @@ fn a_local_batch_too_large_for_a_frame_is_refused_whole() {
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
 
     let batch = |writes| SessionBatch {
@@ -1041,7 +1137,7 @@ fn a_checkpoint_triggered_by_batch_count_is_not_due_again() {
     }
 
     let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     assert_eq!(
@@ -1074,7 +1170,7 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_connected() {
         doc,
         space,
         pin: None,
-        hold: false,
+        hold: None,
         withdrawal: None,
         layers: vec![vec![Retained {
             batch,
@@ -1103,7 +1199,7 @@ struct Present {
     space:  SpaceId,
     alice:  Identity,
     me:     Identity,
-    device: Stater,
+    device: Source,
 }
 
 fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) -> Present {
@@ -1116,7 +1212,7 @@ fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) ->
     // A pin by someone else keeps the document, and so its author, known once
     // alice's device leaves.
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, doc, space, proof));
+    assert!(spawn_pin(&mut world, &relayer, proof));
 
     let device = remote(&mut world, peer(2), Some(alice.did()));
     let writes = vec![
@@ -1135,9 +1231,9 @@ fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) ->
     }
 }
 
-fn returning_batch(present: &Present, stater: &Stater, value: &[u8]) -> Batch {
+fn returning_batch(present: &Present, source: &Source, value: &[u8]) -> Batch {
     batch_from(
-        stater,
+        source,
         &present.alice,
         present.doc,
         present.space,
@@ -1199,11 +1295,11 @@ fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
     release_remote_peer(&mut f.world, f.device.entity, 0);
 
     let feed = replicas.register_stream(peer(1));
-    let Ok(msg @ ReplicationMsg::Snapshot(_)) = feed.rx.try_recv() else {
+    let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     replicas.unregister_stream(feed.token);
-    let Ok(Received::Snapshot(docs)) = msg.validate(clock::current_micros()) else {
+    let Ok(Received::Snapshot { docs, .. }) = msg.validate(clock::current_micros()) else {
         panic!("the carried layer passes validation");
     };
 
@@ -1215,7 +1311,7 @@ fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
     let (doc, proof) = authored(50, &f.alice, f.space);
     let joiner_state = spawn_doc(&mut joiner_world, doc);
     let pinner = remote(&mut joiner_world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut joiner_world, &pinner, doc, f.space, proof));
+    assert!(spawn_pin(&mut joiner_world, &pinner, proof));
 
     let relayer = remote(&mut joiner_world, peer(1), Some(f.me.did()));
     let docs = docs
@@ -1256,7 +1352,7 @@ fn the_writers_return_replaces_the_carried_layer() {
         doc:        f.doc,
         space:      f.space,
         pin:        None,
-        hold:       false,
+        hold:       None,
         withdrawal: None,
         layers:     layers_of(batch),
     };
@@ -1306,7 +1402,7 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_present() {
         doc:        f.doc,
         space:      f.space,
         pin:        None,
-        hold:       false,
+        hold:       None,
         withdrawal: None,
         layers:     layers_of(stale),
     };
@@ -1362,7 +1458,7 @@ fn reconcile(world: &mut World) {
 /// the local peer as a non-author, with a feed watching the local peer's
 /// broadcasts.
 struct Scenario {
-    author: Stater,
+    author: Source,
     doc:    DocId,
     proof:  PinClaim,
     space:  SpaceId,
@@ -1400,16 +1496,18 @@ fn locally_pinned_foreign_doc(
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
 
     let author = remote(world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(world, &author, doc, space, proven));
+    assert!(spawn_pin(world, &author, proven));
     let viewer = local(world, peer(1), me.did());
     let (_, mine) = authored(40, alice, space);
-    assert!(spawn_pin(world, &viewer, doc, space, mine));
+    assert!(spawn_pin(world, &viewer, mine));
     assert!(!replicas.pins_as_author(peer(1), doc));
-    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
+    assert!(
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { record, .. }) if record.payload().is_ok_and(|r| r.doc == doc))
+    );
     Scenario {
         author,
         doc,
@@ -1445,7 +1543,7 @@ fn an_author_unpin_leaves_the_local_pin_while_another_author_device_pins() {
     let (alice, me) = (identity(), identity());
     let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
     let second = remote(&mut world, peer(3), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &second, f.doc, f.space, f.proof));
+    assert!(spawn_pin(&mut world, &second, f.proof));
 
     apply_remote(
         &mut world,
@@ -1490,7 +1588,7 @@ fn a_non_author_pin_keeps_a_doc_loaded_while_the_author_is_adopted() {
     assert!(!view.loads(doc), "nothing pins it");
 
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, doc, space, proven));
+    assert!(spawn_pin(&mut world, &relayer, proven));
     assert!(
         view.loads(doc),
         "an adopted author's document outlives its author"
@@ -1504,7 +1602,7 @@ fn a_non_author_pin_keeps_a_doc_loaded_while_the_author_is_adopted() {
 
     let (_, proof) = authored(41, &alice, space);
     let author = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author, doc, space, proof));
+    assert!(spawn_pin(&mut world, &author, proof));
     assert!(view.loads(doc), "the author's own pin always loads it");
 }
 
@@ -1522,18 +1620,20 @@ fn a_loaded_foreign_doc_is_pinned_locally_until_it_unloads() {
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
 
     let author = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    assert!(spawn_pin(&mut world, &author, proven));
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     load(&mut world, tracker);
     reconcile(&mut world);
 
     assert!(replicas.sync_sources(doc, peer(9)).contains(&peer(1)));
     assert!(!replicas.pins_as_author(peer(1), doc));
-    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
+    assert!(
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { record, .. }) if record.payload().is_ok_and(|r| r.doc == doc))
+    );
 
     world.despawn(tracker);
     assert!(!replicas.sync_sources(doc, peer(9)).contains(&peer(1)));
@@ -1554,7 +1654,7 @@ fn a_loaded_doc_by_an_unadopted_author_is_not_pinned_locally() {
     world.insert_resource(view_of(&replicas, &me, trust));
 
     let author = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    assert!(spawn_pin(&mut world, &author, proven));
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     load(&mut world, tracker);
     reconcile(&mut world);
@@ -1569,7 +1669,7 @@ fn a_withdrawn_doc_is_not_kept_loaded_by_the_remaining_non_author_pins() {
     let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
     let view = view_of(&replicas, &me, TrustTable::new(DeviceStorage::memory()));
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+    assert!(spawn_pin(&mut world, &relayer, f.proof));
 
     withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
 
@@ -1586,13 +1686,13 @@ fn a_newer_author_pin_restores_a_withdrawn_doc() {
     let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
     let view = view_of(&replicas, &me, TrustTable::new(DeviceStorage::memory()));
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+    assert!(spawn_pin(&mut world, &relayer, f.proof));
     withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
     assert!(replicas.is_withdrawn(f.doc));
 
     let (_, again) = authored_at(40, &alice, f.space, 3);
     let author = remote(&mut world, peer(5), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author, f.doc, f.space, again));
+    assert!(spawn_pin(&mut world, &author, again));
 
     assert!(!replicas.is_withdrawn(f.doc));
     assert!(view.loads(f.doc));
@@ -1609,7 +1709,7 @@ fn a_stale_pin_record_does_not_restore_a_withdrawn_doc() {
 
     let (_, stale) = authored(40, &alice, f.space);
     let late = remote(&mut world, peer(6), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &late, f.doc, f.space, stale));
+    assert!(spawn_pin(&mut world, &late, stale));
 
     assert!(replicas.is_pinned(f.doc), "the pin is counted");
     assert!(
@@ -1634,7 +1734,7 @@ fn a_withdrawal_outlives_the_presence_and_is_listed_in_snapshots() {
         "carriers keep it to tell late joiners"
     );
     let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     let listed = docs
@@ -1658,11 +1758,11 @@ fn a_late_joiner_told_only_by_a_carrier_learns_the_withdrawal() {
     join(&carrier, space);
     carrier.observe_record(&record_of(40, space, 2, false), peer(2));
     let feed = carrier.register_stream(peer(3));
-    let Ok(msg @ ReplicationMsg::Snapshot(_)) = feed.rx.try_recv() else {
+    let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
     carrier.unregister_stream(feed.token);
-    let Ok(Received::Snapshot(docs)) = msg.validate(clock::current_micros()) else {
+    let Ok(Received::Snapshot { docs, .. }) = msg.validate(clock::current_micros()) else {
         panic!("the snapshot passes validation");
     };
 
@@ -1685,7 +1785,7 @@ fn a_late_joiner_told_only_by_a_carrier_learns_the_withdrawal() {
     assert!(joiner.is_withdrawn(doc), "the carrier told it");
 
     let pinner = remote(&mut world, peer(4), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &pinner, doc, space, stale));
+    assert!(spawn_pin(&mut world, &pinner, stale));
     assert!(joiner.is_pinned(doc));
     assert!(
         !view.loads(doc),
@@ -1706,10 +1806,10 @@ fn leaving_a_space_sends_a_plain_unpin_and_leaves_no_record() {
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
     let laptop = local(&mut world, peer(1), alice.did());
-    assert!(spawn_pin(&mut world, &laptop, doc, space, claim));
+    assert!(spawn_pin(&mut world, &laptop, claim));
     assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { .. })));
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     assert_eq!(
@@ -1741,7 +1841,7 @@ fn a_withdrawal_is_signed_past_every_record_and_only_while_the_peer_is_in_the_sp
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot(_))
+        Ok(ReplicationMsg::Snapshot { .. })
     ));
     let key = NamespaceSecret::from_bytes(&[48; 32]);
     let doc = doc_of(48);
@@ -1808,7 +1908,7 @@ fn reconcile_does_not_repin_a_withdrawn_doc() {
         TrustTable::new(DeviceStorage::memory()),
     ));
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+    assert!(spawn_pin(&mut world, &relayer, f.proof));
     withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
     let tracker = index::lookup::<PinnedDoc>(&world, f.doc).expect("tracker");
     load(&mut world, tracker);
@@ -1831,7 +1931,7 @@ fn reconcile_does_not_pin_a_doc_the_local_peer_authors() {
         TrustTable::new(DeviceStorage::memory()),
     ));
     let relayer = remote(&mut world, peer(3), Some(bob.did()));
-    assert!(spawn_pin(&mut world, &relayer, doc, space, proven));
+    assert!(spawn_pin(&mut world, &relayer, proven));
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     load(&mut world, tracker);
 
@@ -1859,7 +1959,7 @@ fn reconcile_pins_once_the_author_becomes_known() {
     assert!(!replicas.pins_by(peer(1), doc), "no author is known yet");
 
     let author = remote(&mut world, peer(2), Some(alice.did()));
-    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    assert!(spawn_pin(&mut world, &author, proven));
     reconcile(&mut world);
     assert!(replicas.pins_by(peer(1), doc));
 }

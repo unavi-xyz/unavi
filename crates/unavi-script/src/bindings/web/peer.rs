@@ -44,9 +44,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "releaseHold")]
-    pub fn release_hold(&self, document: &DocumentHandle, to: JsValue) -> Result<(), JsValue> {
-        let to = to.as_string();
-        peer::release_hold(&self.host.borrow(), document.rep(), to.as_deref())
-            .map_err(convert::raise)
+    pub fn release_hold(&self, document: &DocumentHandle) -> Result<(), JsValue> {
+        peer::release_hold(&self.host.borrow(), document.rep()).map_err(convert::raise)
     }
 }

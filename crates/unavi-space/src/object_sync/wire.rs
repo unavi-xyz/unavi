@@ -158,7 +158,7 @@ async fn send_object(
     let stream = match streams.entry(obj.doc) {
         Entry::Occupied(e) => e.into_mut(),
         Entry::Vacant(e) => {
-            let mut tx = connection.open_bi().await?.0;
+            let mut tx = connection.open_uni().await?;
             StreamKind::Object.write(&mut tx).await?;
             tx.write_all(&obj.doc.0).await?;
             e.insert(DocStream {

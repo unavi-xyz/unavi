@@ -119,7 +119,7 @@ pub(crate) fn release_hold_on_release(
     let Some(view) = view else {
         return;
     };
-    view.local().release_hold(doc, None);
+    view.local().release_hold(doc);
 }
 
 fn resolve_doc(

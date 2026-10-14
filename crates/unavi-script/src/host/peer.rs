@@ -1,11 +1,8 @@
 //! `wired:peer`: the local user's identity, and who speaks for each document.
 
-use std::str::FromStr;
-
 use iroh::EndpointId;
 use unavi_policy::permissions::HostApi;
 use unavi_space::membership::SpaceId;
-use xdid::core::did::Did;
 
 use crate::{
     error::ScriptError,
@@ -65,8 +62,7 @@ fn space(host: &ScriptHost, doc: u32) -> Result<(hsd::id::DocId, SpaceId), Scrip
     Ok((id, space))
 }
 
-/// Takes hold of a document the script may write. The replica refuses a peer
-/// the holder reserved the next hold for.
+/// Takes hold of a document the script may write.
 pub fn take_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     host.require(HostApi::Peer)?;
     let (id, space) = space(host, doc)?;
@@ -74,23 +70,10 @@ pub fn take_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     Ok(())
 }
 
-/// Releases this peer's hold on a document the script may write, to `to` if
-/// named. Fails with `not-found` when no peer proving `to` is connected.
-pub fn release_hold(host: &ScriptHost, doc: u32, to: Option<&str>) -> Result<(), ScriptError> {
+/// Releases this peer's hold on a document the script may write.
+pub fn release_hold(host: &ScriptHost, doc: u32) -> Result<(), ScriptError> {
     host.require(HostApi::Peer)?;
     let (id, _) = space(host, doc)?;
-    let to = to
-        .map(|did| {
-            let did = Did::from_str(did).map_err(|_| ScriptError::invalid("not a DID"))?;
-            host.view
-                .identity()
-                .bindings
-                .peers_of(&did)
-                .into_iter()
-                .next()
-                .ok_or(ScriptError::NotFound)
-        })
-        .transpose()?;
-    host.view.local().release_hold(id, to);
+    host.view.local().release_hold(id);
     Ok(())
 }

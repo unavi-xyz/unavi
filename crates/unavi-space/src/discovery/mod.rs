@@ -162,8 +162,8 @@ pub fn publish_blob_providers(peers: Query<&Peer>, providers: Option<ResMut<Blob
     let Some(mut providers) = providers else {
         return;
     };
-    let connected = peers.iter().map(|p| p.0.id).collect::<Vec<_>>();
-    if providers.0 != connected {
-        providers.0 = connected;
+    let tracked = peers.iter().map(|p| p.0.id).collect::<Vec<_>>();
+    if providers.0 != tracked {
+        providers.0 = tracked;
     }
 }

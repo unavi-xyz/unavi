@@ -274,28 +274,23 @@ impl Inner {
         Ok(attributed)
     }
 
-    /// Drops `peer`'s pin on `doc`. Answers whether it was the last of the
-    /// author's.
-    fn remove_pin(&mut self, peer: EndpointId, doc: DocId) -> bool {
+    fn remove_pin(&mut self, peer: EndpointId, doc: DocId) {
         let Some(pins) = self.pins.get_mut(&peer) else {
-            return false;
+            return;
         };
         let Some(pin) = pins.remove(&doc) else {
-            return false;
+            return;
         };
         if pins.is_empty() {
             self.pins.remove(&peer);
         }
-        let mut last = false;
         if let Some(presence) = self.docs.get_mut(&doc) {
             presence.pins = presence.pins.saturating_sub(1);
             if pin.by_author {
                 presence.author_pins.remove(&(pin.record.payload.at, peer));
-                last = presence.author_pins.is_empty();
             }
         }
         self.prune_presence(doc);
-        last
     }
 
     fn pin(&self, peer: EndpointId, doc: DocId) -> Option<&Pin> {
@@ -501,11 +496,8 @@ impl Replicas {
         Ok(())
     }
 
-    /// Drops `peer`'s pin on `doc`. Answers whether it was the last of the
-    /// author's.
-    #[must_use]
-    pub fn remove_pin(&self, peer: EndpointId, doc: DocId) -> bool {
-        self.0.lock().remove_pin(peer, doc)
+    pub fn remove_pin(&self, peer: EndpointId, doc: DocId) {
+        self.0.lock().remove_pin(peer, doc);
     }
 
     /// Whether `peer` pins `doc`.

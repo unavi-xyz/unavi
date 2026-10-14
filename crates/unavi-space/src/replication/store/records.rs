@@ -314,12 +314,6 @@ impl Replicas {
         self.0.lock().records.drop_source(source);
     }
 
-    /// Whether the local peer is in `space`.
-    #[must_use]
-    pub fn in_space(&self, space: SpaceId) -> bool {
-        self.0.lock().in_space(space)
-    }
-
     #[cfg(test)]
     pub(super) fn known_in(&self, space: SpaceId) -> usize {
         self.0.lock().records.known_in(space)

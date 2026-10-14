@@ -333,11 +333,7 @@ fn proven(doc: hsd::id::DocId, proof: Authorship) -> Option<Proven> {
 
 /// A pin carrying a checked record that says the document is pinned.
 fn claim(proven: Proven, record: Record) -> Option<PinClaim> {
-    record.payload.pinned.then_some(PinClaim {
-        proven,
-        record,
-        signer: None,
-    })
+    record.payload.pinned.then_some(PinClaim { proven, record })
 }
 
 async fn prove_docs(docs: Vec<ReceivedDoc>, sender: &mut Sender<'_>) -> Vec<RemoteDoc> {

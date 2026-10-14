@@ -576,7 +576,7 @@ fn drop_other_sources(world: &mut World, writer: EndpointId, doc: DocId, keep: E
     }
 }
 
-/// Why this node could not pin a document.
+/// Why this node could not pin or withdraw a document.
 #[derive(Debug, thiserror::Error)]
 pub enum PinError {
     #[error("no local store")]
@@ -668,7 +668,6 @@ impl LocalReplica {
                         proof,
                     },
                     record,
-                    signer: Some(this.clone()),
                 };
                 if spawn_pin(world, &source, claim) {
                     Ok(())

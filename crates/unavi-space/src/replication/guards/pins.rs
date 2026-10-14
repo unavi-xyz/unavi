@@ -1,7 +1,6 @@
 //! Pin guards, and the pin records and withdrawals they state.
 
 use bevy::prelude::*;
-use bevy_async::task;
 use bevy_iroh::store::DataStore;
 use hsd::id::DocId;
 use iroh::EndpointId;
@@ -9,11 +8,11 @@ use iroh_docs::{
     NamespaceId,
     NamespaceSecret,
 };
+use unavi_identity::authorship::AuthorshipError;
 
 use crate::{
     authority::SpaceView,
     index,
-    membership::SpaceId,
     replication::{
         clock,
         guards::{
@@ -22,6 +21,7 @@ use crate::{
             LocalPeer,
             LocalReplica,
             PeerGuards,
+            PinError,
             Source,
             doc_anchor,
             find_guard,
@@ -44,14 +44,11 @@ use crate::{
 pub struct PinState {
     peer:           EndpointId,
     pub(super) doc: DocId,
-    space:          SpaceId,
     local:          bool,
     /// Whether the pinner proved the document's author.
     by_author:      bool,
-    /// Signs and sends the author's withdrawal when this pin is the last of
-    /// the author's to go.
-    signer:         Option<LocalReplica>,
-    /// The withdrawal a non-author pin relays when it drops.
+    /// The withdrawal the unpin carries: the author's own when it withdraws
+    /// the document, or the one a non-author pin relays when it drops.
     withdrawal:     Option<Record>,
     /// Held because a drop takes no arguments.
     replicas:       Replicas,
@@ -59,24 +56,13 @@ pub struct PinState {
 
 impl Drop for PinState {
     fn drop(&mut self) {
-        let last_author_pin = self.replicas.remove_pin(self.peer, self.doc);
+        self.replicas.remove_pin(self.peer, self.doc);
         if !self.local {
             return;
         }
-        if last_author_pin && let Some(signer) = self.signer.take() {
-            // Whether the author removed the document or left its space is
-            // known only once the despawn that dropped this pin is over.
-            signer.withdraw(self.doc, self.space);
-            return;
-        }
-        let withdrawal = if self.by_author {
-            None
-        } else {
-            self.withdrawal.take()
-        };
         self.replicas.broadcast(&ReplicationMsg::Unpin {
             doc:        self.doc,
-            withdrawal: withdrawal.map(|record| record.signed),
+            withdrawal: self.withdrawal.take().map(|record| record.signed),
         });
     }
 }
@@ -86,18 +72,12 @@ impl Drop for PinState {
 pub struct PinClaim {
     pub proven: Proven,
     pub record: Record,
-    /// Set for the local author's own pin.
-    pub signer: Option<LocalReplica>,
 }
 
 /// Records or restates `source`'s pin on `doc`, spawning its guard the
 /// first time. `false` if the pin was refused.
 pub(super) fn spawn_pin(world: &mut World, source: &Source, claim: PinClaim) -> bool {
-    let PinClaim {
-        proven,
-        record,
-        signer,
-    } = claim;
+    let PinClaim { proven, record } = claim;
     let (doc, space) = (record.payload.doc, record.payload.space);
     let by_author = source.did.as_ref() == Some(&proven.author);
     let replicas = world.resource::<Replicas>().clone();
@@ -120,10 +100,8 @@ pub(super) fn spawn_pin(world: &mut World, source: &Source, claim: PinClaim) -> 
         PinState {
             peer: source.id,
             doc,
-            space,
             local: source.local,
             by_author,
-            signer,
             withdrawal: None,
             replicas,
         },
@@ -158,11 +136,7 @@ pub(crate) fn pin_loaded(world: &mut World, doc: DocId) -> bool {
         did:    Some(view.did().clone()),
         local:  true,
     };
-    let claim = PinClaim {
-        proven,
-        record,
-        signer: None,
-    };
+    let claim = PinClaim { proven, record };
     spawn_pin(world, &me, claim)
 }
 
@@ -208,86 +182,72 @@ pub(super) fn note_record(world: &mut World, record: &Record, source: EndpointId
     }
 }
 
-/// Sends the unpin that ends `me`'s last author pin on `doc`. It carries a
-/// withdrawal signed by `key`, stamped past every record known, only if the
-/// local peer is still in `space`: leaving a space removes nothing.
-pub(crate) fn finish_withdrawal(
-    world: &World,
+/// Withdraws `doc`: signs, with the document's namespace `key`, a record
+/// saying it is no longer pinned, stamped past every record known, and drops
+/// the local pin with it, so every peer unloads the document. Nothing is
+/// withdrawn for a document no peer pins.
+pub(crate) fn withdraw_pin(
+    world: &mut World,
     me: EndpointId,
     doc: DocId,
-    space: SpaceId,
-    key: Option<&NamespaceSecret>,
-) {
+    key: &NamespaceSecret,
+) -> Result<(), PinError> {
     let replicas = world.resource::<Replicas>().clone();
-    let withdrawal = key.filter(|_| replicas.in_space(space)).and_then(|key| {
-        let floor = replicas.newest_record_at(doc);
-        let at = clock::current_micros().max(floor.map_or(0, |at| at.saturating_add(1)));
-        let payload = PinRecord {
-            doc,
-            space,
-            at,
-            pinned: false,
-        };
-        match Record::sign(key, payload) {
-            Ok(record) => Some(record),
-            Err(err) => {
-                warn!(%doc, %err, "withdrawal not signed; unpinning without one");
-                None
-            }
-        }
-    });
-    if let Some(record) = &withdrawal {
-        replicas.observe_record(record, me);
-    }
-    replicas.broadcast(&ReplicationMsg::Unpin {
+    let Some(space) = replicas.space_of(doc) else {
+        return Ok(());
+    };
+    let floor = replicas.newest_record_at(doc);
+    let at = clock::current_micros().max(floor.map_or(0, |at| at.saturating_add(1)));
+    let payload = PinRecord {
         doc,
-        withdrawal: withdrawal.map(|record| record.signed),
-    });
+        space,
+        at,
+        pinned: false,
+    };
+    let record = Record::sign(key, payload).map_err(|err| {
+        warn!(%doc, %err, "withdrawal not signed");
+        PinError::Unsigned
+    })?;
+    replicas.observe_record(&record, me);
+    let guard = index::lookup::<LocalPeer>(world, ())
+        .and_then(|local| find_guard::<PinState>(world, local, |pin| pin.doc == doc));
+    match guard {
+        Some(e) => {
+            if let Some(mut pin) = world.get_mut::<PinState>(e) {
+                pin.withdrawal = Some(record);
+            }
+            world.despawn(e);
+        }
+        None => replicas.broadcast(&ReplicationMsg::Unpin {
+            doc,
+            withdrawal: Some(record.signed),
+        }),
+    }
+    Ok(())
 }
 
 impl LocalReplica {
-    /// Signs and sends the withdrawal ending this node's last author pin on
-    /// `doc`. The namespace key is fetched, used and dropped by the task.
-    pub(super) fn withdraw(&self, doc: DocId, space: SpaceId) {
-        let this = self.clone();
-        task::spawn(async move {
-            let key = this.namespace_key(doc).await;
-            let me = this.me;
-            let sent = this
-                .async_world
-                .commands()
-                .push(move |world: &mut World| {
-                    finish_withdrawal(world, me, doc, space, key.as_ref());
-                })
-                .send()
-                .await;
-            if sent.is_err() {
-                warn!(%doc, "the world is gone; unpin not sent");
-            }
-        });
-    }
-
-    async fn namespace_key(&self, doc: DocId) -> Option<NamespaceSecret> {
+    /// Withdraws `doc`, which this node authors, from its space, so every peer
+    /// unloads it. Unloading a document or leaving its space withdraws
+    /// nothing; deleting it is what calls this.
+    pub async fn withdraw(&self, doc: DocId) -> Result<(), PinError> {
         let store = self
             .async_world
             .commands()
             .send_with(|world: &mut World| world.get_resource::<DataStore>().map(|s| s.0.clone()))
             .await
-            .flatten();
-        let Some(store) = store else {
-            warn!(%doc, "no local store to sign a withdrawal with");
-            return None;
-        };
-        match store.write_key(NamespaceId::from(&doc.0)).await {
-            Ok(Some(key)) => Some(key),
-            Ok(None) => {
-                warn!(%doc, "this store holds no write key to sign a withdrawal with");
-                None
-            }
-            Err(err) => {
-                warn!(%doc, %err, "write key not fetched for a withdrawal");
-                None
-            }
-        }
+            .ok_or(PinError::Unavailable)?
+            .ok_or(PinError::NoStore)?;
+        let key = store
+            .write_key(NamespaceId::from(&doc.0))
+            .await
+            .map_err(|err| PinError::NotAuthor(err.into()))?
+            .ok_or(PinError::NotAuthor(AuthorshipError::NotWritable))?;
+        let me = self.me;
+        self.async_world
+            .commands()
+            .send_with(move |world: &mut World| withdraw_pin(world, me, doc, &key))
+            .await
+            .ok_or(PinError::Unavailable)?
     }
 }

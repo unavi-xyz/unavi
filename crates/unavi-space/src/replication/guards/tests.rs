@@ -68,7 +68,7 @@ use crate::{
         reconcile_local_pins,
     },
     replication::{
-        guards::pins::finish_withdrawal,
+        guards::pins::withdraw_pin,
         message::{
             MAX_BATCHES_PER_LAYER,
             MAX_VALUE_BYTES,
@@ -100,7 +100,6 @@ fn authored_at(seed: u8, author: &Identity, space: SpaceId, at: u64) -> (DocId, 
             proof,
         },
         record: record_of(seed, space, at, true),
-        signer: None,
     };
     (DocId(*ns.id().as_bytes()), claim)
 }
@@ -1834,26 +1833,30 @@ fn leaving_a_space_sends_a_plain_unpin_and_leaves_no_record() {
 }
 
 #[test]
-fn a_withdrawal_is_signed_past_every_record_and_only_while_the_peer_is_in_the_space() {
-    let (world, replicas) = world();
+fn withdrawing_signs_past_every_record_and_unpins_with_it() {
+    let (mut world, replicas) = world();
+    let alice = identity();
     let space = space(b"withdrawal-signing");
     join(&replicas, space);
+    let (doc, claim) = authored(48, &alice, space);
+    let laptop = local(&mut world, peer(1), alice.did());
+    assert!(spawn_pin(&mut world, &laptop, claim));
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
     ));
-    let key = NamespaceSecret::from_bytes(&[48; 32]);
-    let doc = doc_of(48);
 
     let ahead = clock::current_micros() + 5_000_000;
     replicas.observe_record(&record_of(48, space, ahead, true), peer(2));
-    finish_withdrawal(&world, peer(1), doc, space, Some(&key));
+    let key = NamespaceSecret::from_bytes(&[48; 32]);
+    withdraw_pin(&mut world, peer(1), doc, &key).expect("withdraw");
+
     let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
         panic!("the unpin goes out");
     };
     let payload = withdrawal
-        .expect("signed while in the space")
+        .expect("the unpin carries the withdrawal")
         .payload()
         .expect("decode");
     assert!(!payload.pinned);
@@ -1862,38 +1865,47 @@ fn a_withdrawal_is_signed_past_every_record_and_only_while_the_peer_is_in_the_sp
         ahead + 1,
         "stamped past the newest record known"
     );
+    assert!(replicas.is_withdrawn(doc), "kept for late joiners");
     assert!(
-        replicas.is_withdrawn(doc),
-        "the sender keeps it for late joiners"
+        !replicas.pins_by(peer(1), doc),
+        "the local pin went with it"
     );
 
-    let no_key = doc_of(49);
-    finish_withdrawal(&world, peer(1), no_key, space, None);
-    let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
-        panic!("the unpin goes out");
-    };
-    assert!(withdrawal.is_none(), "no key, so a plain unpin");
-
-    replicas
-        .attribution()
-        .policy()
-        .update(space.doc(), |record| record.space = None);
-    let left = doc_of(50);
-    finish_withdrawal(
-        &world,
-        peer(1),
-        left,
-        space,
-        Some(&NamespaceSecret::from_bytes(&[50; 32])),
+    let absent = doc_of(49);
+    withdraw_pin(&mut world, peer(1), absent, &key).expect("nothing to withdraw");
+    assert!(
+        feed.rx.try_recv().is_err(),
+        "a document nobody pins sends nothing"
     );
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn an_unloaded_authored_document_is_unpinned_not_withdrawn() {
+    let (mut world, replicas) = world();
+    let alice = identity();
+    let space = space(b"unload-is-not-delete");
+    join(&replicas, space);
+    let (doc, claim) = authored(50, &alice, space);
+    let laptop = local(&mut world, peer(1), alice.did());
+    assert!(spawn_pin(&mut world, &laptop, claim));
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot { .. })
+    ));
+
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    world.despawn(tracker);
+
     let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
-        panic!("the unpin goes out");
+        panic!("the pin's guard says it let go");
     };
     assert!(
         withdrawal.is_none(),
-        "a space that was left is not withdrawn from"
+        "only deleting a document withdraws it, even while in its space"
     );
-    assert!(!replicas.is_withdrawn(left));
+    assert!(!replicas.is_withdrawn(doc));
     replicas.unregister_stream(feed.token);
 }
 

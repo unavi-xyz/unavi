@@ -240,12 +240,9 @@ fn the_author_endpoint_is_the_authors_first_device_to_pin() {
     assert_eq!(replicas.author_endpoint(space, doc), Some(phone));
     assert_eq!(replicas.author(doc).as_ref(), Some(alice.did()));
 
-    assert!(
-        !replicas.remove_pin(phone, doc),
-        "the laptop still pins as author"
-    );
+    replicas.remove_pin(phone, doc);
     assert_eq!(replicas.author_endpoint(space, doc), Some(laptop));
-    assert!(replicas.remove_pin(laptop, doc));
+    replicas.remove_pin(laptop, doc);
     assert_eq!(replicas.author_endpoint(space, doc), None);
     assert!(!replicas.has_doc(space, doc));
 }
@@ -1208,7 +1205,7 @@ fn a_non_author_pin_keeps_presence_but_never_resolves_the_author_endpoint() {
     );
     assert_eq!(replicas.holder(space, doc), Some(author_device));
 
-    assert!(replicas.remove_pin(author_device, doc));
+    replicas.remove_pin(author_device, doc);
     assert!(!replicas.is_author_pinned(doc));
     assert!(replicas.is_pinned(doc), "the other pins keep it present");
     assert_eq!(replicas.author_endpoint(space, doc), None);
@@ -1704,7 +1701,7 @@ fn a_known_record_outlives_its_presence_and_a_recreated_one_cannot_regress() {
 
     pin(1);
     replicas.observe_record(&record_for(16, space, 5, true), peer(1));
-    assert!(replicas.remove_pin(peer(1), doc));
+    replicas.remove_pin(peer(1), doc);
     assert!(!replicas.has_doc(space, doc), "the presence is gone");
     assert_eq!(
         replicas.newest_record_at(doc),
@@ -1746,7 +1743,7 @@ fn a_record_is_not_kept_past_the_presence_of_a_space_the_peer_is_not_in() {
         "a present document keeps its record"
     );
 
-    assert!(replicas.remove_pin(peer(1), doc));
+    replicas.remove_pin(peer(1), doc);
     assert_eq!(replicas.newest_record_at(doc), None);
 }
 
@@ -1769,7 +1766,7 @@ fn a_flood_of_hearsay_does_not_evict_a_known_withdrawal() {
         )
         .expect("pin");
     replicas.observe_record(&record_for(18, space, 5, false), peer(1));
-    assert!(replicas.remove_pin(peer(1), doc));
+    replicas.remove_pin(peer(1), doc);
 
     for seed in 20..=u8::MAX {
         replicas.observe_record(&record_for(seed, space, 2, false), peer(9));

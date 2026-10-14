@@ -287,6 +287,12 @@ pub async fn delete_document(host: &mut ScriptHost, doc: u32) -> Result<(), Scri
     host.documents.remove(doc)?;
     host.minted.remove(&id);
 
+    // Withdrawn while its pin and write key still exist, so every peer
+    // unloads it rather than keeping it alive through its own pin.
+    if let Err(err) = host.view.local().withdraw(id).await {
+        warn!(%id, %err, "deleted document not withdrawn; peers may keep it");
+    }
+
     let store = host
         .world_call(move |world| {
             if let Some(entity) = world.get_resource::<DocIndex>().and_then(|i| i.get(id)) {

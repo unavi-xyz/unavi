@@ -37,6 +37,7 @@ use unavi_policy::{
     Policy,
     ledger::Record as PolicyRecord,
     quota::{
+        Quota,
         Stock,
         StockLease,
     },
@@ -49,23 +50,28 @@ use crate::{
     membership::SpaceId,
     replication::{
         message::{
-            Batch,
             DocSnapshot,
             HoldClaim,
-            Live,
             PinSnapshot,
             ReplicationMsg,
+            session::{
+                LayerState,
+                ReceivedLayer,
+                ReceivedTick,
+                SignedLayer,
+            },
         },
         record::Record,
         session::{
             SessionError,
-            SessionKey,
+            WriterId,
             layers::{
                 Applied,
+                Charge,
+                LocalTick,
                 Opinion,
                 Orphan,
                 SessionLayers,
-                Writer,
             },
         },
         snapshot,
@@ -313,6 +319,23 @@ impl Inner {
         self.holds
             .holder(doc, space)
             .or_else(|| self.author_endpoint(space, doc))
+    }
+
+    /// The budget `device`'s layer on `doc` is charged to, and whether it may
+    /// take a reserved layer: the author's, or the local peer's.
+    fn charge_of(&self, device: EndpointId, did: &Did, doc: DocId) -> (Arc<Quota>, bool) {
+        let quota = self.attribution.writer_quota(device, Some(did));
+        let reserved = self.author_resolved(doc).as_ref() == Some(did)
+            || self.attribution.local_did().as_ref() == Some(did);
+        (quota, reserved)
+    }
+
+    /// Refuses session state naming another space than `doc`'s presence.
+    fn check_session_space(&self, doc: DocId, space: SpaceId) -> Result<(), SessionError> {
+        if self.docs.get(&doc).is_some_and(|p| p.space != space) {
+            return Err(SessionError::WrongSpace);
+        }
+        Ok(())
     }
 
     fn self_snapshot(&self, me: EndpointId) -> Vec<DocSnapshot> {
@@ -585,63 +608,69 @@ impl Replicas {
         self.author_endpoint(space, doc) == Some(me)
     }
 
-    /// Writes a batch, or the `live` writes of it, into its writer's session
-    /// layer, all or none, charging the writer. `source` is the peer the
-    /// layer is held through.
-    pub(crate) fn add_session(
+    /// Applies a tick its writer sent over its own link, all or none, held
+    /// through `source`.
+    pub(crate) fn apply_tick(
         &self,
         source: EndpointId,
-        batch: &Batch,
-        live: Option<Live<'_>>,
+        tick: &ReceivedTick,
     ) -> Result<Applied, SessionError> {
-        self.write_session(source, batch, live, false)
-    }
-
-    /// Writes a batch that restates the local writer's live cells, which may
-    /// take the layer past its batch cap until the older batches drop.
-    pub(crate) fn add_checkpoint(
-        &self,
-        source: EndpointId,
-        batch: &Batch,
-    ) -> Result<Applied, SessionError> {
-        self.write_session(source, batch, None, true)
-    }
-
-    fn write_session(
-        &self,
-        source: EndpointId,
-        batch: &Batch,
-        live: Option<Live<'_>>,
-        restating: bool,
-    ) -> Result<Applied, SessionError> {
+        let state = &tick.state.payload;
         let mut inner = self.0.lock();
-        let payload = &batch.payload;
-        if inner
-            .docs
-            .get(&payload.doc)
-            .is_some_and(|p| p.space != payload.space)
-        {
-            return Err(SessionError::WrongSpace);
-        }
-        let did = Some(&payload.did);
-        let quota = inner.attribution.writer_quota(payload.writer, did);
-        let reserved = inner.author_resolved(payload.doc).as_ref() == did
-            || inner.attribution.local_did().as_ref() == did;
-        let writer = Writer {
-            peer: payload.writer,
-            did: &payload.did,
+        let (quota, reserved) = inner.charge_of(state.device, &state.did, state.doc);
+        inner.check_session_space(state.doc, state.space)?;
+        let charge = Charge {
             quota: &quota,
             reserved,
-            restating,
         };
-        inner.sessions.write(&writer, source, batch, live)
+        inner.sessions.apply_tick(source, tick, &charge)
+    }
+
+    /// Replaces a writer's layer with a whole one a snapshot states, held
+    /// through `source`. The caller has checked a relayed layer's signature
+    /// and root.
+    pub(crate) fn replace_layer(
+        &self,
+        source: EndpointId,
+        layer: ReceivedLayer,
+    ) -> Result<Applied, SessionError> {
+        let state = &layer.state.payload;
+        let mut inner = self.0.lock();
+        let (quota, reserved) = inner.charge_of(state.device, &state.did, state.doc);
+        inner.check_session_space(state.doc, state.space)?;
+        let charge = Charge {
+            quota: &quota,
+            reserved,
+        };
+        inner.sessions.replace_layer(source, layer, &charge)
+    }
+
+    /// Applies the local writer's own tick and signs the state it leaves.
+    pub(crate) fn write_local(
+        &self,
+        tick: &LocalTick<'_>,
+        sign: impl FnOnce(LayerState) -> anyhow::Result<SignedLayer>,
+    ) -> Result<(Applied, SignedLayer), SessionError> {
+        let mut inner = self.0.lock();
+        let (quota, reserved) = inner.charge_of(tick.device, tick.did, tick.doc);
+        inner.check_session_space(tick.doc, tick.space)?;
+        let charge = Charge {
+            quota: &quota,
+            reserved,
+        };
+        inner.sessions.write_local(tick, &charge, sign)
+    }
+
+    /// Forgets the ticks refused from `device`, once it is gone.
+    pub(crate) fn forget_refused(&self, device: EndpointId) {
+        self.0.lock().sessions.forget_refused(device);
     }
 
     /// Records `source` as holding `writer`'s layer on `doc`. Answers whether
     /// the layer exists.
     pub(crate) fn add_session_source(
         &self,
-        writer: EndpointId,
+        writer: WriterId,
         doc: DocId,
         source: EndpointId,
     ) -> bool {
@@ -652,7 +681,7 @@ impl Replicas {
     /// source is left. Answers whether the layer is gone.
     pub(crate) fn remove_session_source(
         &self,
-        writer: EndpointId,
+        writer: WriterId,
         doc: DocId,
         source: EndpointId,
     ) -> bool {
@@ -660,58 +689,38 @@ impl Replicas {
     }
 
     /// The peers `writer`'s layer on `doc` is held through.
-    pub(crate) fn session_sources(&self, writer: EndpointId, doc: DocId) -> Vec<EndpointId> {
+    pub(crate) fn session_sources(&self, writer: WriterId, doc: DocId) -> Vec<EndpointId> {
         self.0.lock().sessions.sources(writer, doc)
     }
 
-    /// Each document `writer` has a layer on, with each peer it is held
-    /// through.
-    pub(crate) fn session_sources_of_writer(&self, writer: EndpointId) -> Vec<(DocId, EndpointId)> {
-        self.0.lock().sessions.sources_of_writer(writer)
+    /// Every layer `device` writes, with each peer it is held through.
+    pub(crate) fn session_sources_of_device(
+        &self,
+        device: EndpointId,
+    ) -> Vec<(DocId, WriterId, EndpointId)> {
+        self.0.lock().sessions.sources_of_device(device)
     }
 
-    /// Layers `source` alone holds, other than `me`'s own.
+    /// Layers `source` alone holds, other than ones `me` writes.
     pub(crate) fn orphaned_by(&self, source: EndpointId, me: EndpointId) -> Vec<Orphan> {
         self.0.lock().sessions.orphaned_by(source, me)
     }
 
-    /// Whether `writer`'s retained batches on `doc` are due a checkpoint.
-    pub(crate) fn needs_checkpoint(&self, writer: EndpointId, doc: DocId) -> bool {
-        self.0.lock().sessions.needs_checkpoint(writer, doc)
-    }
-
-    /// Records how a checkpoint of `writer`'s layer on `doc` ended.
-    pub(crate) fn record_checkpoint(&self, writer: EndpointId, doc: DocId, succeeded: bool) {
-        self.0
-            .lock()
-            .sessions
-            .record_checkpoint(writer, doc, succeeded);
-    }
-
     /// Writers holding a session layer on `doc`, with the DID each layer
     /// names.
-    pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(EndpointId, Did)> {
+    pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(WriterId, Did)> {
         self.0.lock().sessions.layers(doc)
     }
 
     /// Writers holding a session layer on `doc`.
     #[must_use]
-    pub fn session_writers(&self, doc: DocId) -> Vec<EndpointId> {
+    pub fn session_writers(&self, doc: DocId) -> Vec<WriterId> {
         self.0.lock().sessions.writers(doc)
     }
 
     /// `writer`'s session opinions on `doc`.
-    pub(crate) fn session_opinions(&self, writer: EndpointId, doc: DocId) -> Vec<Opinion> {
+    pub(crate) fn session_opinions(&self, writer: WriterId, doc: DocId) -> Vec<Opinion> {
         self.0.lock().sessions.opinions(writer, doc)
-    }
-
-    /// The keys `writer` has cleared on `doc`, with the stamp of each.
-    pub(crate) fn session_tombstones(
-        &self,
-        writer: EndpointId,
-        doc: DocId,
-    ) -> Vec<(SessionKey, u64)> {
-        self.0.lock().sessions.tombstones(writer, doc)
     }
 
     /// Who authors `doc`: the DID a pin proved, or this node for one it
@@ -866,7 +875,7 @@ impl Replicas {
                             name: key.name,
                             value,
                             at,
-                            writer,
+                            writer: writer.device,
                         }),
                 );
         }

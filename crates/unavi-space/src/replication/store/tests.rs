@@ -1,13 +1,10 @@
-use hsd::{
-    id::PrimId,
-    property::name::PropName,
-};
+use hsd::id::PrimId;
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
 use unavi_local::DeviceStorage;
-use unavi_policy::{
-    quota::limits::Limits,
-    trust::TrustTable,
+use unavi_policy::trust::{
+    Trust,
+    TrustTable,
 };
 use xdid::method::key::{
     DidKeyPair,
@@ -21,18 +18,24 @@ use super::{
 };
 use crate::replication::{
     message::{
-        ClearedKey,
         HoldClaim,
-        Live,
-        MAX_BATCHES_PER_LAYER,
-        RetainedBatch,
-        SessionBatch,
-        SessionWrite,
+        Received,
+        session::{
+            LayerState,
+            ReceivedLayer,
+            ReceivedTick,
+            SignedLayer,
+        },
     },
     record::PinRecord,
     session::{
         SessionKey,
-        layers::MAX_LAYERS_PER_DOC,
+        WriterId,
+        cells::Cells,
+        layers::{
+            LocalTick,
+            MAX_LAYERS_PER_DOC,
+        },
     },
 };
 
@@ -73,127 +76,6 @@ fn space(seed: &[u8]) -> SpaceId {
 /// point, so a key has to be derived rather than written down.
 fn peer(seed: u8) -> EndpointId {
     iroh::SecretKey::from_bytes(&[seed; 32]).public()
-}
-
-fn prim() -> PrimId {
-    PrimId([1; 16])
-}
-
-fn name(field: &str) -> PropName {
-    format!("state/{field}").parse().expect("valid prop name")
-}
-
-fn write(field: &str, value: &[u8]) -> SessionWrite {
-    SessionWrite {
-        prim:  prim(),
-        name:  name(field).to_string(),
-        value: Some(value.to_vec()),
-    }
-}
-
-fn key(field: &str) -> SessionKey {
-    SessionKey {
-        prim: prim(),
-        name: name(field),
-    }
-}
-
-/// A batch from `writer`, signed by `who`, whose layer it names.
-fn batch(
-    writer: EndpointId,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    at: u64,
-    body: Vec<SessionWrite>,
-) -> Batch {
-    Batch::sign(
-        SessionBatch {
-            writer,
-            did: who.did().clone(),
-            doc,
-            space,
-            at,
-            writes: body,
-            clears: Vec::new(),
-        },
-        who.signing_key(),
-    )
-    .expect("sign")
-}
-
-/// A batch dropping `writer`'s opinions on `fields`.
-fn clearing(
-    writer: EndpointId,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    at: u64,
-    fields: &[&str],
-) -> Batch {
-    Batch::sign(
-        SessionBatch {
-            writer,
-            did: who.did().clone(),
-            doc,
-            space,
-            at,
-            writes: Vec::new(),
-            clears: fields
-                .iter()
-                .map(|field| ClearedKey {
-                    prim: prim(),
-                    name: name(field).to_string(),
-                })
-                .collect(),
-        },
-        who.signing_key(),
-    )
-    .expect("sign")
-}
-
-/// `writer` states `writes` over its own connection.
-fn say(
-    replicas: &Replicas,
-    writer: EndpointId,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    at: u64,
-    body: Vec<SessionWrite>,
-) -> Result<Applied, SessionError> {
-    replicas.add_session(writer, &batch(writer, who, doc, space, at, body), None)
-}
-
-/// The retained batches `writer`'s layer would be relayed as.
-fn relayed_layer(replicas: &Replicas, writer: EndpointId) -> Vec<RetainedBatch> {
-    let feed = replicas.register_stream(writer);
-    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
-        panic!("a stream opens with a snapshot");
-    };
-    replicas.unregister_stream(feed.token);
-    docs.into_iter()
-        .flat_map(|doc| doc.layers)
-        .flat_map(|layer| layer.batches)
-        .collect()
-}
-
-/// A relayed batch as its receiver decodes it.
-fn decoded(retained: &RetainedBatch) -> Batch {
-    let payload = retained.batch.payload().expect("decode");
-    Batch {
-        stamp: payload.at,
-        payload,
-        signed: retained.batch.clone(),
-    }
-}
-
-/// Applies only the writes at `writes`, as a relayer's retained batch does.
-const fn only(writes: &[u16]) -> Live<'_> {
-    Live {
-        writes,
-        clears: &[],
-    }
 }
 
 /// A replica whose local identity has loaded, so other DIDs are judged by the
@@ -397,756 +279,6 @@ fn a_peer_holds_a_bounded_number_of_documents() {
 }
 
 #[test]
-fn each_writers_opinion_on_a_key_lands_in_its_own_layer() {
-    let replicas = replicas();
-    let space = space(b"own-layers");
-    let doc = space.doc();
-    let (first, second) = (peer(1), peer(2));
-    let (alice, bob) = (identity(), identity());
-
-    say(
-        &replicas,
-        first,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"first")],
-    )
-    .expect("first writes");
-    say(
-        &replicas,
-        second,
-        &bob,
-        doc,
-        space,
-        2,
-        vec![write("k", b"second")],
-    )
-    .expect("second writes");
-
-    let mut writers = replicas.session_writers(doc);
-    writers.sort_unstable();
-    let mut expected = vec![first, second];
-    expected.sort_unstable();
-    assert_eq!(writers, expected);
-    assert_eq!(
-        replicas.session_opinions(first, doc),
-        vec![(key("k"), Some(b"first".to_vec()), 1)],
-        "a later writer must not overwrite another peer's opinion"
-    );
-    assert_eq!(
-        replicas.session_opinions(second, doc),
-        vec![(key("k"), Some(b"second".to_vec()), 2)]
-    );
-}
-
-#[test]
-fn within_one_layer_an_older_opinion_is_skipped() {
-    let replicas = replicas();
-    let space = space(b"older");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        5,
-        vec![write("k", b"new")],
-    )
-    .expect("write");
-    let applied = say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        3,
-        vec![write("k", b"old")],
-    )
-    .expect("a stale write is not an error");
-    assert!(
-        applied.set.is_empty(),
-        "a skipped opinion is not reported changed"
-    );
-    assert_eq!(
-        replicas.session_opinions(writer, doc),
-        vec![(key("k"), Some(b"new".to_vec()), 5)]
-    );
-}
-
-#[test]
-fn a_batch_refused_by_quota_leaves_nothing_behind() {
-    let replicas = replicas();
-    let space = space(b"atomic");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let batch = vec![
-        write("small", b"v"),
-        write("huge", &vec![0; 9 * 1024 * 1024]),
-    ];
-
-    assert_eq!(
-        say(&replicas, writer, &alice, doc, space, 1, batch).err(),
-        Some(SessionError::QuotaExceeded)
-    );
-    assert!(replicas.session_writers(doc).is_empty(), "no layer");
-    assert!(
-        replicas.session_opinions(writer, doc).is_empty(),
-        "no opinion"
-    );
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-    assert_eq!(quota.usage(Stock::Documents), 0, "no layer charge");
-    assert_eq!(quota.usage(Stock::SessionMemory), 0, "no opinion charge");
-}
-
-#[test]
-fn the_writer_pays_for_its_layer_on_an_authored_document() {
-    let replicas = replicas();
-    let (alice, guest) = (identity(), identity());
-    let (doc, proof) = authored(10, &alice);
-    let space = space(b"charge");
-
-    replicas
-        .add_pin(
-            peer(1),
-            Some(alice.did()),
-            Proven {
-                author: alice.did().clone(),
-                proof,
-            },
-            pin_record(doc, space, 1),
-        )
-        .expect("pin");
-    let attribution = replicas.attribution();
-    let author_documents = attribution
-        .author_quota(alice.did())
-        .usage(Stock::Documents);
-
-    say(
-        &replicas,
-        peer(2),
-        &guest,
-        doc,
-        space,
-        2,
-        vec![write("k", &[0; 64])],
-    )
-    .expect("write");
-
-    let guest_quota = attribution.author_quota(guest.did());
-    assert_eq!(guest_quota.usage(Stock::Documents), 1);
-    assert!(guest_quota.usage(Stock::SessionMemory) > 0);
-    let author_quota = attribution.author_quota(alice.did());
-    assert_eq!(
-        author_quota.usage(Stock::SessionMemory),
-        0,
-        "a guest writing to the author's document must not spend the author's budget"
-    );
-    assert_eq!(
-        author_quota.usage(Stock::Documents),
-        author_documents,
-        "the guest's layer is not a document of the author's"
-    );
-}
-
-#[test]
-fn a_write_naming_another_space_than_the_documents_is_refused() {
-    let replicas = replicas();
-    let alice = identity();
-    let (doc, proof) = authored(5, &alice);
-    let (real, bogus) = (space(b"real-space"), space(b"bogus-space"));
-
-    replicas
-        .add_pin(
-            peer(1),
-            Some(alice.did()),
-            Proven {
-                author: alice.did().clone(),
-                proof,
-            },
-            pin_record(doc, real, 1),
-        )
-        .expect("pin");
-    assert_eq!(
-        say(
-            &replicas,
-            peer(2),
-            &identity(),
-            doc,
-            bogus,
-            2,
-            vec![write("k", b"v")]
-        )
-        .err(),
-        Some(SessionError::WrongSpace),
-        "a document present in one space is not writable through another"
-    );
-    assert!(
-        replicas.session_writers(doc).is_empty(),
-        "a refused write must not stack a layer"
-    );
-}
-
-#[test]
-fn a_document_holds_no_more_layers_than_the_cap() {
-    let replicas = replicas();
-    let space = space(b"cap");
-    let doc = space.doc();
-
-    let writers = (1..=MAX_LAYERS_PER_DOC as u8 + 1)
-        .map(|seed| (peer(seed), identity()))
-        .collect::<Vec<_>>();
-    let (past, past_who) = writers.last().expect("a writer past the cap");
-    for (writer, who) in &writers[..MAX_LAYERS_PER_DOC] {
-        say(
-            &replicas,
-            *writer,
-            who,
-            doc,
-            space,
-            1,
-            vec![write("k", b"v")],
-        )
-        .expect("under the cap");
-    }
-    assert_eq!(
-        say(
-            &replicas,
-            *past,
-            past_who,
-            doc,
-            space,
-            1,
-            vec![write("k", b"v")]
-        )
-        .err(),
-        Some(SessionError::QuotaExceeded)
-    );
-    assert!(
-        replicas.session_opinions(*past, doc).is_empty(),
-        "the refused peer holds no layer"
-    );
-    let (first, first_who) = &writers[0];
-    assert!(
-        say(
-            &replicas,
-            *first,
-            first_who,
-            doc,
-            space,
-            2,
-            vec![write("k", b"w")]
-        )
-        .is_ok(),
-        "a peer already holding a layer is not refused by the cap"
-    );
-}
-
-#[test]
-fn a_layer_is_removed_only_when_its_last_source_goes() {
-    let replicas = replicas();
-    let space = space(b"release");
-    let doc = space.doc();
-    let (writer, relayer, alice) = (peer(1), peer(2), identity());
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"v")],
-    )
-    .expect("write");
-    assert!(replicas.add_session_source(writer, doc, relayer));
-    assert_eq!(quota.usage(Stock::Documents), 1);
-    assert!(quota.usage(Stock::SessionMemory) > 0);
-
-    assert!(
-        !replicas.remove_session_source(writer, doc, writer),
-        "a source remains"
-    );
-    assert_eq!(replicas.session_writers(doc), vec![writer]);
-    assert_eq!(replicas.session_opinions(writer, doc).len(), 1);
-
-    assert!(replicas.remove_session_source(writer, doc, relayer));
-    assert!(
-        replicas.session_writers(doc).is_empty(),
-        "the layer is gone"
-    );
-    assert_eq!(quota.usage(Stock::Documents), 0);
-    assert_eq!(quota.usage(Stock::SessionMemory), 0);
-}
-
-#[test]
-fn a_relayed_layer_for_an_endpoint_held_under_another_did_is_refused() {
-    let replicas = replicas();
-    let space = space(b"wrong-did");
-    let doc = space.doc();
-    let (alice, mallory) = (identity(), identity());
-
-    say(
-        &replicas,
-        peer(1),
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"v")],
-    )
-    .expect("write");
-    let forged = batch(
-        peer(1),
-        &mallory,
-        doc,
-        space,
-        2,
-        vec![write("k", b"forged")],
-    );
-    assert_eq!(
-        replicas.add_session(peer(2), &forged, None).err(),
-        Some(SessionError::WrongDid)
-    );
-    assert_eq!(
-        replicas.session_opinions(peer(1), doc),
-        vec![(key("k"), Some(b"v".to_vec()), 1)]
-    );
-    assert_eq!(replicas.session_sources(peer(1), doc), vec![peer(1)]);
-}
-
-#[test]
-fn a_live_filter_keeps_a_cleared_key_from_returning() {
-    let space = space(b"live");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let batch = batch(
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("a", b"1"), write("b", b"2")],
-    );
-
-    let held = Replicas::new(Policy::new(), Rules::default());
-    held.add_session(writer, &batch, None).expect("held");
-    let cleared = clearing(writer, &alice, doc, space, 2, &["a"]);
-    held.add_session(writer, &cleared, None).expect("cleared");
-    let relayed = relayed_layer(&held, writer);
-    let [written, clearing] = &relayed[..] else {
-        panic!("the write and the clear are retained");
-    };
-    assert_eq!(written.live, vec![1], "only the write still current");
-    assert_eq!(clearing.live_clears, vec![0], "the clear is relayed too");
-
-    let receiver = Replicas::new(Policy::new(), Rules::default());
-    for retained in &relayed {
-        receiver
-            .add_session(peer(9), &decoded(retained), Some(retained.live()))
-            .expect("relayed");
-    }
-    assert_eq!(
-        receiver.session_opinions(writer, doc),
-        vec![(key("b"), Some(b"2".to_vec()), 1)],
-        "the cleared key stays cleared"
-    );
-    assert_eq!(
-        receiver.session_tombstones(writer, doc),
-        vec![(key("a"), 2)]
-    );
-}
-
-#[test]
-fn a_retained_batch_goes_once_no_cell_points_at_it() {
-    let replicas = replicas();
-    let space = space(b"retained");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("a", b"1"), write("b", b"2")],
-    )
-    .expect("first");
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        2,
-        vec![write("a", b"3")],
-    )
-    .expect("second");
-    assert_eq!(
-        relayed_layer(&replicas, writer).len(),
-        2,
-        "the first batch still backs b"
-    );
-    let both = quota.usage(Stock::SessionMemory);
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        3,
-        vec![write("b", b"4")],
-    )
-    .expect("third");
-    let layer = relayed_layer(&replicas, writer);
-    assert_eq!(layer.len(), 2, "the first batch lost its last cell");
-    assert!(layer.iter().all(|retained| !retained.live.is_empty()));
-    assert!(
-        quota.usage(Stock::SessionMemory) < both,
-        "a dropped batch releases its charge"
-    );
-
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 4, &["a", "b"]),
-            None,
-        )
-        .expect("clear");
-    let layer = relayed_layer(&replicas, writer);
-    assert_eq!(layer.len(), 1, "only the clear is left");
-    assert_eq!(layer[0].live_clears, vec![0, 1]);
-
-    assert!(replicas.remove_session_source(writer, doc, writer));
-    assert_eq!(quota.usage(Stock::SessionMemory), 0);
-}
-
-/// Leaves a layer holding 30 KB of batches for one tiny live cell.
-fn leave_dead_weight(
-    replicas: &Replicas,
-    writer: EndpointId,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    prefix: &str,
-) {
-    let key = |letter: &str| format!("{prefix}{letter}");
-    let fat = |letter: &str| write(&key(letter), &[0; 10_000]);
-    say(
-        replicas,
-        writer,
-        who,
-        doc,
-        space,
-        1,
-        vec![fat("a"), fat("b"), fat("c"), write(&key("d"), b"1")],
-    )
-    .expect("first");
-    let thin = |letter: &str| write(&key(letter), b"2");
-    say(
-        replicas,
-        writer,
-        who,
-        doc,
-        space,
-        2,
-        vec![thin("a"), thin("b"), thin("c")],
-    )
-    .expect("second");
-}
-
-#[test]
-fn a_layer_is_due_a_checkpoint_once_its_batches_outgrow_its_content() {
-    let replicas = replicas();
-    let space = space(b"checkpoint");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    assert!(!replicas.needs_checkpoint(writer, doc), "no layer yet");
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("a", &[0; 10_000])],
-    )
-    .expect("first");
-    assert!(!replicas.needs_checkpoint(writer, doc), "nothing is stale");
-
-    leave_dead_weight(&replicas, writer, &alice, doc, space, "x");
-    assert!(
-        replicas.needs_checkpoint(writer, doc),
-        "the first batches hold 30 KB for tiny cells"
-    );
-}
-
-#[test]
-fn a_failed_checkpoint_waits_for_the_layer_to_grow() {
-    let replicas = replicas();
-    let space = space(b"backoff");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    leave_dead_weight(&replicas, writer, &alice, doc, space, "x");
-    assert!(replicas.needs_checkpoint(writer, doc));
-
-    replicas.record_checkpoint(writer, doc, false);
-    assert!(!replicas.needs_checkpoint(writer, doc), "backed off");
-
-    leave_dead_weight(&replicas, writer, &alice, doc, space, "y");
-    assert!(
-        replicas.needs_checkpoint(writer, doc),
-        "the layer grew past the failed attempt"
-    );
-
-    replicas.record_checkpoint(writer, doc, true);
-    assert!(
-        replicas.needs_checkpoint(writer, doc),
-        "a success clears the back-off"
-    );
-}
-
-#[test]
-fn a_layer_refuses_a_batch_past_the_retained_cap() {
-    let replicas = replicas();
-    let space = space(b"retained-cap");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    for i in 0..MAX_BATCHES_PER_LAYER {
-        say(
-            &replicas,
-            writer,
-            &alice,
-            doc,
-            space,
-            1,
-            vec![write(&format!("k{i}"), b"v")],
-        )
-        .expect("under the cap");
-    }
-    assert_eq!(
-        say(
-            &replicas,
-            writer,
-            &alice,
-            doc,
-            space,
-            2,
-            vec![write("more", b"v")]
-        )
-        .err(),
-        Some(SessionError::QuotaExceeded),
-        "a layer too large to relay is not grown"
-    );
-    assert_eq!(
-        replicas
-            .add_session(
-                writer,
-                &clearing(writer, &alice, doc, space, 3, &["k0"]),
-                None
-            )
-            .err(),
-        Some(SessionError::QuotaExceeded),
-        "a clear is a retained batch too"
-    );
-}
-
-#[test]
-fn the_last_write_to_a_key_in_a_batch_wins_and_leaks_nothing() {
-    let replicas = replicas();
-    let space = space(b"duplicate");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"first"), write("k", b"second")],
-    )
-    .expect("written");
-    assert_eq!(
-        replicas.session_opinions(writer, doc),
-        vec![(key("k"), Some(b"second".to_vec()), 1)]
-    );
-    assert_eq!(relayed_layer(&replicas, writer)[0].live, vec![1]);
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        2,
-        vec![write("k", b"third")],
-    )
-    .expect("overwrite");
-    assert_eq!(
-        relayed_layer(&replicas, writer).len(),
-        1,
-        "the first batch lost its last cell"
-    );
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 3, &["k"]),
-            None,
-        )
-        .expect("clear");
-    assert!(replicas.remove_session_source(writer, doc, writer));
-    assert_eq!(quota.usage(Stock::SessionMemory), 0);
-}
-
-#[test]
-fn a_relayer_holds_a_layer_only_for_a_write_that_is_current() {
-    let replicas = replicas();
-    let space = space(b"relayer");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let live = [0];
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        5,
-        vec![write("k", b"new")],
-    )
-    .expect("written");
-
-    let stale = batch(writer, &alice, doc, space, 3, vec![write("k", b"old")]);
-    replicas
-        .add_session(peer(2), &stale, Some(only(&live)))
-        .expect("stale");
-    assert_eq!(
-        replicas.session_sources(writer, doc),
-        vec![writer],
-        "an older opinion earns no source"
-    );
-
-    let current = batch(writer, &alice, doc, space, 5, vec![write("k", b"new")]);
-    replicas
-        .add_session(peer(3), &current, Some(only(&[])))
-        .expect("nothing live");
-    assert_eq!(replicas.session_sources(writer, doc), vec![writer]);
-
-    replicas
-        .add_session(peer(3), &current, Some(only(&live)))
-        .expect("current");
-    let mut sources = replicas.session_sources(writer, doc);
-    sources.sort_unstable();
-    let mut expected = vec![writer, peer(3)];
-    expected.sort_unstable();
-    assert_eq!(
-        sources, expected,
-        "the same opinion is held by another source"
-    );
-}
-
-#[test]
-fn rewriting_a_cell_with_the_same_value_reports_no_change() {
-    let replicas = replicas();
-    let space = space(b"unchanged");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"v")],
-    )
-    .expect("written");
-    let applied = say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        2,
-        vec![write("k", b"v")],
-    )
-    .expect("rewritten");
-    assert!(
-        applied.set.is_empty(),
-        "the composed value is already current"
-    );
-    assert_eq!(
-        replicas.session_opinions(writer, doc),
-        vec![(key("k"), Some(b"v".to_vec()), 2)],
-        "the stamp still moves"
-    );
-}
-
-#[test]
-fn the_author_takes_a_reserved_layer_past_the_cap() {
-    let replicas = Replicas::new(Policy::new(), Rules::default());
-    let author = identity();
-    replicas.attribution().set_local(
-        author.did().clone(),
-        TrustTable::new(DeviceStorage::memory()),
-    );
-    let space = space(b"reserved");
-    let doc = DocId([21; 32]);
-    replicas.record_minted(doc);
-
-    for seed in 1..=MAX_LAYERS_PER_DOC as u8 {
-        say(
-            &replicas,
-            peer(seed),
-            &identity(),
-            doc,
-            space,
-            1,
-            vec![write("k", b"v")],
-        )
-        .expect("under the cap");
-    }
-    assert!(
-        say(
-            &replicas,
-            peer(200),
-            &author,
-            doc,
-            space,
-            2,
-            vec![write("k", b"v")]
-        )
-        .is_ok(),
-        "a crowd of strangers must not lock the author out of its own document"
-    );
-}
-
-#[test]
 fn a_non_author_pin_keeps_presence_but_never_resolves_the_author_endpoint() {
     let replicas = replicas();
     let (alice, bob) = (identity(), identity());
@@ -1233,282 +365,6 @@ fn sync_sources_include_non_author_pinners() {
         )
         .expect("pin");
     assert_eq!(replicas.sync_sources(doc, me), vec![relayer]);
-}
-
-#[test]
-fn a_tombstone_beats_a_dishonest_relayers_older_batch_in_either_arrival_order() {
-    let space = space(b"tombstone-order");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let old = batch(writer, &alice, doc, space, 1, vec![write("k", b"old")]);
-
-    let honest = Replicas::new(Policy::new(), Rules::default());
-    honest.add_session(writer, &old, None).expect("written");
-    honest
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 2, &["k"]),
-            None,
-        )
-        .expect("cleared");
-    let relayed = relayed_layer(&honest, writer);
-    let [tombstone] = &relayed[..] else {
-        panic!("the clear is all an honest carrier retains");
-    };
-    assert_eq!(tombstone.live, Vec::<u16>::new());
-    assert_eq!(tombstone.live_clears, vec![0]);
-
-    for tombstone_first in [false, true] {
-        let receiver = Replicas::new(Policy::new(), Rules::default());
-        let stale = || {
-            receiver
-                .add_session(peer(8), &old, Some(only(&[0])))
-                .expect("relayed");
-        };
-        let fresh = || {
-            receiver
-                .add_session(peer(9), &decoded(tombstone), Some(tombstone.live()))
-                .expect("relayed");
-        };
-        if tombstone_first {
-            fresh();
-            stale();
-        } else {
-            stale();
-            fresh();
-        }
-        assert_eq!(
-            receiver.session_opinions(writer, doc),
-            Vec::new(),
-            "the cleared key stays cleared (tombstone first: {tombstone_first})"
-        );
-        assert_eq!(
-            receiver.session_tombstones(writer, doc),
-            vec![(key("k"), 2)]
-        );
-    }
-}
-
-#[test]
-fn a_write_newer_than_a_tombstone_wins_and_an_equal_stamp_does_not() {
-    let replicas = replicas();
-    let space = space(b"tombstone-order-by-stamp");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"v1")],
-    )
-    .expect("written");
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 2, &["k"]),
-            None,
-        )
-        .expect("cleared");
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        2,
-        vec![write("k", b"tie")],
-    )
-    .expect("tie");
-    assert_eq!(
-        replicas.session_opinions(writer, doc),
-        Vec::new(),
-        "a tie goes to the clear"
-    );
-
-    let applied = say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        3,
-        vec![write("k", b"v3")],
-    )
-    .expect("newer");
-    assert_eq!(
-        applied.set.len(),
-        1,
-        "the write composes over the tombstone"
-    );
-    assert_eq!(
-        replicas.session_opinions(writer, doc),
-        vec![(key("k"), Some(b"v3".to_vec()), 3)]
-    );
-    assert_eq!(replicas.session_tombstones(writer, doc), Vec::new());
-}
-
-#[test]
-fn a_clear_reports_the_composed_opinion_it_dropped_only() {
-    let replicas = replicas();
-    let space = space(b"tombstone-report");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-
-    let first = replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 1, &["k"]),
-            None,
-        )
-        .expect("a clear with nothing to drop");
-    assert!(
-        first.cleared.is_empty() && first.held,
-        "it is held all the same"
-    );
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        2,
-        vec![write("k", b"v")],
-    )
-    .expect("written");
-    let second = replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 3, &["k"]),
-            None,
-        )
-        .expect("cleared");
-    assert_eq!(second.cleared, vec![key("k")]);
-    let third = replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 4, &["k"]),
-            None,
-        )
-        .expect("cleared again");
-    assert!(
-        third.cleared.is_empty(),
-        "a tombstone has nothing composed to drop"
-    );
-}
-
-#[test]
-fn retained_batches_and_leases_balance_across_tombstones() {
-    let replicas = replicas();
-    let space = space(b"tombstone-leases");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        1,
-        vec![write("k", b"v")],
-    )
-    .expect("written");
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 2, &["k"]),
-            None,
-        )
-        .expect("cleared");
-    let layer = relayed_layer(&replicas, writer);
-    assert_eq!(
-        layer.len(),
-        1,
-        "the tombstone replaced the write's only claim on its batch"
-    );
-    assert_eq!(layer[0].live_clears, vec![0]);
-    assert_eq!(layer[0].live, Vec::<u16>::new());
-    let with_tombstone = quota.usage(Stock::SessionMemory);
-    assert!(with_tombstone > 0, "a tombstone is charged");
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
-        space,
-        3,
-        vec![write("k", b"w")],
-    )
-    .expect("rewritten");
-    let layer = relayed_layer(&replicas, writer);
-    assert_eq!(layer.len(), 1, "the write took over from the tombstone");
-    assert_eq!(layer[0].live, vec![0]);
-    assert_eq!(layer[0].live_clears, Vec::<u16>::new());
-
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 4, &["k"]),
-            None,
-        )
-        .expect("cleared again");
-    assert!(replicas.remove_session_source(writer, doc, writer));
-    assert_eq!(
-        quota.usage(Stock::SessionMemory),
-        0,
-        "every lease is released"
-    );
-    assert_eq!(quota.usage(Stock::Documents), 0);
-}
-
-#[test]
-fn a_relayer_holds_a_layer_only_for_a_clear_that_is_current() {
-    let replicas = replicas();
-    let space = space(b"tombstone-relayer");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let clears = Some(Live {
-        writes: &[],
-        clears: &[0],
-    });
-
-    replicas
-        .add_session(
-            writer,
-            &clearing(writer, &alice, doc, space, 5, &["k"]),
-            None,
-        )
-        .expect("cleared");
-
-    let stale = clearing(writer, &alice, doc, space, 3, &["k"]);
-    replicas
-        .add_session(peer(2), &stale, clears)
-        .expect("stale");
-    assert_eq!(
-        replicas.session_sources(writer, doc),
-        vec![writer],
-        "an older clear earns no source"
-    );
-
-    let current = clearing(writer, &alice, doc, space, 5, &["k"]);
-    replicas
-        .add_session(peer(3), &current, clears)
-        .expect("current");
-    let mut sources = replicas.session_sources(writer, doc);
-    sources.sort_unstable();
-    let mut expected = vec![writer, peer(3)];
-    expected.sort_unstable();
-    assert_eq!(sources, expected);
 }
 
 fn doc_of(seed: u8) -> DocId {
@@ -1853,40 +709,406 @@ fn a_pin_snapshot_carries_the_pins_own_record_and_the_withdrawal_apart() {
             .pinned
     );
 }
+/// One writer's layer on one document, for building its ticks and states.
+struct Writer<'a> {
+    device: EndpointId,
+    who:    &'a Identity,
+    doc:    DocId,
+    space:  SpaceId,
+}
+
+impl Writer<'_> {
+    fn id(&self) -> WriterId {
+        WriterId::new(self.device, self.who.did())
+    }
+
+    fn state(&self, at: u64, root: [u8; 32]) -> SignedLayer {
+        SignedLayer::sign(
+            LayerState {
+                device: self.device,
+                did: self.who.did().clone(),
+                doc: self.doc,
+                space: self.space,
+                at,
+                root,
+            },
+            self.who.signing_key(),
+        )
+        .expect("sign")
+    }
+
+    /// A tick at `at` setting `writes` and clearing `clears`. A live tick's
+    /// root is not checked, so it is left zero.
+    fn tick(&self, at: u64, writes: &[(&str, &[u8])], clears: &[&str]) -> ReceivedTick {
+        ReceivedTick {
+            writes: writes
+                .iter()
+                .map(|(field, value)| (key(field), Some(value.to_vec())))
+                .collect(),
+            clears: clears.iter().map(|field| key(field)).collect(),
+            state:  self.state(at, [0; 32]),
+        }
+    }
+
+    /// A whole layer at `at` holding `cells`, signed over their root.
+    fn layer(&self, at: u64, cells: &[(&str, &[u8])]) -> ReceivedLayer {
+        let mut held = Cells::default();
+        for (field, value) in cells {
+            held.set(key(field), Some(value.to_vec()));
+        }
+        ReceivedLayer {
+            state: self.state(at, held.root()),
+            cells: held,
+        }
+    }
+}
+
+fn key(field: &str) -> SessionKey {
+    SessionKey {
+        prim: PrimId([1; 16]),
+        name: format!("state/{field}").parse().expect("name"),
+    }
+}
+
+/// `writer`'s cells on `doc`, as `(field, value)`.
+fn cells_of(replicas: &Replicas, writer: WriterId, doc: DocId) -> Vec<(String, Vec<u8>)> {
+    let mut cells = replicas
+        .session_opinions(writer, doc)
+        .into_iter()
+        .map(|(key, value, _)| {
+            let field = key.name.to_string().trim_start_matches("state/").to_owned();
+            (field, value.unwrap_or_default())
+        })
+        .collect::<Vec<_>>();
+    cells.sort();
+    cells
+}
+
+fn cell(field: &str, value: &[u8]) -> (String, Vec<u8>) {
+    (field.to_owned(), value.to_vec())
+}
 
 #[test]
-fn a_writer_at_its_quota_can_still_clear() {
+fn a_tick_lands_whole_in_its_writers_own_layer() {
     let replicas = replicas();
-    let space = space(b"clear-at-quota");
-    let doc = space.doc();
-    let (writer, alice) = (peer(1), identity());
-    let quota = replicas
-        .attribution()
-        .writer_quota(writer, Some(alice.did()));
-
-    say(
-        &replicas,
-        writer,
-        &alice,
-        doc,
+    let space = space(b"ticks");
+    let (alice, bob) = (identity(), identity());
+    let a = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
         space,
-        1,
-        vec![write("k", &[0; 200])],
-    )
-    .expect("written");
-    let clear = clearing(writer, &alice, doc, space, 2, &["k"]);
-    let mut limits = Limits::default();
-    limits.stock.insert(
-        Stock::SessionMemory,
-        quota.usage(Stock::SessionMemory) + clear.signed.payload_len() as u64,
-    );
-    quota.set_limits(limits);
+    };
+    let b = Writer {
+        device: peer(2),
+        who: &bob,
+        ..a
+    };
 
     replicas
-        .add_session(writer, &clear, None)
-        .expect("the tombstone takes over the lease of the cell it replaces");
+        .apply_tick(a.device, &a.tick(1, &[("k", b"a"), ("gone", b"x")], &[]))
+        .expect("tick");
+    replicas
+        .apply_tick(b.device, &b.tick(1, &[("k", b"b")], &[]))
+        .expect("tick");
+    let applied = replicas
+        .apply_tick(a.device, &a.tick(2, &[("gone", b"y")], &["gone", "k"]))
+        .expect("tick");
+
     assert_eq!(
-        replicas.session_tombstones(writer, doc),
-        vec![(key("k"), 2)]
+        cells_of(&replicas, a.id(), a.doc),
+        vec![cell("gone", b"y")],
+        "a key the tick both clears and writes keeps the write"
+    );
+    assert_eq!(applied.cleared, vec![key("k")]);
+    assert_eq!(cells_of(&replicas, b.id(), b.doc), vec![cell("k", b"b")]);
+}
+
+#[test]
+fn a_tick_no_newer_than_its_layer_is_refused() {
+    let replicas = replicas();
+    let space = space(b"stale");
+    let alice = identity();
+    let a = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
+        space,
+    };
+    replicas
+        .apply_tick(a.device, &a.tick(5, &[("k", b"new")], &[]))
+        .expect("tick");
+    assert_eq!(
+        replicas
+            .apply_tick(a.device, &a.tick(5, &[("k", b"old")], &[]))
+            .err(),
+        Some(SessionError::Stale)
+    );
+    assert_eq!(cells_of(&replicas, a.id(), a.doc), vec![cell("k", b"new")]);
+}
+
+#[test]
+fn a_tick_refused_by_quota_leaves_nothing_and_holds_back_what_follows() {
+    let replicas = replicas();
+    let space = space(b"atomic");
+    let alice = identity();
+    let a = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
+        space,
+    };
+    let limit = Rules::default().limits(Trust::Guest).stock[&Stock::SessionMemory];
+    let huge = vec![0; usize::try_from(limit).expect("fits") + 1];
+
+    replicas
+        .apply_tick(a.device, &a.tick(1, &[("small", b"v")], &[]))
+        .expect("tick");
+    assert_eq!(
+        replicas
+            .apply_tick(a.device, &a.tick(2, &[("big", &huge)], &[]))
+            .err(),
+        Some(SessionError::QuotaExceeded)
+    );
+    assert!(replicas.session_writers(a.doc).is_empty(), "the layer goes");
+    let quota = replicas
+        .attribution()
+        .writer_quota(a.device, Some(alice.did()));
+    assert_eq!(quota.usage(Stock::Documents), 0, "no layer charge");
+    assert_eq!(quota.usage(Stock::SessionMemory), 0, "no opinion charge");
+
+    assert_eq!(
+        replicas
+            .apply_tick(a.device, &a.tick(3, &[("small", b"w")], &[]))
+            .err(),
+        Some(SessionError::QuotaExceeded),
+        "a later tick builds on the refused one"
+    );
+    replicas
+        .replace_layer(a.device, a.layer(4, &[("small", b"w")]))
+        .expect("a whole layer");
+    replicas
+        .apply_tick(a.device, &a.tick(5, &[("more", b"x")], &[]))
+        .expect("ticks follow a whole layer");
+    assert_eq!(
+        cells_of(&replicas, a.id(), a.doc),
+        vec![cell("more", b"x"), cell("small", b"w")]
+    );
+}
+
+#[test]
+fn a_layer_naming_another_space_than_the_documents_is_refused() {
+    let replicas = replicas();
+    let alice = identity();
+    let (doc, proof) = authored(11, &alice);
+    let (real, other) = (space(b"session-real"), space(b"session-other"));
+    replicas
+        .add_pin(
+            peer(1),
+            Some(alice.did()),
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, real, 1),
+        )
+        .expect("pin");
+    let a = Writer {
+        device: peer(2),
+        who: &alice,
+        doc,
+        space: other,
+    };
+    assert_eq!(
+        replicas
+            .apply_tick(a.device, &a.tick(1, &[("k", b"v")], &[]))
+            .err(),
+        Some(SessionError::WrongSpace)
+    );
+}
+
+#[test]
+fn a_document_holds_no_more_layers_than_the_cap_but_its_author_may_exceed_it() {
+    let replicas = replicas();
+    let alice = identity();
+    let (doc, proof) = authored(12, &alice);
+    let space = space(b"cap");
+    replicas
+        .add_pin(
+            peer(200),
+            Some(alice.did()),
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
+        )
+        .expect("pin");
+
+    let strangers = (0..=MAX_LAYERS_PER_DOC)
+        .map(|_| identity())
+        .collect::<Vec<_>>();
+    let writer = |n: usize| Writer {
+        device: peer(u8::try_from(n + 1).expect("seed")),
+        who: &strangers[n],
+        doc,
+        space,
+    };
+    for n in 0..MAX_LAYERS_PER_DOC {
+        let w = writer(n);
+        replicas
+            .apply_tick(w.device, &w.tick(1, &[("k", b"v")], &[]))
+            .expect("under the cap");
+    }
+    let past = writer(MAX_LAYERS_PER_DOC);
+    assert_eq!(
+        replicas
+            .apply_tick(past.device, &past.tick(1, &[("k", b"v")], &[]))
+            .err(),
+        Some(SessionError::QuotaExceeded)
+    );
+    let author = Writer {
+        device: peer(200),
+        who: &alice,
+        doc,
+        space,
+    };
+    replicas
+        .apply_tick(author.device, &author.tick(1, &[("k", b"v")], &[]))
+        .expect("the author takes a reserved layer");
+}
+
+#[test]
+fn a_forged_device_claim_is_a_layer_of_its_own() {
+    let replicas = replicas();
+    let space = space(b"squat");
+    let (alice, mallory) = (identity(), identity());
+    let real = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
+        space,
+    };
+    let forged = Writer {
+        who: &mallory,
+        ..real
+    };
+
+    replicas
+        .replace_layer(peer(3), forged.layer(9, &[("k", b"forged")]))
+        .expect("a layer of mallory's");
+    replicas
+        .replace_layer(peer(4), real.layer(1, &[("k", b"real")]))
+        .expect("alice's layer is not displaced");
+    assert_eq!(
+        cells_of(&replicas, real.id(), real.doc),
+        vec![cell("k", b"real")]
+    );
+    assert_eq!(
+        cells_of(&replicas, forged.id(), forged.doc),
+        vec![cell("k", b"forged")]
+    );
+}
+
+#[test]
+fn a_whole_layer_replaces_only_an_older_one_and_reports_what_it_dropped() {
+    let replicas = replicas();
+    let space = space(b"replace");
+    let alice = identity();
+    let a = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
+        space,
+    };
+    replicas
+        .replace_layer(peer(2), a.layer(2, &[("kept", b"1"), ("dropped", b"1")]))
+        .expect("layer");
+
+    let applied = replicas
+        .replace_layer(peer(3), a.layer(3, &[("kept", b"1"), ("new", b"1")]))
+        .expect("newer");
+    assert_eq!(applied.cleared, vec![key("dropped")]);
+    assert_eq!(
+        applied
+            .set
+            .iter()
+            .map(|(key, ..)| key.clone())
+            .collect::<Vec<_>>(),
+        vec![key("new")],
+        "an unchanged cell is not composed again"
+    );
+
+    replicas
+        .replace_layer(peer(4), a.layer(2, &[("stale", b"1")]))
+        .expect("older is a no-op");
+    assert_eq!(
+        cells_of(&replicas, a.id(), a.doc),
+        vec![cell("kept", b"1"), cell("new", b"1")]
+    );
+    let mut sources = replicas.session_sources(a.id(), a.doc);
+    sources.sort();
+    let mut expected = vec![peer(2), peer(3)];
+    expected.sort();
+    assert_eq!(
+        sources, expected,
+        "a holder of an older state is not a source of this one"
+    );
+}
+
+#[test]
+fn a_layer_goes_only_when_its_last_source_does() {
+    let replicas = replicas();
+    let space = space(b"sources");
+    let alice = identity();
+    let a = Writer {
+        device: peer(1),
+        who: &alice,
+        doc: space.doc(),
+        space,
+    };
+    replicas
+        .apply_tick(a.device, &a.tick(1, &[("k", b"v")], &[]))
+        .expect("tick");
+    assert!(replicas.add_session_source(a.id(), a.doc, peer(2)));
+    assert!(!replicas.remove_session_source(a.id(), a.doc, a.device));
+    assert_eq!(cells_of(&replicas, a.id(), a.doc), vec![cell("k", b"v")]);
+    assert!(replicas.remove_session_source(a.id(), a.doc, peer(2)));
+    assert_eq!(replicas.session_writers(a.doc), Vec::new());
+}
+
+#[test]
+fn a_local_write_signs_the_root_of_the_cells_it_leaves() {
+    let replicas = replicas();
+    let space = space(b"local-root");
+    let alice = identity();
+    let (writes, clears) = (vec![(key("k"), Some(b"v".to_vec()))], Vec::new());
+    let tick = LocalTick {
+        device: peer(1),
+        did: alice.did(),
+        doc: space.doc(),
+        space,
+        writes: &writes,
+        clears: &clears,
+    };
+    let (_, state) = replicas
+        .write_local(&tick, |payload| {
+            SignedLayer::sign(payload, alice.signing_key())
+        })
+        .expect("write");
+
+    let feed = replicas.register_stream(peer(1));
+    let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    replicas.unregister_stream(feed.token);
+    let Ok(Received::Snapshot { mut docs, .. }) = msg.validate(0) else {
+        panic!("the snapshot validates");
+    };
+    let mut layer = docs.remove(0).layers.remove(0);
+    assert_eq!(layer.state.payload.root, state.payload.root);
+    assert!(
+        layer.matches_root(),
+        "a relayed copy verifies against the signed root"
     );
 }

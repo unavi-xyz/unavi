@@ -50,6 +50,7 @@ use crate::{
             LAYER_PREFIX,
             SessionKey,
             Standing,
+            WriterId,
             layer_id,
             layers::Opinion,
             mask,
@@ -66,8 +67,8 @@ use crate::{
 #[component(on_remove = release)]
 pub struct SessionLayerState {
     pub(crate) source:   EndpointId,
-    pub(crate) writer:   EndpointId,
-    /// The DID the layer's batches name.
+    pub(crate) writer:   WriterId,
+    /// The DID that signs the layer.
     pub(crate) did:      Did,
     pub(crate) doc:      DocId,
     /// What the layer was last stacked as.
@@ -79,7 +80,7 @@ pub struct SessionLayerState {
 impl SessionLayerState {
     pub(crate) const fn new(
         source: EndpointId,
-        writer: EndpointId,
+        writer: WriterId,
         did: Did,
         doc: DocId,
         replicas: Replicas,
@@ -132,7 +133,7 @@ pub(crate) fn doc_state(world: &World, doc: DocId) -> Option<Arc<Mutex<HsdState>
 /// How the local viewer stacks `writer`'s layer on `doc`, judging the DID the
 /// layer names, so a layer keeps its standing after its writer leaves. Without
 /// replicas or a view, the writer is an anonymous non-author.
-fn standing(world: &World, writer: EndpointId, did: &Did, doc: DocId) -> Standing {
+fn standing(world: &World, writer: WriterId, did: &Did, doc: DocId) -> Standing {
     let author = world
         .get_resource::<Replicas>()
         .and_then(|replicas| replicas.author(doc));
@@ -145,7 +146,7 @@ fn standing(world: &World, writer: EndpointId, did: &Did, doc: DocId) -> Standin
         .unwrap_or_default()
         .permissions(trust);
     Standing {
-        peer: writer,
+        writer,
         is_author: author.as_ref() == Some(did),
         trust,
         permissions,
@@ -157,7 +158,7 @@ fn standing(world: &World, writer: EndpointId, did: &Did, doc: DocId) -> Standin
 /// layers are stacked when it arrives.
 pub(crate) fn compose(
     world: &World,
-    writer: EndpointId,
+    writer: WriterId,
     did: &Did,
     doc: DocId,
     opinions: &[Opinion],
@@ -244,7 +245,7 @@ fn restack_order(state: &mut HsdState, world: &World, doc: DocId) -> bool {
         .filter(|id| **id != LayerId::BASE && !session_ids.contains(*id))
         .cloned()
         .collect::<Vec<_>>();
-    stack.extend(standings.iter().map(|standing| layer_id(standing.peer)));
+    stack.extend(standings.iter().map(|standing| layer_id(standing.writer)));
 
     match state.reorder(&stack) {
         Ok(()) => true,
@@ -331,10 +332,10 @@ pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
             let mut ok = true;
             let mut masked = HashSet::new();
             for (_, now) in &standings {
-                if !masked.insert(now.peer) {
+                if !masked.insert(now.writer) {
                     continue;
                 }
-                let id = layer_id(now.peer);
+                let id = layer_id(now.writer);
                 if state.layer(&id).is_some()
                     && let Err(err) = state.set_mask(&id, mask(now.is_author, now.permissions))
                 {
@@ -361,7 +362,7 @@ pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
 
 /// Drops `writer`'s opinions on `keys` from `doc`'s stack, so the layers
 /// beneath show through.
-pub(crate) fn uncompose(world: &World, writer: EndpointId, doc: DocId, keys: &[SessionKey]) {
+pub(crate) fn uncompose(world: &World, writer: WriterId, doc: DocId, keys: &[SessionKey]) {
     let Some(state) = doc_state(world, doc) else {
         return;
     };

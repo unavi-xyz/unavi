@@ -55,11 +55,14 @@ use crate::{
             pins::PinClaim,
         },
         message::{
-            Batch,
             Received,
             ReceivedDoc,
             ReplicationMsg,
-            Retained,
+            merge_snapshot,
+            session::{
+                LayerState,
+                ReceivedLayer,
+            },
         },
         record::Record,
         store::Proven,
@@ -70,7 +73,7 @@ use crate::{
 /// so a length prefix alone never costs a full frame.
 const READ_CHUNK: usize = 16 * 1024;
 
-/// How long a DID may take to resolve before the batches naming it are
+/// How long a DID may take to resolve before the layers naming it are
 /// dropped.
 const RESOLVE_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -188,14 +191,8 @@ async fn recv_loop(
                 continue;
             }
         };
-        let more = matches!(msg, Received::Snapshot { more: true, .. });
-
-        let mut sender = Sender::new(peer, did, &link.view().identity().resolver);
-        let Some(change) = prove(msg, &mut sender).await else {
-            continue;
-        };
-        let change = match change {
-            Remote::Snapshot(docs) => {
+        let msg = match msg {
+            Received::Snapshot { docs, more } => {
                 snapshot.extend(docs);
                 snapshot_frames += 1;
                 if snapshot_frames > MAX_SNAPSHOT_FRAMES {
@@ -205,9 +202,17 @@ async fn recv_loop(
                     continue;
                 }
                 snapshot_frames = 0;
-                Remote::Snapshot(std::mem::take(&mut snapshot))
+                Received::Snapshot {
+                    docs: merge_snapshot(std::mem::take(&mut snapshot)),
+                    more: false,
+                }
             }
-            change => change,
+            msg => msg,
+        };
+
+        let mut sender = Sender::new(peer, did, &link.view().identity().resolver);
+        let Some(change) = prove(msg, &mut sender).await else {
+            continue;
         };
 
         // Awaited rather than tried: a full queue holds this stream back,
@@ -240,7 +245,7 @@ impl<'a> Sender<'a> {
         }
     }
 
-    /// The proven DID's document. Not resolved again for each batch.
+    /// The proven DID's document. Not resolved again for each layer.
     async fn own_document(&mut self) -> Option<&Document> {
         if self.document.is_none() {
             self.document = resolve(self.resolver, self.did?).await;
@@ -248,9 +253,9 @@ impl<'a> Sender<'a> {
         self.document.as_ref()
     }
 
-    /// Whether a batch names this connection's endpoint and proven DID.
-    fn owns(&self, batch: &Batch) -> bool {
-        batch.payload.writer == self.id && self.did == Some(&batch.payload.did)
+    /// Whether a layer state names this connection's endpoint and proven DID.
+    fn owns(&self, state: &LayerState) -> bool {
+        state.device == self.id && self.did == Some(&state.did)
     }
 }
 
@@ -259,11 +264,11 @@ async fn resolve(resolver: &Resolver, did: &Did) -> Option<Document> {
     match timeout(RESOLVE_TIMEOUT, resolver.resolve(did)).await {
         Ok(Ok(document)) => Some(document),
         Ok(Err(err)) => {
-            warn!(%did, %err, "DID did not resolve; its session batches dropped");
+            warn!(%did, %err, "DID did not resolve; its session layers dropped");
             None
         }
         Err(_) => {
-            warn!(%did, "DID resolution timed out; its session batches dropped");
+            warn!(%did, "DID resolution timed out; its session layers dropped");
             None
         }
     }
@@ -274,12 +279,11 @@ async fn resolve(resolver: &Resolver, did: &Did) -> Option<Document> {
 /// whether the sender is the author.
 ///
 /// Nothing here is gated on the sender's presence. A pin or withdrawal is
-/// admitted by the record it carries, a snapshot layer by its writer's
-/// signature, and a session batch from its writer's own connection, which
-/// proves its endpoint and DID. Presence only drives discovery and dialing;
-/// making delivery wait on it would couple one transport to another's timing.
-/// Every batch's signature must also verify against the DID it names, so a bad
-/// signature is refused at the first hop and no holder diverges.
+/// admitted by the record it carries, a relayed layer by its writer's
+/// signature over its root, and a session tick or the writer's own layer by
+/// arriving on the writer's own connection, which proves its endpoint and DID.
+/// Presence only drives discovery and dialing; making delivery wait on it
+/// would couple one transport to another's timing.
 async fn prove(msg: Received, sender: &mut Sender<'_>) -> Option<Remote> {
     Some(match msg {
         Received::Snapshot { docs, .. } => Remote::Snapshot(prove_docs(docs, sender).await),
@@ -298,18 +302,12 @@ async fn prove(msg: Received, sender: &mut Sender<'_>) -> Option<Remote> {
         },
         Received::Hold(hold) => Remote::Hold(hold),
         Received::ReleaseHold { doc } => Remote::ReleaseHold { doc },
-        Received::Session(batch) => {
-            if !sender.owns(&batch) {
-                debug!(peer = %sender.id, "session batch not from its writer; dropped");
+        Received::Session(tick) => {
+            if !sender.owns(&tick.state.payload) {
+                debug!(peer = %sender.id, "session tick not from its writer; dropped");
                 return None;
             }
-            let peer = sender.id;
-            let document = sender.own_document().await?;
-            if let Err(err) = batch.signed.verify_document(&batch.payload.did, document) {
-                warn!(%peer, %err, "session batch not signed by its DID; dropped");
-                return None;
-            }
-            Remote::Session(batch)
+            Remote::Session(tick)
         }
     })
 }
@@ -363,18 +361,16 @@ async fn prove_docs(docs: Vec<ReceivedDoc>, sender: &mut Sender<'_>) -> Vec<Remo
     out
 }
 
-/// A snapshot layer's batches that the sender may state. Every batch of a
-/// layer names one writer and DID. The writer's own layer needs the
-/// connection's proof of that DID, and every batch needs a signature that
-/// verifies against the DID's document, resolved once for the layer. Batches
-/// that fail are dropped, and a DID that does not resolve drops the layer.
-async fn vouched(layer: Vec<Retained>, sender: &mut Sender<'_>) -> Option<Vec<Retained>> {
-    let first = &layer.first()?.batch;
-    if first.payload.writer == sender.id && !sender.owns(first) {
-        return None;
+/// A snapshot layer the sender may state. Its own layer needs the
+/// connection's proof of its DID. A relayed one needs a signature that verifies
+/// against its DID's document and cells that hash to the root the signature
+/// covers, so a carrier can leave a layer out but never change one.
+async fn vouched(mut layer: ReceivedLayer, sender: &mut Sender<'_>) -> Option<ReceivedLayer> {
+    let state = &layer.state.payload;
+    if state.device == sender.id {
+        return sender.owns(state).then_some(layer);
     }
-
-    let did = first.payload.did.clone();
+    let did = state.did.clone();
     let peer = sender.id;
     let resolved;
     let document = if sender.did == Some(&did) {
@@ -383,14 +379,15 @@ async fn vouched(layer: Vec<Retained>, sender: &mut Sender<'_>) -> Option<Vec<Re
         resolved = resolve(sender.resolver, &did).await?;
         &resolved
     };
-    let mut kept = Vec::with_capacity(layer.len());
-    for retained in layer {
-        match retained.batch.signed.verify_document(&did, document) {
-            Ok(()) => kept.push(retained),
-            Err(err) => warn!(%peer, %err, "session batch dropped"),
-        }
+    if let Err(err) = layer.state.signed.verify_document(&did, document) {
+        warn!(%peer, %err, "relayed session layer not signed by its DID; dropped");
+        return None;
     }
-    (!kept.is_empty()).then_some(kept)
+    if !layer.matches_root() {
+        warn!(%peer, "relayed session layer does not match its signed root; dropped");
+        return None;
+    }
+    Some(layer)
 }
 
 #[cfg(test)]
@@ -413,12 +410,21 @@ mod tests {
     use super::*;
     use crate::replication::{
         message::{
+            DocSnapshot,
             ReceivedDoc,
             ReceivedPin,
-            SessionBatch,
-            SessionWrite,
+            session::{
+                LayerSnapshot,
+                SessionTick,
+                SessionWrite,
+                SignedLayer,
+            },
         },
         record::PinRecord,
+        session::{
+            SessionKey,
+            cells::Cells,
+        },
     };
 
     fn identity() -> Identity {
@@ -466,43 +472,78 @@ mod tests {
         }
     }
 
-    /// A batch from `writer` naming `named`, signed by `signer`.
-    fn batch(writer: EndpointId, named: &Identity, signer: &Identity, space: SpaceId) -> Batch {
-        Batch::sign(
-            SessionBatch {
-                writer,
+    const DOC: DocId = DocId([4; 32]);
+
+    fn cell() -> SessionWrite {
+        SessionWrite {
+            prim:  PrimId([3; 16]),
+            name:  "state/k".to_owned(),
+            value: Some(vec![1]),
+        }
+    }
+
+    /// `device`'s layer state naming `named`, signed by `signer`, committing
+    /// to `root`.
+    fn state(
+        device: EndpointId,
+        named: &Identity,
+        signer: &Identity,
+        root: [u8; 32],
+    ) -> SignedLayer {
+        SignedLayer::sign(
+            LayerState {
+                device,
                 did: named.did().clone(),
-                doc: DocId([4; 32]),
-                space,
+                doc: DOC,
+                space: SpaceId([1; 32]),
                 at: 1,
-                writes: vec![SessionWrite {
-                    prim:  PrimId([3; 16]),
-                    name:  "state/k".to_owned(),
-                    value: Some(vec![1]),
-                }],
-                clears: Vec::new(),
+                root,
             },
             signer.signing_key(),
         )
         .expect("sign")
     }
 
-    fn snapshot_of(batch: Batch, space: SpaceId) -> Received {
-        Received::Snapshot {
-            docs: vec![ReceivedDoc {
-                doc: batch.payload.doc,
-                space,
-                pin: None,
-                hold: None,
+    fn tick(device: EndpointId, named: &Identity) -> Received {
+        let msg = ReplicationMsg::Session(SessionTick {
+            writes: vec![cell()],
+            clears: Vec::new(),
+            state:  state(device, named, named, [0; 32]).signed,
+        });
+        msg.validate(0).expect("valid tick")
+    }
+
+    /// The root `cell()` alone hashes to.
+    fn root() -> [u8; 32] {
+        let mut cells = Cells::default();
+        let write = cell();
+        cells.set(
+            SessionKey {
+                prim: write.prim,
+                name: write.name.parse().expect("name"),
+            },
+            write.value,
+        );
+        cells.root()
+    }
+
+    /// A snapshot stating one layer holding `cells`.
+    fn snapshot_of(state: SignedLayer, cells: Vec<SessionWrite>) -> Received {
+        let msg = ReplicationMsg::Snapshot {
+            docs: vec![DocSnapshot {
+                doc:        DOC,
+                space:      SpaceId([1; 32]),
+                pin:        None,
+                hold:       Some(1),
                 withdrawal: None,
-                layers: vec![vec![Retained {
-                    batch,
-                    live: vec![0],
-                    live_clears: Vec::new(),
-                }]],
+                layers:     vec![LayerSnapshot {
+                    state: state.signed,
+                    cells,
+                }],
             }],
             more: false,
-        }
+        };
+        msg.validate(0).expect("valid snapshot")
     }
 
     fn relayed_layers(remote: Option<Remote>) -> usize {
@@ -671,10 +712,9 @@ mod tests {
     }
 
     #[test]
-    fn a_live_batch_is_accepted_only_from_its_writer_proving_its_did() {
+    fn a_live_tick_is_accepted_only_from_its_writer_proving_its_did() {
         let (alice, mallory) = (identity(), identity());
-        let space = SpaceId([1; 32]);
-        let own = || Received::Session(batch(peer(1), &alice, &alice, space));
+        let own = || tick(peer(1), &alice);
 
         assert!(prove_as(own(), peer(1), Some(alice.did())).is_some());
         assert!(
@@ -683,34 +723,18 @@ mod tests {
         );
         assert!(
             prove_as(own(), peer(1), Some(mallory.did())).is_none(),
-            "the batch names a DID the connection did not prove"
+            "the tick names a DID the connection did not prove"
         );
         assert!(
             prove_as(own(), peer(2), Some(alice.did())).is_none(),
-            "the batch names another endpoint's layer"
+            "the tick names another device's layer"
         );
     }
 
     #[test]
     fn a_snapshot_keeps_its_layers_and_occupancy() {
         let alice = identity();
-        let space = SpaceId([1; 32]);
-        let msg = Received::Snapshot {
-            docs: vec![ReceivedDoc {
-                doc: DocId([4; 32]),
-                space,
-                pin: None,
-                hold: Some(1),
-                withdrawal: None,
-                layers: vec![vec![Retained {
-                    batch:       batch(peer(1), &alice, &alice, space),
-                    live:        vec![0],
-                    live_clears: Vec::new(),
-                }]],
-            }],
-            more: false,
-        };
-
+        let msg = snapshot_of(state(peer(1), &alice, &alice, root()), vec![cell()]);
         let Some(Remote::Snapshot(docs)) = prove_as(msg, peer(1), Some(alice.did())) else {
             panic!("a snapshot is accepted");
         };
@@ -719,52 +743,49 @@ mod tests {
     }
 
     #[test]
-    fn a_writers_own_batch_with_a_bad_signature_is_refused_at_the_first_hop() {
+    fn a_relayed_layer_is_kept_only_when_signed_by_its_did_over_its_cells() {
         let (alice, mallory) = (identity(), identity());
-        let space = SpaceId([1; 32]);
-        let forged = || batch(peer(1), &alice, &mallory, space);
-
-        let live = prove_as(Received::Session(forged()), peer(1), Some(alice.did()));
-        assert!(
-            live.is_none(),
-            "the connection proves the DID, not the signature"
-        );
-        let snapshot = prove_as(snapshot_of(forged(), space), peer(1), Some(alice.did()));
-        assert_eq!(relayed_layers(snapshot), 0);
-    }
-
-    #[test]
-    fn a_relayed_batch_is_kept_only_when_its_signature_verifies() {
-        let (alice, mallory) = (identity(), identity());
-        let space = SpaceId([1; 32]);
         let carrier = peer(2);
+        let relay =
+            |state, cells| relayed_layers(prove_as(snapshot_of(state, cells), carrier, None));
 
-        let genuine = batch(peer(1), &alice, &alice, space);
-        let relayed = prove_as(snapshot_of(genuine, space), carrier, None);
-        assert_eq!(relayed_layers(relayed), 1, "a signed batch is relayable");
-
-        let forged = batch(peer(1), &alice, &mallory, space);
-        let relayed = prove_as(snapshot_of(forged, space), carrier, None);
         assert_eq!(
-            relayed_layers(relayed),
+            relay(state(peer(1), &alice, &alice, root()), vec![cell()]),
+            1,
+            "a signed layer is relayable"
+        );
+        assert_eq!(
+            relay(state(peer(1), &alice, &mallory, root()), vec![cell()]),
             0,
-            "a batch naming a DID it was not signed by is dropped"
+            "a layer naming a DID it was not signed by is dropped"
+        );
+        let mut tampered = cell();
+        tampered.value = Some(vec![2]);
+        assert_eq!(
+            relay(state(peer(1), &alice, &alice, root()), vec![tampered]),
+            0,
+            "a carrier cannot change a cell the root covers"
+        );
+        assert_eq!(
+            relay(state(peer(1), &alice, &alice, root()), Vec::new()),
+            0,
+            "nor leave one out"
         );
     }
 
     #[test]
     fn a_writers_own_layer_in_a_snapshot_needs_its_proven_did() {
         let (alice, mallory) = (identity(), identity());
-        let space = SpaceId([1; 32]);
-        let own = || snapshot_of(batch(peer(1), &alice, &alice, space), space);
+        let own = || snapshot_of(state(peer(1), &alice, &alice, root()), vec![cell()]);
 
-        let accepted = prove_as(own(), peer(1), Some(alice.did()));
-        assert_eq!(relayed_layers(accepted), 1);
-        let refused = prove_as(own(), peer(1), Some(mallory.did()));
         assert_eq!(
-            relayed_layers(refused),
+            relayed_layers(prove_as(own(), peer(1), Some(alice.did()))),
+            1
+        );
+        assert_eq!(
+            relayed_layers(prove_as(own(), peer(1), Some(mallory.did()))),
             0,
-            "the writer's own layer is not checked by signature, so the connection must vouch"
+            "the writer's own layer is vouched for by its connection"
         );
     }
 }

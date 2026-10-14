@@ -20,6 +20,7 @@ use unavi_policy::{
     rules::Rules,
     trust::Trust,
 };
+use xdid::core::did::Did;
 
 use super::*;
 
@@ -175,35 +176,37 @@ fn a_blocked_layer_contributes_nothing() {
 
 #[test]
 fn the_authors_devices_stack_strongest_and_others_by_rung() {
-    let (author_a, author_b, trusted, guest) = (peer(4), peer(3), peer(1), peer(2));
+    let did: Did = "did:web:writer.example".parse().expect("did");
+    let writer = |seed| WriterId::new(peer(seed), &did);
+    let (author_a, author_b, trusted, guest) = (writer(4), writer(3), writer(1), writer(2));
     let mut layers = vec![
         Standing {
-            peer:        author_a,
+            writer:      author_a,
             is_author:   true,
             trust:       Trust::Guest,
             permissions: Permissions::none(),
         },
         Standing {
-            peer:        trusted,
+            writer:      trusted,
             is_author:   false,
             trust:       Trust::Trusted,
             permissions: Permissions::none(),
         },
         Standing {
-            peer:        guest,
+            writer:      guest,
             is_author:   false,
             trust:       Trust::Guest,
             permissions: Permissions::none(),
         },
         Standing {
-            peer:        author_b,
+            writer:      author_b,
             is_author:   true,
             trust:       Trust::Guest,
             permissions: Permissions::none(),
         },
     ];
     order(&mut layers);
-    let peers = layers.iter().map(|layer| layer.peer).collect::<Vec<_>>();
+    let peers = layers.iter().map(|layer| layer.writer).collect::<Vec<_>>();
     let mut authors = [author_a, author_b];
     authors.sort_unstable();
     assert_eq!(

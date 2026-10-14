@@ -59,6 +59,7 @@ use xdid::method::key::{
 
 use super::*;
 use crate::{
+    authority::SpaceView,
     membership::{
         forget_space,
         register_space,
@@ -68,13 +69,33 @@ use crate::{
         reconcile_local_pins,
     },
     replication::{
-        guards::pins::withdraw_pin,
-        message::{
-            MAX_BATCHES_PER_LAYER,
-            MAX_VALUE_BYTES,
-            Received,
+        guards::{
+            layers::{
+                LocalWrite,
+                local_write,
+            },
+            pins::withdraw_pin,
         },
-        session::compose::stack_on_arrival,
+        message::{
+            Received,
+            session::{
+                ClearedKey,
+                LayerState,
+                MAX_VALUE_BYTES,
+                MAX_WRITES_PER_TICK,
+                ReceivedLayer,
+                ReceivedTick,
+                SessionWrite,
+                SignedLayer,
+                check_tick,
+            },
+        },
+        session::{
+            SessionError,
+            WriterId,
+            cells::Cells,
+            compose::stack_on_arrival,
+        },
         store::StateFeed,
     },
 };
@@ -223,42 +244,68 @@ fn remote(world: &mut World, id: EndpointId, did: Option<&Did>) -> Source {
     }
 }
 
-/// A signed batch from `source`, whose layer names `who`'s DID.
-fn batch_from(
-    source: &Source,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    writes: Vec<SessionWrite>,
-    at: u64,
-) -> Batch {
-    Batch::sign(
-        SessionBatch {
-            writer: source.id,
-            did: who.did().clone(),
-            doc,
-            space,
-            at,
-            writes,
-            clears: Vec::new(),
-        },
-        who.signing_key(),
-    )
-    .expect("sign")
+/// A peer speaking for `who` about `doc` in `space`.
+struct Speaker<'a> {
+    source: &'a Source,
+    who:    &'a Identity,
+    doc:    DocId,
+    space:  SpaceId,
 }
 
-/// States `writes` as `source`, a peer proving `who`'s DID.
-fn say(
-    world: &mut World,
-    source: &Source,
-    who: &Identity,
-    doc: DocId,
-    space: SpaceId,
-    writes: Vec<SessionWrite>,
-    at: u64,
-) -> Result<(), SessionError> {
-    let batch = batch_from(source, who, doc, space, writes, at);
-    apply_batch(world, source, &batch, None)
+impl Speaker<'_> {
+    fn state(&self, at: u64, root: [u8; 32]) -> SignedLayer {
+        SignedLayer::sign(
+            LayerState {
+                device: self.source.id,
+                did: self.who.did().clone(),
+                doc: self.doc,
+                space: self.space,
+                at,
+                root,
+            },
+            self.who.signing_key(),
+        )
+        .expect("sign")
+    }
+
+    /// The tick setting `writes`, stamped `at`.
+    fn tick(&self, writes: &[SessionWrite], at: u64) -> ReceivedTick {
+        let (writes, clears) = check_tick(writes, &[]).expect("within bounds");
+        ReceivedTick {
+            writes,
+            clears,
+            state: self.state(at, [0; 32]),
+        }
+    }
+
+    /// The whole layer holding `writes`, stamped `at`, as a snapshot states it.
+    fn layer(&self, writes: &[SessionWrite], at: u64) -> ReceivedLayer {
+        let (writes, _) = check_tick(writes, &[]).expect("within bounds");
+        let mut cells = Cells::default();
+        for (key, value) in writes {
+            cells.set(key, value);
+        }
+        ReceivedLayer {
+            state: self.state(at, cells.root()),
+            cells,
+        }
+    }
+
+    /// States `writes`: through the local write path for the local peer, which
+    /// stamps it by its own clock, and as a received tick otherwise.
+    fn say(&self, world: &mut World, writes: Vec<SessionWrite>, at: u64) {
+        if self.source.local {
+            let write = LocalWrite {
+                doc: self.doc,
+                space: self.space,
+                writes,
+                clears: Vec::new(),
+            };
+            local_write(world, self.who, self.source.id, write).expect("local write");
+        } else {
+            layers::apply_tick(world, self.source, &self.tick(&writes, at));
+        }
+    }
 }
 
 #[test]
@@ -296,16 +343,13 @@ fn a_session_write_composes_into_the_document_it_speaks_for() {
     let state = spawn_doc(&mut world, space.doc());
 
     let source = local(&mut world, peer(1), me.did());
-    say(
-        &mut world,
-        &source,
-        &me,
-        space.doc(),
+    Speaker {
+        source: &source,
+        who: &me,
+        doc: space.doc(),
         space,
-        vec![write(&state_k(), b"v")],
-        1,
-    )
-    .expect("session set");
+    }
+    .say(&mut world, vec![write(&state_k(), b"v")], 1);
 
     assert_eq!(
         resolved(&state, &state_k()).as_deref(),
@@ -325,7 +369,13 @@ fn a_guests_script_does_not_resolve_while_the_authors_does() {
 
     let visitor = remote(&mut world, peer(2), Some(guest.did()));
     let batch = vec![write(&ScriptAttr::NAME, &[2; 32]), write(&state_k(), b"v")];
-    say(&mut world, &visitor, &guest, doc, space, batch, 1).expect("session set");
+    Speaker {
+        source: &visitor,
+        who: &guest,
+        doc,
+        space,
+    }
+    .say(&mut world, batch, 1);
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
     assert_eq!(
         resolved(&state, &ScriptAttr::NAME),
@@ -334,16 +384,13 @@ fn a_guests_script_does_not_resolve_while_the_authors_does() {
     );
 
     let owner = local(&mut world, peer(1), author.did());
-    say(
-        &mut world,
-        &owner,
-        &author,
+    Speaker {
+        source: &owner,
+        who: &author,
         doc,
         space,
-        vec![write(&ScriptAttr::NAME, &[1; 32])],
-        2,
-    )
-    .expect("session set");
+    }
+    .say(&mut world, vec![write(&ScriptAttr::NAME, &[1; 32])], 2);
     assert_eq!(resolved(&state, &ScriptAttr::NAME), Some(vec![1; 32]));
 }
 
@@ -361,16 +408,13 @@ fn the_authors_opinion_beats_a_guests_on_an_open_key_whatever_the_stamp() {
         let visitor = remote(&mut world, peer(2), Some(guest.did()));
 
         let mut speak = |source: &Source, who: &Identity, value: &[u8], at: u64| {
-            say(
-                &mut world,
+            Speaker {
                 source,
                 who,
                 doc,
                 space,
-                vec![write(&state_k(), value)],
-                at,
-            )
-            .expect("session set");
+            }
+            .say(&mut world, vec![write(&state_k(), value)], at);
         };
         if guest_first {
             speak(&visitor, &guest, b"guest", 9);
@@ -396,18 +440,18 @@ fn a_departing_peer_takes_its_session_layer() {
 
     let guest = identity();
     let visitor = remote(&mut world, peer(3), Some(guest.did()));
-    say(
-        &mut world,
-        &visitor,
-        &guest,
+    Speaker {
+        source: &visitor,
+        who: &guest,
         doc,
         space,
-        vec![write(&state_k(), b"v")],
-        1,
-    )
-    .expect("session set");
+    }
+    .say(&mut world, vec![write(&state_k(), b"v")], 1);
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
-    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
+    assert_eq!(
+        replicas.session_writers(doc),
+        vec![WriterId::new(peer(3), guest.did())]
+    );
 
     world.despawn(visitor.entity);
     assert_eq!(
@@ -430,17 +474,17 @@ fn a_layer_goes_with_its_document() {
 
     let guest = identity();
     let visitor = remote(&mut world, peer(3), Some(guest.did()));
-    say(
-        &mut world,
-        &visitor,
-        &guest,
+    Speaker {
+        source: &visitor,
+        who: &guest,
         doc,
         space,
-        vec![write(&state_k(), b"v")],
-        1,
-    )
-    .expect("session set");
-    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
+    }
+    .say(&mut world, vec![write(&state_k(), b"v")], 1);
+    assert_eq!(
+        replicas.session_writers(doc),
+        vec![WriterId::new(peer(3), guest.did())]
+    );
 
     let entity = world.resource::<DocIndex>().get(doc).expect("document");
     world.despawn(entity);
@@ -458,17 +502,17 @@ fn a_layer_stated_before_its_document_arrives_composes_once_it_does() {
 
     let guest = identity();
     let visitor = remote(&mut world, peer(3), Some(guest.did()));
-    say(
-        &mut world,
-        &visitor,
-        &guest,
+    Speaker {
+        source: &visitor,
+        who: &guest,
         doc,
         space,
-        vec![write(&state_k(), b"early")],
-        1,
-    )
-    .expect("session set");
-    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
+    }
+    .say(&mut world, vec![write(&state_k(), b"early")], 1);
+    assert_eq!(
+        replicas.session_writers(doc),
+        vec![WriterId::new(peer(3), guest.did())]
+    );
 
     let state = spawn_doc(&mut world, doc);
     assert_eq!(
@@ -670,12 +714,12 @@ fn portal_rules() -> Rules {
 /// Hands the next message on `feed` to `world` as if `from` sent it.
 fn forward(feed: &StateFeed, world: &mut World, from: Entity) {
     let Ok(msg @ ReplicationMsg::Session(_)) = feed.rx.try_recv() else {
-        panic!("the visitor broadcasts its session batch");
+        panic!("the visitor broadcasts its session tick");
     };
-    let Ok(Received::Session(batch)) = msg.validate(clock::current_micros()) else {
-        panic!("a broadcast batch passes validation");
+    let Ok(Received::Session(tick)) = msg.validate(clock::current_micros()) else {
+        panic!("a broadcast tick passes validation");
     };
-    apply_remote(world, from, Remote::Session(batch));
+    apply_remote(world, from, Remote::Session(tick));
 }
 
 /// Two peers, each with its own world and replica: the visitor that opens a
@@ -724,19 +768,17 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     }
     .encode()
     .expect("encode");
-    let opener = |at: u64, writes: Vec<SessionWrite>| SessionBatch {
-        writer: visitor_id,
-        did: visitor.did().clone(),
+    let opener = |writes: Vec<SessionWrite>| LocalWrite {
         doc: gate,
         space,
-        at,
         writes,
         clears: Vec::new(),
     };
     local_write(
         &mut visitor_world,
         &visitor,
-        opener(1, vec![write(&PortalAttr::NAME, &far_half)]),
+        visitor_id,
+        opener(vec![write(&PortalAttr::NAME, &far_half)]),
     )
     .expect("pairing stated");
     forward(&feed, &mut host_world, from_visitor);
@@ -748,12 +790,16 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
             "the {side} composes the far half"
         );
     }
-    assert_eq!(host_replicas.session_writers(gate), vec![visitor_id]);
+    assert_eq!(
+        host_replicas.session_writers(gate),
+        vec![WriterId::new(visitor_id, visitor.did())]
+    );
 
     local_write(
         &mut visitor_world,
         &visitor,
-        opener(2, vec![write(&ScriptAttr::NAME, &[1; 32])]),
+        visitor_id,
+        opener(vec![write(&ScriptAttr::NAME, &[1; 32])]),
     )
     .expect("the visitor may state anything; the mask decides");
     forward(&feed, &mut host_world, from_visitor);
@@ -818,16 +864,13 @@ fn a_guest_cannot_redirect_a_portal_the_document_authors() {
     .expect("encode");
     let guest = identity();
     let visitor = remote(&mut world, peer(2), Some(guest.did()));
-    say(
-        &mut world,
-        &visitor,
-        &guest,
+    Speaker {
+        source: &visitor,
+        who: &guest,
         doc,
         space,
-        vec![write(&PortalAttr::NAME, &redirect)],
-        2,
-    )
-    .expect("session set");
+    }
+    .say(&mut world, vec![write(&PortalAttr::NAME, &redirect)], 2);
     assert_eq!(
         resolved(&state, &PortalAttr::NAME),
         Some(authored),
@@ -848,19 +891,17 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
         Ok(ReplicationMsg::Snapshot { .. })
     ));
 
-    let batch = |at: u64, writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
+    let tick = |writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| LocalWrite {
         doc,
         space,
-        at,
         writes,
         clears,
     };
     local_write(
         &mut world,
         &me,
-        batch(1, vec![write(&state_k(), b"v")], Vec::new()),
+        peer(1),
+        tick(vec![write(&state_k(), b"v")], Vec::new()),
     )
     .expect("session set");
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
@@ -870,9 +911,12 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
         prim: prim(),
         name: state_k().to_string(),
     }];
-    local_write(&mut world, &me, batch(2, Vec::new(), cleared)).expect("cleared");
+    local_write(&mut world, &me, peer(1), tick(Vec::new(), cleared)).expect("cleared");
     assert_eq!(resolved(&state, &state_k()), None);
-    assert_eq!(replicas.session_opinions(peer(1), doc), Vec::new());
+    assert_eq!(
+        replicas.session_opinions(WriterId::new(peer(1), me.did()), doc),
+        Vec::new()
+    );
     assert!(
         matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Session(_))),
         "a commit's clear has to reach every peer still drawing the old opinion"
@@ -881,171 +925,7 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
 }
 
 #[test]
-fn a_checkpoint_replaces_batches_that_outgrew_their_content() {
-    let (mut world, replicas) = world();
-    let me = identity();
-    let space = space(b"checkpoint");
-    let doc = space.doc();
-    let names = ["a", "b", "c", "d"]
-        .map(|field| format!("state/{field}").parse::<PropName>().expect("name"));
-    let [a, b, c, d] = &names;
-    let batch = |at: u64, writes: Vec<SessionWrite>| SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
-        doc,
-        space,
-        at,
-        writes,
-        clears: Vec::new(),
-    };
-
-    let first = vec![
-        write(a, &[0; 10_000]),
-        write(b, &[0; 10_000]),
-        write(c, &[0; 10_000]),
-        write(d, &[1]),
-    ];
-    local_write(&mut world, &me, batch(1, first)).expect("first batch");
-    assert!(!replicas.needs_checkpoint(peer(1), doc), "nothing is stale");
-
-    let overwrite = vec![write(a, &[2]), write(b, &[2]), write(c, &[2])];
-    local_write(&mut world, &me, batch(2, overwrite)).expect("overwrite");
-    assert!(
-        !replicas.needs_checkpoint(peer(1), doc),
-        "the write checkpointed the layer"
-    );
-
-    let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
-        panic!("a stream opens with a snapshot");
-    };
-    let layers = &docs[0].layers;
-    assert_eq!(layers.len(), 1);
-    assert_eq!(
-        layers[0].batches.len(),
-        1,
-        "the older batches lost their last cell"
-    );
-    assert_eq!(layers[0].batches[0].live, vec![0, 1, 2, 3]);
-    let mut values = replicas
-        .session_opinions(peer(1), doc)
-        .into_iter()
-        .map(|(_, value, _)| value)
-        .collect::<Vec<_>>();
-    values.sort();
-    assert_eq!(
-        values,
-        vec![Some(vec![1]), Some(vec![2]), Some(vec![2]), Some(vec![2])]
-    );
-    replicas.unregister_stream(feed.token);
-}
-
-#[test]
-fn tombstones_survive_a_checkpoint() {
-    let (mut world, replicas) = world();
-    let me = identity();
-    let space = space(b"tombstone-checkpoint");
-    let doc = space.doc();
-    let names = ["a", "b", "c", "d"]
-        .map(|field| format!("state/{field}").parse::<PropName>().expect("name"));
-    let [a, b, c, d] = &names;
-    let payload = |at: u64, writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
-        doc,
-        space,
-        at,
-        writes,
-        clears,
-    };
-    let cleared = |name: &PropName| ClearedKey {
-        prim: prim(),
-        name: name.to_string(),
-    };
-
-    let first = vec![
-        write(a, &[0; 10_000]),
-        write(b, &[0; 10_000]),
-        write(c, &[0; 10_000]),
-        write(d, &[1]),
-    ];
-    local_write(&mut world, &me, payload(1, first, Vec::new())).expect("first batch");
-    local_write(&mut world, &me, payload(2, Vec::new(), vec![cleared(a)])).expect("clear");
-    assert!(
-        !replicas.needs_checkpoint(peer(1), doc),
-        "nothing is stale yet"
-    );
-
-    let overwrite = vec![write(b, &[2]), write(c, &[2])];
-    local_write(&mut world, &me, payload(3, overwrite, Vec::new())).expect("overwrite");
-    assert!(
-        !replicas.needs_checkpoint(peer(1), doc),
-        "the write checkpointed the layer"
-    );
-
-    let tombstones = replicas.session_tombstones(peer(1), doc);
-    assert_eq!(tombstones.len(), 1);
-    assert_eq!(&tombstones[0].0.name, a, "the clear is restated");
-    let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
-        panic!("a stream opens with a snapshot");
-    };
-    let batches = &docs[0].layers[0].batches;
-    assert_eq!(batches.len(), 2, "the older batches lost their last cell");
-    let clearing = batches
-        .iter()
-        .find(|retained| !retained.live_clears.is_empty());
-    assert_eq!(
-        clearing.map(|retained| retained.live_clears.clone()),
-        Some(vec![0]),
-        "the tombstone is relayed from a re-signed batch"
-    );
-    replicas.unregister_stream(feed.token);
-}
-
-#[test]
-fn a_writer_at_the_batch_cap_checkpoints_before_it_writes() {
-    let (mut world, replicas) = world();
-    let me = identity();
-    let space = space(b"at-the-cap");
-    let doc = space.doc();
-    let writer = local(&mut world, peer(1), me.did());
-    for i in 0..MAX_BATCHES_PER_LAYER {
-        let name = format!("state/k{i}").parse().expect("name");
-        let batch = batch_from(
-            &writer,
-            &me,
-            doc,
-            space,
-            vec![write(&name, &[1; 200])],
-            i as u64 + 1,
-        );
-        replicas
-            .add_session(peer(1), &batch, None)
-            .expect("under the cap");
-    }
-    assert!(replicas.needs_checkpoint(peer(1), doc));
-
-    let payload = SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
-        doc,
-        space,
-        at: 1,
-        writes: vec![write(&state_k(), b"more")],
-        clears: Vec::new(),
-    };
-    local_write(&mut world, &me, payload).expect("room is made before the write");
-
-    assert_eq!(
-        replicas.session_opinions(peer(1), doc).len(),
-        MAX_BATCHES_PER_LAYER + 1
-    );
-    assert!(!replicas.needs_checkpoint(peer(1), doc));
-}
-
-#[test]
-fn a_local_batch_too_large_for_a_frame_is_refused_whole() {
+fn a_local_tick_too_large_for_a_frame_is_refused_whole() {
     let (mut world, replicas) = world();
     let me = identity();
     let space = space(b"split");
@@ -1056,24 +936,21 @@ fn a_local_batch_too_large_for_a_frame_is_refused_whole() {
         Ok(ReplicationMsg::Snapshot { .. })
     ));
 
-    let batch = |writes| SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
+    let tick = |writes| LocalWrite {
         doc,
         space,
-        at: 1,
         writes,
         clears: Vec::new(),
     };
     let by_size = (0..20)
         .map(|i| write(&format!("state/w{i}").parse().expect("name"), &[0; 15_000]))
         .collect();
-    let by_count = (0..=MAX_WRITES_PER_BATCH)
+    let by_count = (0..=MAX_WRITES_PER_TICK)
         .map(|i| write(&format!("state/w{i}").parse().expect("name"), &[1]))
         .collect();
     for writes in [by_size, by_count] {
         assert_eq!(
-            local_write(&mut world, &me, batch(writes)).err(),
+            local_write(&mut world, &me, peer(1), tick(writes)).err(),
             Some(SessionError::TooLarge)
         );
     }
@@ -1091,61 +968,20 @@ fn a_value_past_the_cap_is_refused_locally() {
     let me = identity();
     let space = space(b"cap");
     let doc = space.doc();
-    let payload = SessionBatch {
-        writer: peer(1),
-        did: me.did().clone(),
+    let tick = LocalWrite {
         doc,
         space,
-        at: 1,
         writes: vec![write(&state_k(), &vec![0; MAX_VALUE_BYTES + 1])],
         clears: Vec::new(),
     };
     assert_eq!(
-        local_write(&mut world, &me, payload).err(),
+        local_write(&mut world, &me, peer(1), tick).err(),
         Some(SessionError::TooLarge)
     );
     assert!(
         replicas.session_writers(doc).is_empty(),
         "a refused write stacks no layer"
     );
-}
-
-#[test]
-fn a_checkpoint_triggered_by_batch_count_is_not_due_again() {
-    let (mut world, replicas) = world();
-    let me = identity();
-    let space = space(b"many");
-    let doc = space.doc();
-
-    for i in 0..=MAX_BATCHES_PER_LAYER / 2 {
-        let payload = SessionBatch {
-            writer: peer(1),
-            did: me.did().clone(),
-            doc,
-            space,
-            at: i as u64 + 1,
-            // Values large enough that retained bytes never pass twice the
-            // live bytes, so only the batch count can trigger the checkpoint.
-            writes: vec![write(
-                &format!("state/k{i}").parse().expect("name"),
-                &[1; 200],
-            )],
-            clears: Vec::new(),
-        };
-        local_write(&mut world, &me, payload).expect("written");
-    }
-
-    let feed = replicas.register_stream(peer(1));
-    let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
-        panic!("a stream opens with a snapshot");
-    };
-    assert_eq!(
-        docs[0].layers[0].batches.len(),
-        3,
-        "513 cells re-signed in batches of 256"
-    );
-    assert!(!replicas.needs_checkpoint(peer(1), doc));
-    replicas.unregister_stream(feed.token);
 }
 
 #[test]
@@ -1157,25 +993,19 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_connected() {
     let writer = remote(&mut world, peer(2), Some(alice.did()));
     let relayer = remote(&mut world, peer(4), Some(bob.did()));
 
-    let batch = batch_from(
-        &writer,
-        &alice,
+    let speaker = Speaker {
+        source: &writer,
+        who: &alice,
         doc,
         space,
-        vec![write(&state_k(), b"v")],
-        1,
-    );
+    };
     let remote_doc = RemoteDoc {
         doc,
         space,
         pin: None,
         hold: None,
         withdrawal: None,
-        layers: vec![vec![Retained {
-            batch,
-            live: vec![0],
-            live_clears: Vec::new(),
-        }]],
+        layers: vec![speaker.layer(&[write(&state_k(), b"v")], 1)],
     };
     apply_remote(
         &mut world,
@@ -1201,6 +1031,23 @@ struct Present {
     device: Source,
 }
 
+impl Present {
+    /// Alice's device's layer.
+    fn writer(&self) -> WriterId {
+        WriterId::new(peer(2), self.alice.did())
+    }
+
+    /// Alice's device, speaking about the document.
+    fn speaker<'a>(&'a self, source: &'a Source) -> Speaker<'a> {
+        Speaker {
+            source,
+            who: &self.alice,
+            doc: self.doc,
+            space: self.space,
+        }
+    }
+}
+
 fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) -> Present {
     let (alice, me, bob) = (identity(), identity(), identity());
     let space = space(b"carry");
@@ -1218,7 +1065,13 @@ fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) ->
         write(&ScriptAttr::NAME, &[1; 32]),
         write(&state_k(), b"old"),
     ];
-    say(&mut world, &device, &alice, doc, space, writes, 1).expect("session set");
+    Speaker {
+        source: &device,
+        who: &alice,
+        doc,
+        space,
+    }
+    .say(&mut world, writes, 1);
     Present {
         world,
         state,
@@ -1228,25 +1081,6 @@ fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) ->
         me,
         device,
     }
-}
-
-fn returning_batch(present: &Present, source: &Source, value: &[u8]) -> Batch {
-    batch_from(
-        source,
-        &present.alice,
-        present.doc,
-        present.space,
-        vec![write(&state_k(), value)],
-        5,
-    )
-}
-
-fn layers_of(batch: Batch) -> Vec<Vec<Retained>> {
-    vec![vec![Retained {
-        batch,
-        live: vec![0],
-        live_clears: Vec::new(),
-    }]]
 }
 
 #[test]
@@ -1262,7 +1096,7 @@ fn the_authors_engine_opinion_survives_its_departure_when_the_viewer_adopts_it()
         Some(vec![1; 32]),
         "a carried layer is still masked as the author's"
     );
-    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(1)]);
+    assert_eq!(replicas.session_sources(f.writer(), f.doc), vec![peer(1)]);
 }
 
 #[test]
@@ -1328,14 +1162,17 @@ fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
 
     assert_eq!(
         joiner_replicas.session_layers(doc),
-        vec![(peer(2), f.alice.did().clone())]
+        vec![(f.writer(), f.alice.did().clone())]
     );
     assert_eq!(
         resolved(&joiner_state, &ScriptAttr::NAME),
         Some(vec![1; 32]),
         "the layer is the author's, whoever relays it"
     );
-    assert_eq!(joiner_replicas.session_sources(peer(2), doc), vec![peer(1)]);
+    assert_eq!(
+        joiner_replicas.session_sources(f.writer(), doc),
+        vec![peer(1)]
+    );
 }
 
 #[test]
@@ -1343,22 +1180,22 @@ fn the_writers_return_replaces_the_carried_layer() {
     let (world, replicas) = world();
     let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
     release_remote_peer(&mut f.world, f.device.entity, 0);
-    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(1)]);
+    assert_eq!(replicas.session_sources(f.writer(), f.doc), vec![peer(1)]);
 
     let back = remote(&mut f.world, peer(2), Some(f.alice.did()));
-    let batch = returning_batch(&f, &back, b"fresh");
+    let layer = f.speaker(&back).layer(&[write(&state_k(), b"fresh")], 5);
     let doc = RemoteDoc {
         doc:        f.doc,
         space:      f.space,
         pin:        None,
         hold:       None,
         withdrawal: None,
-        layers:     layers_of(batch),
+        layers:     vec![layer],
     };
     apply_remote(&mut f.world, back.entity, Remote::Snapshot(vec![doc]));
 
     assert_eq!(
-        replicas.session_sources(peer(2), f.doc),
+        replicas.session_sources(f.writer(), f.doc),
         vec![peer(2)],
         "the writer is present, so only its word counts"
     );
@@ -1374,16 +1211,16 @@ fn the_writers_return_replaces_the_carried_layer() {
 }
 
 #[test]
-fn a_live_batch_from_the_returning_writer_drops_the_carry() {
+fn a_live_tick_from_the_returning_writer_drops_the_carry() {
     let (world, replicas) = world();
     let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
     release_remote_peer(&mut f.world, f.device.entity, 0);
 
     let back = remote(&mut f.world, peer(2), Some(f.alice.did()));
-    let batch = returning_batch(&f, &back, b"live");
-    apply_remote(&mut f.world, back.entity, Remote::Session(batch));
+    let tick = f.speaker(&back).tick(&[write(&state_k(), b"live")], 5);
+    apply_remote(&mut f.world, back.entity, Remote::Session(tick));
 
-    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(2)]);
+    assert_eq!(replicas.session_sources(f.writer(), f.doc), vec![peer(2)]);
     assert_eq!(
         resolved(&f.state, &state_k()).as_deref(),
         Some(&b"live"[..])
@@ -1396,18 +1233,20 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_present() {
     let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
 
     let relayer = remote(&mut f.world, peer(4), Some(f.me.did()));
-    let stale = returning_batch(&f, &f.device, b"stale");
+    let stale = f
+        .speaker(&f.device)
+        .layer(&[write(&state_k(), b"stale")], 5);
     let doc = RemoteDoc {
         doc:        f.doc,
         space:      f.space,
         pin:        None,
         hold:       None,
         withdrawal: None,
-        layers:     layers_of(stale),
+        layers:     vec![stale],
     };
     apply_remote(&mut f.world, relayer.entity, Remote::Snapshot(vec![doc]));
 
-    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(2)]);
+    assert_eq!(replicas.session_sources(f.writer(), f.doc), vec![peer(2)]);
     assert_eq!(resolved(&f.state, &state_k()).as_deref(), Some(&b"old"[..]));
 }
 

@@ -43,11 +43,14 @@ use unavi_policy::{
     },
 };
 use unavi_space::replication::{
-    message::{
+    message::session::{
         ClearedKey,
         SessionWrite,
     },
-    session,
+    session::{
+        self,
+        WriterId,
+    },
 };
 
 use crate::{
@@ -306,7 +309,7 @@ fn shared_write(edit: &Edit) -> Result<SessionWrite, ScriptError> {
     })
 }
 
-/// States `writes` on `doc` for the session, as one batch.
+/// States `writes` on `doc` for the session, as one tick.
 async fn share(
     host: &ScriptHost,
     doc: DocId,
@@ -368,7 +371,7 @@ pub async fn commit(
         },
     };
     // This peer's session layer exists only once it has written one opinion.
-    let mine = session::layer_id(host.view.me());
+    let mine = session::layer_id(WriterId::new(host.view.me(), host.view.did()));
     let entries = doc
         .write(|state| {
             let mut from = vec![stack::RUNTIME];

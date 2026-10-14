@@ -73,9 +73,12 @@ impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
             SessionError::QuotaExceeded => Self::LimitReached(Stock::SessionMemory),
-            SessionError::WrongSpace | SessionError::WrongDid => Self::Forbidden,
+            SessionError::WrongSpace => Self::Forbidden,
             SessionError::BadName => Self::invalid("invalid shared property name"),
-            SessionError::TooLarge => Self::invalid("too many shared writes in one batch"),
+            SessionError::TooLarge => Self::invalid("too many shared writes in one tick"),
+            SessionError::Stale => {
+                Self::Internal("the shared write is older than its layer".into())
+            }
             SessionError::Unsigned => Self::Internal("the shared write could not be signed".into()),
             SessionError::Unavailable => Self::Internal("the world is gone".into()),
         }

@@ -265,14 +265,27 @@ impl HsdState {
             return Ok(());
         }
 
-        let mut rest = self.stack.split_off(1);
+        // A key's winner depends only on the order of the layers holding an
+        // opinion on it, so only the keys of layers that moved can change.
+        let mut slots = self
+            .stack
+            .split_off(1)
+            .into_iter()
+            .map(Some)
+            .collect::<Vec<_>>();
         let mut keys = HashSet::new();
-        for id in order {
-            let Some(at) = rest.iter().position(|stacked| stacked.id == *id) else {
+        for (to, id) in order.iter().enumerate() {
+            let taken = slots
+                .iter_mut()
+                .enumerate()
+                .find(|(_, slot)| slot.as_ref().is_some_and(|stacked| stacked.id == *id))
+                .and_then(|(from, slot)| slot.take().map(|stacked| (from, stacked)));
+            let Some((from, stacked)) = taken else {
                 return Err(StackError::NotAnOrder);
             };
-            let stacked = rest.swap_remove(at);
-            keys.extend(stacked.layer.keys());
+            if from != to {
+                keys.extend(stacked.layer.keys());
+            }
             self.stack.push(stacked);
         }
         self.settle_keys(keys);

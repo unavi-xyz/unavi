@@ -551,7 +551,7 @@ fn set_session(
     if find_guard::<SessionLayerState>(world, stater.entity, |layer| layer.doc == doc).is_none() {
         let anchor = doc_anchor(world, doc, space);
         world.spawn((
-            SessionLayerState::new(stater.id, doc, stater.did.clone(), replicas.clone()),
+            SessionLayerState::new(stater.id, doc, replicas.clone()),
             ForDoc(anchor),
             FromPeer(stater.entity),
         ));

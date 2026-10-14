@@ -5,7 +5,13 @@ use std::{
         HashMap,
         HashSet,
     },
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{
+            AtomicU64,
+            Ordering,
+        },
+    },
 };
 
 use anyhow::Context;
@@ -58,6 +64,8 @@ struct Inner {
     default_trust:   RwLock<Trust>,
     blocked_devices: RwLock<HashSet<EndpointId>>,
     storage:         DeviceStorage,
+    /// Bumped on every change, so a reader can tell cheaply that none came.
+    generation:      AtomicU64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,6 +92,7 @@ impl TrustTable {
             default_trust: RwLock::new(default),
             blocked_devices: RwLock::default(),
             storage,
+            generation: AtomicU64::new(0),
         }))
     }
 
@@ -149,11 +158,23 @@ impl TrustTable {
             return Err(UnassignableTrust);
         }
         self.0.overrides.write().insert(did, trust);
+        self.changed();
         Ok(())
     }
 
     pub fn clear(&self, did: &Did) {
         self.0.overrides.write().remove(did);
+        self.changed();
+    }
+
+    /// Counts changes to the table, endpoint blocks included.
+    #[must_use]
+    pub fn generation(&self) -> u64 {
+        self.0.generation.load(Ordering::Acquire)
+    }
+
+    fn changed(&self) {
+        self.0.generation.fetch_add(1, Ordering::AcqRel);
     }
 
     /// The level of a DID nobody has judged.
@@ -167,6 +188,7 @@ impl TrustTable {
             return Err(UnassignableTrust);
         }
         *self.0.default_trust.write() = trust;
+        self.changed();
         Ok(())
     }
 
@@ -174,10 +196,12 @@ impl TrustTable {
     /// proves. For a peer with no DID to block.
     pub fn block_endpoint(&self, peer: EndpointId) {
         self.0.blocked_devices.write().insert(peer);
+        self.changed();
     }
 
     pub fn unblock_endpoint(&self, peer: EndpointId) {
         self.0.blocked_devices.write().remove(&peer);
+        self.changed();
     }
 
     #[must_use]

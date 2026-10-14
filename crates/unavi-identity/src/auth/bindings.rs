@@ -35,17 +35,32 @@ pub struct Bindings {
 struct Inner {
     dids:        HashMap<EndpointId, Did>,
     connections: HashMap<EndpointId, usize>,
+    /// Bumped whenever a binding is added or removed.
+    generation:  u64,
 }
 
 impl Bindings {
     /// Records `did` for `peer`. Only a verified handshake calls this.
     pub fn bind(&self, peer: EndpointId, did: Did) {
-        self.inner.lock().dids.insert(peer, did);
+        let mut inner = self.inner.lock();
+        inner.dids.insert(peer, did);
+        inner.generation = inner.generation.wrapping_add(1);
+        drop(inner);
         self.changed.notify_waiters();
     }
 
     pub fn unbind(&self, peer: EndpointId) {
-        self.inner.lock().dids.remove(&peer);
+        let mut inner = self.inner.lock();
+        if inner.dids.remove(&peer).is_some() {
+            inner.generation = inner.generation.wrapping_add(1);
+        }
+    }
+
+    /// Counts bindings added and removed, so a reader can tell cheaply that
+    /// none changed.
+    #[must_use]
+    pub fn generation(&self) -> u64 {
+        self.inner.lock().generation
     }
 
     #[must_use]
@@ -126,8 +141,8 @@ impl Bindings {
                 return;
             };
             let mut inner = bindings.inner.lock();
-            if !inner.connections.contains_key(&peer) {
-                inner.dids.remove(&peer);
+            if !inner.connections.contains_key(&peer) && inner.dids.remove(&peer).is_some() {
+                inner.generation = inner.generation.wrapping_add(1);
             }
         });
     }

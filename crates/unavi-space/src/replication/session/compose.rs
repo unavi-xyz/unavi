@@ -65,8 +65,6 @@ use crate::{
 pub struct SessionLayerState {
     pub(crate) peer:     EndpointId,
     pub(crate) doc:      DocId,
-    /// The DID the peer proved, which decides whether it is the author.
-    pub(crate) did:      Option<Did>,
     /// What the layer was last stacked as.
     standing:            Option<Standing>,
     /// Held because a drop takes no arguments.
@@ -74,16 +72,10 @@ pub struct SessionLayerState {
 }
 
 impl SessionLayerState {
-    pub(crate) const fn new(
-        peer: EndpointId,
-        doc: DocId,
-        did: Option<Did>,
-        replicas: Replicas,
-    ) -> Self {
+    pub(crate) const fn new(peer: EndpointId, doc: DocId, replicas: Replicas) -> Self {
         Self {
             peer,
             doc,
-            did,
             standing: None,
             replicas,
         }
@@ -205,21 +197,11 @@ pub fn stack_on_arrival(
         let Some(replicas) = world.get_resource::<Replicas>().cloned() else {
             return;
         };
-        for peer in replicas.session_peers(doc) {
-            let did = layer_did(world, peer, doc);
+        for (peer, did) in replicas.session_layers(doc) {
             let opinions = replicas.session_opinions(peer, doc);
             compose(world, peer, did.as_ref(), doc, &opinions);
         }
     });
-}
-
-/// The DID the guard of `peer`'s layer on `doc` recorded.
-fn layer_did(world: &mut World, peer: EndpointId, doc: DocId) -> Option<Did> {
-    let mut layers = world.query::<&SessionLayerState>();
-    layers
-        .iter(world)
-        .find(|layer| layer.peer == peer && layer.doc == doc)
-        .and_then(|layer| layer.did.clone())
 }
 
 /// Orders `doc`'s session layers above everything else in its stack. A layer
@@ -227,18 +209,13 @@ fn layer_did(world: &mut World, peer: EndpointId, doc: DocId) -> Option<Did> {
 /// author's, so on failure every session layer is masked out entirely until
 /// an order succeeds. Answers whether it did.
 fn restack_order(state: &mut HsdState, world: &World, doc: DocId) -> bool {
-    let mut seen = HashSet::new();
-    let mut standings = Vec::new();
-    if let Some(mut layers) = world.try_query::<&SessionLayerState>() {
-        for layer in layers.iter(world) {
-            if layer.doc == doc
-                && state.layer(&layer_id(layer.peer)).is_some()
-                && seen.insert(layer.peer)
-            {
-                standings.push(standing(world, layer.peer, layer.did.as_ref(), doc));
-            }
-        }
-    }
+    let mut standings = world
+        .get_resource::<Replicas>()
+        .map_or_default(|replicas| replicas.session_layers(doc))
+        .into_iter()
+        .filter(|(peer, _)| state.layer(&layer_id(*peer)).is_some())
+        .map(|(peer, did)| standing(world, peer, did.as_ref(), doc))
+        .collect::<Vec<_>>();
     order(&mut standings);
 
     let session_ids = state
@@ -267,21 +244,77 @@ fn restack_order(state: &mut HsdState, world: &World, doc: DocId) -> bool {
     }
 }
 
+/// Everything a layer's standing is computed from, so [`restack`] can tell in
+/// constant time that none of it moved.
+#[derive(Default)]
+pub struct Inputs {
+    me:       Option<EndpointId>,
+    trust:    u64,
+    bindings: u64,
+    authors:  u64,
+    rules:    Option<Rules>,
+}
+
+impl Inputs {
+    fn of(world: &World) -> Self {
+        let view = world.get_resource::<SpaceView>();
+        Self {
+            me:       view.map(SpaceView::me),
+            trust:    view.map_or(0, |view| view.trust().generation()),
+            bindings: view.map_or(0, |view| view.identity().bindings.generation()),
+            authors:  world
+                .get_resource::<Replicas>()
+                .map_or(0, Replicas::author_generation),
+            rules:    world.get_resource::<Rules>().cloned(),
+        }
+    }
+
+    fn same(&self, other: &Self) -> bool {
+        let rules = match (&self.rules, &other.rules) {
+            (Some(a), Some(b)) => a.is_same_table(b),
+            (None, None) => true,
+            _ => false,
+        };
+        self.me == other.me
+            && self.trust == other.trust
+            && self.bindings == other.bindings
+            && self.authors == other.authors
+            && rules
+    }
+}
+
 /// Restacks every layer whose standing moved.
 ///
 /// A standing moves when an author becomes known, a peer's trust or the rules
-/// change, or the local identity loads. It is recorded only once its document
-/// applied it, so a failure is retried next frame.
-pub fn restack(world: &mut World) {
+/// change, or the local identity loads; anything else leaves every standing
+/// where it was, so the pass is skipped. A standing is recorded only once its
+/// document applied it, so a failure is retried on the next change.
+pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
+    let inputs = Inputs::of(world);
+    if last.as_ref().is_some_and(|last| last.same(&inputs)) {
+        return;
+    }
+
+    let Some(replicas) = world.get_resource::<Replicas>().cloned() else {
+        return;
+    };
     let mut layers = world.query::<(Entity, &SessionLayerState)>();
     let mut moved: HashMap<DocId, Vec<(Entity, Standing)>> = HashMap::new();
+    let mut dids: HashMap<DocId, HashMap<EndpointId, Option<Did>>> = HashMap::new();
     for (entity, layer) in layers.iter(world) {
-        let now = standing(world, layer.peer, layer.did.as_ref(), layer.doc);
+        let did = dids
+            .entry(layer.doc)
+            .or_insert_with(|| replicas.session_layers(layer.doc).into_iter().collect())
+            .get(&layer.peer)
+            .cloned()
+            .flatten();
+        let now = standing(world, layer.peer, did.as_ref(), layer.doc);
         if layer.standing != Some(now) {
             moved.entry(layer.doc).or_default().push((entity, now));
         }
     }
 
+    let mut all_applied = true;
     for (doc, standings) in moved {
         let applied = doc_state(world, doc).is_none_or(|state| {
             let Ok(mut state) = state.lock() else {
@@ -304,6 +337,7 @@ pub fn restack(world: &mut World) {
             ok
         });
         if !applied {
+            all_applied = false;
             continue;
         }
         for (entity, now) in standings {
@@ -312,6 +346,7 @@ pub fn restack(world: &mut World) {
             }
         }
     }
+    *last = all_applied.then_some(inputs);
 }
 
 /// Drops `peer`'s opinions on `keys` from `doc`'s stack, so the layers

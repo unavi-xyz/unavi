@@ -15,6 +15,7 @@ use unavi_policy::quota::{
     Stock,
     StockLease,
 };
+use xdid::core::did::Did;
 
 use crate::{
     membership::SpaceId,
@@ -43,6 +44,8 @@ struct Cell {
 /// One peer's opinions on one document.
 struct PeerLayer {
     space:      SpaceId,
+    /// The DID the peer proved, which decides whether it is the author.
+    did:        Option<Did>,
     cells:      HashMap<SessionKey, Cell>,
     _doc_lease: StockLease,
 }
@@ -50,6 +53,7 @@ struct PeerLayer {
 /// Who writes a batch, and what it is charged to.
 pub(crate) struct Writer<'a> {
     pub(crate) peer:     EndpointId,
+    pub(crate) did:      Option<&'a Did>,
     pub(crate) quota:    &'a Arc<Quota>,
     /// Whether the writer may take one of the [`RESERVED_LAYERS`].
     pub(crate) reserved: bool,
@@ -65,6 +69,16 @@ impl SessionLayers {
     /// The space any peer's layer places `doc` in.
     pub(crate) fn space_of(&self, doc: DocId) -> Option<SpaceId> {
         self.0.get(&doc)?.values().next().map(|layer| layer.space)
+    }
+
+    /// Peers holding a layer on `doc`, with the DID each proved.
+    pub(crate) fn layers(&self, doc: DocId) -> Vec<(EndpointId, Option<Did>)> {
+        self.0.get(&doc).map_or_default(|layers| {
+            layers
+                .iter()
+                .map(|(peer, layer)| (*peer, layer.did.clone()))
+                .collect()
+        })
     }
 
     /// Peers holding a layer on `doc`.
@@ -123,6 +137,7 @@ impl SessionLayers {
     ) -> Result<Vec<Opinion>, SessionError> {
         let Writer {
             peer,
+            did,
             quota,
             reserved,
         } = *writer;
@@ -168,6 +183,7 @@ impl SessionLayers {
                 };
                 v.insert(PeerLayer {
                     space,
+                    did: did.cloned(),
                     cells: HashMap::new(),
                     _doc_lease: doc_lease,
                 })

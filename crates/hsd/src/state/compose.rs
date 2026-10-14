@@ -93,7 +93,10 @@ fn after(held: Option<Stamp>) -> u64 {
 /// The strongest opinion on a key its layer's mask admits. `Blocked` stops
 /// the walk.
 fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> Option<&'a Value> {
-    for (at, stacked) in stack.iter().enumerate().rev() {
+    // Walked weakest first, so `resolved` is what the layers beneath each one
+    // resolve to, and the strongest admitted opinion is the one left.
+    let mut resolved = None;
+    for stacked in stack {
         let Some(opinion) = stacked
             .layer
             .get(prim)
@@ -107,14 +110,14 @@ fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> 
                 MaskKey::Property {
                     name,
                     value: opinion.value(),
-                    beneath: resolve_property(&stack[..at], prim, name),
+                    beneath: resolved,
                 },
             );
         if admitted {
-            return opinion.value();
+            resolved = opinion.value();
         }
     }
-    None
+    resolved
 }
 
 impl HsdState {

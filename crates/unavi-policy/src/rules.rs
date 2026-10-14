@@ -103,6 +103,13 @@ const fn slot(trust: Trust) -> usize {
 }
 
 impl Rules {
+    /// Whether `other` is this same table, not merely an equal one. A table
+    /// is replaced whole, so identity tells whether it changed.
+    #[must_use]
+    pub fn is_same_table(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
     #[must_use]
     pub fn grant(&self, trust: Trust) -> &Grant {
         &self.0[slot(trust)]

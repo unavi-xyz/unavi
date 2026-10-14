@@ -112,6 +112,19 @@ struct DocPresence {
     hold_grant: Option<EndpointId>,
     _doc_lease: StockLease,
     refs:       u32,
+    /// Peers pinning and keeping it, counted so neither question scans every
+    /// peer's replica.
+    pins:       u32,
+    keeps:      u32,
+}
+
+impl DocPresence {
+    const fn claims(&mut self, claim: Claim) -> &mut u32 {
+        match claim {
+            Claim::Pin => &mut self.pins,
+            Claim::Keep => &mut self.keeps,
+        }
+    }
 }
 
 /// A registered outbound state stream.
@@ -150,6 +163,8 @@ struct Inner {
     /// Documents in the world this node minted, and so authors.
     minted:      HashSet<DocId>,
     sessions:    SessionLayers,
+    /// Bumped whenever a document's author becomes known or is forgotten.
+    authors:     u64,
     senders:     HashMap<StreamToken, Outbound>,
     next_token:  u64,
 }
@@ -212,6 +227,8 @@ impl Inner {
                     hold_grant: None,
                     _doc_lease: lease,
                     refs: 0,
+                    pins: 0,
+                    keeps: 0,
                 }))
             }
         }
@@ -294,6 +311,9 @@ impl Inner {
         if slot.is_none() {
             *slot = Some(at);
             self.inc_ref(doc);
+            if let Some(presence) = self.docs.get_mut(&doc) {
+                *presence.claims(claim) += 1;
+            }
         }
         Ok(attributed)
     }
@@ -307,6 +327,10 @@ impl Inner {
             Claim::Keep => &mut entry.keep,
         };
         if slot.take().is_some() {
+            if let Some(presence) = self.docs.get_mut(&doc) {
+                let count = presence.claims(claim);
+                *count = count.saturating_sub(1);
+            }
             self.prune_entry(peer, doc);
             self.dec_ref(doc);
         }
@@ -487,6 +511,7 @@ impl Replicas {
             docs:        HashMap::new(),
             minted:      HashSet::new(),
             sessions:    SessionLayers::default(),
+            authors:     0,
             senders:     HashMap::new(),
             next_token:  0,
         })))
@@ -581,6 +606,9 @@ impl Replicas {
         let author = proven.author.clone();
         let mut inner = self.0.lock();
         let attributed = inner.add_claim(claim, peer, doc, space, proven, at)?;
+        if attributed {
+            inner.authors = inner.authors.wrapping_add(1);
+        }
         let attribution = inner.attribution.clone();
         drop(inner);
         if attributed {
@@ -628,11 +656,7 @@ impl Replicas {
     /// Whether any peer keeps `doc` after its author left.
     #[must_use]
     pub fn is_kept(&self, doc: DocId) -> bool {
-        self.0
-            .lock()
-            .peers
-            .values()
-            .any(|r| r.docs.get(&doc).is_some_and(|e| e.keep.is_some()))
+        self.0.lock().docs.get(&doc).is_some_and(|p| p.keeps > 0)
     }
 
     /// Whether `peer`, proving `did`, may hold `doc`.
@@ -687,6 +711,7 @@ impl Replicas {
                 || inner.attribution.local_did().as_ref() == did);
         let writer = Writer {
             peer: writer,
+            did,
             quota: &quota,
             reserved,
         };
@@ -701,6 +726,11 @@ impl Replicas {
     /// Drops `peer`'s session layer on `doc`.
     pub(crate) fn remove_session_layer(&self, peer: EndpointId, doc: DocId) {
         self.0.lock().sessions.remove(peer, doc);
+    }
+
+    /// Peers holding a session layer on `doc`, with the DID each proved.
+    pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(EndpointId, Option<Did>)> {
+        self.0.lock().sessions.layers(doc)
     }
 
     /// Peers holding a session layer on `doc`.
@@ -735,6 +765,7 @@ impl Replicas {
     pub fn record_minted(&self, doc: DocId) {
         let mut inner = self.0.lock();
         inner.minted.insert(doc);
+        inner.authors = inner.authors.wrapping_add(1);
         let space = inner.docs.get(&doc).map(|p| p.space);
         let author = inner.author_of(doc);
         inner.attribution.reassign(doc, space, author.as_ref());
@@ -742,7 +773,16 @@ impl Replicas {
 
     /// Forgets a minted document that left the world.
     pub fn forget_minted(&self, doc: DocId) {
-        self.0.lock().minted.remove(&doc);
+        let mut inner = self.0.lock();
+        inner.minted.remove(&doc);
+        inner.authors = inner.authors.wrapping_add(1);
+    }
+
+    /// Counts changes to who authors what, so a reader can tell cheaply that
+    /// none came.
+    #[must_use]
+    pub fn author_generation(&self) -> u64 {
+        self.0.lock().authors
     }
 
     /// The first of the author's endpoints to pin `doc`.
@@ -814,11 +854,7 @@ impl Replicas {
     /// Whether any peer currently pins `doc`.
     #[must_use]
     pub fn is_pinned(&self, doc: DocId) -> bool {
-        self.0
-            .lock()
-            .peers
-            .values()
-            .any(|r| r.docs.get(&doc).is_some_and(|e| e.pin.is_some()))
+        self.0.lock().docs.get(&doc).is_some_and(|p| p.pins > 0)
     }
 
     /// A deterministically ordered snapshot, for inspection.

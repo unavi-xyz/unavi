@@ -41,16 +41,9 @@ pub const MAX_PORTAL_SPACES: usize = 8;
 #[derive(Component)]
 pub struct ByPortal;
 
-/// A space loaded only because a peer-pinned document has a portal to it.
-///
-/// It is fetched so the portal can show it, but it joins no gossip topic and
-/// is never announced until the local agent actually enters it.
-#[derive(Component)]
-pub struct Peeked;
-
 /// Loads the destination space of every portal, within [`MAX_PORTAL_SPACES`].
-/// One in a document a peer pinned opens [`Peeked`], and only if its author
-/// may open portals at all.
+/// A portal in a document a peer pinned only loads its destination when that
+/// author may open portals at all.
 pub fn spawn_portal_space(
     trigger: On<Insert, PortalConfig>,
     portals: Query<(&PortalConfig, Option<&PrimOf>)>,
@@ -89,27 +82,22 @@ pub fn spawn_portal_space(
                 .is_some_and(|(_, pinned)| pinned);
             (root, pinned || root_pinned)
         });
-    let peek = source.is_some_and(|(_, pinned)| pinned);
-
     if by_portal.iter().count() + pending.len() >= MAX_PORTAL_SPACES {
         debug!(space = %id, "portal space cap reached; destination not loaded");
         return;
     }
-    if peek {
-        let allowed = source.is_some_and(|(root, _)| {
-            view.as_deref()
-                .is_some_and(|view| view.permissions(root).require(HostApi::Portal).is_ok())
-        });
+    // A portal a peer pinned is the only one whose author gates loading.
+    if let Some((root, true)) = source {
+        let allowed = view
+            .as_deref()
+            .is_some_and(|view| view.permissions(root).require(HostApi::Portal).is_ok());
         if !allowed {
             return;
         }
     }
 
     pending.insert(id);
-    let mut space = commands.spawn((Space(id), ByPortal));
-    if peek {
-        space.insert(Peeked);
-    }
+    commands.spawn((Space(id), ByPortal));
 }
 
 /// A space the local agent walked into through a portal is entered like any
@@ -122,7 +110,7 @@ pub fn enter_portal_space(
     if let Some(entity) = active.0
         && by_portal.contains(entity)
     {
-        commands.entity(entity).remove::<(ByPortal, Peeked)>();
+        commands.entity(entity).remove::<ByPortal>();
     }
 }
 

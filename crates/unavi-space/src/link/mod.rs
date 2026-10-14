@@ -49,10 +49,7 @@ use crate::{
         RemoteAgent,
         ResolvedPose,
     },
-    discovery::{
-        Peer,
-        PeerPresence,
-    },
+    discovery::Peer,
     identity::LocalIdentity,
     index::Index,
     link::senders::PeerSender,
@@ -90,7 +87,6 @@ struct Slot {
 
 struct LinkInner {
     view:        SpaceView,
-    presence:    PeerPresence,
     slots:       Mutex<HashMap<EndpointId, Slot>>,
     next_token:  AtomicU64,
     next_stream: AtomicU64,
@@ -133,10 +129,9 @@ impl Drop for SlotGuard {
 }
 
 impl PeerLink {
-    fn new(view: SpaceView, presence: PeerPresence) -> Self {
+    fn new(view: SpaceView) -> Self {
         Self(Arc::new(LinkInner {
             view,
-            presence,
             slots: Mutex::new(HashMap::new()),
             next_token: AtomicU64::new(0),
             next_stream: AtomicU64::new(0),
@@ -148,11 +143,6 @@ impl PeerLink {
     #[must_use]
     pub fn view(&self) -> &SpaceView {
         &self.0.view
-    }
-
-    #[must_use]
-    pub fn presence(&self) -> &PeerPresence {
-        &self.0.presence
     }
 
     #[must_use]
@@ -291,7 +281,6 @@ pub fn register_protocol(
     replicas: Res<Replicas>,
     trust: Res<TrustTable>,
     rules: Res<Rules>,
-    presence: Res<PeerPresence>,
     async_world: Res<AsyncWorld>,
     mut commands: Commands,
 ) {
@@ -312,7 +301,7 @@ pub fn register_protocol(
         rules.clone(),
         async_world.clone(),
     );
-    let link = PeerLink::new(view.clone(), presence.clone());
+    let link = PeerLink::new(view.clone());
     commands.insert_resource(view);
     commands.insert_resource(link.clone());
 

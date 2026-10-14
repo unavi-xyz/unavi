@@ -72,8 +72,6 @@ impl Plugin for SpacePlugin {
             .init_resource::<travel::PendingTravel>()
             .init_resource::<replication::Replicas>()
             .init_resource::<discovery::HeardPresence>()
-            .init_resource::<discovery::PeerPresence>()
-            .init_resource::<discovery::gossip::ActiveSpaceSignal>()
             .init_resource::<grab::TakenHolds>()
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)
@@ -141,7 +139,6 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 Update,
                 (
-                    discovery::gossip::publish_active_space,
                     avatar_sync::receive::apply_remote_poses,
                     avatar_sync::receive::advance_remote_lerp,
                 )

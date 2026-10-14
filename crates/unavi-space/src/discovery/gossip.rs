@@ -1,9 +1,9 @@
-//! Each space's gossip topic: joined while the space is loaded (and not just
-//! peeked through a portal), left when it unloads.
+//! Each space's gossip topic: joined while the space is loaded, left when it
+//! unloads.
 //!
-//! Peers broadcast signed presence on the topic of the space they stand in,
-//! naming the topic and when they spoke, so a broadcast cannot be replayed into
-//! another space or kept alive past its time.
+//! Peers broadcast signed presence on every loaded space's topic, naming the
+//! topic and when they spoke, so a broadcast cannot be replayed into another
+//! space or kept alive past its time.
 
 use std::{
     sync::{
@@ -41,10 +41,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use tokio::sync::{
-    oneshot,
-    watch,
-};
+use tokio::sync::oneshot;
 use tracing::Instrument;
 use unavi_identity::signed::Signable;
 use unavi_registry::client::Followed;
@@ -60,45 +57,13 @@ use crate::{
         gossip_wire,
         registry,
     },
-    grid::ActiveSpace,
     identity::LocalIdentity,
     link::inbox::Inbox,
     membership::{
         Space,
         SpaceId,
     },
-    portal::Peeked,
 };
-
-/// The occupied space, mirrored from [`ActiveSpace`] for the gossip tasks.
-/// Presence broadcasts only to this space.
-///
-/// A send wakes the outbound task, so entering a space broadcasts immediately
-/// instead of waiting out the heartbeat.
-#[derive(Resource)]
-pub struct ActiveSpaceSignal(watch::Sender<Option<SpaceId>>);
-
-impl Default for ActiveSpaceSignal {
-    fn default() -> Self {
-        Self(watch::channel(None).0)
-    }
-}
-
-pub fn publish_active_space(
-    active: Res<ActiveSpace>,
-    spaces: Query<&Space>,
-    signal: Res<ActiveSpaceSignal>,
-) {
-    if !active.is_changed() {
-        return;
-    }
-    let id = active.0.and_then(|e| spaces.get(e).ok()).map(Space::id);
-    signal.0.send_if_modified(|current| {
-        let changed = *current != id;
-        *current = id;
-        changed
-    });
-}
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct SpaceBroadcast {
@@ -168,8 +133,6 @@ pub fn adopt_gossip(
 pub(super) struct GossipCtx {
     pub endpoint: Endpoint,
     pub gossip:   Gossip,
-    /// The occupied space. Only it broadcasts presence.
-    pub active:   watch::Receiver<Option<SpaceId>>,
     pub presence: Inbox<(EndpointId, SpaceId), EndpointAddr>,
     /// Asked who is in a space before its gossip topic has neighbors.
     pub followed: Followed,
@@ -181,14 +144,11 @@ pub struct SpaceGossip {
     _leave: oneshot::Sender<()>,
 }
 
-/// Subscribes every loaded space that is not subscribed yet. A peeked space
-/// joins only once it becomes the active one. A pass rather than an observer,
-/// since gossip is built asynchronously.
+/// Subscribes every loaded space that is not subscribed yet. A pass rather
+/// than an observer, since gossip is built asynchronously.
 pub fn join_space_topics(
-    spaces: Query<(Entity, &Space, Has<Peeked>), Without<SpaceGossip>>,
+    spaces: Query<(Entity, &Space), Without<SpaceGossip>>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
-    active: Res<ActiveSpace>,
-    signal: Res<ActiveSpaceSignal>,
     heard: Res<HeardPresence>,
     identity: Option<Res<LocalIdentity>>,
     mut commands: Commands,
@@ -203,15 +163,10 @@ pub fn join_space_topics(
         return;
     };
 
-    for (entity, space, peeked) in &spaces {
-        if peeked && active.0 != Some(entity) {
-            continue;
-        }
-
+    for (entity, space) in &spaces {
         let ctx = GossipCtx {
             endpoint: endpoint.0.clone(),
             gossip:   gossip.0.clone(),
-            active:   signal.0.subscribe(),
             presence: heard.inbox().clone(),
             followed: identity.followed.clone(),
         };

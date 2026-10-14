@@ -458,24 +458,6 @@ const fn check_name(name: &str) -> Result<(), Rejected> {
     }
 }
 
-impl Received {
-    /// The spaces this message speaks for.
-    pub fn spaces(&self) -> impl Iterator<Item = SpaceId> + '_ {
-        let (one, many) = match self {
-            Self::Snapshot(docs) | Self::SnapshotMore(docs) => {
-                (None, Some(docs.iter().map(|d| d.space)))
-            }
-            Self::Pin { space, .. } | Self::Hold { space, .. } => (Some(*space), None),
-            Self::Session(batch) => (Some(batch.payload.space), None),
-            Self::Unpin { withdrawal, .. } => {
-                (withdrawal.as_ref().map(|record| record.payload.space), None)
-            }
-            Self::ReleaseHold { .. } => (None, None),
-        };
-        one.into_iter().chain(many.into_iter().flatten())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use unavi_identity::identity::Identity;

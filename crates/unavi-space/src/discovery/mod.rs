@@ -1,16 +1,10 @@
 //! Finding peers: signed presence heard over each space's gossip topic, and
 //! registry occupancy, turned into a bounded set of [`Peer`] entities.
 
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::{
-    platform::collections::{
-        HashMap,
-        HashSet,
-    },
+    platform::collections::HashMap,
     prelude::*,
 };
 use bevy_iroh::store::BlobProviders;
@@ -18,8 +12,6 @@ use iroh::{
     EndpointAddr,
     EndpointId,
 };
-use parking_lot::Mutex;
-use tokio::sync::Notify;
 
 use crate::{
     index::{
@@ -96,62 +88,17 @@ impl HeardPresence {
     }
 }
 
-/// Which space each tracked peer is present in, readable from network tasks.
-/// Mirrors [`LastSeenIn`].
-#[derive(Resource, Clone, Default)]
-pub struct PeerPresence(Arc<PresenceInner>);
-
-#[derive(Default)]
-struct PresenceInner {
-    spaces:  Mutex<HashMap<EndpointId, HashSet<SpaceId>>>,
-    changed: Notify,
-}
-
-impl PeerPresence {
-    #[must_use]
-    pub fn is_in(&self, peer: EndpointId, space: SpaceId) -> bool {
-        self.0
-            .spaces
-            .lock()
-            .get(&peer)
-            .is_some_and(|spaces| spaces.contains(&space))
-    }
-
-    /// Whether `peer` is in `space`, waiting up to `deadline` for presence
-    /// still on its way.
-    pub async fn wait(&self, peer: EndpointId, space: SpaceId, deadline: Duration) -> bool {
-        let wait = async {
-            loop {
-                let mut changed = std::pin::pin!(self.0.changed.notified());
-                changed.as_mut().enable();
-                if self.is_in(peer, space) {
-                    return;
-                }
-                changed.await;
-            }
-        };
-        n0_future::time::timeout(deadline, wait).await.is_ok()
-    }
-
-    fn replace(&self, spaces: HashMap<EndpointId, HashSet<SpaceId>>) {
-        *self.0.spaces.lock() = spaces;
-        self.0.changed.notify_waiters();
-    }
-}
-
 /// Turns heard presence into [`Peer`] entities, within [`MAX_PEERS`] and
 /// [`MAX_PEERS_PER_SPACE`], and expires peers not heard for a while.
 pub fn track_peers(
     time: Res<Time>,
     heard: Res<HeardPresence>,
     index: Res<Index<Peer>>,
-    presence: Res<PeerPresence>,
     mut peers: Query<(Entity, &mut Peer, &mut LastSeenIn)>,
     mut commands: Commands,
 ) {
     let now = time.elapsed();
     let updates = heard.0.drain();
-    let mut changed = !updates.is_empty();
 
     let mut per_space = HashMap::<SpaceId, usize>::default();
     for (_, _, seen) in &peers {
@@ -198,27 +145,11 @@ pub fn track_peers(
 
     let limit = now.saturating_sub(INACTIVE);
     for (entity, peer, mut seen) in &mut peers {
-        let before = seen.0.len();
         seen.0.retain(|_, at| *at > limit);
-        if seen.0.len() != before {
-            changed = true;
-        }
         if seen.0.is_empty() {
             info!("-peer: {}", peer.0.id);
             commands.entity(entity).despawn();
         }
-    }
-
-    if changed {
-        let mut spaces = peers
-            .iter()
-            .filter(|(_, _, seen)| !seen.0.is_empty())
-            .map(|(_, peer, seen)| (peer.0.id, seen.spaces().collect::<HashSet<_>>()))
-            .collect::<HashMap<_, _>>();
-        for (id, space) in spawned {
-            spaces.entry(id).or_default().insert(space);
-        }
-        presence.replace(spaces);
     }
 }
 

@@ -127,7 +127,8 @@ pub fn publish_spaces(
 /// Heartbeats occupancy of the active space to every followed registry.
 ///
 /// Others find peers to bootstrap gossip against this way. Only the active
-/// space: one peeked at through a portal never lists this node's DID.
+/// space: one held through a portal but not entered never lists this node's
+/// DID.
 pub fn announce_presence(
     time: Res<Time>,
     active: Res<ActiveSpace>,

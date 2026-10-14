@@ -5,6 +5,8 @@ use std::{
     sync::Arc,
 };
 
+use tracing::debug;
+
 use hsd::{
     attributes::portal::{
         LinkId,
@@ -67,6 +69,13 @@ async fn set_destination(
     let mut portal = doc
         .read(|state| state.attribute::<PortalAttr>(prim).and_then(Result::ok))?
         .ok_or_else(|| ScriptError::invalid("the prim has no portal"))?;
+    debug!(
+        doc = ?doc.id,
+        ?prim,
+        space = ?destination.space,
+        link = ?destination.link,
+        "stating portal destination"
+    );
     portal.destination = Some(destination);
     let value = portal.encode().map_err(ScriptError::internal)?;
     write_fields(

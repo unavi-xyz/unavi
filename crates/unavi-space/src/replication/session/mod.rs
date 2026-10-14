@@ -23,6 +23,7 @@ use hsd::{
     },
 };
 use iroh::EndpointId;
+use tracing::debug;
 use unavi_policy::{
     permissions::{
         HostApi,
@@ -119,16 +120,31 @@ fn admits_non_author(
     if name.group() == SCRIPT_STATE_GROUP && name.field().is_some() {
         return true;
     }
-    if !pairs || *name != PortalAttr::NAME {
+    if *name != PortalAttr::NAME {
+        return false;
+    }
+    if !pairs {
+        debug!("session portal refused: the writer's rung opens no portals");
         return false;
     }
     let (Some(pairing), Some(frame)) = (decode_portal(value), decode_portal(beneath)) else {
+        debug!("session portal refused: no pairing over an authored frame");
         return false;
     };
-    frame.destination.is_none()
+    let admitted = frame.destination.is_none()
         && pairing.destination.is_some_and(|dest| dest.link.is_some())
         && pairing.size_x.to_bits() == frame.size_x.to_bits()
-        && pairing.size_y.to_bits() == frame.size_y.to_bits()
+        && pairing.size_y.to_bits() == frame.size_y.to_bits();
+    if !admitted {
+        debug!(
+            frame_leads = frame.destination.is_some(),
+            paired = pairing.destination.is_some(),
+            pairing_size = ?(pairing.size_x, pairing.size_y),
+            frame_size = ?(frame.size_x, frame.size_y),
+            "session portal refused by the pairing rule"
+        );
+    }
+    admitted
 }
 
 /// What a peer's layer may contribute: nothing from a peer granted no host

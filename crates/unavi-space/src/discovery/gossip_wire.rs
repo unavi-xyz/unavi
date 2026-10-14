@@ -104,41 +104,36 @@ pub(super) async fn receive(
     Ok(())
 }
 
-/// Broadcasts this node's presence while `space` is the active one.
+/// Broadcasts this node's presence in `space` for as long as the space is
+/// loaded.
 pub(super) async fn announce(
     ctx: &GossipCtx,
     tx: &GossipSender,
     space: SpaceId,
     wake: &Notify,
 ) -> anyhow::Result<()> {
-    let mut active = ctx.active.clone();
     let signer = EndpointSigner(ctx.endpoint.secret_key());
     let mut watcher = ctx.endpoint.watch_addr();
 
     let _ = n0_future::time::timeout(Duration::from_secs(15), ctx.endpoint.online()).await;
 
     loop {
-        if *active.borrow_and_update() == Some(space) {
-            let addr = watcher.get();
-            debug!(?addr, "Broadcasting presence");
-            let broadcast = SpaceBroadcast {
-                sender: ctx.endpoint.id(),
-                space,
-                issued_at: unix_secs(),
-                msg: SpaceMessage::Presence(addr),
-            };
-            let bytes = postcard::to_stdvec(&broadcast.sign(&signer)?)?;
-            tx.broadcast(bytes.into()).await?;
-        }
+        let addr = watcher.get();
+        debug!(?addr, "Broadcasting presence");
+        let broadcast = SpaceBroadcast {
+            sender: ctx.endpoint.id(),
+            space,
+            issued_at: unix_secs(),
+            msg: SpaceMessage::Presence(addr),
+        };
+        let bytes = postcard::to_stdvec(&broadcast.sign(&signer)?)?;
+        tx.broadcast(bytes.into()).await?;
 
-        // Re-broadcast on the interval, immediately when a neighbor joins the
-        // topic, or as soon as this space becomes active.
+        // Re-broadcast on the interval, or immediately when a neighbor joins
+        // the topic.
         tokio::select! {
             () = n0_future::time::sleep(PRESENCE_INTERVAL) => {}
             () = wake.notified() => {}
-            // The sender outlives every topic task, so a closed channel is
-            // unreachable rather than a state to fall through on.
-            res = active.changed() => res?,
         }
     }
 }

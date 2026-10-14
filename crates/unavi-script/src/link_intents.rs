@@ -7,6 +7,7 @@ use std::collections::{
 };
 
 use bevy::prelude::*;
+use tracing::debug;
 use bevy_hsd::{
     attributes::portal::PortalConfig,
     document::HsdDocId,
@@ -122,6 +123,12 @@ pub fn offer_link_intents(
         if due.is_empty() {
             continue;
         }
+        debug!(
+            source_space = ?intent.source_space,
+            link = ?intent.link,
+            targets = due.len(),
+            "portal link intent offered"
+        );
         intents.offer(intent, &due);
         offered.extend(due.into_iter().map(|doc| (intent, doc)));
     }

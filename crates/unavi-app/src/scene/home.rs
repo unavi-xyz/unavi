@@ -1,18 +1,36 @@
 use std::str::FromStr;
 
 use bevy::prelude::*;
-use bevy_async::task;
+use bevy_async::{
+    AsyncWorld,
+    task,
+};
 use bevy_hsd::{
-    document::HsdNamespace,
-    package::ImportPackage,
+    document::{
+        Hsd,
+        HsdDocId,
+        HsdNamespace,
+        Minted,
+    },
+    package::{
+        ImportPackage,
+        PackageAsset,
+    },
 };
 use bevy_iroh::store::DataStore;
+use hsd::{
+    id::DocId,
+    state::HsdState,
+};
 use iroh_docs::NamespaceId;
 use unavi_space::{
     identity::RootDocument,
     membership::Space,
 };
-use unavi_store::Store;
+use unavi_store::{
+    Document,
+    Store,
+};
 
 /// A namespace to enter instead of the local home, from `--join`.
 #[derive(Resource, Default)]
@@ -47,7 +65,72 @@ pub fn join_startup_space(
 
 pub fn join_home(asset_server: &AssetServer, commands: &mut Commands) {
     let handle = asset_server.load("hsd/unavi_default_home.hsdz");
-    commands.spawn((ImportPackage(handle), JoiningHome));
+    commands.spawn(ResolveHome(handle));
+}
+
+/// A bundled home not yet decided: load the recorded one if it is still held,
+/// otherwise import the default into fresh namespaces.
+#[derive(Component)]
+pub struct ResolveHome(pub Handle<PackageAsset>);
+
+/// Resolves [`ResolveHome`] once the store and root document exist.
+///
+/// Startup runs before the identity task has installed either, so this waits
+/// for them rather than guessing. A recorded home whose document is no longer
+/// held falls back to a fresh import.
+pub fn resolve_home(
+    pending: Query<(Entity, &ResolveHome)>,
+    store: Option<Res<DataStore>>,
+    root: Option<Res<RootDocument>>,
+    async_world: Res<AsyncWorld>,
+    mut commands: Commands,
+) {
+    let (Some(store), Some(root)) = (store, root) else {
+        return;
+    };
+    for (entity, resolve) in &pending {
+        commands.entity(entity).despawn();
+        let store = store.0.clone();
+        let root = root.0;
+        let handle = resolve.0.clone();
+        let world = async_world.clone();
+        task::spawn(async move {
+            let loaded = load_recorded_home(&store, root).await;
+            let sent = world
+                .commands()
+                .push(move |world: &mut World| match loaded {
+                    Some((ns, doc)) => {
+                        info!(%ns, "Loading saved home");
+                        world.spawn((
+                            Space(ns.into()),
+                            Hsd::new(HsdState::new()),
+                            HsdDocId(DocId(*ns.as_bytes())),
+                            HsdNamespace(doc),
+                            Minted,
+                        ));
+                    }
+                    None => {
+                        world.spawn((ImportPackage(handle), JoiningHome));
+                    }
+                })
+                .send()
+                .await;
+            if let Err(err) = sent {
+                warn!(?err, "the world is gone; dropping home resolution");
+            }
+        });
+    }
+}
+
+/// The recorded home namespace and its held document, when both exist.
+async fn load_recorded_home(store: &Store, root: NamespaceId) -> Option<(NamespaceId, Document)> {
+    let doc = store.held(root).await.ok()??;
+    let bytes = doc.get(HOME_KEY).await.ok()??;
+    let (_version, rest) = postcard::take_from_bytes::<u32>(&bytes).ok()?;
+    let bytes: &[u8; 32] = rest.get(..32)?.try_into().ok()?;
+    let ns = NamespaceId::from(bytes);
+    let held = store.held(ns).await.ok()??;
+    Some((ns, held))
 }
 
 /// Enters a `join_home` entity as [`Space`] once its namespace resolves, and

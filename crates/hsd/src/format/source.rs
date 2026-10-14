@@ -26,8 +26,14 @@ fn ron_options() -> ron::Options {
         .with_default_extension(Extensions::UNWRAP_NEWTYPES)
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
-pub struct Source(pub Vec<SourcePrim>);
+#[serde(default)]
+pub struct Source {
+    /// Document-level metadata, compiled into the `meta/` entry.
+    pub meta:  Option<SourceMeta>,
+    pub prims: Vec<SourcePrim>,
+}
 
 impl Source {
     pub fn parse(s: &str) -> Result<Self, ron::error::SpannedError> {
@@ -37,6 +43,16 @@ impl Source {
     pub fn to_ron(&self) -> Result<String, ron::Error> {
         ron_options().to_string_pretty(self, ron::ser::PrettyConfig::default())
     }
+}
+
+/// What an authored file declares about its own document.
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct SourceMeta {
+    pub name:        Option<String>,
+    pub description: Option<String>,
+    pub public:      Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Default)]

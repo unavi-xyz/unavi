@@ -1,63 +1,69 @@
-[
-    (
-        attributes: (
-            name: "gate",
-            reference: "../unavi-gate/asset.hsda",
-            xform: (
-                translation: [
-                    0.0,
-                    0.0,
-                    -10.0,
-                ],
-            ),
-        ),
-        children: [],
+(
+    meta: (
+        name: "Home",
+        public: true,
     ),
-    (
-        attributes: (
-            image: (
-                data: "../../crates/unavi-app/assets/image/dev-white.png",
-                address_mode_u: Repeat,
-                address_mode_v: Repeat,
-                address_mode_w: Repeat,
-                mag_filter: Nearest,
-                min_filter: Nearest,
-                srgb: true,
+    prims: [
+        (
+            attributes: (
+                name: "gate",
+                reference: "../unavi-gate/asset.hsda",
+                xform: (
+                    translation: [
+                        0.0,
+                        0.0,
+                        -10.0,
+                    ],
+                ),
             ),
-            name: "ground_tex",
+            children: [],
         ),
-        children: [],
-    ),
-    (
-        attributes: (
-            material: (
-                base_color_texture: "ground_tex",
+        (
+            attributes: (
+                image: (
+                    data: "../../crates/unavi-app/assets/image/dev-white.png",
+                    address_mode_u: Repeat,
+                    address_mode_v: Repeat,
+                    address_mode_w: Repeat,
+                    mag_filter: Nearest,
+                    min_filter: Nearest,
+                    srgb: true,
+                ),
+                name: "ground_tex",
             ),
-            name: "ground",
+            children: [],
         ),
-        children: [],
-    ),
-    (
-        attributes: (
-            name: "unavi-default-home",
-            script: "./Cargo.toml",
-        ),
-        children: [],
-    ),
-    (
-        attributes: (
-            name: "spawn",
-            spawn: (
-                radius: 4.0,
+        (
+            attributes: (
+                material: (
+                    base_color_texture: "ground_tex",
+                ),
+                name: "ground",
             ),
-            xform: (
-                translation: [
-                    0.0,
-                    0.5,
-                    0.0,
-                ],
-            ),
+            children: [],
         ),
-        children: [],
-    ),
-]
+        (
+            attributes: (
+                name: "unavi-default-home",
+                script: "./Cargo.toml",
+            ),
+            children: [],
+        ),
+        (
+            attributes: (
+                name: "spawn",
+                spawn: (
+                    radius: 4.0,
+                ),
+                xform: (
+                    translation: [
+                        0.0,
+                        0.5,
+                        0.0,
+                    ],
+                ),
+            ),
+            children: [],
+        ),
+    ],
+)

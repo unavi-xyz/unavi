@@ -27,7 +27,7 @@ use hsd::{
     },
 };
 
-const SOURCE: &str = r#"[
+const SOURCE: &str = r#"(prims: [
     (
         attributes: (name: "root"),
         children: [
@@ -40,7 +40,7 @@ const SOURCE: &str = r#"[
             (attributes: (name: "tex", image: (data: "tex.png"))),
         ],
     ),
-]"#;
+])"#;
 
 const TEXTURE: &[u8] = b"not really a png";
 
@@ -114,11 +114,11 @@ fn a_duplicate_name_fails_the_build() {
     assert!(err.to_string().contains("duplicate"), "{err}");
 }
 
-const TARGET: &str = r#"[(attributes: (name: "chair"))]"#;
+const TARGET: &str = r#"(prims: [(attributes: (name: "chair"))])"#;
 
 /// Two prims naming one file, so the package has to carry the target once and
 /// both references have to name that one copy.
-const REFERENCING: &str = r#"[
+const REFERENCING: &str = r#"(prims: [
     (
         attributes: (name: "room"),
         children: [
@@ -126,7 +126,7 @@ const REFERENCING: &str = r#"[
             (attributes: (name: "right", reference: "chair/asset.hsda")),
         ],
     ),
-]"#;
+])"#;
 
 fn write_referencing(case: &str) -> PathBuf {
     let input = write_source(case, REFERENCING);
@@ -145,8 +145,16 @@ fn a_reference_cycle_fails_the_build_instead_of_recursing_forever() {
 
     let a = dir.join("a.hsda");
     let b = dir.join("b.hsda");
-    std::fs::write(&a, r#"[(attributes: (name: "a", reference: "b.hsda"))]"#).expect("write a");
-    std::fs::write(&b, r#"[(attributes: (name: "b", reference: "a.hsda"))]"#).expect("write b");
+    std::fs::write(
+        &a,
+        r#"(prims: [(attributes: (name: "a", reference: "b.hsda"))])"#,
+    )
+    .expect("write a");
+    std::fs::write(
+        &b,
+        r#"(prims: [(attributes: (name: "b", reference: "a.hsda"))])"#,
+    )
+    .expect("write b");
 
     let err = compile(&a).expect_err("a cycle must fail, not recurse forever");
     assert!(
@@ -249,4 +257,16 @@ fn rewriting_replaces_every_reference_with_its_minted_id() {
             minted
         );
     }
+}
+
+#[test]
+fn document_meta_compiles_into_the_state() {
+    let src = r#"(meta: (name: "Home", description: "a place", public: true), prims: [(attributes: (name: "root"))])"#;
+    let state = load_state(&compile(&write_source("meta", src)).expect("compile"));
+
+    let meta = state.meta();
+    assert_eq!(meta.name.as_deref(), Some("Home"));
+    assert_eq!(meta.description.as_deref(), Some("a place"));
+    assert!(meta.public);
+    assert!(meta.author.is_none(), "the author is supplied at runtime");
 }

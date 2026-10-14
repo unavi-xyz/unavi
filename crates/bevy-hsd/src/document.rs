@@ -58,6 +58,12 @@ impl Hsd {
         Arc::clone(&self.0)
     }
 
+    /// The document's metadata, cloned out of the state lock.
+    #[must_use]
+    pub fn meta(&self) -> Option<hsd::format::meta::DocMeta> {
+        self.lock().map(|state| state.meta().clone())
+    }
+
     /// `None` on a poisoned lock.
     #[must_use]
     pub fn lock(&self) -> Option<MutexGuard<'_, HsdState>> {

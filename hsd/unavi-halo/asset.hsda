@@ -1,24 +1,26 @@
-[
-    (
-        attributes: (
-            name: "halo",
-            script: "./Cargo.toml",
-        ),
-        children: [
-            (
-                attributes: (
-                    name: "beacon_template",
-                    reference: "../unavi-beacon/asset.hsda",
-                    xform: (
-                        scale: [
-                            0.0,
-                            0.0,
-                            0.0,
-                        ],
-                    ),
-                ),
-                children: [],
+(
+    prims: [
+        (
+            attributes: (
+                name: "halo",
+                script: "./Cargo.toml",
             ),
-        ],
-    ),
-]
+            children: [
+                (
+                    attributes: (
+                        name: "beacon_template",
+                        reference: "../unavi-beacon/asset.hsda",
+                        xform: (
+                            scale: [
+                                0.0,
+                                0.0,
+                                0.0,
+                            ],
+                        ),
+                    ),
+                    children: [],
+                ),
+            ],
+        ),
+    ],
+)

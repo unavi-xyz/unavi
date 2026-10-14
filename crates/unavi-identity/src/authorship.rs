@@ -6,10 +6,15 @@
 //! and the DID's, which only the DID can make. Neither alone is enough, since a
 //! writer could name any DID and a DID could name any namespace.
 //!
-//! A document carries its proof under [`AUTHORSHIP_KEY`], so a reader holding
-//! only the namespace id can check it. Every writer can replace that entry, so
-//! when several DIDs share a write key the latest claim names the author.
+//! A document carries its proof in [`DocMeta::author`], so a reader holding
+//! only the namespace id can check it. Every writer can replace the meta
+//! blob, so when several DIDs share a write key the latest claim names the
+//! author.
 
+use hsd::{
+    format::meta::DocMeta,
+    key,
+};
 use iroh::Signature;
 use iroh_docs::{
     NamespaceId,
@@ -36,9 +41,6 @@ use crate::{
     },
 };
 
-/// Where a document records its [`Authorship`].
-pub const AUTHORSHIP_KEY: &str = "wired/authorship";
-
 /// Context of the namespace key's signature, distinct from the DID's so one
 /// can never stand in for the other.
 const NAMESPACE_CONTEXT: &[u8] = b"wired/authorship/namespace\0";
@@ -46,6 +48,9 @@ const NAMESPACE_CONTEXT: &[u8] = b"wired/authorship/namespace\0";
 /// Bytes an encoded [`Authorship`] may take. Far above any real one; it bounds
 /// what a reader decodes from a peer-written entry.
 pub const MAX_AUTHORSHIP_BYTES: usize = 4096;
+
+/// Largest `meta/` blob this crate decodes before giving up.
+const MAX_META_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthorshipError {
@@ -164,8 +169,21 @@ pub async fn claim(
         .ok_or(AuthorshipError::NotWritable)?;
     let proof = Authorship::sign(&write_key, identity)?;
 
-    let bytes = postcard::to_stdvec(&proof).map_err(|_| AuthorshipError::Malformed)?;
-    doc.set(AUTHORSHIP_KEY, bytes).await?;
+    let mut meta = match doc
+        .entry(key::META, unavi_store::Tombstones::Exclude)
+        .await?
+    {
+        Some(entry) => doc
+            .value(&entry)
+            .await?
+            .map_or_else(DocMeta::default, |bytes| {
+                postcard::from_bytes::<DocMeta>(&bytes).unwrap_or_default()
+            }),
+        None => DocMeta::default(),
+    };
+    meta.author = Some(postcard::to_stdvec(&proof).map_err(|_| AuthorshipError::Malformed)?);
+    let bytes = postcard::to_stdvec(&meta).map_err(|_| AuthorshipError::Malformed)?;
+    doc.set(key::META, bytes).await?;
     Ok(proof)
 }
 
@@ -173,18 +191,25 @@ pub async fn claim(
 /// content has not arrived.
 pub async fn recorded(doc: &Document) -> Result<Option<Authorship>, AuthorshipError> {
     let Some(entry) = doc
-        .entry(AUTHORSHIP_KEY, unavi_store::Tombstones::Exclude)
+        .entry(key::META, unavi_store::Tombstones::Exclude)
         .await?
     else {
         return Ok(None);
     };
-    if entry.content_len() > MAX_AUTHORSHIP_BYTES as u64 {
+    if entry.content_len() > MAX_META_BYTES as u64 {
         return Err(AuthorshipError::Malformed);
     }
     let Some(bytes) = doc.value(&entry).await? else {
         return Ok(None);
     };
-    postcard::from_bytes(&bytes)
+    let meta: DocMeta = postcard::from_bytes(&bytes).map_err(|_| AuthorshipError::Malformed)?;
+    let Some(author) = meta.author else {
+        return Ok(None);
+    };
+    if author.len() > MAX_AUTHORSHIP_BYTES {
+        return Err(AuthorshipError::Malformed);
+    }
+    postcard::from_bytes(&author)
         .map(Some)
         .map_err(|_| AuthorshipError::Malformed)
 }

@@ -163,7 +163,7 @@ fn compile_file_inner<S: std::hash::BuildHasher>(
     let source = source_identity(&input_abs)?;
 
     let mut names = HashMap::new();
-    index_names(&doc.0, &source, &mut Vec::new(), &mut names)?;
+    index_names(&doc.prims, &source, &mut Vec::new(), &mut names)?;
 
     visiting.push(input_abs.clone());
 
@@ -176,11 +176,25 @@ fn compile_file_inner<S: std::hash::BuildHasher>(
         built,
         visiting,
     };
+    let meta = DocMeta {
+        name: doc
+            .meta
+            .as_ref()
+            .and_then(|m| m.name.clone())
+            .map(Into::into),
+        description: doc
+            .meta
+            .as_ref()
+            .and_then(|m| m.description.clone())
+            .map(Into::into),
+        public: doc.meta.as_ref().and_then(|m| m.public).unwrap_or(false),
+        ..DocMeta::default()
+    };
     compiler.entries.insert(
         key::META.to_owned(),
-        DocMeta::default().encode().context("encoding meta")?,
+        meta.encode().context("encoding meta")?,
     );
-    let emitted = compiler.emit(&doc.0, ParentAttr::Root, &mut Vec::new());
+    let emitted = compiler.emit(&doc.prims, ParentAttr::Root, &mut Vec::new());
 
     compiler.visiting.pop();
     emitted?;

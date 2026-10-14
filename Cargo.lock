@@ -11264,6 +11264,7 @@ dependencies = [
  "clap",
  "directories",
  "embed-resource",
+ "hsd",
  "image",
  "iroh",
  "iroh-docs",
@@ -11348,6 +11349,7 @@ name = "unavi-identity"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "hsd",
  "iroh",
  "iroh-docs",
  "jose-jwk",

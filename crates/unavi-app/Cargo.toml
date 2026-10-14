@@ -38,6 +38,7 @@ bevy-inspector-egui     = { optional = true, workspace = true }
 bevy-iroh.path          = "../bevy-iroh"
 bevy_vrm.workspace      = true
 clap.workspace          = true
+hsd.path                = "../hsd"
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 iroh-docs.workspace     = true

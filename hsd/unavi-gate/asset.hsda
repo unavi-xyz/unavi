@@ -1,36 +1,38 @@
-[
-    (
-        attributes: (
-            name: "gate",
-            script: "./Cargo.toml",
+(
+    prims: [
+        (
+            attributes: (
+                name: "gate",
+                script: "./Cargo.toml",
+            ),
+            children: [
+                (
+                    attributes: (
+                        name: "portal",
+                        xform: (
+                            translation: [
+                                0.0,
+                                1.3090171,
+                                0.0,
+                            ],
+                        ),
+                    ),
+                    children: [],
+                ),
+                (
+                    attributes: (
+                        name: "receptor",
+                        xform: (
+                            translation: [
+                                -1.618034,
+                                0.809017,
+                                0.0,
+                            ],
+                        ),
+                    ),
+                    children: [],
+                ),
+            ],
         ),
-        children: [
-            (
-                attributes: (
-                    name: "portal",
-                    xform: (
-                        translation: [
-                            0.0,
-                            1.3090171,
-                            0.0,
-                        ],
-                    ),
-                ),
-                children: [],
-            ),
-            (
-                attributes: (
-                    name: "receptor",
-                    xform: (
-                        translation: [
-                            -1.618034,
-                            0.809017,
-                            0.0,
-                        ],
-                    ),
-                ),
-                children: [],
-            ),
-        ],
-    ),
-]
+    ],
+)

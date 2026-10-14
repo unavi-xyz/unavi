@@ -57,7 +57,12 @@ impl Plugin for ScenePlugin {
             )
             .add_systems(
                 Update,
-                (limbo::fall_back_to_limbo, limbo::drive_limbo_exit).chain(),
+                (
+                    home::resolve_home,
+                    limbo::fall_back_to_limbo,
+                    limbo::drive_limbo_exit,
+                )
+                    .chain(),
             )
             .add_systems(
                 FixedUpdate,

@@ -116,7 +116,7 @@ fn write_source(case: &str, shader: &str) -> PathBuf {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(case);
     std::fs::create_dir_all(&dir).expect("create case dir");
     std::fs::write(dir.join("glow.hss"), shader).expect("write shader");
-    let hsda = r#"[(attributes: (name: "p", shader: (path: "./glow.hss")))]"#;
+    let hsda = r#"(prims: [(attributes: (name: "p", shader: (path: "./glow.hss")))])"#;
     let input = dir.join("asset.hsda");
     std::fs::write(&input, hsda).expect("write source");
     input
@@ -163,10 +163,10 @@ fn a_mistyped_override_fails_the_build() {
         r"(public_inputs: [Float(1.0)], surface: (nodes: [], output: Lit((alpha: Input(0)))))",
     )
     .expect("write shader");
-    let hsda = r#"[(attributes: (name: "p", shader: (
+    let hsda = r#"(prims: [(attributes: (name: "p", shader: (
         path: "./glow.hss",
         overrides: {0: Vec3((0.0, 0.0, 0.0))},
-    )))]"#;
+    )))])"#;
     let input = dir.join("asset.hsda");
     std::fs::write(&input, hsda).expect("write source");
 

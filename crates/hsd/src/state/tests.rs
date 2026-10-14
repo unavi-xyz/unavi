@@ -487,7 +487,18 @@ fn a_document_newer_than_this_build_adds_nothing_to_the_scene_until_it_is_readab
         &mut state,
         &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
     );
-    let meta = |version| Entry::new(key::META, DocMeta { version }.encode().expect("encode"), 3);
+    let meta = |version| {
+        Entry::new(
+            key::META,
+            DocMeta {
+                version,
+                ..Default::default()
+            }
+            .encode()
+            .expect("encode"),
+            3,
+        )
+    };
 
     project(&mut state, &[meta(DOC_VERSION + 1)]);
     assert!(state.is_refused());

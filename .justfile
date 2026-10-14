@@ -28,9 +28,6 @@ fmt-check:
     nix build -L .#checks.x86_64-linux.treefmt
     just fmt-check-hsd
 
-# The authored `.hsda` sources are not treefmt inputs. Building assets no
-# longer rewrites them; this is the only thing that does. Test fixtures are
-# left out: they are hand-formatted, with comments the formatter drops.
 fmt-hsd:
     cargo run --quiet -p hsd-cli -- fmt hsd
 

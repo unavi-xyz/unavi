@@ -1,9 +1,11 @@
-[
-    (
-        attributes: (
-            name: "example-unavi-vui",
-            script: "./Cargo.toml",
+(
+    prims: [
+        (
+            attributes: (
+                name: "example-unavi-vui",
+                script: "./Cargo.toml",
+            ),
+            children: [],
         ),
-        children: [],
-    ),
-]
+    ],
+)

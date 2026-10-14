@@ -272,7 +272,7 @@ impl LocalReplica {
                 .async_world
                 .commands()
                 .push(move |world: &mut World| {
-                    finish_withdrawal(world, me, doc, space, key.as_ref())
+                    finish_withdrawal(world, me, doc, space, key.as_ref());
                 })
                 .send()
                 .await;

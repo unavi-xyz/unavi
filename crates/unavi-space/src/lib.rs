@@ -112,6 +112,7 @@ impl Plugin for SpacePlugin {
                     (discovery::track_peers, link::dial::dial_peers).chain(),
                     discovery::publish_blob_providers,
                     discovery::registry::announce_presence,
+                    discovery::registry::publish_spaces,
                     discovery::gossip::adopt_gossip,
                     discovery::gossip::join_space_topics,
                     avatar_sync::send::send_agent_pose,

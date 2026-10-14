@@ -180,6 +180,11 @@ impl HsdState {
     }
 
     #[must_use]
+    pub const fn meta(&self) -> &DocMeta {
+        &self.meta
+    }
+
+    #[must_use]
     pub fn attribute<A: Property>(&self, prim: PrimId) -> Option<Result<A, postcard::Error>> {
         self.payload(prim, &A::NAME)
     }

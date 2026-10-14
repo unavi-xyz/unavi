@@ -1,29 +1,31 @@
-[
-    (
-        attributes: (
-            name: "physgun",
-            script: "./Cargo.toml",
-        ),
-        children: [],
-    ),
-    (
-        attributes: (
-            shader: (
-                path: "./beam.hss",
-                overrides: {},
+(
+    prims: [
+        (
+            attributes: (
+                name: "physgun",
+                script: "./Cargo.toml",
             ),
-            name: "beam_template",
+            children: [],
         ),
-        children: [],
-    ),
-    (
-        attributes: (
-            shader: (
-                path: "./glow.hss",
-                overrides: {},
+        (
+            attributes: (
+                shader: (
+                    path: "./beam.hss",
+                    overrides: {},
+                ),
+                name: "beam_template",
             ),
-            name: "glow_template",
+            children: [],
         ),
-        children: [],
-    ),
-]
+        (
+            attributes: (
+                shader: (
+                    path: "./glow.hss",
+                    overrides: {},
+                ),
+                name: "glow_template",
+            ),
+            children: [],
+        ),
+    ],
+)

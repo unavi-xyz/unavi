@@ -43,7 +43,10 @@ use unavi_policy::{
     },
 };
 use unavi_space::replication::{
-    message::SessionWrite,
+    message::{
+        ClearedKey,
+        SessionWrite,
+    },
     session,
 };
 
@@ -364,15 +367,30 @@ pub async fn commit(
             site:  *site,
         },
     };
+    // This peer's session layer exists only once it has written one opinion.
+    let mine = session::layer_id(host.view.me());
     let entries = doc
         .write(|state| {
-            state.commit(
-                &[stack::RUNTIME, session::layer_id(host.view.me())],
-                &target,
-                &props,
-            )
+            let mut from = vec![stack::RUNTIME];
+            if state.layer(&mine).is_some() {
+                from.push(mine.clone());
+            }
+            state.commit(&from, &target, &props)
         })?
         .map_err(ScriptError::internal)?;
+
+    // The committed opinions now live in a durable layer. Left in the session
+    // layer, they would keep shadowing it on every peer.
+    if let Some(space) = host.view.space_of(doc.id) {
+        let keys = props
+            .iter()
+            .map(|(prim, name)| ClearedKey {
+                prim: *prim,
+                name: name.to_string(),
+            })
+            .collect();
+        host.view.local().clear_session(space, doc.id, keys).await?;
+    }
 
     match landing {
         Landing::Document => write_entries(host, namespace_of(host, doc.id).await?, entries).await,

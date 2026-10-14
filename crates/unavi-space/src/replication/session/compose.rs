@@ -10,7 +10,10 @@ use bevy::{
         lifecycle::HookContext,
         world::DeferredWorld,
     },
-    platform::collections::HashSet,
+    platform::collections::{
+        HashMap,
+        HashSet,
+    },
     prelude::*,
 };
 use bevy_hsd::document::{
@@ -27,6 +30,7 @@ use hsd::{
         entry::Entry,
         stack::{
             LayerId,
+            Mask,
             Merge,
         },
     },
@@ -43,6 +47,8 @@ use crate::{
     replication::{
         Replicas,
         session::{
+            LAYER_PREFIX,
+            SessionKey,
             Standing,
             layer_id,
             layers::Opinion,
@@ -116,21 +122,26 @@ pub(crate) fn doc_state(world: &World, doc: DocId) -> Option<Arc<Mutex<HsdState>
     world.get::<Hsd>(entity).map(Hsd::handle)
 }
 
-/// How the local viewer stacks `peer`'s layer on `doc`.
+/// How the local viewer stacks `peer`'s layer on `doc`. Without replicas or a
+/// view, the peer is an anonymous non-author.
 fn standing(world: &World, peer: EndpointId, did: Option<&Did>, doc: DocId) -> Standing {
-    let author = world.resource::<Replicas>().author(doc);
+    let author = world
+        .get_resource::<Replicas>()
+        .and_then(|replicas| replicas.author(doc));
     let trust = world
         .get_resource::<SpaceView>()
         .map_or(Trust::Anonymous, |view| view.trust_of(peer));
+    let permissions = world
+        .get_resource::<Rules>()
+        .cloned()
+        .unwrap_or_default()
+        .permissions(trust);
     Standing {
         peer,
         is_author: did.is_some() && author.as_ref() == did,
         trust,
+        permissions,
     }
-}
-
-fn rules(world: &World) -> Rules {
-    world.get_resource::<Rules>().cloned().unwrap_or_default()
 }
 
 /// Composes `opinions` into `peer`'s layer on `doc`, stacking the layer first
@@ -147,23 +158,26 @@ pub(crate) fn compose(
         return;
     };
     let standing = standing(world, peer, did, doc);
-    let rules = rules(world);
     let Ok(mut state) = state.lock() else {
         warn!("scene state poisoned");
         return;
     };
 
+    state.open_tick();
     let id = layer_id(peer);
     if state.layer(&id).is_none() {
-        let mask = mask(standing.is_author, rules.permissions(standing.trust));
-        if let Err(err) = state.add_layer(id.clone(), Merge::Latest, mask) {
-            warn!(?err, %doc, "session layer not stacked");
+        if let Err(err) = state.add_layer(
+            id.clone(),
+            Merge::Latest,
+            mask(standing.is_author, standing.permissions),
+        ) {
+            debug!(?err, %doc, "session layer not stacked");
+            state.close_tick();
             return;
         }
         restack_order(&mut state, world, doc);
     }
 
-    state.open_tick();
     for (key, value, at) in opinions {
         // A guest states an opaque payload, which is what an attribute is:
         // the same encoding the document uses.
@@ -172,7 +186,7 @@ pub(crate) fn compose(
             .map_or_default(|bytes| Value::Attribute(bytes.clone().into()).encode());
         let entry = Entry::new(key::Key::prop(key.prim, &key.name).to_string(), value, *at);
         if let Err(err) = state.apply(&id, &entry) {
-            warn!(?err, "session opinion refused by the document");
+            debug!(?err, "session opinion refused by the document");
         }
     }
     state.close_tick();
@@ -188,7 +202,9 @@ pub fn stack_on_arrival(
         return;
     };
     commands.queue(move |world: &mut World| {
-        let replicas = world.resource::<Replicas>().clone();
+        let Some(replicas) = world.get_resource::<Replicas>().cloned() else {
+            return;
+        };
         for peer in replicas.session_peers(doc) {
             let did = layer_did(world, peer, doc);
             let opinions = replicas.session_opinions(peer, doc);
@@ -206,28 +222,29 @@ fn layer_did(world: &mut World, peer: EndpointId, doc: DocId) -> Option<Did> {
         .and_then(|layer| layer.did.clone())
 }
 
-/// Orders `doc`'s session layers above everything else in its stack.
-fn restack_order(state: &mut HsdState, world: &World, doc: DocId) {
-    let sessions = world
-        .resource::<Replicas>()
-        .session_peers(doc)
-        .into_iter()
-        .filter(|peer| state.layer(&layer_id(*peer)).is_some())
-        .collect::<HashSet<_>>();
-    let mut standings = Vec::with_capacity(sessions.len());
-    let mut layers = world.try_query::<&SessionLayerState>();
-    if let Some(layers) = layers.as_mut() {
+/// Orders `doc`'s session layers above everything else in its stack. A layer
+/// left out of order would sit wherever it was added, possibly above the
+/// author's, so on failure every session layer is masked out entirely until
+/// an order succeeds. Answers whether it did.
+fn restack_order(state: &mut HsdState, world: &World, doc: DocId) -> bool {
+    let mut seen = HashSet::new();
+    let mut standings = Vec::new();
+    if let Some(mut layers) = world.try_query::<&SessionLayerState>() {
         for layer in layers.iter(world) {
-            if layer.doc == doc && sessions.contains(&layer.peer) {
+            if layer.doc == doc
+                && state.layer(&layer_id(layer.peer)).is_some()
+                && seen.insert(layer.peer)
+            {
                 standings.push(standing(world, layer.peer, layer.did.as_ref(), doc));
             }
         }
     }
     order(&mut standings);
 
-    let session_ids = standings
-        .iter()
-        .map(|standing| layer_id(standing.peer))
+    let session_ids = state
+        .layers()
+        .filter(|id| id.as_str().starts_with(LAYER_PREFIX))
+        .cloned()
         .collect::<HashSet<LayerId>>();
     let mut stack = state
         .layers()
@@ -235,61 +252,87 @@ fn restack_order(state: &mut HsdState, world: &World, doc: DocId) {
         .cloned()
         .collect::<Vec<_>>();
     stack.extend(standings.iter().map(|standing| layer_id(standing.peer)));
-    if let Err(err) = state.reorder(&stack) {
-        warn!(?err, %doc, "session layers not ordered");
+
+    match state.reorder(&stack) {
+        Ok(()) => true,
+        Err(err) => {
+            warn!(?err, %doc, "session layers not ordered; masking them out");
+            for id in session_ids {
+                if let Err(err) = state.set_mask(&id, Mask::new(|_, _| false)) {
+                    warn!(?err, %doc, "session layer not masked out");
+                }
+            }
+            false
+        }
     }
 }
 
-/// Restacks every layer whose standing moved: an author became known, a
-/// peer's trust changed, or the local identity loaded.
+/// Restacks every layer whose standing moved.
+///
+/// A standing moves when an author becomes known, a peer's trust or the rules
+/// change, or the local identity loads. It is recorded only once its document
+/// applied it, so a failure is retried next frame.
 pub fn restack(world: &mut World) {
-    let mut moved = HashSet::new();
     let mut layers = world.query::<(Entity, &SessionLayerState)>();
-    let current = layers
-        .iter(world)
-        .map(|(entity, layer)| {
-            (
-                entity,
-                layer.doc,
-                layer.standing,
-                standing(world, layer.peer, layer.did.as_ref(), layer.doc),
-            )
-        })
-        .collect::<Vec<_>>();
-    let rules = rules(world);
-
-    for (entity, doc, was, now) in current {
-        if was == Some(now) {
-            continue;
+    let mut moved: HashMap<DocId, Vec<(Entity, Standing)>> = HashMap::new();
+    for (entity, layer) in layers.iter(world) {
+        let now = standing(world, layer.peer, layer.did.as_ref(), layer.doc);
+        if layer.standing != Some(now) {
+            moved.entry(layer.doc).or_default().push((entity, now));
         }
-        if let Some(mut layer) = world.get_mut::<SessionLayerState>(entity) {
-            layer.standing = Some(now);
-        }
-        let Some(state) = doc_state(world, doc) else {
-            continue;
-        };
-        let Ok(mut state) = state.lock() else {
-            warn!("scene state poisoned");
-            continue;
-        };
-        let id = layer_id(now.peer);
-        if state.layer(&id).is_none() {
-            continue;
-        }
-        if let Err(err) = state.set_mask(&id, mask(now.is_author, rules.permissions(now.trust))) {
-            warn!(?err, %doc, "session layer mask not set");
-        }
-        moved.insert(doc);
     }
 
-    for doc in moved {
-        let Some(state) = doc_state(world, doc) else {
+    for (doc, standings) in moved {
+        let applied = doc_state(world, doc).is_none_or(|state| {
+            let Ok(mut state) = state.lock() else {
+                warn!("scene state poisoned");
+                return false;
+            };
+            state.open_tick();
+            let mut ok = true;
+            for (_, now) in &standings {
+                let id = layer_id(now.peer);
+                if state.layer(&id).is_some()
+                    && let Err(err) = state.set_mask(&id, mask(now.is_author, now.permissions))
+                {
+                    warn!(?err, %doc, "session layer mask not set");
+                    ok = false;
+                }
+            }
+            ok &= restack_order(&mut state, world, doc);
+            state.close_tick();
+            ok
+        });
+        if !applied {
             continue;
-        };
-        let Ok(mut state) = state.lock() else {
-            warn!("scene state poisoned");
-            continue;
-        };
-        restack_order(&mut state, world, doc);
+        }
+        for (entity, now) in standings {
+            if let Some(mut layer) = world.get_mut::<SessionLayerState>(entity) {
+                layer.standing = Some(now);
+            }
+        }
     }
+}
+
+/// Drops `peer`'s opinions on `keys` from `doc`'s stack, so the layers
+/// beneath show through.
+pub(crate) fn uncompose(world: &World, peer: EndpointId, doc: DocId, keys: &[SessionKey]) {
+    let Some(state) = doc_state(world, doc) else {
+        return;
+    };
+    let Ok(mut state) = state.lock() else {
+        warn!("scene state poisoned");
+        return;
+    };
+    let id = layer_id(peer);
+    if state.layer(&id).is_none() {
+        return;
+    }
+    state.open_tick();
+    for key in keys {
+        if let Err(err) = state.clear(&id, key.prim, &key.name) {
+            debug!(?err, "session opinion not cleared");
+        }
+    }
+    state.close_tick();
 }

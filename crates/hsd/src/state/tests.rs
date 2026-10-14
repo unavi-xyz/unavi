@@ -1884,7 +1884,7 @@ fn layer_ids(state: &HsdState) -> Vec<LayerId> {
 }
 
 fn refusing_names() -> Mask {
-    Mask::new(|_, key| !matches!(key, MaskKey::Property(name, _) if *name == NameAttr::NAME))
+    Mask::new(|_, key| !matches!(key, MaskKey::Property { name, .. } if *name == NameAttr::NAME))
 }
 
 #[test]
@@ -1976,7 +1976,7 @@ fn a_value_aware_mask_admits_one_value_of_a_property_and_refuses_another() {
             filtered.clone(),
             Merge::Latest,
             Mask::new(
-                move |_, key| matches!(key, MaskKey::Property(_, Some(value)) if *value == allowed),
+                move |_, key| matches!(key, MaskKey::Property { value: Some(value), .. } if *value == allowed),
             ),
         )
         .expect("add");

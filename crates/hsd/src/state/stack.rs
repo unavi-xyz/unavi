@@ -86,7 +86,13 @@ pub enum MaskKey<'a> {
     /// The prim's parent. `None` blocks it.
     Parent(Option<ParentAttr>),
     /// A property. A `None` value blocks it.
-    Property(&'a PropName, Option<&'a Value>),
+    Property {
+        name:    &'a PropName,
+        value:   Option<&'a Value>,
+        /// What the layers beneath this one resolve the key to, so a layer
+        /// can be admitted only where it fills a gap.
+        beneath: Option<&'a Value>,
+    },
 }
 
 type MaskFn = dyn Fn(PrimId, MaskKey<'_>) -> bool + Send + Sync;
@@ -111,6 +117,11 @@ impl Mask {
     #[must_use]
     pub fn admits(&self, prim: PrimId, key: MaskKey<'_>) -> bool {
         self.0.as_ref().is_none_or(|admits| admits(prim, key))
+    }
+
+    #[must_use]
+    pub const fn is_all(&self) -> bool {
+        self.0.is_none()
     }
 }
 

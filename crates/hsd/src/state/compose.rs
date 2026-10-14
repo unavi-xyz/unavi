@@ -93,17 +93,28 @@ fn after(held: Option<Stamp>) -> u64 {
 /// The strongest opinion on a key its layer's mask admits. `Blocked` stops
 /// the walk.
 fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> Option<&'a Value> {
-    stack
-        .iter()
-        .rev()
-        .find_map(|stacked| {
-            let opinion = stacked.layer.get(prim)?.property(name)?;
-            stacked
-                .mask
-                .admits(prim, MaskKey::Property(name, opinion.value()))
-                .then_some(opinion)
-        })
-        .and_then(|opinion| opinion.value())
+    for (at, stacked) in stack.iter().enumerate().rev() {
+        let Some(opinion) = stacked
+            .layer
+            .get(prim)
+            .and_then(|opinions| opinions.property(name))
+        else {
+            continue;
+        };
+        let admitted = stacked.mask.is_all()
+            || stacked.mask.admits(
+                prim,
+                MaskKey::Property {
+                    name,
+                    value: opinion.value(),
+                    beneath: resolve_property(&stack[..at], prim, name),
+                },
+            );
+        if admitted {
+            return opinion.value();
+        }
+    }
+    None
 }
 
 impl HsdState {

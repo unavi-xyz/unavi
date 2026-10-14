@@ -46,15 +46,44 @@ fn portal(link: Option<LinkId>, side: f64) -> Value {
     )
 }
 
+fn frame(side: f64) -> Value {
+    attribute(
+        PortalAttr {
+            destination: None,
+            size_x:      side,
+            size_y:      side,
+        }
+        .encode()
+        .expect("encode"),
+    )
+}
+
 fn admits(mask: &Mask, name: &PropName, value: Option<&Value>) -> bool {
-    mask.admits(PrimId([1; 16]), MaskKey::Property(name, value))
+    pairs(mask, name, value, None)
+}
+
+fn pairs(mask: &Mask, name: &PropName, value: Option<&Value>, beneath: Option<&Value>) -> bool {
+    mask.admits(
+        PrimId([1; 16]),
+        MaskKey::Property {
+            name,
+            value,
+            beneath,
+        },
+    )
 }
 
 #[test]
 fn the_authors_layer_contributes_everything() {
-    let mask = mask(true, Permissions::none());
+    let mask = mask(true, Rules::default().permissions(Trust::Guest));
     assert!(admits(&mask, &ScriptAttr::NAME, Some(&attribute(vec![1]))));
     assert!(mask.admits(PrimId([1; 16]), MaskKey::Parent(None)));
+}
+
+#[test]
+fn a_peer_granted_nothing_contributes_nothing_even_as_author() {
+    let mask = mask(true, Permissions::none());
+    assert!(!admits(&mask, &ScriptAttr::NAME, Some(&attribute(vec![1]))));
 }
 
 #[test]
@@ -63,6 +92,11 @@ fn a_guest_layer_contributes_script_state_and_nothing_the_engine_applies() {
     let state: PropName = "state/ticks".parse().expect("name");
     assert!(admits(&mask, &state, Some(&attribute(vec![1]))));
     assert!(admits(&mask, &state, None), "script state may be blocked");
+    let bare: PropName = "state".parse().expect("name");
+    assert!(
+        !admits(&mask, &bare, Some(&attribute(vec![1]))),
+        "the group alone is not script state"
+    );
     assert!(
         !admits(&mask, &ScriptAttr::NAME, Some(&attribute(vec![1]))),
         "a guest must not decide what the author's document runs"
@@ -74,34 +108,61 @@ fn a_guest_layer_contributes_script_state_and_nothing_the_engine_applies() {
 }
 
 #[test]
-fn a_guest_layer_contributes_a_portal_only_as_a_pairing() {
+fn a_guest_layer_pairs_only_an_empty_frame_at_its_own_size() {
     let mask = mask(false, Rules::default().permissions(Trust::Guest));
     let link = Some(LinkId([5; 16]));
-    assert!(admits(&mask, &PortalAttr::NAME, Some(&portal(link, 2.0))));
-    assert!(!admits(&mask, &PortalAttr::NAME, None), "never a blank");
+    let paired = portal(link, 2.0);
+    assert!(pairs(
+        &mask,
+        &PortalAttr::NAME,
+        Some(&paired),
+        Some(&frame(2.0))
+    ));
     assert!(
-        !admits(&mask, &PortalAttr::NAME, Some(&portal(None, 2.0))),
+        !pairs(&mask, &PortalAttr::NAME, None, Some(&frame(2.0))),
+        "never a blank"
+    );
+    assert!(
+        !pairs(
+            &mask,
+            &PortalAttr::NAME,
+            Some(&portal(None, 2.0)),
+            Some(&frame(2.0))
+        ),
         "an unlinked destination is a redirect"
     );
-    assert!(!admits(
-        &mask,
-        &PortalAttr::NAME,
-        Some(&portal(link, f64::NAN))
-    ));
-    assert!(!admits(
-        &mask,
-        &PortalAttr::NAME,
-        Some(&portal(link, 1_000.0))
-    ));
+    assert!(
+        !pairs(
+            &mask,
+            &PortalAttr::NAME,
+            Some(&portal(link, 3.0)),
+            Some(&frame(2.0))
+        ),
+        "a pairing does not resize the frame"
+    );
+    assert!(
+        !pairs(
+            &mask,
+            &PortalAttr::NAME,
+            Some(&paired),
+            Some(&portal(link, 2.0))
+        ),
+        "a portal that already leads somewhere is not redirected"
+    );
+    assert!(
+        !pairs(&mask, &PortalAttr::NAME, Some(&paired), None),
+        "a guest does not add a portal where the author made none"
+    );
 }
 
 #[test]
 fn a_rung_that_opens_no_portals_cannot_pair_one() {
     let mask = mask(false, Rules::default().permissions(Trust::Anonymous));
-    assert!(!admits(
+    assert!(!pairs(
         &mask,
         &PortalAttr::NAME,
-        Some(&portal(Some(LinkId([5; 16])), 2.0))
+        Some(&portal(Some(LinkId([5; 16])), 2.0)),
+        Some(&frame(2.0))
     ));
 }
 
@@ -117,24 +178,28 @@ fn the_authors_devices_stack_strongest_and_others_by_rung() {
     let (author_a, author_b, trusted, guest) = (peer(4), peer(3), peer(1), peer(2));
     let mut layers = vec![
         Standing {
-            peer:      author_a,
-            is_author: true,
-            trust:     Trust::Guest,
+            peer:        author_a,
+            is_author:   true,
+            trust:       Trust::Guest,
+            permissions: Permissions::none(),
         },
         Standing {
-            peer:      trusted,
-            is_author: false,
-            trust:     Trust::Trusted,
+            peer:        trusted,
+            is_author:   false,
+            trust:       Trust::Trusted,
+            permissions: Permissions::none(),
         },
         Standing {
-            peer:      guest,
-            is_author: false,
-            trust:     Trust::Guest,
+            peer:        guest,
+            is_author:   false,
+            trust:       Trust::Guest,
+            permissions: Permissions::none(),
         },
         Standing {
-            peer:      author_b,
-            is_author: true,
-            trust:     Trust::Guest,
+            peer:        author_b,
+            is_author:   true,
+            trust:       Trust::Guest,
+            permissions: Permissions::none(),
         },
     ];
     order(&mut layers);

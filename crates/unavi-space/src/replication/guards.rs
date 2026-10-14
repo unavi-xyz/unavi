@@ -37,6 +37,7 @@ use crate::{
     replication::{
         clock,
         message::{
+            ClearedKey,
             ReplicationMsg,
             SESSION_NAME_MAX_BYTES,
             SessionSnapshot,
@@ -48,6 +49,7 @@ use crate::{
             compose::{
                 SessionLayerState,
                 compose,
+                uncompose,
             },
         },
         store::Replicas,
@@ -223,6 +225,11 @@ pub enum Remote {
         space:  SpaceId,
         writes: Vec<SessionWrite>,
         at:     u64,
+    },
+    SessionClear {
+        doc:   DocId,
+        space: SpaceId,
+        keys:  Vec<ClearedKey>,
     },
 }
 
@@ -436,6 +443,33 @@ fn set_session(
     Ok(())
 }
 
+/// Drops the stater's own opinions on `keys`, and broadcasts the drop if they
+/// are this peer's.
+fn clear_session(
+    world: &World,
+    stater: &Stater,
+    doc: DocId,
+    space: SpaceId,
+    keys: Vec<ClearedKey>,
+) -> Result<(), SessionError> {
+    let named = keys
+        .iter()
+        .map(|key| {
+            valid_name(&key.name).map(|name| SessionKey {
+                prim: key.prim,
+                name,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let replicas = world.resource::<Replicas>().clone();
+    replicas.clear_session(stater.id, doc, &named);
+    uncompose(world, stater.id, doc, &named);
+    if stater.local {
+        replicas.broadcast(&ReplicationMsg::SessionClear { doc, space, keys });
+    }
+    Ok(())
+}
+
 /// A session name is a property name, so it answers to the same key-layout
 /// rule every document property does, plus a length the store will accept.
 fn valid_name(name: &str) -> Result<PropName, SessionError> {
@@ -553,6 +587,24 @@ impl LocalReplica {
             .try_send();
     }
 
+    /// Drops this node's own session opinions on `keys` of `doc`.
+    pub async fn clear_session(
+        &self,
+        space: SpaceId,
+        doc: DocId,
+        keys: Vec<ClearedKey>,
+    ) -> Result<(), SessionError> {
+        let this = self.clone();
+        self.async_world
+            .commands()
+            .send_with(move |world: &mut World| {
+                let stater = this.stater(world);
+                clear_session(world, &stater, doc, space, keys)
+            })
+            .await
+            .unwrap_or(Err(SessionError::Unavailable))
+    }
+
     /// States what this node says about `doc`'s prims for the rest of the
     /// session, as one atomic batch. A write with no value blocks its key.
     pub async fn set_session(
@@ -613,6 +665,11 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
         } => {
             if let Err(err) = set_session(world, &stater, doc, space, writes, at) {
                 debug!(%doc, ?err, "remote session batch refused");
+            }
+        }
+        Remote::SessionClear { doc, space, keys } => {
+            if let Err(err) = clear_session(world, &stater, doc, space, keys) {
+                debug!(%doc, ?err, "remote session clear refused");
             }
         }
     }

@@ -9,6 +9,7 @@ use bevy_hsd::document::{
 };
 use hsd::{
     attributes::{
+        parent::ParentAttr,
         portal::{
             LinkId,
             PortalAttr,
@@ -17,12 +18,16 @@ use hsd::{
         script::ScriptAttr,
     },
     id::PrimId,
+    key,
     property::{
         Payload,
         Property,
         value::Value,
     },
-    state::HsdState,
+    state::{
+        HsdState,
+        entry::Entry,
+    },
 };
 use iroh_docs::NamespaceSecret;
 use unavi_identity::identity::Identity;
@@ -107,6 +112,32 @@ fn spawn_doc(world: &mut World, doc: DocId) -> Arc<Mutex<HsdState>> {
     world.spawn((Hsd::shared(Arc::clone(&state)), HsdDocId(doc)));
     world.flush();
     state
+}
+
+/// Authors an empty portal frame on the test prim, as a gate's asset does.
+fn author_frame(state: &Mutex<HsdState>) {
+    let mut state = state.lock().expect("lock");
+    state
+        .project(&Entry::new(
+            key::Key::prop(prim(), &ParentAttr::NAME).to_string(),
+            ParentAttr::to_wire(Some(ParentAttr::Root)),
+            1,
+        ))
+        .expect("root");
+    let frame = PortalAttr {
+        destination: None,
+        size_x:      2.0,
+        size_y:      2.0,
+    }
+    .encode()
+    .expect("encode");
+    state
+        .project(&Entry::new(
+            key::Key::prop(prim(), &PortalAttr::NAME).to_string(),
+            Value::Attribute(frame.into()).encode(),
+            1,
+        ))
+        .expect("frame");
 }
 
 /// What `name` on the test prim resolves to in `state`.
@@ -495,6 +526,8 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     host_replicas.record_minted(gate);
     let visitor_gate = spawn_doc(&mut visitor_world, gate);
     let host_gate = spawn_doc(&mut host_world, gate);
+    author_frame(&visitor_gate);
+    author_frame(&host_gate);
 
     let feed = visitor_replicas.register_stream(visitor_id);
     assert!(matches!(
@@ -554,4 +587,118 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
         );
     }
     visitor_replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn a_guest_cannot_redirect_a_portal_the_document_authors() {
+    let (mut world, replicas) = world();
+    world.insert_resource(portal_rules());
+    let author = identity();
+    let space = space(b"authored-portal");
+    let doc = space.doc();
+    minted_by(&replicas, &author, doc);
+    let state = spawn_doc(&mut world, doc);
+
+    let authored = PortalAttr {
+        destination: Some(PortalDestination {
+            space: [8; 32],
+            link:  None,
+        }),
+        size_x:      2.0,
+        size_y:      2.0,
+    }
+    .encode()
+    .expect("encode");
+    {
+        let mut state = state.lock().expect("lock");
+        state
+            .project(&Entry::new(
+                key::Key::prop(prim(), &ParentAttr::NAME).to_string(),
+                ParentAttr::to_wire(Some(ParentAttr::Root)),
+                1,
+            ))
+            .expect("root");
+        state
+            .project(&Entry::new(
+                key::Key::prop(prim(), &PortalAttr::NAME).to_string(),
+                Value::Attribute(authored.clone().into()).encode(),
+                1,
+            ))
+            .expect("portal");
+    }
+
+    let redirect = PortalAttr {
+        destination: Some(PortalDestination {
+            space: [9; 32],
+            link:  Some(LinkId([2; 16])),
+        }),
+        size_x:      2.0,
+        size_y:      2.0,
+    }
+    .encode()
+    .expect("encode");
+    let visitor = remote(&mut world, peer(2), None);
+    set_session(
+        &mut world,
+        &visitor,
+        doc,
+        space,
+        vec![write(&PortalAttr::NAME, &redirect)],
+        2,
+    )
+    .expect("session set");
+    assert_eq!(
+        resolved(&state, &PortalAttr::NAME),
+        Some(authored),
+        "a pairing fills an empty frame and never redirects an authored portal"
+    );
+}
+
+#[test]
+fn a_cleared_opinion_leaves_the_document_and_every_replica() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"cleared");
+    let doc = space.doc();
+    let state = spawn_doc(&mut world, doc);
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+
+    let stater = local(&mut world, peer(1), me.did());
+    set_session(
+        &mut world,
+        &stater,
+        doc,
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    )
+    .expect("session set");
+    assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Session { .. })
+    ));
+
+    clear_session(
+        &world,
+        &stater,
+        doc,
+        space,
+        vec![ClearedKey {
+            prim: prim(),
+            name: state_k().to_string(),
+        }],
+    )
+    .expect("cleared");
+    assert_eq!(resolved(&state, &state_k()), None);
+    assert_eq!(replicas.session_opinions(peer(1), doc), Vec::new());
+    assert!(
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::SessionClear { .. })),
+        "a commit's clear has to reach every peer still drawing the old opinion"
+    );
+    replicas.unregister_stream(feed.token);
 }

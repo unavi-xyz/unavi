@@ -245,6 +245,12 @@ fn prove(msg: ReplicationMsg, did: Option<&Did>, present: &HashSet<SpaceId>) -> 
                 at,
             }
         }
+        ReplicationMsg::SessionClear { doc, space, keys } => {
+            if !present.contains(&space) {
+                return None;
+            }
+            Remote::SessionClear { doc, space, keys }
+        }
     })
 }
 

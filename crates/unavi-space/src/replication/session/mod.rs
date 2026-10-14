@@ -60,68 +60,84 @@ pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
     (key.name.as_str().len() + value.map_or(0, <[u8]>::len)) as u64
 }
 
+/// Every session layer's id starts with this.
+pub const LAYER_PREFIX: &str = "session/";
+
 /// The stack layer holding `peer`'s session opinions.
 #[must_use]
 pub fn layer_id(peer: EndpointId) -> LayerId {
-    LayerId::new(format!("session/{peer}"))
+    LayerId::new(format!("{LAYER_PREFIX}{peer}"))
 }
 
 /// The group guest scripts keep their own session state under. It carries no
 /// meaning to the engine.
 const SCRIPT_STATE_GROUP: &str = "state";
 
-/// Largest side of a portal a non-author's layer may state, in metres.
-const MAX_PAIRED_PORTAL_SIDE: f64 = 16.0;
+fn decode_portal(value: Option<&Value>) -> Option<PortalAttr> {
+    value
+        .and_then(Value::as_attribute)
+        .and_then(|payload| <PortalAttr as Payload>::decode(payload).ok())
+}
 
-/// Whether a layer that is not the author's may contribute `value` at `name`.
+/// Whether a layer that is not the author's may contribute `value` at `name`,
+/// over `beneath`, what the layers below it resolve the key to.
 ///
 /// Every other property is applied as if authored, so a non-author's layer
 /// stating one would decide what the author's document runs, references or
-/// simulates. A portal is admitted only as the far half of a pairing, a
-/// linked destination of bounded size and never a tombstone, and only from a
-/// writer whose rung opens portals.
-fn admits_non_author(name: &PropName, value: Option<&Value>, pairs: bool) -> bool {
-    if name.group() == SCRIPT_STATE_GROUP {
+/// simulates. A portal is admitted only as the far half of a pairing: a linked
+/// destination over a portal the layers beneath leave with none, at the same
+/// size, from a writer whose rung opens portals. It never redirects, resizes
+/// or adds a portal.
+fn admits_non_author(
+    name: &PropName,
+    value: Option<&Value>,
+    beneath: Option<&Value>,
+    pairs: bool,
+) -> bool {
+    if name.group() == SCRIPT_STATE_GROUP && name.field().is_some() {
         return true;
     }
     if !pairs || *name != PortalAttr::NAME {
         return false;
     }
-    let Some(Ok(portal)) = value
-        .and_then(Value::as_attribute)
-        .map(|payload| <PortalAttr as Payload>::decode(payload))
-    else {
+    let (Some(pairing), Some(frame)) = (decode_portal(value), decode_portal(beneath)) else {
         return false;
     };
-    let bounded = |side: f64| side.is_finite() && side > 0.0 && side <= MAX_PAIRED_PORTAL_SIDE;
-    portal.destination.is_some_and(|dest| dest.link.is_some())
-        && bounded(portal.size_x)
-        && bounded(portal.size_y)
+    frame.destination.is_none()
+        && pairing.destination.is_some_and(|dest| dest.link.is_some())
+        && pairing.size_x.to_bits() == frame.size_x.to_bits()
+        && pairing.size_y.to_bits() == frame.size_y.to_bits()
 }
 
-/// What a peer's layer may contribute: everything when it is the author's,
-/// nothing from a peer granted no host API, and the open class otherwise.
+/// What a peer's layer may contribute: nothing from a peer granted no host
+/// API, everything when it is the author's, and the open class otherwise.
 #[must_use]
 pub fn mask(is_author: bool, permissions: Permissions) -> Mask {
-    if is_author {
-        return Mask::all();
-    }
     if permissions == Permissions::none() {
         return Mask::new(|_, _| false);
+    }
+    if is_author {
+        return Mask::all();
     }
     let pairs = permissions.require(HostApi::Portal).is_ok();
     Mask::new(move |_, key| match key {
         MaskKey::Parent(_) => false,
-        MaskKey::Property(name, value) => admits_non_author(name, value, pairs),
+        MaskKey::Property {
+            name,
+            value,
+            beneath,
+        } => admits_non_author(name, value, beneath, pairs),
     })
 }
 
 /// One peer's layer as the stack builder sees it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Standing {
-    pub peer:      EndpointId,
-    pub is_author: bool,
-    pub trust:     Trust,
+    pub peer:        EndpointId,
+    pub is_author:   bool,
+    pub trust:       Trust,
+    /// What the rules grant at `trust`, so a rules change re-masks too.
+    pub permissions: Permissions,
 }
 
 /// Orders session layers weakest first: other peers by rung, then the

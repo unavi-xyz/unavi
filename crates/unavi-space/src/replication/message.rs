@@ -60,14 +60,25 @@ pub enum ReplicationMsg {
     /// ever draws half of one.
     ///
     /// A `value` of `None` blocks the key, which is how a delete propagates.
-    /// An opinion belongs to the document, so a peer tearing down locally
-    /// never tells anyone else to drop theirs.
     Session {
         doc:    DocId,
         space:  SpaceId,
         writes: Vec<SessionWrite>,
         at:     u64,
     },
+    /// Drops the sender's own opinions on `keys`, so the layers beneath show
+    /// through again. Sent after a commit makes them durable.
+    SessionClear {
+        doc:   DocId,
+        space: SpaceId,
+        keys:  Vec<ClearedKey>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ClearedKey {
+    pub prim: PrimId,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -112,9 +123,10 @@ impl ReplicationMsg {
     pub fn spaces(&self) -> impl Iterator<Item = SpaceId> + '_ {
         let (one, many) = match self {
             Self::Snapshot(docs) => (None, Some(docs.iter().map(|d| d.space))),
-            Self::Pin { space, .. } | Self::Hold { space, .. } | Self::Session { space, .. } => {
-                (Some(*space), None)
-            }
+            Self::Pin { space, .. }
+            | Self::Hold { space, .. }
+            | Self::Session { space, .. }
+            | Self::SessionClear { space, .. } => (Some(*space), None),
             Self::Unpin { .. } | Self::ReleaseHold { .. } => (None, None),
         };
         one.into_iter().chain(many.into_iter().flatten())
@@ -146,6 +158,14 @@ impl ReplicationMsg {
                     check_name(&write.name)?;
                 }
                 *at = clock::clamp_to(*at, recv);
+            }
+            Self::SessionClear { keys, .. } => {
+                if keys.len() > MAX_WRITES_PER_BATCH {
+                    return Err(Rejected::BatchTooLarge);
+                }
+                for key in keys.iter() {
+                    check_name(&key.name)?;
+                }
             }
             Self::Pin { .. }
             | Self::Unpin { .. }

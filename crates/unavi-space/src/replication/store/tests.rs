@@ -444,3 +444,35 @@ fn an_overflowing_stream_resyncs_from_a_snapshot() {
     assert!(!feed.resync.load(Ordering::Relaxed));
     replicas.unregister_stream(feed.token);
 }
+
+#[test]
+fn the_author_takes_a_reserved_layer_past_the_cap() {
+    let replicas = Replicas::new(Policy::new(), Rules::default());
+    let author = identity();
+    replicas.attribution().set_local(
+        author.did().clone(),
+        TrustTable::new(DeviceStorage::memory()),
+    );
+    let space = space(b"reserved");
+    let doc = DocId([21; 32]);
+    replicas.record_minted(doc);
+
+    for seed in 1..=MAX_LAYERS_PER_DOC as u8 {
+        replicas
+            .add_session(peer(seed), None, doc, space, write("k", b"v"), 1)
+            .expect("under the cap");
+    }
+    assert!(
+        replicas
+            .add_session(
+                peer(200),
+                Some(author.did()),
+                doc,
+                space,
+                write("k", b"v"),
+                2
+            )
+            .is_ok(),
+        "a crowd of strangers must not lock the author out of its own document"
+    );
+}

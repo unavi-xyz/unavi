@@ -29,6 +29,10 @@ use crate::{
 /// which also holds the document's other layers.
 pub const MAX_LAYERS_PER_DOC: usize = 48;
 
+/// Further layers past [`MAX_LAYERS_PER_DOC`] only the document's author and
+/// the local peer may take, so a crowd of strangers cannot lock them out.
+pub const RESERVED_LAYERS: usize = 8;
+
 /// One opinion, merged last-write-wins by `at`. A `None` value blocks its key.
 struct Cell {
     value:  Option<Vec<u8>>,
@@ -41,6 +45,14 @@ struct PeerLayer {
     space:      SpaceId,
     cells:      HashMap<SessionKey, Cell>,
     _doc_lease: StockLease,
+}
+
+/// Who writes a batch, and what it is charged to.
+pub(crate) struct Writer<'a> {
+    pub(crate) peer:     EndpointId,
+    pub(crate) quota:    &'a Arc<Quota>,
+    /// Whether the writer may take one of the [`RESERVED_LAYERS`].
+    pub(crate) reserved: bool,
 }
 
 /// One opinion as stored: its key, value and stamp.
@@ -98,25 +110,30 @@ impl SessionLayers {
         out
     }
 
-    /// Writes a batch into `peer`'s layer on `doc`, all or none, charging
-    /// `quota`. An opinion older than the one held is skipped. Answers the
+    /// Writes a batch into the writer's layer on `doc`, all or none, charging
+    /// the writer. An opinion older than the one held is skipped. Answers the
     /// opinions that changed.
     pub(crate) fn write(
         &mut self,
-        peer: EndpointId,
+        writer: &Writer<'_>,
         doc: DocId,
         space: SpaceId,
-        quota: &Arc<Quota>,
         batch: Vec<(SessionKey, Option<Vec<u8>>)>,
         at: u64,
     ) -> Result<Vec<Opinion>, SessionError> {
+        let Writer {
+            peer,
+            quota,
+            reserved,
+        } = *writer;
         let layers = self.0.get(&doc);
         if layers.is_some_and(|layers| layers.values().any(|layer| layer.space != space)) {
             return Err(SessionError::WrongSpace);
         }
         let held = layers.and_then(|layers| layers.get(&peer));
         let fresh = held.is_none();
-        if fresh && layers.is_some_and(|layers| layers.len() >= MAX_LAYERS_PER_DOC) {
+        let cap = MAX_LAYERS_PER_DOC + if reserved { RESERVED_LAYERS } else { 0 };
+        if fresh && layers.is_some_and(|layers| layers.len() >= cap) {
             return Err(SessionError::QuotaExceeded);
         }
         let doc_lease = if fresh {
@@ -169,6 +186,19 @@ impl SessionLayers {
             );
         }
         Ok(changed)
+    }
+
+    /// Drops `peer`'s opinions on `keys` of `doc`, releasing what they held.
+    pub(crate) fn clear(&mut self, peer: EndpointId, doc: DocId, keys: &[SessionKey]) {
+        if let Some(layer) = self
+            .0
+            .get_mut(&doc)
+            .and_then(|layers| layers.get_mut(&peer))
+        {
+            for key in keys {
+                layer.cells.remove(key);
+            }
+        }
     }
 
     /// Drops `peer`'s layer on `doc`, releasing what it held.

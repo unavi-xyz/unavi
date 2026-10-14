@@ -51,6 +51,7 @@ use crate::{
             layers::{
                 Opinion,
                 SessionLayers,
+                Writer,
             },
         },
         snapshot,
@@ -567,8 +568,6 @@ impl Replicas {
         self.0.lock().remove_hold(peer, doc, to);
     }
 
-    /// Records a batch of session opinions by `writer`, proving `did`, all or
-    /// none.
     /// Writes a batch into `writer`'s session layer on `doc`, all or none,
     /// charging `writer`. Answers the opinions that changed.
     pub(crate) fn add_session(
@@ -585,7 +584,20 @@ impl Replicas {
             return Err(SessionError::WrongSpace);
         }
         let quota = inner.attribution.writer_quota(writer, did);
-        inner.sessions.write(writer, doc, space, &quota, batch, at)
+        let reserved = did.is_some()
+            && (inner.author_resolved(doc).as_ref() == did
+                || inner.attribution.local_did().as_ref() == did);
+        let writer = Writer {
+            peer: writer,
+            quota: &quota,
+            reserved,
+        };
+        inner.sessions.write(&writer, doc, space, batch, at)
+    }
+
+    /// Drops `peer`'s opinions on `keys` of `doc`, releasing what they held.
+    pub(crate) fn clear_session(&self, peer: EndpointId, doc: DocId, keys: &[SessionKey]) {
+        self.0.lock().sessions.clear(peer, doc, keys);
     }
 
     /// Drops `peer`'s session layer on `doc`.

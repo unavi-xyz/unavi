@@ -19,6 +19,7 @@ use bevy::{
 use bevy_hsd::{
     document::{
         DocIndex,
+        Hsd,
         HsdDocId,
     },
     prim::{
@@ -26,6 +27,7 @@ use bevy_hsd::{
         PrimIndex,
         PrimOf,
     },
+    stack::RUNTIME,
 };
 use web_time::Instant;
 
@@ -50,13 +52,17 @@ use crate::{
 /// updates, so they tick far less often than agent poses.
 const OBJECT_INTERVAL: Duration = Duration::from_millis(200);
 
-/// Broadcasts every dynamic prim in documents the local peer holds
-/// over. Poses are space-relative; velocities are space-invariant (spaces only
+/// Broadcasts every dynamic prim that peers share in documents the local peer
+/// holds over.
+///
+/// A prim only this peer's layer states is skipped: no other peer has it.
+/// Poses are space-relative; velocities are space-invariant (spaces only
 /// translate).
 pub fn send_object_poses(
     time: Res<Time>,
     spaces: Query<(&Space, &GlobalTransform)>,
     roots: Query<&HsdDocId>,
+    docs: Query<&Hsd>,
     prims: Query<(
         &Prim,
         &PrimOf,
@@ -87,9 +93,22 @@ pub fn send_object_poses(
             if !matches!(body, RigidBody::Dynamic) {
                 return None;
             }
+            // A prim only this peer's layer states has no copy on any other
+            // peer, so its id and pose mean nothing to them.
+            let replicated = docs
+                .get(child_of.0)
+                .ok()
+                .and_then(Hsd::lock)
+                .is_some_and(|state| state.is_replicated(prim.0, &RUNTIME));
+            if !replicated {
+                return None;
+            }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = *held.entry(doc).or_insert_with(|| {
-                view.space_of(doc)
+                // The presence space is what `holder` is keyed on, so it is
+                // the one that decides who may drive the document.
+                view.replicas()
+                    .space_of(doc)
                     .filter(|space| view.replicas().is_holder(*space, doc, me))
             });
             let space = space?;
@@ -160,7 +179,6 @@ pub fn apply_remote_objects(
     roots: Query<&PrimIndex>,
     doc_index: Res<DocIndex>,
     spaces: Res<Index<Space>>,
-    bodies: Query<(&RigidBody, Has<ReplicaObject>)>,
     mut interps: Query<&mut ObjectInterp>,
     view: Option<Res<SpaceView>>,
     link: Option<Res<PeerLink>>,
@@ -174,10 +192,18 @@ pub fn apply_remote_objects(
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current holder may move it, and never the
-        // local peer.
-        let holder = *holders
-            .entry((resolved.space, doc))
-            .or_insert_with(|| view.replicas().holder(resolved.space, doc));
+        // local peer. The holder is keyed on the document's presence space,
+        // which is what `reconcile_object_holds` parks a body from, so the
+        // sender's space is only the coordinate frame. Where the two
+        // disagree, the presence space decides, or a parked replica would
+        // never be driven.
+        let holder = *holders.entry((resolved.space, doc)).or_insert_with(|| {
+            view.replicas().holder(resolved.space, doc).or_else(|| {
+                view.replicas()
+                    .space_of(doc)
+                    .and_then(|space| view.replicas().holder(space, doc))
+            })
+        });
         if holder != Some(peer) || holder == Some(view.me()) {
             continue;
         }
@@ -188,14 +214,6 @@ pub fn apply_remote_objects(
         else {
             continue;
         };
-        // The holder streams only dynamic bodies, so nothing else is moved
-        // for it.
-        let movable = bodies
-            .get(prim_entity)
-            .is_ok_and(|(body, replica)| replica || matches!(body, RigidBody::Dynamic));
-        if !movable {
-            continue;
-        }
         let Some(space) = spaces.get(resolved.space) else {
             continue;
         };
@@ -264,7 +282,8 @@ pub struct ReplicaObject;
 /// so only the accepted controller drives a prim.
 pub fn reconcile_object_holds(
     roots: Query<&HsdDocId>,
-    prims: Query<(Entity, &PrimOf, &RigidBody, Has<ReplicaObject>), With<Prim>>,
+    docs: Query<&Hsd>,
+    prims: Query<(Entity, &Prim, &PrimOf, &RigidBody, Has<ReplicaObject>), With<Prim>>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
@@ -272,12 +291,22 @@ pub fn reconcile_object_holds(
         return;
     };
     let mut remote = HashMap::new();
-    for (entity, child_of, body, is_replica) in &prims {
+    for (entity, prim, child_of, body, is_replica) in &prims {
+        // A local-only prim is this peer's own; a remote holder has no copy
+        // of it to drive, so it keeps simulating here.
+        let replicated = docs
+            .get(child_of.0)
+            .ok()
+            .and_then(Hsd::lock)
+            .is_some_and(|state| state.is_replicated(prim.0, &RUNTIME));
+        if !replicated {
+            continue;
+        }
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
         let remote_controlled = *remote.entry(doc).or_insert_with(|| {
-            view.space_of(doc).is_some_and(|space| {
+            view.replicas().space_of(doc).is_some_and(|space| {
                 let holder = view.replicas().holder(space, doc);
                 holder.is_some() && holder != Some(view.me())
             })

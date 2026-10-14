@@ -100,18 +100,30 @@ fn prim_name(doc: &Document, prim: (u64, u64)) -> Option<String> {
     }
 }
 
+/// Makes the space-named prim the beacon's body. Every peer's copy of the
+/// script does the same to the same committed prim, so the holder's pose
+/// stream drives one body everywhere.
+fn make_body(doc: &Document, body: (u64, u64)) -> anyhow::Result<()> {
+    doc.local()
+        .set(
+            body,
+            Property::Collider(Cuboid::new(Vec3::splat(SIZE)).collider()),
+        )
+        .set(body, Property::RigidBody(RigidBody::dynamic()))
+        .flush()?;
+    Ok(())
+}
+
+/// Builds the visible shell under the body. Its prims are this peer's own, so
+/// they carry no physics and only follow the body.
 fn build_shell(
     doc: &Document,
     parent: (u64, u64),
     id: Hash,
 ) -> anyhow::Result<((u64, u64), (u64, u64))> {
-    let shape = Cuboid::new(Vec3::splat(SIZE));
     let group = doc.create_prim(wired::scene::document::Layer::Local, Some(parent))?;
 
-    let mut batch = doc
-        .local()
-        .set(group, Property::Collider(shape.collider()))
-        .set(group, Property::RigidBody(RigidBody::dynamic()));
+    let mut batch = doc.local();
 
     let shell_mat = material(SHELL_COLOR, 0.0);
     for x in [-1.0_f32, 1.0] {
@@ -147,15 +159,23 @@ fn build_shell(
     Ok((group, core))
 }
 
-/// No space-named prim means the authored template, which does nothing; a
-/// real beacon is minted as a document of its own.
-struct Script(Option<Beacon>);
+/// Ticks between looks for the space-named prim while none is found.
+const FIND_INTERVAL: u32 = 30;
+
+/// No space-named prim means the authored template, which does nothing, or a
+/// minted beacon whose committed prim has not synced to this peer yet, which
+/// is looked for again every [`FIND_INTERVAL`] ticks.
+struct Script {
+    beacon: Option<Beacon>,
+    waited: u32,
+}
 
 struct Beacon {
     doc:          Document,
     color:        Color,
     core:         (u64, u64),
-    group:        (u64, u64),
+    /// The space-named prim, which carries the collider and rigid body.
+    body:         (u64, u64),
     id:           Hash,
     input:        InputSubscription,
     emit_elapsed: f32,
@@ -166,6 +186,31 @@ struct Beacon {
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
+        Ok(Self {
+            beacon: Beacon::find()?,
+            waited: 0,
+        })
+    }
+
+    fn fixed_update(&mut self, tick: Tick) -> anyhow::Result<()> {
+        if self.beacon.is_none() {
+            self.waited += 1;
+            if self.waited < FIND_INTERVAL {
+                return Ok(());
+            }
+            self.waited = 0;
+            self.beacon = Beacon::find()?;
+        }
+        self.beacon
+            .as_mut()
+            .map_or_else(|| Ok(()), |beacon| beacon.fixed_update(tick.dt))
+    }
+}
+
+impl Beacon {
+    /// The beacon this script's document is, once its space-named prim is
+    /// present.
+    fn find() -> anyhow::Result<Option<Self>> {
         let doc = script_document()?;
 
         let Some((id, prim)) = doc
@@ -173,11 +218,12 @@ impl ScriptBehavior for Script {
             .into_iter()
             .find_map(|p| Hash::from_str(&prim_name(&doc, p)?).ok().map(|id| (id, p)))
         else {
-            return Ok(Self(None));
+            return Ok(None);
         };
 
+        make_body(&doc, prim)?;
         let existing_group = doc.children(prim).into_iter().next();
-        let (group, core) = if let Some(group) = existing_group {
+        let (_, core) = if let Some(group) = existing_group {
             let core = doc
                 .children(group)
                 .into_iter()
@@ -188,30 +234,22 @@ impl ScriptBehavior for Script {
             build_shell(&doc, prim, id)?
         };
 
-        let input = targeted::listen(&doc, group)?;
+        let input = targeted::listen(&doc, prim)?;
         println!("Beacon initialized: space={id}");
-        Ok(Self(Some(Beacon {
+        Ok(Some(Self {
             doc,
             color: generate_color(id),
             core,
-            group,
+            body: prim,
             id,
             input,
             emit_elapsed: 0.0,
             published: false,
             pulse_step: u32::MAX,
             tick: 0,
-        })))
+        }))
     }
 
-    fn fixed_update(&mut self, tick: Tick) -> anyhow::Result<()> {
-        self.0
-            .as_mut()
-            .map_or_else(|| Ok(()), |beacon| beacon.fixed_update(tick.dt))
-    }
-}
-
-impl Beacon {
     fn fixed_update(&mut self, dt: f32) -> anyhow::Result<()> {
         for event in self.input.drain(8) {
             if !self.published
@@ -246,7 +284,7 @@ impl Beacon {
             Scope::Spatial(Spatial {
                 origin: wired::core::ids::PrimRef {
                     document: self.doc.id(),
-                    prim:     self.group,
+                    prim:     self.body,
                 },
                 radius: EVENT_RADIUS,
             }),

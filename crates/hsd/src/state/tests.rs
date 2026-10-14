@@ -1482,6 +1482,41 @@ fn install(state: &mut HsdState, layer: Layer) {
 }
 
 #[test]
+fn only_a_prim_a_shared_layer_states_is_replicated() {
+    let mut state = stacked();
+
+    let local = state.create_prim(None);
+    assert!(
+        !state.is_replicated(local, &RUNTIME),
+        "no peer composes this peer's runtime layer"
+    );
+
+    state.set_edit_target(SESSION).expect("edit target");
+    let shared = state.create_prim(None);
+    assert!(
+        state.is_replicated(shared, &RUNTIME),
+        "a session layer is replicated"
+    );
+
+    state.set_edit_target(LayerId::BASE).expect("edit target");
+    let durable = state.create_prim(None);
+    assert!(
+        state.is_replicated(durable, &RUNTIME),
+        "the base is replicated"
+    );
+
+    // A runtime opinion layered onto a durable prim does not unshare it.
+    state.set_edit_target(RUNTIME).expect("edit target");
+    state
+        .set_attribute(durable, &NameAttr("local".into()))
+        .expect("attribute");
+    assert!(
+        state.is_replicated(durable, &RUNTIME),
+        "the base still states the prim"
+    );
+}
+
+#[test]
 fn an_override_beats_the_document_it_speaks_for() {
     let mut state = referenced();
     install(

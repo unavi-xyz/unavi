@@ -126,6 +126,11 @@ pub fn apply_anchor_offsets(
 
 /// Promotes the space nearest the local agent's body to active, shifting
 /// every body so that space sits at the origin.
+///
+/// Content under a space, the agent body or another body moves with it. Any
+/// other hierarchy holding a body, such as the shell's documents, is moved
+/// whole by its topmost spatial ancestor, so its colliders stay with its
+/// visuals.
 pub fn recenter_active_space(
     agents: Query<&LocalAgentEntities, (With<LocalAgent>, Without<Spaceless>)>,
     spaces: Query<(Entity, &Transform), With<Space>>,
@@ -138,9 +143,11 @@ pub fn recenter_active_space(
         ),
         Without<Space>,
     >,
+    mut roots: Query<&mut Transform, (Without<Space>, Without<Position>)>,
     parents: Query<&ChildOf>,
     space_marker: Query<(), With<Space>>,
     position_marker: Query<(), With<Position>>,
+    spatial: Query<(), With<Transform>>,
     mut active: ResMut<ActiveSpace>,
 ) {
     let Ok(entities) = agents.single() else {
@@ -172,31 +179,50 @@ pub fn recenter_active_space(
 
     let delta = -offset;
 
-    let rides_ancestor_shift = |mut entity: Entity| {
-        while let Ok(child_of) = parents.get(entity) {
+    // What moves `entity`: an ancestor already shifted, else the topmost
+    // spatial ancestor of its hierarchy, which may be itself.
+    let shifted_by = |entity: Entity| {
+        let mut top = entity;
+        let mut at = entity;
+        while let Ok(child_of) = parents.get(at) {
             let parent = child_of.parent();
             if parent == body || space_marker.contains(parent) || position_marker.contains(parent) {
-                return true;
+                return None;
             }
-            entity = parent;
+            if spatial.contains(parent) {
+                top = parent;
+            }
+            at = parent;
         }
-        false
+        Some(top)
     };
 
+    let mut moved_roots = HashSet::new();
     for (entity, mut position, transform, prev) in &mut bodies {
         if entity == body {
             continue;
         }
         position.0 += delta;
-        if !rides_ancestor_shift(entity) {
-            if let Some(mut transform) = transform {
-                transform.translation += delta;
+        match shifted_by(entity) {
+            Some(root) if root == entity => {
+                if let Some(mut transform) = transform {
+                    transform.translation += delta;
+                }
+                if let Some(mut prev) = prev
+                    && let Some(p) = prev.0.as_mut()
+                {
+                    *p += delta;
+                }
             }
-            if let Some(mut prev) = prev
-                && let Some(p) = prev.0.as_mut()
-            {
-                *p += delta;
+            Some(root) => {
+                moved_roots.insert(root);
             }
+            None => {}
+        }
+    }
+    for root in moved_roots {
+        if let Ok(mut transform) = roots.get_mut(root) {
+            transform.translation += delta;
         }
     }
 
@@ -464,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn world_doc_under_plain_parent_shifts_local() {
+    fn a_body_under_a_plain_hierarchy_moves_with_its_root() {
         let mut app = setup();
         spawn_space(&mut app, b"a");
         let b = spawn_space(&mut app, b"b");
@@ -483,11 +509,19 @@ mod tests {
             ))
             .id();
 
-        // A prim under a plain (non-physics) container rides nothing; its local
-        // `Transform` must shift directly this frame.
+        // A document that belongs to no space: one collider prim and one
+        // visual sibling under a plain root.
         let root = app
             .world_mut()
             .spawn((Transform::default(), GlobalTransform::default()))
+            .id();
+        let visual = app
+            .world_mut()
+            .spawn((
+                Transform::from_translation(Vec3::new(5.0, 1.0, 6.0)),
+                GlobalTransform::default(),
+                ChildOf(root),
+            ))
             .id();
         let prim_local = Vec3::new(5.0, 0.0, 6.0);
         let prim = app
@@ -507,7 +541,16 @@ mod tests {
 
         assert_eq!(app.world().resource::<ActiveSpace>().0, Some(b));
         let read = |e| app.world().get::<Position>(e).expect("position").0;
-        assert!((translation(&app, prim) - (prim_local - b_pos)).length() < 1.0e-4);
+        assert!(
+            (translation(&app, root) + b_pos).length() < 1.0e-4,
+            "the root moves by the recenter"
+        );
+        assert_eq!(
+            translation(&app, prim),
+            prim_local,
+            "the collider keeps its place in its document"
+        );
+        assert_eq!(translation(&app, visual), Vec3::new(5.0, 1.0, 6.0));
         assert!((read(prim) - (prim_local - b_pos)).length() < 1.0e-4);
     }
 
@@ -565,7 +608,11 @@ mod tests {
 
         assert_eq!(app.world().resource::<ActiveSpace>().0, Some(b));
         let read = |e| app.world().get::<Position>(e).expect("position").0;
-        assert!((translation(&app, parent_body) - (parent_local - b_pos)).length() < 1.0e-4);
+        assert!(
+            (translation(&app, root) + b_pos).length() < 1.0e-4,
+            "the plain root carries the whole hierarchy"
+        );
+        assert!((translation(&app, parent_body) - parent_local).length() < 1.0e-4);
         assert!((translation(&app, nested) - nested_local).length() < 1.0e-4);
         // Positions are global, so both shift uniformly.
         assert!((read(parent_body) - (parent_local - b_pos)).length() < 1.0e-4);

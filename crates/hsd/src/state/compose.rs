@@ -21,6 +21,7 @@ use crate::{
         event::SceneEvent,
         prim::PrimState,
         stack::{
+            LayerId,
             MaskKey,
             Merge,
             Stacked,
@@ -162,6 +163,28 @@ impl HsdState {
                 || (None, Stamp::default()),
                 |(opinion, stamp)| (opinion.value().copied(), *stamp),
             )
+    }
+
+    /// Whether a peer composing every layer but `local` sees `prim` in the
+    /// scene: its strongest parent opinion outside `local` is live.
+    ///
+    /// A prim a script built only in its own layer has no such opinion, so no
+    /// other peer holds it. Its pose, id and body are meaningless to them, so
+    /// nothing about it may be replicated.
+    #[must_use]
+    pub fn is_replicated(&self, prim: PrimId, local: &LayerId) -> bool {
+        self.stack
+            .iter()
+            .rev()
+            .filter(|stacked| &stacked.id != local)
+            .find_map(|stacked| {
+                let held = stacked.layer.get(prim)?.parent()?;
+                stacked
+                    .mask
+                    .admits(prim, MaskKey::Parent(held.0.value().copied()))
+                    .then_some(held)
+            })
+            .is_some_and(|(opinion, _)| opinion.value().is_some())
     }
 
     /// Stamps a local write with [`Self::local_parent_stamp`] when `stamp` is

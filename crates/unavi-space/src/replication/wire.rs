@@ -20,12 +20,20 @@ use iroh::{
     },
 };
 use iroh_docs::NamespaceId;
+use n0_future::time::timeout;
 use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
 use tracing::warn;
-use xdid::core::did::Did;
+use unavi_identity::{
+    authorship::Authorship,
+    resolver::Resolver,
+};
+use xdid::core::{
+    did::Did,
+    document::Document,
+};
 
 use crate::{
     link::{
@@ -38,18 +46,27 @@ use crate::{
     membership::SpaceId,
     replication::{
         clock,
+        frames::{
+            self,
+            MAX_STATE_FRAME,
+        },
         guards::{
             self,
             Remote,
             RemoteDoc,
+            pins::PinClaim,
         },
-        message::ReplicationMsg,
+        message::{
+            Batch,
+            Received,
+            ReceivedDoc,
+            ReplicationMsg,
+            Retained,
+        },
+        record::Record,
         store::Proven,
     },
 };
-
-/// Largest frame either side sends or accepts.
-const MAX_STATE_FRAME: usize = 256 * 1024;
 
 /// Bytes allocated ahead of a frame's content; the rest grows as it arrives,
 /// so a length prefix alone never costs a full frame.
@@ -57,6 +74,10 @@ const READ_CHUNK: usize = 16 * 1024;
 
 /// How long a message naming a space waits for its sender's presence there.
 const PRESENCE_WAIT: Duration = Duration::from_secs(10);
+
+/// How long a DID may take to resolve before the batches naming it are
+/// dropped.
+const RESOLVE_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub async fn send_state_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
@@ -72,7 +93,9 @@ pub async fn send_state_stream(link: &PeerLink, connection: &Connection) -> anyh
             } else {
                 msg
             };
-            write_frame(&mut tx, &msg).await?;
+            for frame in frames::split(msg, MAX_STATE_FRAME) {
+                write_frame(&mut tx, &frame).await?;
+            }
         }
         anyhow::Ok(())
     }
@@ -101,12 +124,12 @@ pub async fn recv_state_stream(
     // Racing connections to the same peer share one state entity; the
     // generation lets only the latest stream tear it down.
     let generation = link.next_stream_gen();
-    let claim_did = did.clone();
+    let claimed = did.clone();
     let peer_ent = link
         .view()
         .commands()
         .send_with(move |world: &mut World| {
-            guards::claim_remote_peer(world, peer, claim_did, generation)
+            guards::claim_remote_peer(world, peer, claimed, generation)
         })
         .await
         .context("claim remote peer")?;
@@ -174,7 +197,8 @@ async fn recv_loop(
             }
         }
 
-        let Some(change) = prove(msg, did, &present) else {
+        let mut sender = Sender::new(peer, did, &link.view().identity().resolver);
+        let Some(change) = prove(msg, &present, &mut sender).await else {
             continue;
         };
 
@@ -189,93 +213,213 @@ async fn recv_loop(
     }
 }
 
-/// Checks each authorship proof, and drops whatever names a space the sender
-/// is not present in. A pin's proof must name the sender; a keep relays
-/// someone else's.
-fn prove(msg: ReplicationMsg, did: Option<&Did>, present: &HashSet<SpaceId>) -> Option<Remote> {
-    let relayed = |doc: hsd::id::DocId, proof: unavi_identity::authorship::Authorship| {
-        let author = proof.verify_namespace(NamespaceId::from(&doc.0)).ok()?;
-        Some(Proven { author, proof })
-    };
-    let proven = |doc: hsd::id::DocId, proof: unavi_identity::authorship::Authorship| {
-        let proven = relayed(doc, proof)?;
-        if did != Some(&proven.author) {
-            debug!(%doc, "pin from a peer that is not the document's author; dropped");
-            return None;
-        }
-        Some(proven)
-    };
+/// The peer a frame came from: its endpoint, the DID it proved, and that DID's
+/// document, resolved the first time a signature needs it.
+struct Sender<'a> {
+    id:       EndpointId,
+    did:      Option<&'a Did>,
+    resolver: &'a Resolver,
+    document: Option<Document>,
+}
 
+impl<'a> Sender<'a> {
+    const fn new(id: EndpointId, did: Option<&'a Did>, resolver: &'a Resolver) -> Self {
+        Self {
+            id,
+            did,
+            resolver,
+            document: None,
+        }
+    }
+
+    /// The proven DID's document. Not resolved again for each batch.
+    async fn own_document(&mut self) -> Option<&Document> {
+        if self.document.is_none() {
+            self.document = resolve(self.resolver, self.did?).await;
+        }
+        self.document.as_ref()
+    }
+
+    /// Whether a batch names this connection's endpoint and proven DID.
+    fn owns(&self, batch: &Batch) -> bool {
+        batch.payload.writer == self.id && self.did == Some(&batch.payload.did)
+    }
+}
+
+/// `did`'s document, or `None` if it does not resolve in time.
+async fn resolve(resolver: &Resolver, did: &Did) -> Option<Document> {
+    match timeout(RESOLVE_TIMEOUT, resolver.resolve(did)).await {
+        Ok(Ok(document)) => Some(document),
+        Ok(Err(err)) => {
+            warn!(%did, %err, "DID did not resolve; its session batches dropped");
+            None
+        }
+        Err(_) => {
+            warn!(%did, "DID resolution timed out; its session batches dropped");
+            None
+        }
+    }
+}
+
+/// Checks each authorship proof and pin record against its document's
+/// namespace, and drops whatever names a space the sender is not present in.
+/// A pin may relay someone else's proof; each receiver records whether the
+/// sender is the author.
+///
+/// A session batch is accepted from its writer's own connection, which proves
+/// its endpoint and DID, so a sender that proved no DID writes no session
+/// state. Every batch's signature must also verify against the DID it names,
+/// so a bad signature is refused at the first hop and no holder diverges.
+async fn prove(
+    msg: Received,
+    present: &HashSet<SpaceId>,
+    sender: &mut Sender<'_>,
+) -> Option<Remote> {
     Some(match msg {
-        ReplicationMsg::Snapshot(docs) => Remote::Snapshot(
-            docs.into_iter()
-                .filter(|d| present.contains(&d.space))
-                .map(|d| RemoteDoc {
-                    doc:     d.doc,
-                    space:   d.space,
-                    pin:     d.pin.and_then(|proof| proven(d.doc, proof)),
-                    keep:    d.keep.and_then(|proof| relayed(d.doc, proof)),
-                    hold:    d.hold,
-                    session: d.session,
-                })
-                .collect(),
-        ),
-        ReplicationMsg::Pin { doc, space, author } => {
+        Received::Snapshot(docs) => Remote::Snapshot(prove_docs(docs, present, sender).await),
+        Received::SnapshotMore(docs) => {
+            Remote::SnapshotMore(prove_docs(docs, present, sender).await)
+        }
+        Received::Pin {
+            doc,
+            space,
+            author,
+            record,
+        } => {
             if !present.contains(&space) {
                 return None;
             }
             Remote::Pin {
                 doc,
                 space,
-                proof: proven(doc, author)?,
+                claim: claim(proven(doc, author)?, checked(record, doc, space)?)?,
             }
         }
-        ReplicationMsg::Unpin { doc } => Remote::Unpin { doc },
-        ReplicationMsg::Keep { doc, space, author } => {
-            if !present.contains(&space) {
-                return None;
-            }
-            Remote::Keep {
-                doc,
-                space,
-                proof: relayed(doc, author)?,
-            }
-        }
-        ReplicationMsg::Unkeep { doc } => Remote::Unkeep { doc },
-        ReplicationMsg::Hold { doc, space } => {
+        Received::Unpin { doc, withdrawal } => Remote::Unpin {
+            doc,
+            withdrawal: withdrawal.and_then(|record| {
+                let space = record.payload.space;
+                (present.contains(&space) && !record.payload.pinned)
+                    .then(|| checked(record, doc, space))
+                    .flatten()
+            }),
+        },
+        Received::Hold { doc, space } => {
             if !present.contains(&space) {
                 return None;
             }
             Remote::Hold { doc, space }
         }
-        ReplicationMsg::ReleaseHold { doc, to } => Remote::ReleaseHold { doc, to },
-        ReplicationMsg::Session {
-            doc,
-            space,
-            writes,
-            at,
-        } => {
-            if !present.contains(&space) {
+        Received::ReleaseHold { doc, to } => Remote::ReleaseHold { doc, to },
+        Received::Session(batch) => {
+            if !present.contains(&batch.payload.space) || !sender.owns(&batch) {
+                debug!(peer = %sender.id, "session batch not from its writer; dropped");
                 return None;
             }
-            Remote::Session {
-                doc,
-                space,
-                writes,
-                at,
-            }
-        }
-        ReplicationMsg::SessionClear { doc, space, keys } => {
-            if !present.contains(&space) {
+            let peer = sender.id;
+            let document = sender.own_document().await?;
+            if let Err(err) = batch.signed.verify_document(&batch.payload.did, document) {
+                warn!(%peer, %err, "session batch not signed by its DID; dropped");
                 return None;
             }
-            Remote::SessionClear { doc, space, keys }
+            Remote::Session(batch)
         }
     })
 }
 
+/// `record` if it names `doc` in `space` and `doc`'s namespace signed it.
+fn checked(record: Record, doc: hsd::id::DocId, space: SpaceId) -> Option<Record> {
+    match record.verify(doc, space) {
+        Ok(()) => Some(record),
+        Err(err) => {
+            warn!(%doc, %err, "pin record dropped");
+            None
+        }
+    }
+}
+
+/// `proof` with the DID it names, if `doc`'s namespace signed it.
+fn proven(doc: hsd::id::DocId, proof: Authorship) -> Option<Proven> {
+    let author = proof.verify_namespace(NamespaceId::from(&doc.0)).ok()?;
+    Some(Proven { author, proof })
+}
+
+/// A pin carrying a checked record that says the document is pinned.
+fn claim(proven: Proven, record: Record) -> Option<PinClaim> {
+    record.payload.pinned.then_some(PinClaim {
+        proven,
+        record,
+        signer: None,
+    })
+}
+
+async fn prove_docs(
+    docs: Vec<ReceivedDoc>,
+    present: &HashSet<SpaceId>,
+    sender: &mut Sender<'_>,
+) -> Vec<RemoteDoc> {
+    let mut out = Vec::with_capacity(docs.len());
+    for d in docs.into_iter().filter(|d| present.contains(&d.space)) {
+        let mut layers = Vec::with_capacity(d.layers.len());
+        for layer in d.layers {
+            layers.extend(vouched(layer, sender).await);
+        }
+        let pin = d.pin.and_then(|pin| {
+            let record = checked(pin.record, d.doc, d.space)?;
+            claim(proven(d.doc, pin.author)?, record)
+        });
+        let withdrawal = d
+            .withdrawal
+            .and_then(|record| checked(record, d.doc, d.space))
+            .filter(|record| !record.payload.pinned);
+        out.push(RemoteDoc {
+            doc: d.doc,
+            space: d.space,
+            pin,
+            hold: d.hold,
+            withdrawal,
+            layers,
+        });
+    }
+    out
+}
+
+/// A snapshot layer's batches that the sender may state. Every batch of a
+/// layer names one writer and DID. The writer's own layer needs the
+/// connection's proof of that DID, and every batch needs a signature that
+/// verifies against the DID's document, resolved once for the layer. Batches
+/// that fail are dropped, and a DID that does not resolve drops the layer.
+async fn vouched(layer: Vec<Retained>, sender: &mut Sender<'_>) -> Option<Vec<Retained>> {
+    let first = &layer.first()?.batch;
+    if first.payload.writer == sender.id && !sender.owns(first) {
+        return None;
+    }
+
+    let did = first.payload.did.clone();
+    let peer = sender.id;
+    let resolved;
+    let document = if sender.did == Some(&did) {
+        sender.own_document().await?
+    } else {
+        resolved = resolve(sender.resolver, &did).await?;
+        &resolved
+    };
+    let mut kept = Vec::with_capacity(layer.len());
+    for retained in layer {
+        match retained.batch.signed.verify_document(&did, document) {
+            Ok(()) => kept.push(retained),
+            Err(err) => warn!(%peer, %err, "session batch dropped"),
+        }
+    }
+    (!kept.is_empty()).then_some(kept)
+}
+
 #[cfg(test)]
 mod tests {
+    use hsd::id::{
+        DocId,
+        PrimId,
+    };
     use iroh_docs::NamespaceSecret;
     use unavi_identity::{
         authorship::Authorship,
@@ -288,6 +432,15 @@ mod tests {
     };
 
     use super::*;
+    use crate::replication::{
+        message::{
+            ReceivedDoc,
+            ReceivedPin,
+            SessionBatch,
+            SessionWrite,
+        },
+        record::PinRecord,
+    };
 
     fn identity() -> Identity {
         let key = P256KeyPair::generate();
@@ -295,33 +448,372 @@ mod tests {
         Identity::new(did, key)
     }
 
-    fn pin(author: &Identity, space: SpaceId) -> ReplicationMsg {
-        let ns = NamespaceSecret::from_bytes(&[7; 32]);
-        ReplicationMsg::Pin {
-            doc: hsd::id::DocId(*ns.id().as_bytes()),
+    fn peer(seed: u8) -> EndpointId {
+        iroh::SecretKey::from_bytes(&[seed; 32]).public()
+    }
+
+    fn prove_as(
+        msg: Received,
+        present: &HashSet<SpaceId>,
+        peer: EndpointId,
+        did: Option<&Did>,
+    ) -> Option<Remote> {
+        let resolver = Resolver::new().expect("resolver");
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime")
+            .block_on(prove(msg, present, &mut Sender::new(peer, did, &resolver)))
+    }
+
+    fn namespace() -> NamespaceSecret {
+        NamespaceSecret::from_bytes(&[7; 32])
+    }
+
+    fn record(key: &NamespaceSecret, doc: DocId, space: SpaceId, at: u64, pinned: bool) -> Record {
+        Record::sign(
+            key,
+            PinRecord {
+                doc,
+                space,
+                at,
+                pinned,
+            },
+        )
+        .expect("sign")
+    }
+
+    fn pin(author: &Identity, space: SpaceId) -> Received {
+        let ns = namespace();
+        let doc = DocId(*ns.id().as_bytes());
+        Received::Pin {
+            doc,
             space,
             author: Authorship::sign(&ns, author).expect("sign"),
+            record: record(&ns, doc, space, 1, true),
         }
     }
 
+    /// A batch from `writer` naming `named`, signed by `signer`.
+    fn batch(writer: EndpointId, named: &Identity, signer: &Identity, space: SpaceId) -> Batch {
+        Batch::sign(
+            SessionBatch {
+                writer,
+                did: named.did().clone(),
+                doc: DocId([4; 32]),
+                space,
+                at: 1,
+                writes: vec![SessionWrite {
+                    prim:  PrimId([3; 16]),
+                    name:  "state/k".to_owned(),
+                    value: Some(vec![1]),
+                }],
+                clears: Vec::new(),
+            },
+            signer.signing_key(),
+        )
+        .expect("sign")
+    }
+
+    fn snapshot_of(batch: Batch, space: SpaceId) -> Received {
+        Received::Snapshot(vec![ReceivedDoc {
+            doc: batch.payload.doc,
+            space,
+            pin: None,
+            hold: false,
+            withdrawal: None,
+            layers: vec![vec![Retained {
+                batch,
+                live: vec![0],
+                live_clears: Vec::new(),
+            }]],
+        }])
+    }
+
+    fn relayed_layers(remote: Option<Remote>) -> usize {
+        let Some(Remote::Snapshot(docs)) = remote else {
+            panic!("a snapshot is accepted");
+        };
+        docs.iter().map(|doc| doc.layers.len()).sum()
+    }
+
     #[test]
-    fn only_the_proven_author_may_pin() {
-        let (alice, mallory) = (identity(), identity());
+    fn a_pin_relaying_the_authors_proof_is_accepted() {
+        let alice = identity();
         let space = SpaceId([1; 32]);
         let present = HashSet::from([space]);
 
-        assert!(prove(pin(&alice, space), Some(alice.did()), &present).is_some());
+        let Some(Remote::Pin { claim, .. }) = prove_as(pin(&alice, space), &present, peer(1), None)
+        else {
+            panic!("a proof that verifies is accepted whoever sends it");
+        };
+        assert_eq!(&claim.proven.author, alice.did());
+    }
+
+    #[test]
+    fn a_proof_for_another_namespace_is_dropped() {
+        let alice = identity();
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let Received::Pin {
+            author,
+            space,
+            record,
+            ..
+        } = pin(&alice, space)
+        else {
+            unreachable!();
+        };
+
+        let msg = Received::Pin {
+            doc: DocId([9; 32]),
+            space,
+            author,
+            record,
+        };
+        assert!(prove_as(msg, &present, peer(1), None).is_none());
+    }
+
+    #[test]
+    fn a_forged_pin_record_drops_the_pin() {
+        let alice = identity();
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let ns = namespace();
+        let doc = DocId(*ns.id().as_bytes());
+        let other = NamespaceSecret::from_bytes(&[8; 32]);
+        let Received::Pin { author, .. } = pin(&alice, space) else {
+            unreachable!();
+        };
+        let with = |record: Record| Received::Pin {
+            doc,
+            space,
+            author: author.clone(),
+            record,
+        };
+
         assert!(
-            prove(pin(&alice, space), Some(mallory.did()), &present).is_none(),
-            "replaying another DID's proof does not make the sender its author"
+            prove_as(
+                with(record(&ns, doc, space, 2, true)),
+                &present,
+                peer(1),
+                None
+            )
+            .is_some(),
+            "a genuine record passes"
         );
-        assert!(prove(pin(&alice, space), None, &present).is_none());
+        let mut wrong_key = record(&other, DocId(*other.id().as_bytes()), space, 2, true);
+        wrong_key.payload.doc = doc;
+        assert!(
+            prove_as(with(wrong_key), &present, peer(1), None).is_none(),
+            "a record another namespace's key signed"
+        );
+        assert!(
+            prove_as(
+                with(record(&ns, DocId([3; 32]), space, 2, true)),
+                &present,
+                peer(1),
+                None
+            )
+            .is_none(),
+            "a record the namespace signed for another document id"
+        );
+        assert!(
+            prove_as(
+                with(record(&ns, doc, SpaceId([2; 32]), 2, true)),
+                &present,
+                peer(1),
+                None
+            )
+            .is_none(),
+            "a record for another space"
+        );
+        assert!(
+            prove_as(
+                with(record(&ns, doc, space, 2, false)),
+                &present,
+                peer(1),
+                None
+            )
+            .is_none(),
+            "a pin must carry a record that says pinned"
+        );
+    }
+
+    #[test]
+    fn a_withdrawal_is_kept_only_when_genuine_and_for_a_present_space() {
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let ns = namespace();
+        let doc = DocId(*ns.id().as_bytes());
+        let withdrawn = |record: Record| {
+            let msg = Received::Unpin {
+                doc,
+                withdrawal: Some(record),
+            };
+            let Some(Remote::Unpin { withdrawal, .. }) = prove_as(msg, &present, peer(1), None)
+            else {
+                panic!("an unpin is never dropped for its record");
+            };
+            withdrawal.is_some()
+        };
+
+        assert!(withdrawn(record(&ns, doc, space, 2, false)));
+        assert!(
+            !withdrawn(record(&ns, doc, SpaceId([2; 32]), 2, false)),
+            "a space the sender is not in"
+        );
+        assert!(
+            !withdrawn(record(&ns, doc, space, 2, true)),
+            "a pin is not a withdrawal"
+        );
+        let other = NamespaceSecret::from_bytes(&[8; 32]);
+        let mut forged = record(&other, DocId(*other.id().as_bytes()), space, 2, false);
+        forged.payload.doc = doc;
+        assert!(!withdrawn(forged), "signed by another namespace");
+    }
+
+    #[test]
+    fn a_snapshot_pin_needs_a_genuine_pinned_record_and_a_withdrawal_a_genuine_withdrawal() {
+        let alice = identity();
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let ns = namespace();
+        let doc = DocId(*ns.id().as_bytes());
+        let proof = Authorship::sign(&ns, &alice).expect("sign");
+        let snapshot = |pin: Option<Record>, withdrawal: Option<Record>| {
+            let msg = Received::Snapshot(vec![ReceivedDoc {
+                doc,
+                space,
+                pin: pin.map(|record| ReceivedPin {
+                    author: proof.clone(),
+                    record,
+                }),
+                hold: false,
+                withdrawal,
+                layers: Vec::new(),
+            }]);
+            let Some(Remote::Snapshot(mut docs)) = prove_as(msg, &present, peer(1), None) else {
+                panic!("a snapshot is accepted");
+            };
+            docs.remove(0)
+        };
+
+        let genuine = snapshot(Some(record(&ns, doc, space, 2, true)), None);
+        assert!(genuine.pin.is_some() && genuine.withdrawal.is_none());
+        let both = snapshot(
+            Some(record(&ns, doc, space, 2, true)),
+            Some(record(&ns, doc, space, 3, false)),
+        );
+        assert!(
+            both.pin.is_some() && both.withdrawal.is_some(),
+            "a pin is stated whatever withdrawal the sender also knows"
+        );
+        let stale = snapshot(Some(record(&ns, doc, space, 3, false)), None);
+        assert!(stale.pin.is_none(), "a pin record must say pinned");
+        let wrong_space = snapshot(Some(record(&ns, doc, SpaceId([2; 32]), 2, true)), None);
+        assert!(wrong_space.pin.is_none());
+        let alone = snapshot(None, Some(record(&ns, doc, space, 3, false)));
+        assert!(alone.pin.is_none() && alone.withdrawal.is_some());
+        let not_a_withdrawal = snapshot(None, Some(record(&ns, doc, space, 3, true)));
+        assert!(not_a_withdrawal.withdrawal.is_none());
+        let forged = snapshot(None, Some(record(&ns, doc, SpaceId([2; 32]), 3, false)));
+        assert!(forged.withdrawal.is_none());
     }
 
     #[test]
     fn a_pin_for_a_space_the_sender_is_not_in_is_dropped() {
         let alice = identity();
         let present = HashSet::from([SpaceId([1; 32])]);
-        assert!(prove(pin(&alice, SpaceId([2; 32])), Some(alice.did()), &present).is_none());
+        assert!(prove_as(pin(&alice, SpaceId([2; 32])), &present, peer(1), None).is_none());
+    }
+
+    #[test]
+    fn a_live_batch_is_accepted_only_from_its_writer_proving_its_did() {
+        let (alice, mallory) = (identity(), identity());
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let own = || Received::Session(batch(peer(1), &alice, &alice, space));
+
+        assert!(prove_as(own(), &present, peer(1), Some(alice.did())).is_some());
+        assert!(
+            prove_as(own(), &present, peer(1), None).is_none(),
+            "a sender with no proven DID writes no session state"
+        );
+        assert!(
+            prove_as(own(), &present, peer(1), Some(mallory.did())).is_none(),
+            "the batch names a DID the connection did not prove"
+        );
+        assert!(
+            prove_as(own(), &present, peer(2), Some(alice.did())).is_none(),
+            "the batch names another endpoint's layer"
+        );
+        assert!(
+            prove_as(own(), &HashSet::new(), peer(1), Some(alice.did())).is_none(),
+            "a space the sender is not in"
+        );
+    }
+
+    #[test]
+    fn a_writers_own_batch_with_a_bad_signature_is_refused_at_the_first_hop() {
+        let (alice, mallory) = (identity(), identity());
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let forged = || batch(peer(1), &alice, &mallory, space);
+
+        let live = prove_as(
+            Received::Session(forged()),
+            &present,
+            peer(1),
+            Some(alice.did()),
+        );
+        assert!(
+            live.is_none(),
+            "the connection proves the DID, not the signature"
+        );
+        let snapshot = prove_as(
+            snapshot_of(forged(), space),
+            &present,
+            peer(1),
+            Some(alice.did()),
+        );
+        assert_eq!(relayed_layers(snapshot), 0);
+    }
+
+    #[test]
+    fn a_relayed_batch_is_kept_only_when_its_signature_verifies() {
+        let (alice, mallory) = (identity(), identity());
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let carrier = peer(2);
+
+        let genuine = batch(peer(1), &alice, &alice, space);
+        let relayed = prove_as(snapshot_of(genuine, space), &present, carrier, None);
+        assert_eq!(relayed_layers(relayed), 1, "a signed batch is relayable");
+
+        let forged = batch(peer(1), &alice, &mallory, space);
+        let relayed = prove_as(snapshot_of(forged, space), &present, carrier, None);
+        assert_eq!(
+            relayed_layers(relayed),
+            0,
+            "a batch naming a DID it was not signed by is dropped"
+        );
+    }
+
+    #[test]
+    fn a_writers_own_layer_in_a_snapshot_needs_its_proven_did() {
+        let (alice, mallory) = (identity(), identity());
+        let space = SpaceId([1; 32]);
+        let present = HashSet::from([space]);
+        let own = || snapshot_of(batch(peer(1), &alice, &alice, space), space);
+
+        let accepted = prove_as(own(), &present, peer(1), Some(alice.did()));
+        assert_eq!(relayed_layers(accepted), 1);
+        let refused = prove_as(own(), &present, peer(1), Some(mallory.did()));
+        assert_eq!(
+            relayed_layers(refused),
+            0,
+            "the writer's own layer is not checked by signature, so the connection must vouch"
+        );
     }
 }

@@ -69,7 +69,7 @@ const MAX_PRIMS_PER_STREAM: usize = 1024;
 #[derive(Serialize, Deserialize, MaxSize)]
 enum ObjectMsg {
     SpaceChange {
-        space: [u8; 32],
+        space: SpaceId,
     },
     Keyframe {
         id:   u32,
@@ -171,7 +171,7 @@ async fn send_object(
 
     if stream.last_space != Some(obj.space) {
         stream.last_space = Some(obj.space);
-        let msg = ObjectMsg::SpaceChange { space: obj.space.0 };
+        let msg = ObjectMsg::SpaceChange { space: obj.space };
         write_frame(&mut stream.tx, &msg, buf).await?;
     }
 
@@ -332,7 +332,7 @@ pub async fn recv_object_stream(
         let msg = postcard::from_bytes::<ObjectMsg>(buf)?;
 
         match msg {
-            ObjectMsg::SpaceChange { space } => current_space = Some(SpaceId(space)),
+            ObjectMsg::SpaceChange { space } => current_space = Some(space),
             frame => {
                 let Some(space) = current_space else {
                     continue;

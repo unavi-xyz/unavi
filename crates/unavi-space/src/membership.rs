@@ -16,16 +16,20 @@ use bevy_hsd::{
 };
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use postcard::experimental::max_size::MaxSize;
 use serde::{
     Deserialize,
     Serialize,
 };
 use unavi_policy::Policy;
 
-use crate::index::{
-    self,
-    Index,
-    Indexed,
+use crate::{
+    index::{
+        self,
+        Index,
+        Indexed,
+    },
+    replication::Replicas,
 };
 
 /// Keeps space membership and document hosts recorded in [`Policy`].
@@ -49,7 +53,9 @@ impl Plugin for MembershipPlugin {
 ///
 /// Distinct from [`DocId`] and [`NamespaceId`] so a document id is never
 /// passed where a space is meant.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, Serialize, Deserialize, MaxSize,
+)]
 pub struct SpaceId(pub [u8; 32]);
 
 impl SpaceId {
@@ -211,9 +217,17 @@ pub fn forget_membership(
     }
 }
 
-pub fn forget_space(trigger: On<Remove, Space>, spaces: Query<&Space>, policy: Res<Policy>) {
+pub fn forget_space(
+    trigger: On<Remove, Space>,
+    spaces: Query<&Space>,
+    policy: Res<Policy>,
+    replicas: Option<Res<Replicas>>,
+) {
     if let Ok(space) = spaces.get(trigger.entity) {
         policy.forget_space(space.doc_id());
+        if let Some(replicas) = replicas {
+            replicas.forget_space_records(space.id());
+        }
     }
 }
 

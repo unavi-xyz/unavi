@@ -1,10 +1,11 @@
-//! Session opinions: one layer per peer per document, stacked above the
+//! Session opinions: one layer per writer per document, stacked above the
 //! document's own layers and masked by the viewer.
 //!
-//! [`layers::SessionLayers`] keeps each peer's opinions and charges them to
-//! that peer. [`compose`] stacks them into the documents they speak for. A
+//! [`layers::SessionLayers`] keeps each writer's opinions, the signed batches
+//! that state them and the peers that carry them, and charges them to the
+//! writer. [`compose`] stacks them into the documents they speak for. A
 //! layer's mask, not admission, decides what it may contribute, so every
-//! peer holds every present peer's layer and resolves them the same way.
+//! peer holds every present writer's layer and resolves them the same way.
 
 use hsd::{
     attributes::portal::PortalAttr,
@@ -30,6 +31,8 @@ use unavi_policy::{
     trust::Trust,
 };
 
+use crate::replication::message::SESSION_NAME_MAX_BYTES;
+
 pub mod compose;
 pub mod layers;
 #[cfg(test)] mod tests;
@@ -42,14 +45,33 @@ pub(crate) struct SessionKey {
     pub(crate) name: PropName,
 }
 
+impl SessionKey {
+    /// A session name is a property name, so it answers to the same
+    /// key-layout rule every document property does, plus a length the store
+    /// will accept.
+    pub(crate) fn new(prim: PrimId, name: &str) -> Result<Self, SessionError> {
+        if name.len() > SESSION_NAME_MAX_BYTES {
+            return Err(SessionError::BadName);
+        }
+        let name = name.parse().map_err(|_| SessionError::BadName)?;
+        Ok(Self { prim, name })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum SessionError {
     #[error("session property name is invalid or too long")]
     BadName,
+    #[error("session batch carries too many writes")]
+    TooLarge,
     #[error("session write to a document present in another space")]
     WrongSpace,
+    #[error("session layer is held under another DID")]
+    WrongDid,
     #[error("session write exceeds quota")]
     QuotaExceeded,
+    #[error("session batch could not be signed")]
+    Unsigned,
     /// The world the replica lives in is gone.
     #[error("session write failed: replica unavailable")]
     Unavailable,
@@ -63,10 +85,10 @@ pub(crate) fn cell_bytes(key: &SessionKey, value: Option<&[u8]>) -> u64 {
 /// Every session layer's id starts with this.
 pub const LAYER_PREFIX: &str = "session/";
 
-/// The stack layer holding `peer`'s session opinions.
+/// The stack layer holding `writer`'s session opinions.
 #[must_use]
-pub fn layer_id(peer: EndpointId) -> LayerId {
-    LayerId::new(format!("{LAYER_PREFIX}{peer}"))
+pub fn layer_id(writer: EndpointId) -> LayerId {
+    LayerId::new(format!("{LAYER_PREFIX}{writer}"))
 }
 
 /// The group guest scripts keep their own session state under. It carries no
@@ -130,7 +152,7 @@ pub fn mask(is_author: bool, permissions: Permissions) -> Mask {
     })
 }
 
-/// One peer's layer as the stack builder sees it.
+/// One writer's layer as the stack builder sees it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Standing {
     pub peer:        EndpointId,

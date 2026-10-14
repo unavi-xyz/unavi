@@ -21,9 +21,9 @@ const MYSELF_SHARE: f64 = 4.0;
 pub struct Grant {
     pub permissions: Permissions,
     pub limits:      Limits,
-    /// Whether a peer at this rung that leaves has its live state adopted:
-    /// its session opinions copied into the viewer's own, and the documents
-    /// it authored kept loaded.
+    /// Whether what an originator at this rung brought outlives it. The
+    /// viewer pins documents it authored and carries session layers it wrote
+    /// after it leaves.
     pub adopts:      bool,
 }
 

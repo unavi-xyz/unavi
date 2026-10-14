@@ -9,6 +9,11 @@ use iroh::{
     EndpointId,
     Signature,
 };
+use iroh_docs::{
+    NamespaceId,
+    NamespacePublicKey,
+    NamespaceSecret,
+};
 use serde::{
     Deserialize,
     Serialize,
@@ -17,6 +22,7 @@ use xdid::{
     core::{
         ResolutionError,
         did::Did,
+        document::Document,
     },
     method::key::Signer,
 };
@@ -39,6 +45,8 @@ pub enum VerifyError {
     NotSigned(Did),
     #[error("not signed by endpoint {0}")]
     NotSignedByEndpoint(EndpointId),
+    #[error("not signed by namespace {0}")]
+    NotSignedByNamespace(NamespaceId),
 }
 
 /// A `T` and a signature over it. Who signed is not recorded: the verifier
@@ -97,7 +105,12 @@ where
                 did: did.clone(),
                 source,
             })?;
+        self.verify_document(did, &doc)
+    }
 
+    /// Checks the signature against the authentication keys of `doc`, which is
+    /// `did`'s already-resolved document.
+    pub fn verify_document(&self, did: &Did, doc: &Document) -> Result<(), VerifyError> {
         let methods = doc
             .authentication
             .as_ref()
@@ -125,6 +138,16 @@ where
         endpoint
             .verify(&self.signing_bytes(), &Signature::from_bytes(&signature))
             .map_err(|_| VerifyError::NotSignedByEndpoint(endpoint))
+    }
+
+    /// Checks the signature against the namespace key `ns` names, as made by
+    /// [`NamespaceSigner`]. Needs no resolver: the id is the public key.
+    pub fn verify_namespace(&self, ns: NamespaceId) -> Result<(), VerifyError> {
+        let forged = || VerifyError::NotSignedByNamespace(ns);
+        let signature = <[u8; 64]>::try_from(self.signature.as_slice()).map_err(|_| forged())?;
+        let key = NamespacePublicKey::from_bytes(ns.as_bytes()).map_err(|_| forged())?;
+        key.verify(&self.signing_bytes(), &Signature::from_bytes(&signature))
+            .map_err(|_| forged())
     }
 }
 
@@ -158,6 +181,18 @@ where
 pub struct EndpointSigner<'a>(pub &'a iroh::SecretKey);
 
 impl Signer for EndpointSigner<'_> {
+    type Error = Infallible;
+
+    fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Infallible> {
+        Ok(self.0.sign(message).to_bytes().to_vec())
+    }
+}
+
+/// Signs with a namespace's write key, for payloads verified by
+/// [`Signed::verify_namespace`].
+pub struct NamespaceSigner<'a>(pub &'a NamespaceSecret);
+
+impl Signer for NamespaceSigner<'_> {
     type Error = Infallible;
 
     fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Infallible> {
@@ -225,6 +260,21 @@ mod tests {
         assert!(
             signed
                 .verify_endpoint(SecretKey::generate().public())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn a_namespace_signature_verifies_only_for_its_namespace() {
+        let ns = NamespaceSecret::from_bytes(&[1; 32]);
+        let signed = A(7).sign(&NamespaceSigner(&ns)).expect("sign");
+
+        signed
+            .verify_namespace(ns.id())
+            .expect("the signing namespace verifies");
+        assert!(
+            signed
+                .verify_namespace(NamespaceSecret::from_bytes(&[2; 32]).id())
                 .is_err()
         );
     }

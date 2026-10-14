@@ -126,14 +126,21 @@ impl SpaceView {
         }
     }
 
-    /// Whether `doc` stays loaded with its author gone: some peer keeps it,
-    /// and the local rules adopt its author's rung.
+    /// Whether the local rules adopt content `did` authors.
     #[must_use]
-    pub fn keeps(&self, doc: DocId) -> bool {
-        self.replicas.is_kept(doc)
-            && self
-                .author(doc)
-                .is_some_and(|did| self.rules.grant(self.trust_of_did(&did)).adopts)
+    pub fn adopts(&self, did: &Did) -> bool {
+        self.rules.grant(self.trust_of_did(did)).adopts
+    }
+
+    /// Whether `doc` stays loaded: its author pins it, or anyone pins it, the
+    /// newest record of the author's says it is pinned, and the local rules
+    /// adopt its author's rung.
+    #[must_use]
+    pub fn loads(&self, doc: DocId) -> bool {
+        self.replicas.is_author_pinned(doc)
+            || (self.replicas.is_pin_current(doc)
+                && self.replicas.is_pinned(doc)
+                && self.author(doc).is_some_and(|did| self.adopts(&did)))
     }
 
     /// Who authored `doc`, resolved through the document that composed it.

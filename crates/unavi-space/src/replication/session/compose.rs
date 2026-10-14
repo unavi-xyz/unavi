@@ -58,23 +58,36 @@ use crate::{
     },
 };
 
-/// Holds one peer's session layer on one document for as long as the peer's
-/// guard owner and the document's anchor both live.
+/// Holds one writer's session layer on one document through one source, for
+/// as long as the source's guard owner and the document's anchor both live.
+///
+/// The layer is unstacked from the document when its last source's guard goes.
 #[derive(Component)]
-#[component(on_remove = unstack)]
+#[component(on_remove = release)]
 pub struct SessionLayerState {
-    pub(crate) peer:     EndpointId,
+    pub(crate) source:   EndpointId,
+    pub(crate) writer:   EndpointId,
+    /// The DID the layer's batches name.
+    pub(crate) did:      Did,
     pub(crate) doc:      DocId,
     /// What the layer was last stacked as.
     standing:            Option<Standing>,
-    /// Held because a drop takes no arguments.
+    /// Held because the removal hook reads it off the component.
     pub(crate) replicas: Replicas,
 }
 
 impl SessionLayerState {
-    pub(crate) const fn new(peer: EndpointId, doc: DocId, replicas: Replicas) -> Self {
+    pub(crate) const fn new(
+        source: EndpointId,
+        writer: EndpointId,
+        did: Did,
+        doc: DocId,
+        replicas: Replicas,
+    ) -> Self {
         Self {
-            peer,
+            source,
+            writer,
+            did,
             doc,
             standing: None,
             replicas,
@@ -82,16 +95,18 @@ impl SessionLayerState {
     }
 }
 
-impl Drop for SessionLayerState {
-    fn drop(&mut self) {
-        self.replicas.remove_session_layer(self.peer, self.doc);
-    }
-}
-
-fn unstack(world: DeferredWorld, ctx: HookContext) {
+/// Drops the guard's source from the layer, and unstacks the layer from its
+/// document if that was the last one.
+fn release(world: DeferredWorld, ctx: HookContext) {
     let Some(layer) = world.get::<SessionLayerState>(ctx.entity) else {
         return;
     };
+    if !layer
+        .replicas
+        .remove_session_source(layer.writer, layer.doc, layer.source)
+    {
+        return;
+    }
     let Some(state) = doc_state(&world, layer.doc) else {
         return;
     };
@@ -100,8 +115,8 @@ fn unstack(world: DeferredWorld, ctx: HookContext) {
         return;
     };
     // A document that never stacked the layer has nothing to remove.
-    if state.layer(&layer_id(layer.peer)).is_some()
-        && let Err(err) = state.remove_layer(&layer_id(layer.peer))
+    if state.layer(&layer_id(layer.writer)).is_some()
+        && let Err(err) = state.remove_layer(&layer_id(layer.writer))
     {
         warn!(?err, "session layer not unstacked");
     }
@@ -114,49 +129,50 @@ pub(crate) fn doc_state(world: &World, doc: DocId) -> Option<Arc<Mutex<HsdState>
     world.get::<Hsd>(entity).map(Hsd::handle)
 }
 
-/// How the local viewer stacks `peer`'s layer on `doc`. Without replicas or a
-/// view, the peer is an anonymous non-author.
-fn standing(world: &World, peer: EndpointId, did: Option<&Did>, doc: DocId) -> Standing {
+/// How the local viewer stacks `writer`'s layer on `doc`, judging the DID the
+/// layer names, so a layer keeps its standing after its writer leaves. Without
+/// replicas or a view, the writer is an anonymous non-author.
+fn standing(world: &World, writer: EndpointId, did: &Did, doc: DocId) -> Standing {
     let author = world
         .get_resource::<Replicas>()
         .and_then(|replicas| replicas.author(doc));
     let trust = world
         .get_resource::<SpaceView>()
-        .map_or(Trust::Anonymous, |view| view.trust_of(peer));
+        .map_or(Trust::Anonymous, |view| view.trust_of_did(did));
     let permissions = world
         .get_resource::<Rules>()
         .cloned()
         .unwrap_or_default()
         .permissions(trust);
     Standing {
-        peer,
-        is_author: did.is_some() && author.as_ref() == did,
+        peer: writer,
+        is_author: author.as_ref() == Some(did),
         trust,
         permissions,
     }
 }
 
-/// Composes `opinions` into `peer`'s layer on `doc`, stacking the layer first
-/// if it is new. A document not in the world composes nothing; its layers are
-/// stacked when it arrives.
+/// Composes `opinions` into `writer`'s layer on `doc`, stacking the layer
+/// first if it is new. A document not in the world composes nothing; its
+/// layers are stacked when it arrives.
 pub(crate) fn compose(
     world: &World,
-    peer: EndpointId,
-    did: Option<&Did>,
+    writer: EndpointId,
+    did: &Did,
     doc: DocId,
     opinions: &[Opinion],
 ) {
     let Some(state) = doc_state(world, doc) else {
         return;
     };
-    let standing = standing(world, peer, did, doc);
+    let standing = standing(world, writer, did, doc);
     let Ok(mut state) = state.lock() else {
         warn!("scene state poisoned");
         return;
     };
 
     state.open_tick();
-    let id = layer_id(peer);
+    let id = layer_id(writer);
     if state.layer(&id).is_none() {
         if let Err(err) = state.add_layer(
             id.clone(),
@@ -197,9 +213,9 @@ pub fn stack_on_arrival(
         let Some(replicas) = world.get_resource::<Replicas>().cloned() else {
             return;
         };
-        for (peer, did) in replicas.session_layers(doc) {
-            let opinions = replicas.session_opinions(peer, doc);
-            compose(world, peer, did.as_ref(), doc, &opinions);
+        for (writer, did) in replicas.session_layers(doc) {
+            let opinions = replicas.session_opinions(writer, doc);
+            compose(world, writer, &did, doc, &opinions);
         }
     });
 }
@@ -213,8 +229,8 @@ fn restack_order(state: &mut HsdState, world: &World, doc: DocId) -> bool {
         .get_resource::<Replicas>()
         .map_or_default(|replicas| replicas.session_layers(doc))
         .into_iter()
-        .filter(|(peer, _)| state.layer(&layer_id(*peer)).is_some())
-        .map(|(peer, did)| standing(world, peer, did.as_ref(), doc))
+        .filter(|(writer, _)| state.layer(&layer_id(*writer)).is_some())
+        .map(|(writer, did)| standing(world, writer, &did, doc))
         .collect::<Vec<_>>();
     order(&mut standings);
 
@@ -295,20 +311,10 @@ pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
         return;
     }
 
-    let Some(replicas) = world.get_resource::<Replicas>().cloned() else {
-        return;
-    };
     let mut layers = world.query::<(Entity, &SessionLayerState)>();
     let mut moved: HashMap<DocId, Vec<(Entity, Standing)>> = HashMap::new();
-    let mut dids: HashMap<DocId, HashMap<EndpointId, Option<Did>>> = HashMap::new();
     for (entity, layer) in layers.iter(world) {
-        let did = dids
-            .entry(layer.doc)
-            .or_insert_with(|| replicas.session_layers(layer.doc).into_iter().collect())
-            .get(&layer.peer)
-            .cloned()
-            .flatten();
-        let now = standing(world, layer.peer, did.as_ref(), layer.doc);
+        let now = standing(world, layer.writer, &layer.did, layer.doc);
         if layer.standing != Some(now) {
             moved.entry(layer.doc).or_default().push((entity, now));
         }
@@ -323,7 +329,11 @@ pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
             };
             state.open_tick();
             let mut ok = true;
+            let mut masked = HashSet::new();
             for (_, now) in &standings {
+                if !masked.insert(now.peer) {
+                    continue;
+                }
                 let id = layer_id(now.peer);
                 if state.layer(&id).is_some()
                     && let Err(err) = state.set_mask(&id, mask(now.is_author, now.permissions))
@@ -349,9 +359,9 @@ pub fn restack(world: &mut World, mut last: Local<Option<Inputs>>) {
     *last = all_applied.then_some(inputs);
 }
 
-/// Drops `peer`'s opinions on `keys` from `doc`'s stack, so the layers
+/// Drops `writer`'s opinions on `keys` from `doc`'s stack, so the layers
 /// beneath show through.
-pub(crate) fn uncompose(world: &World, peer: EndpointId, doc: DocId, keys: &[SessionKey]) {
+pub(crate) fn uncompose(world: &World, writer: EndpointId, doc: DocId, keys: &[SessionKey]) {
     let Some(state) = doc_state(world, doc) else {
         return;
     };
@@ -359,7 +369,7 @@ pub(crate) fn uncompose(world: &World, peer: EndpointId, doc: DocId, keys: &[Ses
         warn!("scene state poisoned");
         return;
     };
-    let id = layer_id(peer);
+    let id = layer_id(writer);
     if state.layer(&id).is_none() {
         return;
     }

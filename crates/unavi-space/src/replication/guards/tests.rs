@@ -3,9 +3,13 @@ use std::sync::{
     Mutex,
 };
 
-use bevy_hsd::document::{
-    Hsd,
-    HsdDocId,
+use bevy::ecs::system::RunSystemOnce;
+use bevy_hsd::{
+    document::{
+        Hsd,
+        HsdDocId,
+    },
+    loaded::HsdLoaded,
 };
 use hsd::{
     attributes::{
@@ -22,6 +26,7 @@ use hsd::{
     property::{
         Payload,
         Property,
+        name::PropName,
         value::Value,
     },
     state::{
@@ -31,8 +36,10 @@ use hsd::{
 };
 use iroh_docs::NamespaceSecret;
 use unavi_identity::{
+    auth::Bindings,
     authorship::Authorship,
     identity::Identity,
+    resolver::Resolver,
 };
 use unavi_local::DeviceStorage;
 use unavi_policy::{
@@ -43,6 +50,7 @@ use unavi_policy::{
         TrustTable,
     },
 };
+use unavi_registry::client::Followed as FollowedSet;
 use xdid::method::key::{
     DidKeyPair,
     PublicKey,
@@ -50,9 +58,25 @@ use xdid::method::key::{
 };
 
 use super::*;
-use crate::replication::{
-    session::compose::stack_on_arrival,
-    store::StateFeed,
+use crate::{
+    membership::{
+        forget_space,
+        register_space,
+    },
+    pinned::{
+        NoLocalPin,
+        reconcile_local_pins,
+    },
+    replication::{
+        guards::pins::finish_withdrawal,
+        message::{
+            MAX_BATCHES_PER_LAYER,
+            MAX_VALUE_BYTES,
+            Received,
+        },
+        session::compose::stack_on_arrival,
+        store::StateFeed,
+    },
 };
 
 fn identity() -> Identity {
@@ -61,16 +85,36 @@ fn identity() -> Identity {
     Identity::new(did, key)
 }
 
-fn authored(seed: u8, author: &Identity) -> (DocId, Proven) {
+/// A document `author` wrote in `space`, and the pin that says so.
+fn authored(seed: u8, author: &Identity, space: SpaceId) -> (DocId, PinClaim) {
+    authored_at(seed, author, space, 1)
+}
+
+/// As [`authored`], with the pin record stamped `at`.
+fn authored_at(seed: u8, author: &Identity, space: SpaceId, at: u64) -> (DocId, PinClaim) {
     let ns = NamespaceSecret::from_bytes(&[seed; 32]);
     let proof = Authorship::sign(&ns, author).expect("sign");
-    (
-        DocId(*ns.id().as_bytes()),
-        Proven {
+    let claim = PinClaim {
+        proven: Proven {
             author: author.did().clone(),
             proof,
         },
-    )
+        record: record_of(seed, space, at, true),
+        signer: None,
+    };
+    (DocId(*ns.id().as_bytes()), claim)
+}
+
+/// The record `authored(seed, ..)`'s namespace signs for its document.
+fn record_of(seed: u8, space: SpaceId, at: u64, pinned: bool) -> Record {
+    let ns = NamespaceSecret::from_bytes(&[seed; 32]);
+    let payload = PinRecord {
+        doc: DocId(*ns.id().as_bytes()),
+        space,
+        at,
+        pinned,
+    };
+    Record::sign(&ns, payload).expect("sign")
 }
 
 fn space(seed: &[u8]) -> SpaceId {
@@ -180,12 +224,50 @@ fn remote(world: &mut World, id: EndpointId, did: Option<&Did>) -> Stater {
     }
 }
 
+/// A signed batch from `stater`, whose layer names `who`'s DID.
+fn batch_from(
+    stater: &Stater,
+    who: &Identity,
+    doc: DocId,
+    space: SpaceId,
+    writes: Vec<SessionWrite>,
+    at: u64,
+) -> Batch {
+    Batch::sign(
+        SessionBatch {
+            writer: stater.id,
+            did: who.did().clone(),
+            doc,
+            space,
+            at,
+            writes,
+            clears: Vec::new(),
+        },
+        who.signing_key(),
+    )
+    .expect("sign")
+}
+
+/// States `writes` as `stater`, a peer proving `who`'s DID.
+fn say(
+    world: &mut World,
+    stater: &Stater,
+    who: &Identity,
+    doc: DocId,
+    space: SpaceId,
+    writes: Vec<SessionWrite>,
+    at: u64,
+) -> Result<(), SessionError> {
+    let batch = batch_from(stater, who, doc, space, writes, at);
+    apply_batch(world, stater, &batch, None)
+}
+
 #[test]
 fn a_local_pin_broadcasts_and_its_guard_releases_it() {
     let (mut world, replicas) = world();
     let me = identity();
-    let (doc, proven) = authored(1, &me);
     let space = space(b"pin-guard");
+    let (doc, proven) = authored(1, &me, space);
 
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
@@ -201,7 +283,7 @@ fn a_local_pin_broadcasts_and_its_guard_releases_it() {
     let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
     world.despawn(tracker);
     assert_eq!(replicas.author_endpoint(space, doc), None);
-    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Unpin { doc: d }) if d == doc));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Unpin { doc: d, .. }) if d == doc));
     replicas.unregister_stream(feed.token);
 }
 
@@ -213,9 +295,10 @@ fn a_session_write_composes_into_the_document_it_speaks_for() {
     let state = spawn_doc(&mut world, space.doc());
 
     let stater = local(&mut world, peer(1), me.did());
-    set_session(
+    say(
         &mut world,
         &stater,
+        &me,
         space.doc(),
         space,
         vec![write(&state_k(), b"v")],
@@ -241,7 +324,7 @@ fn a_guests_script_does_not_resolve_while_the_authors_does() {
 
     let visitor = remote(&mut world, peer(2), Some(guest.did()));
     let batch = vec![write(&ScriptAttr::NAME, &[2; 32]), write(&state_k(), b"v")];
-    set_session(&mut world, &visitor, doc, space, batch, 1).expect("session set");
+    say(&mut world, &visitor, &guest, doc, space, batch, 1).expect("session set");
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
     assert_eq!(
         resolved(&state, &ScriptAttr::NAME),
@@ -250,9 +333,10 @@ fn a_guests_script_does_not_resolve_while_the_authors_does() {
     );
 
     let owner = local(&mut world, peer(1), author.did());
-    set_session(
+    say(
         &mut world,
         &owner,
+        &author,
         doc,
         space,
         vec![write(&ScriptAttr::NAME, &[1; 32])],
@@ -275,10 +359,11 @@ fn the_authors_opinion_beats_a_guests_on_an_open_key_whatever_the_stamp() {
         let owner = local(&mut world, peer(1), author.did());
         let visitor = remote(&mut world, peer(2), Some(guest.did()));
 
-        let mut say = |stater: &Stater, value: &[u8], at: u64| {
-            set_session(
+        let mut speak = |stater: &Stater, who: &Identity, value: &[u8], at: u64| {
+            say(
                 &mut world,
                 stater,
+                who,
                 doc,
                 space,
                 vec![write(&state_k(), value)],
@@ -287,11 +372,11 @@ fn the_authors_opinion_beats_a_guests_on_an_open_key_whatever_the_stamp() {
             .expect("session set");
         };
         if guest_first {
-            say(&visitor, b"guest", 9);
-            say(&owner, b"author", 1);
+            speak(&visitor, &guest, b"guest", 9);
+            speak(&owner, &author, b"author", 1);
         } else {
-            say(&owner, b"author", 1);
-            say(&visitor, b"guest", 9);
+            speak(&owner, &author, b"author", 1);
+            speak(&visitor, &guest, b"guest", 9);
         }
         assert_eq!(
             resolved(&state, &state_k()).as_deref(),
@@ -308,10 +393,12 @@ fn a_departing_peer_takes_its_session_layer() {
     let doc = space.doc();
     let state = spawn_doc(&mut world, doc);
 
-    let visitor = remote(&mut world, peer(3), None);
-    set_session(
+    let guest = identity();
+    let visitor = remote(&mut world, peer(3), Some(guest.did()));
+    say(
         &mut world,
         &visitor,
+        &guest,
         doc,
         space,
         vec![write(&state_k(), b"v")],
@@ -319,7 +406,7 @@ fn a_departing_peer_takes_its_session_layer() {
     )
     .expect("session set");
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
-    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
 
     world.despawn(visitor.entity);
     assert_eq!(
@@ -328,7 +415,7 @@ fn a_departing_peer_takes_its_session_layer() {
         "an opinion goes with the peer that stated it"
     );
     assert!(
-        replicas.session_peers(doc).is_empty(),
+        replicas.session_writers(doc).is_empty(),
         "the replicas drop the layer too"
     );
 }
@@ -340,22 +427,24 @@ fn a_layer_goes_with_its_document() {
     let doc = space.doc();
     spawn_doc(&mut world, doc);
 
-    let visitor = remote(&mut world, peer(3), None);
-    set_session(
+    let guest = identity();
+    let visitor = remote(&mut world, peer(3), Some(guest.did()));
+    say(
         &mut world,
         &visitor,
+        &guest,
         doc,
         space,
         vec![write(&state_k(), b"v")],
         1,
     )
     .expect("session set");
-    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
 
     let entity = world.resource::<DocIndex>().get(doc).expect("document");
     world.despawn(entity);
     assert!(
-        replicas.session_peers(doc).is_empty(),
+        replicas.session_writers(doc).is_empty(),
         "a layer cannot outlive the document it speaks for"
     );
 }
@@ -366,17 +455,19 @@ fn a_layer_stated_before_its_document_arrives_composes_once_it_does() {
     let space = space(b"early-layer");
     let doc = DocId([8; 32]);
 
-    let visitor = remote(&mut world, peer(3), None);
-    set_session(
+    let guest = identity();
+    let visitor = remote(&mut world, peer(3), Some(guest.did()));
+    say(
         &mut world,
         &visitor,
+        &guest,
         doc,
         space,
         vec![write(&state_k(), b"early")],
         1,
     )
     .expect("session set");
-    assert_eq!(replicas.session_peers(doc), vec![peer(3)]);
+    assert_eq!(replicas.session_writers(doc), vec![peer(3)]);
 
     let state = spawn_doc(&mut world, doc);
     assert_eq!(
@@ -390,8 +481,8 @@ fn a_layer_stated_before_its_document_arrives_composes_once_it_does() {
 fn a_departing_peer_takes_its_pins() {
     let (mut world, replicas) = world();
     let alice = identity();
-    let (doc, proven) = authored(2, &alice);
     let space = space(b"cascade-peer");
+    let (doc, proven) = authored(2, &alice, space);
 
     let stater = remote(&mut world, peer(2), Some(alice.did()));
     assert!(spawn_pin(&mut world, &stater, doc, space, proven));
@@ -406,8 +497,8 @@ fn a_departing_peer_takes_its_pins() {
 fn a_guest_holds_and_reserves_the_next() {
     let (mut world, replicas) = world();
     let alice = identity();
-    let (doc, proven) = authored(3, &alice);
     let space = space(b"hold");
+    let (doc, proven) = authored(3, &alice, space);
 
     let author_device = remote(&mut world, peer(1), Some(alice.did()));
     assert!(spawn_pin(&mut world, &author_device, doc, space, proven));
@@ -432,8 +523,8 @@ fn a_guest_holds_and_reserves_the_next() {
 fn a_superseded_stream_leaves_the_peers_state() {
     let (mut world, replicas) = world();
     let alice = identity();
-    let (doc, proven) = authored(4, &alice);
     let space = space(b"supersede");
+    let (doc, proven) = authored(4, &alice, space);
 
     let e0 = claim_remote_peer(&mut world, peer(2), Some(alice.did().clone()), 0);
     let stater = Stater {
@@ -458,8 +549,8 @@ fn a_superseded_stream_leaves_the_peers_state() {
 fn state_for_an_unentered_space_waits_unparented() {
     let (mut world, replicas) = world();
     let alice = identity();
-    let (doc, proven) = authored(5, &alice);
     let space = space(b"unentered");
+    let (doc, proven) = authored(5, &alice, space);
 
     let stater = remote(&mut world, peer(2), Some(alice.did()));
     assert!(spawn_pin(&mut world, &stater, doc, space, proven));
@@ -483,25 +574,13 @@ fn portal_rules() -> Rules {
 
 /// Hands the next message on `feed` to `world` as if `from` sent it.
 fn forward(feed: &StateFeed, world: &mut World, from: Entity) {
-    let Ok(ReplicationMsg::Session {
-        doc,
-        space,
-        writes,
-        at,
-    }) = feed.rx.try_recv()
-    else {
+    let Ok(msg @ ReplicationMsg::Session(_)) = feed.rx.try_recv() else {
         panic!("the visitor broadcasts its session batch");
     };
-    apply_remote(
-        world,
-        from,
-        Remote::Session {
-            doc,
-            space,
-            writes,
-            at,
-        },
-    );
+    let Ok(Received::Session(batch)) = msg.validate(clock::current_micros()) else {
+        panic!("a broadcast batch passes validation");
+    };
+    apply_remote(world, from, Remote::Session(batch));
 }
 
 /// Two peers, each with its own world and replica: the visitor that opens a
@@ -550,14 +629,19 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     }
     .encode()
     .expect("encode");
-    let opener = local(&mut visitor_world, visitor_id, visitor.did());
-    set_session(
-        &mut visitor_world,
-        &opener,
-        gate,
+    let opener = |at: u64, writes: Vec<SessionWrite>| SessionBatch {
+        writer: visitor_id,
+        did: visitor.did().clone(),
+        doc: gate,
         space,
-        vec![write(&PortalAttr::NAME, &far_half)],
-        1,
+        at,
+        writes,
+        clears: Vec::new(),
+    };
+    local_write(
+        &mut visitor_world,
+        &visitor,
+        opener(1, vec![write(&PortalAttr::NAME, &far_half)]),
     )
     .expect("pairing stated");
     forward(&feed, &mut host_world, from_visitor);
@@ -569,15 +653,12 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
             "the {side} composes the far half"
         );
     }
-    assert_eq!(host_replicas.session_peers(gate), vec![visitor_id]);
+    assert_eq!(host_replicas.session_writers(gate), vec![visitor_id]);
 
-    set_session(
+    local_write(
         &mut visitor_world,
-        &opener,
-        gate,
-        space,
-        vec![write(&ScriptAttr::NAME, &[1; 32])],
-        2,
+        &visitor,
+        opener(2, vec![write(&ScriptAttr::NAME, &[1; 32])]),
     )
     .expect("the visitor may state anything; the mask decides");
     forward(&feed, &mut host_world, from_visitor);
@@ -640,10 +721,12 @@ fn a_guest_cannot_redirect_a_portal_the_document_authors() {
     }
     .encode()
     .expect("encode");
-    let visitor = remote(&mut world, peer(2), None);
-    set_session(
+    let guest = identity();
+    let visitor = remote(&mut world, peer(2), Some(guest.did()));
+    say(
         &mut world,
         &visitor,
+        &guest,
         doc,
         space,
         vec![write(&PortalAttr::NAME, &redirect)],
@@ -670,49 +753,772 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
         Ok(ReplicationMsg::Snapshot(_))
     ));
 
-    let stater = local(&mut world, peer(1), me.did());
-    set_session(
-        &mut world,
-        &stater,
+    let batch = |at: u64, writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
         doc,
         space,
-        vec![write(&state_k(), b"v")],
-        1,
+        at,
+        writes,
+        clears,
+    };
+    local_write(
+        &mut world,
+        &me,
+        batch(1, vec![write(&state_k(), b"v")], Vec::new()),
     )
     .expect("session set");
     assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
-    assert!(matches!(
-        feed.rx.try_recv(),
-        Ok(ReplicationMsg::Session { .. })
-    ));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Session(_))));
 
-    clear_session(
-        &world,
-        &stater,
-        doc,
-        space,
-        vec![ClearedKey {
-            prim: prim(),
-            name: state_k().to_string(),
-        }],
-    )
-    .expect("cleared");
+    let cleared = vec![ClearedKey {
+        prim: prim(),
+        name: state_k().to_string(),
+    }];
+    local_write(&mut world, &me, batch(2, Vec::new(), cleared)).expect("cleared");
     assert_eq!(resolved(&state, &state_k()), None);
     assert_eq!(replicas.session_opinions(peer(1), doc), Vec::new());
     assert!(
-        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::SessionClear { .. })),
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Session(_))),
         "a commit's clear has to reach every peer still drawing the old opinion"
     );
     replicas.unregister_stream(feed.token);
 }
 
 #[test]
-fn adopting_a_departing_peer_restates_its_opinions_and_keeps_its_documents() {
+fn a_checkpoint_replaces_batches_that_outgrew_their_content() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"checkpoint");
+    let doc = space.doc();
+    let names = ["a", "b", "c", "d"]
+        .map(|field| format!("state/{field}").parse::<PropName>().expect("name"));
+    let [a, b, c, d] = &names;
+    let batch = |at: u64, writes: Vec<SessionWrite>| SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
+        doc,
+        space,
+        at,
+        writes,
+        clears: Vec::new(),
+    };
+
+    let first = vec![
+        write(a, &[0; 10_000]),
+        write(b, &[0; 10_000]),
+        write(c, &[0; 10_000]),
+        write(d, &[1]),
+    ];
+    local_write(&mut world, &me, batch(1, first)).expect("first batch");
+    assert!(!replicas.needs_checkpoint(peer(1), doc), "nothing is stale");
+
+    let overwrite = vec![write(a, &[2]), write(b, &[2]), write(c, &[2])];
+    local_write(&mut world, &me, batch(2, overwrite)).expect("overwrite");
+    assert!(
+        !replicas.needs_checkpoint(peer(1), doc),
+        "the write checkpointed the layer"
+    );
+
+    let feed = replicas.register_stream(peer(1));
+    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    let layers = &docs[0].layers;
+    assert_eq!(layers.len(), 1);
+    assert_eq!(
+        layers[0].batches.len(),
+        1,
+        "the older batches lost their last cell"
+    );
+    assert_eq!(layers[0].batches[0].live, vec![0, 1, 2, 3]);
+    let mut values = replicas
+        .session_opinions(peer(1), doc)
+        .into_iter()
+        .map(|(_, value, _)| value)
+        .collect::<Vec<_>>();
+    values.sort();
+    assert_eq!(
+        values,
+        vec![Some(vec![1]), Some(vec![2]), Some(vec![2]), Some(vec![2])]
+    );
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn tombstones_survive_a_checkpoint() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"tombstone-checkpoint");
+    let doc = space.doc();
+    let names = ["a", "b", "c", "d"]
+        .map(|field| format!("state/{field}").parse::<PropName>().expect("name"));
+    let [a, b, c, d] = &names;
+    let payload = |at: u64, writes: Vec<SessionWrite>, clears: Vec<ClearedKey>| SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
+        doc,
+        space,
+        at,
+        writes,
+        clears,
+    };
+    let cleared = |name: &PropName| ClearedKey {
+        prim: prim(),
+        name: name.to_string(),
+    };
+
+    let first = vec![
+        write(a, &[0; 10_000]),
+        write(b, &[0; 10_000]),
+        write(c, &[0; 10_000]),
+        write(d, &[1]),
+    ];
+    local_write(&mut world, &me, payload(1, first, Vec::new())).expect("first batch");
+    local_write(&mut world, &me, payload(2, Vec::new(), vec![cleared(a)])).expect("clear");
+    assert!(
+        !replicas.needs_checkpoint(peer(1), doc),
+        "nothing is stale yet"
+    );
+
+    let overwrite = vec![write(b, &[2]), write(c, &[2])];
+    local_write(&mut world, &me, payload(3, overwrite, Vec::new())).expect("overwrite");
+    assert!(
+        !replicas.needs_checkpoint(peer(1), doc),
+        "the write checkpointed the layer"
+    );
+
+    let tombstones = replicas.session_tombstones(peer(1), doc);
+    assert_eq!(tombstones.len(), 1);
+    assert_eq!(&tombstones[0].0.name, a, "the clear is restated");
+    let feed = replicas.register_stream(peer(1));
+    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    let batches = &docs[0].layers[0].batches;
+    assert_eq!(batches.len(), 2, "the older batches lost their last cell");
+    let clearing = batches
+        .iter()
+        .find(|retained| !retained.live_clears.is_empty());
+    assert_eq!(
+        clearing.map(|retained| retained.live_clears.clone()),
+        Some(vec![0]),
+        "the tombstone is relayed from a re-signed batch"
+    );
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn a_writer_at_the_batch_cap_checkpoints_before_it_writes() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"at-the-cap");
+    let doc = space.doc();
+    let writer = local(&mut world, peer(1), me.did());
+    for i in 0..MAX_BATCHES_PER_LAYER {
+        let name = format!("state/k{i}").parse().expect("name");
+        let batch = batch_from(
+            &writer,
+            &me,
+            doc,
+            space,
+            vec![write(&name, &[1; 200])],
+            i as u64 + 1,
+        );
+        replicas
+            .add_session(peer(1), &batch, None)
+            .expect("under the cap");
+    }
+    assert!(replicas.needs_checkpoint(peer(1), doc));
+
+    let payload = SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
+        doc,
+        space,
+        at: 1,
+        writes: vec![write(&state_k(), b"more")],
+        clears: Vec::new(),
+    };
+    local_write(&mut world, &me, payload).expect("room is made before the write");
+
+    assert_eq!(
+        replicas.session_opinions(peer(1), doc).len(),
+        MAX_BATCHES_PER_LAYER + 1
+    );
+    assert!(!replicas.needs_checkpoint(peer(1), doc));
+}
+
+#[test]
+fn a_local_batch_too_large_for_a_frame_is_refused_whole() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"split");
+    let doc = space.doc();
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+
+    let batch = |writes| SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
+        doc,
+        space,
+        at: 1,
+        writes,
+        clears: Vec::new(),
+    };
+    let by_size = (0..20)
+        .map(|i| write(&format!("state/w{i}").parse().expect("name"), &[0; 15_000]))
+        .collect();
+    let by_count = (0..=MAX_WRITES_PER_BATCH)
+        .map(|i| write(&format!("state/w{i}").parse().expect("name"), &[1]))
+        .collect();
+    for writes in [by_size, by_count] {
+        assert_eq!(
+            local_write(&mut world, &me, batch(writes)).err(),
+            Some(SessionError::TooLarge)
+        );
+    }
+    assert!(feed.rx.try_recv().is_err(), "nothing is sent");
+    assert!(
+        replicas.session_writers(doc).is_empty(),
+        "nothing is applied"
+    );
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn a_value_past_the_cap_is_refused_locally() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"cap");
+    let doc = space.doc();
+    let payload = SessionBatch {
+        writer: peer(1),
+        did: me.did().clone(),
+        doc,
+        space,
+        at: 1,
+        writes: vec![write(&state_k(), &vec![0; MAX_VALUE_BYTES + 1])],
+        clears: Vec::new(),
+    };
+    assert_eq!(
+        local_write(&mut world, &me, payload).err(),
+        Some(SessionError::TooLarge)
+    );
+    assert!(
+        replicas.session_writers(doc).is_empty(),
+        "a refused write stacks no layer"
+    );
+}
+
+#[test]
+fn a_checkpoint_triggered_by_batch_count_is_not_due_again() {
+    let (mut world, replicas) = world();
+    let me = identity();
+    let space = space(b"many");
+    let doc = space.doc();
+
+    for i in 0..=MAX_BATCHES_PER_LAYER / 2 {
+        let payload = SessionBatch {
+            writer: peer(1),
+            did: me.did().clone(),
+            doc,
+            space,
+            at: i as u64 + 1,
+            // Values large enough that retained bytes never pass twice the
+            // live bytes, so only the batch count can trigger the checkpoint.
+            writes: vec![write(
+                &format!("state/k{i}").parse().expect("name"),
+                &[1; 200],
+            )],
+            clears: Vec::new(),
+        };
+        local_write(&mut world, &me, payload).expect("written");
+    }
+
+    let feed = replicas.register_stream(peer(1));
+    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    assert_eq!(
+        docs[0].layers[0].batches.len(),
+        3,
+        "513 cells re-signed in batches of 256"
+    );
+    assert!(!replicas.needs_checkpoint(peer(1), doc));
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn a_relayed_layer_is_ignored_while_its_writer_is_connected() {
+    let (mut world, replicas) = world();
+    let (alice, bob) = (identity(), identity());
+    let space = space(b"connected");
+    let doc = space.doc();
+    let writer = remote(&mut world, peer(2), Some(alice.did()));
+    let relayer = remote(&mut world, peer(4), Some(bob.did()));
+
+    let batch = batch_from(
+        &writer,
+        &alice,
+        doc,
+        space,
+        vec![write(&state_k(), b"v")],
+        1,
+    );
+    let remote_doc = RemoteDoc {
+        doc,
+        space,
+        pin: None,
+        hold: false,
+        withdrawal: None,
+        layers: vec![vec![Retained {
+            batch,
+            live: vec![0],
+            live_clears: Vec::new(),
+        }]],
+    };
+    apply_remote(
+        &mut world,
+        relayer.entity,
+        Remote::Snapshot(vec![remote_doc]),
+    );
+
+    assert!(
+        replicas.session_writers(doc).is_empty(),
+        "the connected writer has not stated it"
+    );
+}
+
+/// A document `alice` authors, in a world viewed from `peer(1)`, with one of
+/// her devices present at `peer(2)` having stated a script and some state.
+struct Present {
+    world:  World,
+    state:  Arc<Mutex<HsdState>>,
+    doc:    DocId,
+    space:  SpaceId,
+    alice:  Identity,
+    me:     Identity,
+    device: Stater,
+}
+
+fn alice_is_present(replicas: &Replicas, mut world: World, trust: TrustTable) -> Present {
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let space = space(b"carry");
+    let (doc, proof) = authored(50, &alice, space);
+    world.insert_resource(view_of(replicas, &me, trust));
+    let state = spawn_doc(&mut world, doc);
+
+    // A pin by someone else keeps the document, and so its author, known once
+    // alice's device leaves.
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, doc, space, proof));
+
+    let device = remote(&mut world, peer(2), Some(alice.did()));
+    let writes = vec![
+        write(&ScriptAttr::NAME, &[1; 32]),
+        write(&state_k(), b"old"),
+    ];
+    say(&mut world, &device, &alice, doc, space, writes, 1).expect("session set");
+    Present {
+        world,
+        state,
+        doc,
+        space,
+        alice,
+        me,
+        device,
+    }
+}
+
+fn returning_batch(present: &Present, stater: &Stater, value: &[u8]) -> Batch {
+    batch_from(
+        stater,
+        &present.alice,
+        present.doc,
+        present.space,
+        vec![write(&state_k(), value)],
+        5,
+    )
+}
+
+fn layers_of(batch: Batch) -> Vec<Vec<Retained>> {
+    vec![vec![Retained {
+        batch,
+        live: vec![0],
+        live_clears: Vec::new(),
+    }]]
+}
+
+#[test]
+fn the_authors_engine_opinion_survives_its_departure_when_the_viewer_adopts_it() {
+    let (world, replicas) = world();
+    let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
+    assert_eq!(resolved(&f.state, &ScriptAttr::NAME), Some(vec![1; 32]));
+
+    release_remote_peer(&mut f.world, f.device.entity, 0);
+
+    assert_eq!(
+        resolved(&f.state, &ScriptAttr::NAME),
+        Some(vec![1; 32]),
+        "a carried layer is still masked as the author's"
+    );
+    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(1)]);
+}
+
+#[test]
+fn a_peer_whose_rung_is_not_adopted_does_not_carry() {
+    let (world, replicas) = world();
+    let trust = TrustTable::new(DeviceStorage::memory());
+    let mut f = alice_is_present(&replicas, world, trust.clone());
+    trust
+        .set(f.alice.did().clone(), Trust::Anonymous)
+        .expect("set");
+
+    release_remote_peer(&mut f.world, f.device.entity, 0);
+
+    assert!(
+        replicas.session_writers(f.doc).is_empty(),
+        "nothing holds the layer once its writer is gone"
+    );
+    assert_eq!(resolved(&f.state, &state_k()), None);
+}
+
+#[test]
+fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
+    let (viewer_world, replicas) = world();
+    let mut f = alice_is_present(
+        &replicas,
+        viewer_world,
+        TrustTable::new(DeviceStorage::memory()),
+    );
+    release_remote_peer(&mut f.world, f.device.entity, 0);
+
+    let feed = replicas.register_stream(peer(1));
+    let Ok(msg @ ReplicationMsg::Snapshot(_)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    replicas.unregister_stream(feed.token);
+    let Ok(Received::Snapshot(docs)) = msg.validate(clock::current_micros()) else {
+        panic!("the carried layer passes validation");
+    };
+
+    let (mut joiner_world, joiner_replicas) = world();
+    let (joiner, bob) = (identity(), identity());
+    let trust = TrustTable::new(DeviceStorage::memory());
+    trust.set(f.me.did().clone(), Trust::Blocked).expect("set");
+    joiner_world.insert_resource(view_as(&joiner_replicas, &joiner, peer(9), trust));
+    let (doc, proof) = authored(50, &f.alice, f.space);
+    let joiner_state = spawn_doc(&mut joiner_world, doc);
+    let pinner = remote(&mut joiner_world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut joiner_world, &pinner, doc, f.space, proof));
+
+    let relayer = remote(&mut joiner_world, peer(1), Some(f.me.did()));
+    let docs = docs
+        .into_iter()
+        .map(|d| RemoteDoc {
+            doc:        d.doc,
+            space:      d.space,
+            pin:        None,
+            hold:       d.hold,
+            withdrawal: d.withdrawal,
+            layers:     d.layers,
+        })
+        .collect();
+    apply_remote(&mut joiner_world, relayer.entity, Remote::Snapshot(docs));
+
+    assert_eq!(
+        joiner_replicas.session_layers(doc),
+        vec![(peer(2), f.alice.did().clone())]
+    );
+    assert_eq!(
+        resolved(&joiner_state, &ScriptAttr::NAME),
+        Some(vec![1; 32]),
+        "the layer is the author's, whoever relays it"
+    );
+    assert_eq!(joiner_replicas.session_sources(peer(2), doc), vec![peer(1)]);
+}
+
+#[test]
+fn the_writers_return_replaces_the_carried_layer() {
+    let (world, replicas) = world();
+    let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
+    release_remote_peer(&mut f.world, f.device.entity, 0);
+    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(1)]);
+
+    let back = remote(&mut f.world, peer(2), Some(f.alice.did()));
+    let batch = returning_batch(&f, &back, b"fresh");
+    let doc = RemoteDoc {
+        doc:        f.doc,
+        space:      f.space,
+        pin:        None,
+        hold:       false,
+        withdrawal: None,
+        layers:     layers_of(batch),
+    };
+    apply_remote(&mut f.world, back.entity, Remote::Snapshot(vec![doc]));
+
+    assert_eq!(
+        replicas.session_sources(peer(2), f.doc),
+        vec![peer(2)],
+        "the writer is present, so only its word counts"
+    );
+    assert_eq!(
+        resolved(&f.state, &state_k()).as_deref(),
+        Some(&b"fresh"[..])
+    );
+    assert_eq!(
+        resolved(&f.state, &ScriptAttr::NAME),
+        None,
+        "the snapshot replaces the layer outright"
+    );
+}
+
+#[test]
+fn a_live_batch_from_the_returning_writer_drops_the_carry() {
+    let (world, replicas) = world();
+    let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
+    release_remote_peer(&mut f.world, f.device.entity, 0);
+
+    let back = remote(&mut f.world, peer(2), Some(f.alice.did()));
+    let batch = returning_batch(&f, &back, b"live");
+    apply_remote(&mut f.world, back.entity, Remote::Session(batch));
+
+    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(2)]);
+    assert_eq!(
+        resolved(&f.state, &state_k()).as_deref(),
+        Some(&b"live"[..])
+    );
+}
+
+#[test]
+fn a_relayed_layer_is_ignored_while_its_writer_is_present() {
+    let (world, replicas) = world();
+    let mut f = alice_is_present(&replicas, world, TrustTable::new(DeviceStorage::memory()));
+
+    let relayer = remote(&mut f.world, peer(4), Some(f.me.did()));
+    let stale = returning_batch(&f, &f.device, b"stale");
+    let doc = RemoteDoc {
+        doc:        f.doc,
+        space:      f.space,
+        pin:        None,
+        hold:       false,
+        withdrawal: None,
+        layers:     layers_of(stale),
+    };
+    apply_remote(&mut f.world, relayer.entity, Remote::Snapshot(vec![doc]));
+
+    assert_eq!(replicas.session_sources(peer(2), f.doc), vec![peer(2)]);
+    assert_eq!(resolved(&f.state, &state_k()).as_deref(), Some(&b"old"[..]));
+}
+
+/// A view of `replicas` from `me`'s side, judging DIDs by `trust`.
+fn view_of(replicas: &Replicas, me: &Identity, trust: TrustTable) -> SpaceView {
+    view_as(replicas, me, peer(1), trust)
+}
+
+/// A view of `replicas` from the endpoint `id` of `me`.
+fn view_as(replicas: &Replicas, me: &Identity, id: EndpointId, trust: TrustTable) -> SpaceView {
+    let mut app = App::new();
+    app.add_plugins(bevy_async::AsyncPlugin);
+    let async_world = app.world().resource::<bevy_async::AsyncWorld>().clone();
+    // Only the DID is read, so a fresh key stands in for the real one.
+    let identity = LocalIdentity {
+        identity: Arc::new(Identity::new(me.did().clone(), P256KeyPair::generate())),
+        bindings: Arc::new(Bindings::default()),
+        resolver: Arc::new(Resolver::new().expect("resolver")),
+        followed: FollowedSet::default(),
+    };
+    SpaceView::new(
+        Policy::new(),
+        replicas.clone(),
+        identity,
+        id,
+        trust,
+        Rules::default(),
+        async_world,
+    )
+}
+
+/// Marks `tracker` as a document that finished loading.
+fn load(world: &mut World, tracker: Entity) {
+    world
+        .entity_mut(tracker)
+        .insert((Hsd::new(HsdState::new()), HsdLoaded));
+}
+
+/// Runs the system that pins loaded documents for the local peer.
+fn reconcile(world: &mut World) {
+    world
+        .run_system_once(reconcile_local_pins)
+        .expect("reconcile ran");
+}
+
+/// A document authored by `alice`, pinned by a remote author device and by
+/// the local peer as a non-author, with a feed watching the local peer's
+/// broadcasts.
+struct Scenario {
+    author: Stater,
+    doc:    DocId,
+    proof:  PinClaim,
+    space:  SpaceId,
+    feed:   StateFeed,
+}
+
+/// Puts the local peer in `space`, as a loaded space entity does.
+fn join(replicas: &Replicas, space: SpaceId) {
+    replicas
+        .attribution()
+        .policy()
+        .update(space.doc(), |record| record.space = Some(space.doc()));
+}
+
+fn doc_of(seed: u8) -> DocId {
+    DocId(*NamespaceSecret::from_bytes(&[seed; 32]).id().as_bytes())
+}
+
+/// The author's last device withdrawing `doc`, with a record stamped `at`.
+fn withdraw(world: &mut World, author: Entity, doc: DocId, space: SpaceId, at: u64) {
+    let withdrawal = Some(record_of(40, space, at, false));
+    apply_remote(world, author, Remote::Unpin { doc, withdrawal });
+}
+
+fn locally_pinned_foreign_doc(
+    world: &mut World,
+    replicas: &Replicas,
+    alice: &Identity,
+    me: &Identity,
+) -> Scenario {
+    let space = space(b"follow");
+    join(replicas, space);
+    let (doc, proven) = authored(40, alice, space);
+    let (_, proof) = authored(40, alice, space);
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+
+    let author = remote(world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(world, &author, doc, space, proven));
+    let viewer = local(world, peer(1), me.did());
+    let (_, mine) = authored(40, alice, space);
+    assert!(spawn_pin(world, &viewer, doc, space, mine));
+    assert!(!replicas.pins_as_author(peer(1), doc));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
+    Scenario {
+        author,
+        doc,
+        proof,
+        space,
+        feed,
+    }
+}
+
+#[test]
+fn an_author_unpin_drops_a_local_non_author_pin() {
     let (mut world, replicas) = world();
     let (alice, me) = (identity(), identity());
-    let (doc, proven) = authored(31, &alice);
-    let space = space(b"adopted");
-    let state = spawn_doc(&mut world, doc);
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+
+    assert!(!replicas.is_pinned(f.doc), "nobody holds it any more");
+    let Ok(ReplicationMsg::Unpin { doc, withdrawal }) = f.feed.rx.try_recv() else {
+        panic!("the local peer tells everyone it let go");
+    };
+    assert_eq!(doc, f.doc);
+    assert!(
+        withdrawal.is_some(),
+        "and relays the withdrawal that made it"
+    );
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn an_author_unpin_leaves_the_local_pin_while_another_author_device_pins() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+    let second = remote(&mut world, peer(3), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &second, f.doc, f.space, f.proof));
+
+    apply_remote(
+        &mut world,
+        f.author.entity,
+        Remote::Unpin {
+            doc:        f.doc,
+            withdrawal: None,
+        },
+    );
+
+    assert!(replicas.is_author_pinned(f.doc));
+    assert!(replicas.sync_sources(f.doc, peer(9)).contains(&peer(1)));
+    assert!(f.feed.rx.try_recv().is_err());
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_remote_authors_disconnect_is_not_an_unpin() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+
+    release_remote_peer(&mut world, f.author.entity, 0);
+
+    assert!(!replicas.is_author_pinned(f.doc));
+    assert!(
+        replicas.sync_sources(f.doc, peer(9)).contains(&peer(1)),
+        "the local pin outlives the author's connection"
+    );
+    assert!(f.feed.rx.try_recv().is_err(), "nothing is broadcast");
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_non_author_pin_keeps_a_doc_loaded_while_the_author_is_adopted() {
+    let (mut world, replicas) = world();
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let space = space(b"loads");
+    let (doc, proven) = authored(41, &alice, space);
+    let trust = TrustTable::new(DeviceStorage::memory());
+    let view = view_of(&replicas, &me, trust.clone());
+    assert!(!view.loads(doc), "nothing pins it");
+
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, doc, space, proven));
+    assert!(
+        view.loads(doc),
+        "an adopted author's document outlives its author"
+    );
+
+    trust.set(alice.did().clone(), Trust::Blocked).expect("set");
+    assert!(
+        !view.loads(doc),
+        "a blocked author's document needs the author"
+    );
+
+    let (_, proof) = authored(41, &alice, space);
+    let author = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author, doc, space, proof));
+    assert!(view.loads(doc), "the author's own pin always loads it");
+}
+
+#[test]
+fn a_loaded_foreign_doc_is_pinned_locally_until_it_unloads() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let space = space(b"pin-on-load");
+    let (doc, proven) = authored(42, &alice, space);
+    world.insert_resource(view_of(
+        &replicas,
+        &me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
     let feed = replicas.register_stream(peer(1));
     assert!(matches!(
         feed.rx.try_recv(),
@@ -721,100 +1527,339 @@ fn adopting_a_departing_peer_restates_its_opinions_and_keeps_its_documents() {
 
     let author = remote(&mut world, peer(2), Some(alice.did()));
     assert!(spawn_pin(&mut world, &author, doc, space, proven));
-    set_session(
-        &mut world,
-        &author,
-        doc,
-        space,
-        vec![write(&state_k(), b"v")],
-        1,
-    )
-    .expect("session set");
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    load(&mut world, tracker);
+    reconcile(&mut world);
 
-    let viewer = local(&mut world, peer(1), me.did());
-    adopt(&mut world, peer(2), &viewer);
-    world.despawn(author.entity);
+    assert!(replicas.sync_sources(doc, peer(9)).contains(&peer(1)));
+    assert!(!replicas.pins_as_author(peer(1), doc));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { doc: d, .. }) if d == doc));
 
-    assert_eq!(
-        resolved(&state, &state_k()).as_deref(),
-        Some(&b"v"[..]),
-        "an adopted opinion outlives the peer that stated it"
-    );
-    assert_eq!(
-        replicas
-            .session_opinions(peer(1), doc)
-            .into_iter()
-            .map(|(_, value, _)| value)
-            .collect::<Vec<_>>(),
-        vec![Some(b"v".to_vec())],
-        "the opinion is restated as the viewer's own"
-    );
+    world.despawn(tracker);
+    assert!(!replicas.sync_sources(doc, peer(9)).contains(&peer(1)));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Unpin { doc: d, .. }) if d == doc));
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn a_loaded_doc_by_an_unadopted_author_is_not_pinned_locally() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let space = space(b"pin-on-load-anonymous");
+    let (doc, proven) = authored(43, &alice, space);
+    let trust = TrustTable::new(DeviceStorage::memory());
+    trust
+        .set(alice.did().clone(), Trust::Anonymous)
+        .expect("set");
+    world.insert_resource(view_of(&replicas, &me, trust));
+
+    let author = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    load(&mut world, tracker);
+    reconcile(&mut world);
+
+    assert!(!replicas.sync_sources(doc, peer(9)).contains(&peer(1)));
+}
+
+#[test]
+fn a_withdrawn_doc_is_not_kept_loaded_by_the_remaining_non_author_pins() {
+    let (mut world, replicas) = world();
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+    let view = view_of(&replicas, &me, TrustTable::new(DeviceStorage::memory()));
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+
+    assert!(replicas.is_withdrawn(f.doc));
+    assert!(replicas.is_pinned(f.doc), "the relayer still pins it");
+    assert!(!view.loads(f.doc));
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_newer_author_pin_restores_a_withdrawn_doc() {
+    let (mut world, replicas) = world();
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+    let view = view_of(&replicas, &me, TrustTable::new(DeviceStorage::memory()));
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+    assert!(replicas.is_withdrawn(f.doc));
+
+    let (_, again) = authored_at(40, &alice, f.space, 3);
+    let author = remote(&mut world, peer(5), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author, f.doc, f.space, again));
+
+    assert!(!replicas.is_withdrawn(f.doc));
+    assert!(view.loads(f.doc));
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_stale_pin_record_does_not_restore_a_withdrawn_doc() {
+    let (mut world, replicas) = world();
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+    let view = view_of(&replicas, &me, TrustTable::new(DeviceStorage::memory()));
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+
+    let (_, stale) = authored(40, &alice, f.space);
+    let late = remote(&mut world, peer(6), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &late, f.doc, f.space, stale));
+
+    assert!(replicas.is_pinned(f.doc), "the pin is counted");
     assert!(
-        replicas.is_kept(doc),
-        "the document is kept with its author gone"
+        replicas.is_withdrawn(f.doc),
+        "the withdrawal is still the newest record"
     );
-    let sent = std::iter::from_fn(|| feed.rx.try_recv().ok()).collect::<Vec<_>>();
+    assert!(!view.loads(f.doc), "whoever relays the stale pin");
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_withdrawal_outlives_the_presence_and_is_listed_in_snapshots() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+
+    assert!(!replicas.is_pinned(f.doc), "nobody holds it any more");
     assert!(
-        sent.iter()
-            .any(|msg| matches!(msg, ReplicationMsg::Keep { doc: d, .. } if *d == doc)),
-        "the keep reaches peers that join later"
+        replicas.is_withdrawn(f.doc),
+        "carriers keep it to tell late joiners"
+    );
+    let feed = replicas.register_stream(peer(1));
+    let Ok(ReplicationMsg::Snapshot(docs)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    let listed = docs
+        .iter()
+        .find(|d| d.doc == f.doc)
+        .expect("a withdrawn doc is listed");
+    assert!(listed.pin.is_none());
+    let record = listed.withdrawal.as_ref().expect("with its withdrawal");
+    assert!(!record.payload().expect("decode").pinned);
+    replicas.unregister_stream(feed.token);
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn a_late_joiner_told_only_by_a_carrier_learns_the_withdrawal() {
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let space = space(b"carrier");
+    let (doc, stale) = authored(40, &alice, space);
+
+    let (_carrier_world, carrier) = world();
+    join(&carrier, space);
+    carrier.observe_record(&record_of(40, space, 2, false), peer(2));
+    let feed = carrier.register_stream(peer(3));
+    let Ok(msg @ ReplicationMsg::Snapshot(_)) = feed.rx.try_recv() else {
+        panic!("a stream opens with a snapshot");
+    };
+    carrier.unregister_stream(feed.token);
+    let Ok(Received::Snapshot(docs)) = msg.validate(clock::current_micros()) else {
+        panic!("the snapshot passes validation");
+    };
+
+    let (mut world, joiner) = world();
+    join(&joiner, space);
+    let view = view_of(&joiner, &me, TrustTable::new(DeviceStorage::memory()));
+    let from_carrier = remote(&mut world, peer(3), Some(bob.did()));
+    let docs = docs
+        .into_iter()
+        .map(|d| RemoteDoc {
+            doc:        d.doc,
+            space:      d.space,
+            pin:        None,
+            hold:       d.hold,
+            withdrawal: d.withdrawal,
+            layers:     d.layers,
+        })
+        .collect();
+    apply_remote(&mut world, from_carrier.entity, Remote::Snapshot(docs));
+    assert!(joiner.is_withdrawn(doc), "the carrier told it");
+
+    let pinner = remote(&mut world, peer(4), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &pinner, doc, space, stale));
+    assert!(joiner.is_pinned(doc));
+    assert!(
+        !view.loads(doc),
+        "a pin that predates the withdrawal does not load it"
+    );
+}
+
+#[test]
+fn leaving_a_space_sends_a_plain_unpin_and_leaves_no_record() {
+    let (mut world, replicas) = world();
+    world.add_observer(register_space);
+    world.add_observer(forget_space);
+    let alice = identity();
+    let space = space(b"leave-ordering");
+    let (doc, claim) = authored(47, &alice, space);
+
+    let space_entity = world.spawn(Space(space)).id();
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+    let laptop = local(&mut world, peer(1), alice.did());
+    assert!(spawn_pin(&mut world, &laptop, doc, space, claim));
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Pin { .. })));
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    assert_eq!(
+        world.get::<ChildOf>(tracker).map(ChildOf::parent),
+        Some(space_entity),
+        "the pin hangs under the space"
+    );
+
+    world.despawn(space_entity);
+
+    let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
+        panic!("the pin's guard says it let go");
+    };
+    assert!(withdrawal.is_none(), "leaving a space withdraws nothing");
+    assert!(!replicas.is_withdrawn(doc));
+    assert_eq!(
+        replicas.newest_record_at(doc),
+        None,
+        "the space's records go once it is left, after its guards"
     );
     replicas.unregister_stream(feed.token);
 }
 
 #[test]
-fn adoption_leaves_the_viewers_own_opinions_alone() {
-    let (mut world, replicas) = world();
-    let me = identity();
-    let space = space(b"adopt-own");
-    let doc = space.doc();
-    spawn_doc(&mut world, doc);
+fn a_withdrawal_is_signed_past_every_record_and_only_while_the_peer_is_in_the_space() {
+    let (world, replicas) = world();
+    let space = space(b"withdrawal-signing");
+    join(&replicas, space);
+    let feed = replicas.register_stream(peer(1));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot(_))
+    ));
+    let key = NamespaceSecret::from_bytes(&[48; 32]);
+    let doc = doc_of(48);
 
-    let viewer = local(&mut world, peer(1), me.did());
-    set_session(
-        &mut world,
-        &viewer,
-        doc,
-        space,
-        vec![write(&state_k(), b"mine")],
-        1,
-    )
-    .expect("session set");
-    let other = remote(&mut world, peer(2), None);
-    set_session(
-        &mut world,
-        &other,
-        doc,
-        space,
-        vec![write(&state_k(), b"theirs")],
-        2,
-    )
-    .expect("session set");
-
-    adopt(&mut world, peer(2), &viewer);
+    let ahead = clock::current_micros() + 5_000_000;
+    replicas.observe_record(&record_of(48, space, ahead, true), peer(2));
+    finish_withdrawal(&world, peer(1), doc, space, Some(&key));
+    let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
+        panic!("the unpin goes out");
+    };
+    let payload = withdrawal
+        .expect("signed while in the space")
+        .payload()
+        .expect("decode");
+    assert!(!payload.pinned);
     assert_eq!(
-        replicas
-            .session_opinions(peer(1), doc)
-            .into_iter()
-            .map(|(_, value, _)| value)
-            .collect::<Vec<_>>(),
-        vec![Some(b"mine".to_vec())]
+        payload.at,
+        ahead + 1,
+        "stamped past the newest record known"
     );
+    assert!(
+        replicas.is_withdrawn(doc),
+        "the sender keeps it for late joiners"
+    );
+
+    let no_key = doc_of(49);
+    finish_withdrawal(&world, peer(1), no_key, space, None);
+    let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
+        panic!("the unpin goes out");
+    };
+    assert!(withdrawal.is_none(), "no key, so a plain unpin");
+
+    replicas
+        .attribution()
+        .policy()
+        .update(space.doc(), |record| record.space = None);
+    let left = doc_of(50);
+    finish_withdrawal(
+        &world,
+        peer(1),
+        left,
+        space,
+        Some(&NamespaceSecret::from_bytes(&[50; 32])),
+    );
+    let Ok(ReplicationMsg::Unpin { withdrawal, .. }) = feed.rx.try_recv() else {
+        panic!("the unpin goes out");
+    };
+    assert!(
+        withdrawal.is_none(),
+        "a space that was left is not withdrawn from"
+    );
+    assert!(!replicas.is_withdrawn(left));
+    replicas.unregister_stream(feed.token);
 }
 
 #[test]
-fn a_kept_document_stays_present_after_its_author_leaves() {
+fn reconcile_does_not_repin_a_withdrawn_doc() {
     let (mut world, replicas) = world();
-    let alice = identity();
-    let (doc, proven) = authored(32, &alice);
-    let space = space(b"kept");
+    let (alice, me, bob) = (identity(), identity(), identity());
+    let f = locally_pinned_foreign_doc(&mut world, &replicas, &alice, &me);
+    world.insert_resource(view_of(
+        &replicas,
+        &me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, f.doc, f.space, f.proof));
+    withdraw(&mut world, f.author.entity, f.doc, f.space, 2);
+    let tracker = index::lookup::<PinnedDoc>(&world, f.doc).expect("tracker");
+    load(&mut world, tracker);
 
-    let keeper = remote(&mut world, peer(3), None);
-    spawn_keep(&mut world, &keeper, doc, space, proven);
-    assert!(replicas.is_kept(doc));
-    assert_eq!(replicas.author(doc).as_ref(), Some(alice.did()));
-    assert_eq!(replicas.sync_sources(doc, peer(1)), vec![peer(3)]);
+    reconcile(&mut world);
 
-    world.despawn(keeper.entity);
-    assert!(!replicas.is_kept(doc), "a keep goes with its keeper");
+    assert!(!replicas.pins_by(peer(1), f.doc));
+    replicas.unregister_stream(f.feed.token);
+}
+
+#[test]
+fn reconcile_does_not_pin_a_doc_the_local_peer_authors() {
+    let (mut world, replicas) = world();
+    let (me, bob) = (identity(), identity());
+    let space = space(b"own-doc");
+    let (doc, proven) = authored(44, &me, space);
+    world.insert_resource(view_of(
+        &replicas,
+        &me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, doc, space, proven));
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    load(&mut world, tracker);
+
+    reconcile(&mut world);
+
+    assert!(!replicas.pins_by(peer(1), doc));
+    assert!(world.get::<NoLocalPin>(tracker).is_some());
+}
+
+#[test]
+fn reconcile_pins_once_the_author_becomes_known() {
+    let (mut world, replicas) = world();
+    let (alice, me) = (identity(), identity());
+    let space = space(b"late-author");
+    let (doc, proven) = authored(45, &alice, space);
+    world.insert_resource(view_of(
+        &replicas,
+        &me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
+    let tracker = world.spawn(PinnedDoc { doc, space }).id();
+    load(&mut world, tracker);
+
+    reconcile(&mut world);
+    assert!(!replicas.pins_by(peer(1), doc), "no author is known yet");
+
+    let author = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &author, doc, space, proven));
+    reconcile(&mut world);
+    assert!(replicas.pins_by(peer(1), doc));
 }

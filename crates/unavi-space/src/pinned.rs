@@ -1,6 +1,6 @@
-//! Documents peers pin into a space: fetched once a pinner or keeper is
-//! reachable, instanced under the space, and despawned once nothing keeps it
-//! present for this viewer.
+//! Documents peers pin into a space: fetched once a pinner is reachable,
+//! instanced under the space, and despawned once nothing keeps it present for
+//! this viewer.
 
 use std::time::Duration;
 
@@ -21,6 +21,7 @@ use bevy_hsd::{
         DocFeed,
         FeedReady,
     },
+    loaded::HsdLoaded,
 };
 use bevy_iroh::store::DataStore;
 use hsd::{
@@ -46,7 +47,10 @@ use crate::{
     },
     replication::{
         Replicas,
-        guards::DocGuards,
+        guards::{
+            self,
+            DocGuards,
+        },
     },
 };
 
@@ -137,7 +141,7 @@ pub fn fetch_pinned_docs(
         if backoff.is_some_and(|b| now < b.0) {
             continue;
         }
-        if !replicas.is_pinned(doc.doc) && !view.as_deref().is_some_and(|v| v.keeps(doc.doc)) {
+        if !view.as_deref().is_some_and(|v| v.loads(doc.doc)) {
             continue;
         }
 
@@ -222,20 +226,18 @@ pub fn instance_pinned_docs(
 
 /// Reconciles trackers to their pin state.
 ///
-/// An instanced document stays while its author pins it, or while a peer
-/// keeps it and the local rules adopt its author's rung; otherwise it
-/// despawns. A tracker left with no state at all is dropped.
+/// An instanced document stays while its author pins it, or while anyone pins
+/// it, the author's newest record says it is pinned, and the local rules adopt
+/// its author's rung; otherwise it despawns. A tracker left with no state at
+/// all is dropped.
 pub fn prune_pinned_docs(
     instanced: Query<(Entity, &PinnedDoc), With<Hsd>>,
     trackers: Query<(Entity, Option<&DocGuards>), (With<PinnedDoc>, Without<Hsd>)>,
-    replicas: Res<Replicas>,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
     for (entity, doc) in &instanced {
-        let present =
-            replicas.is_pinned(doc.doc) || view.as_deref().is_some_and(|v| v.keeps(doc.doc));
-        if !present {
+        if !view.as_deref().is_some_and(|v| v.loads(doc.doc)) {
             commands.entity(entity).despawn();
         }
     }
@@ -244,5 +246,52 @@ pub fn prune_pinned_docs(
         if states.is_none_or(|s| s.iter().next().is_none()) {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+/// Marks a loaded document the local peer will not pin: one it authors, or
+/// whose pin was refused.
+#[derive(Component)]
+pub struct NoLocalPin;
+
+/// Pins every loaded document of an adopted author the local peer does not
+/// pin yet.
+///
+/// A peer arriving later can then learn of the document from this one. The
+/// pin hangs off the document's anchor, so it is dropped, and unpinned to
+/// everyone, when the document unloads. Retried every tick, so a document
+/// whose author becomes known later is still pinned. Waits for
+/// [`HsdLoaded`], so nobody is pointed at a source that is still empty.
+pub fn reconcile_local_pins(
+    loaded: Query<(Entity, &PinnedDoc), (With<Hsd>, With<HsdLoaded>, Without<NoLocalPin>)>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
+    mut commands: Commands,
+) {
+    let Some(view) = view else {
+        return;
+    };
+    for (entity, doc) in &loaded {
+        let (id, space) = (doc.doc, doc.space);
+        if replicas.pins_by(view.me(), id) || replicas.is_withdrawn(id) {
+            continue;
+        }
+        let Some(proven) = replicas.proven(id) else {
+            continue;
+        };
+        if &proven.author == view.did() {
+            commands.entity(entity).try_insert(NoLocalPin);
+            continue;
+        }
+        if !view.adopts(&proven.author) {
+            continue;
+        }
+        commands.queue(move |world: &mut World| {
+            if !guards::pins::pin_loaded(world, id, space)
+                && let Ok(mut doc) = world.get_entity_mut(entity)
+            {
+                doc.insert(NoLocalPin);
+            }
+        });
     }
 }

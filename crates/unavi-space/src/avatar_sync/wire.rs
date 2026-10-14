@@ -56,12 +56,12 @@ use crate::{
 enum AgentMsg {
     Keyframe {
         id:    u32,
-        space: [u8; 32],
+        space: SpaceId,
         pose:  Pose<Keyframe>,
     },
     Delta {
         keyframe: u32,
-        space:    [u8; 32],
+        space:    SpaceId,
         pose:     Pose<Delta>,
     },
 }
@@ -92,7 +92,6 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
 
     while let Ok(OutgoingPose { space, pose }) = pose_rx.recv().await {
         let now = Instant::now();
-        let space_bytes = space.0;
 
         // A delta is only valid against a keyframe in the same space,
         // so a space change forces a fresh keyframe.
@@ -107,14 +106,14 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
             last_space = Some(space);
             AgentMsg::Keyframe {
                 id: keyframe_id,
-                space: space_bytes,
+                space,
                 pose,
             }
         } else {
             AgentMsg::Delta {
                 keyframe: keyframe_id,
-                space:    space_bytes,
-                pose:     delta_pose(pose, &last_keyframe),
+                space,
+                pose: delta_pose(pose, &last_keyframe),
             }
         };
 
@@ -164,12 +163,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 root: pose.root,
                 bones: pose.bones,
             });
-            ResolvedPose {
-                space: SpaceId(space),
-                root,
-                bones,
-            }
-            .checked()
+            ResolvedPose { space, root, bones }.checked()
         }
         AgentMsg::Delta {
             keyframe,
@@ -197,7 +191,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 })
                 .collect();
             ResolvedPose {
-                space: SpaceId(space),
+                space,
                 root: Transform {
                     translation,
                     rotation: pose.root.rot.into(),
@@ -246,7 +240,7 @@ mod tests {
 
     use super::*;
 
-    const SPACE: [u8; 32] = [7; 32];
+    const SPACE: SpaceId = SpaceId([7; 32]);
 
     fn keyframe_pose(t: Vec3) -> Pose<Keyframe> {
         Pose {
@@ -286,7 +280,7 @@ mod tests {
         )
         .expect("resolved");
 
-        assert_eq!(SpaceId(SPACE), resolved.space);
+        assert_eq!(SPACE, resolved.space);
         assert!((resolved.root.translation - pos).length() < 0.01);
         assert!(baseline.is_some());
     }

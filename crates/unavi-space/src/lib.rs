@@ -129,6 +129,7 @@ impl Plugin for SpacePlugin {
                     pinned::fetch_pinned_docs,
                     pinned::instance_pinned_docs,
                     pinned::prune_pinned_docs,
+                    pinned::reconcile_local_pins,
                 ),
             )
             .add_systems(

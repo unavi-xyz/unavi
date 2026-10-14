@@ -24,10 +24,11 @@ use bevy::prelude::{
 use hsd::id::DocId;
 use iroh::EndpointId;
 use parking_lot::Mutex;
+use records::Records;
 use unavi_identity::authorship::Authorship;
 use unavi_policy::{
     Policy,
-    ledger::Record,
+    ledger::Record as PolicyRecord,
     quota::{
         Stock,
         StockLease,
@@ -41,15 +42,20 @@ use crate::{
     membership::SpaceId,
     replication::{
         message::{
+            Batch,
             DocSnapshot,
+            Live,
+            PinSnapshot,
             ReplicationMsg,
-            SessionSnapshot,
         },
+        record::Record,
         session::{
             SessionError,
             SessionKey,
             layers::{
+                Applied,
                 Opinion,
+                Orphan,
                 SessionLayers,
                 Writer,
             },
@@ -57,6 +63,8 @@ use crate::{
         snapshot,
     },
 };
+
+mod records;
 
 /// Messages one outbound state stream may queue before it falls back to a
 /// fresh snapshot.
@@ -66,16 +74,23 @@ const OUTBOUND_QUEUE: usize = 256;
 /// was received.
 #[derive(Default)]
 struct PeerDocEntry {
-    pin:  Option<u64>,
-    /// Set while the peer keeps a document whose author left.
-    keep: Option<u64>,
-    hold: Option<u64>,
+    pin:    Option<PinStamp>,
+    /// The record the pin states.
+    record: Option<Record>,
+    hold:   Option<u64>,
 }
 
 impl PeerDocEntry {
     const fn is_empty(&self) -> bool {
-        self.pin.is_none() && self.keep.is_none() && self.hold.is_none()
+        self.pin.is_none() && self.hold.is_none()
     }
+}
+
+/// When a peer's pin arrived, and whether the pinner proved the author's DID.
+#[derive(Clone, Copy)]
+struct PinStamp {
+    at:        u64,
+    by_author: bool,
 }
 
 /// An authorship proof whose namespace signature checked out, with the DID it
@@ -83,14 +98,6 @@ impl PeerDocEntry {
 pub struct Proven {
     pub author: Did,
     pub proof:  Authorship,
-}
-
-/// How a peer states that a document stays present: as its author, or as a
-/// peer keeping it after the author left.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Claim {
-    Pin,
-    Keep,
 }
 
 #[derive(Default)]
@@ -102,29 +109,20 @@ struct PeerReplica {
 /// holds keeping the presence alive; `_doc_lease` charges one `Documents`
 /// unit while the doc is known locally.
 struct DocPresence {
-    space:      SpaceId,
+    space:       SpaceId,
     /// The DID a verified pin proved, fixed once set.
-    author:     Option<Did>,
+    author:      Option<Did>,
     /// The proof that pin carried, re-sent when this node pins too.
-    proof:      Option<Authorship>,
+    proof:       Option<Authorship>,
     /// The peer the holder reserved the next hold for. While set, only it or
     /// the author may hold.
-    hold_grant: Option<EndpointId>,
-    _doc_lease: StockLease,
-    refs:       u32,
-    /// Peers pinning and keeping it, counted so neither question scans every
-    /// peer's replica.
-    pins:       u32,
-    keeps:      u32,
-}
-
-impl DocPresence {
-    const fn claims(&mut self, claim: Claim) -> &mut u32 {
-        match claim {
-            Claim::Pin => &mut self.pins,
-            Claim::Keep => &mut self.keeps,
-        }
-    }
+    hold_grant:  Option<EndpointId>,
+    _doc_lease:  StockLease,
+    refs:        u32,
+    /// Peers pinning it, and those among them who proved its author, counted
+    /// so neither question scans every peer's replica.
+    pins:        u32,
+    author_pins: u32,
 }
 
 /// A registered outbound state stream.
@@ -162,6 +160,7 @@ struct Inner {
     docs:        HashMap<DocId, DocPresence>,
     /// Documents in the world this node minted, and so authors.
     minted:      HashSet<DocId>,
+    records:     Records,
     sessions:    SessionLayers,
     /// Bumped whenever a document's author becomes known or is forgotten.
     authors:     u64,
@@ -228,7 +227,7 @@ impl Inner {
                     _doc_lease: lease,
                     refs: 0,
                     pins: 0,
-                    keeps: 0,
+                    author_pins: 0,
                 }))
             }
         }
@@ -244,8 +243,10 @@ impl Inner {
         if let Entry::Occupied(p) = self.docs.entry(doc)
             && p.get().refs == 0
         {
+            let space = p.get().space;
             p.remove();
             forget_untracked(&self.attribution, doc);
+            self.settle_records(doc, space);
         }
     }
 
@@ -280,12 +281,12 @@ impl Inner {
             .or_default()
     }
 
-    /// Records `peer`'s pin or keep. The caller has checked that the proof
-    /// names its author, and for a pin that `peer` proved it.
-    fn add_claim(
+    /// Records `peer`'s pin, proving `did`. The caller has checked that the
+    /// proof names its author. A pin is by the author when `did` is it.
+    fn add_pin(
         &mut self,
-        claim: Claim,
         peer: EndpointId,
+        did: Option<&Did>,
         doc: DocId,
         space: SpaceId,
         Proven { author, proof }: Proven,
@@ -294,7 +295,12 @@ impl Inner {
         if self.author_of(doc).is_some_and(|known| known != author) {
             return Err(PinRefused::WrongAuthor);
         }
-        let presence = self.ensure_presence(doc, space, Some(&author))?;
+        let by_author = did == Some(&author);
+        self.ensure_presence(doc, space, Some(&author))?;
+        self.promote_records(doc);
+        let Some(presence) = self.docs.get_mut(&doc) else {
+            return Err(PinRefused::WrongSpace);
+        };
         let attributed = presence.author.is_none();
         if attributed {
             presence.author = Some(author);
@@ -304,32 +310,28 @@ impl Inner {
         }
 
         let entry = self.entry(peer, doc);
-        let slot = match claim {
-            Claim::Pin => &mut entry.pin,
-            Claim::Keep => &mut entry.keep,
-        };
-        if slot.is_none() {
-            *slot = Some(at);
+        if entry.pin.is_none() {
+            entry.pin = Some(PinStamp { at, by_author });
             self.inc_ref(doc);
             if let Some(presence) = self.docs.get_mut(&doc) {
-                *presence.claims(claim) += 1;
+                presence.pins += 1;
+                presence.author_pins += u32::from(by_author);
             }
         }
         Ok(attributed)
     }
 
-    fn remove_claim(&mut self, claim: Claim, peer: EndpointId, doc: DocId) {
+    fn remove_pin(&mut self, peer: EndpointId, doc: DocId) {
         let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) else {
             return;
         };
-        let slot = match claim {
-            Claim::Pin => &mut entry.pin,
-            Claim::Keep => &mut entry.keep,
-        };
-        if slot.take().is_some() {
+        if let Some(stamp) = entry.pin.take() {
+            entry.record = None;
             if let Some(presence) = self.docs.get_mut(&doc) {
-                let count = presence.claims(claim);
-                *count = count.saturating_sub(1);
+                presence.pins = presence.pins.saturating_sub(1);
+                if stamp.by_author {
+                    presence.author_pins = presence.author_pins.saturating_sub(1);
+                }
             }
             self.prune_entry(peer, doc);
             self.dec_ref(doc);
@@ -418,10 +420,12 @@ impl Inner {
         .map(|(_, pid)| pid)
     }
 
-    /// The first of the author's endpoints to pin `doc`. Only the author pins,
-    /// so this is one of its devices.
+    /// The first of the author's endpoints to pin `doc`. Pins by anyone else
+    /// never resolve it.
     fn author_endpoint(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
-        self.resolve_peer(space, doc, false, |e| e.pin)
+        self.resolve_peer(space, doc, false, |e| {
+            e.pin.filter(|p| p.by_author).map(|p| p.at)
+        })
     }
 
     /// The latest hold, else the author's endpoint, so an author drives its
@@ -438,43 +442,62 @@ impl Inner {
                 let Some(presence) = self.docs.get(doc) else {
                     continue;
                 };
+                let pin = e.pin.and_then(|_| {
+                    Some(PinSnapshot {
+                        author: presence.proof.clone()?,
+                        record: e.record.as_ref()?.signed.clone(),
+                    })
+                });
                 by_doc.insert(
                     *doc,
-                    DocSnapshot {
-                        doc:     *doc,
-                        space:   presence.space,
-                        pin:     e.pin.and_then(|_| presence.proof.clone()),
-                        keep:    e.keep.and_then(|_| presence.proof.clone()),
-                        hold:    e.hold.is_some(),
-                        session: Vec::new(),
-                    },
+                    empty_snapshot(*doc, presence.space, pin, e.hold.is_some()),
                 );
             }
         }
-        for (doc, space, opinions) in self.sessions.of_peer(me) {
+        for (doc, space, layer) in self.sessions.snapshot_of(me) {
             by_doc
                 .entry(doc)
-                .or_insert_with(|| DocSnapshot {
-                    doc,
-                    space,
-                    pin: None,
-                    keep: None,
-                    hold: false,
-                    session: Vec::new(),
-                })
-                .session
-                .extend(
-                    opinions
-                        .into_iter()
-                        .map(|(key, value, at)| SessionSnapshot {
-                            prim: key.prim,
-                            name: key.name.to_string(),
-                            value,
-                            at,
-                        }),
-                );
+                .or_insert_with(|| empty_snapshot(doc, space, None, false))
+                .layers
+                .push(layer);
         }
-        by_doc.into_values().collect()
+        for withdrawal in self.records.withdrawn() {
+            let (doc, space) = (withdrawal.payload.doc, withdrawal.payload.space);
+            by_doc
+                .entry(doc)
+                .or_insert_with(|| empty_snapshot(doc, space, None, false));
+        }
+        for (doc, snapshot) in &mut by_doc {
+            snapshot.withdrawal = self
+                .newest_record(*doc)
+                .filter(|record| !record.payload.pinned && self.in_space(snapshot.space))
+                .map(|record| record.signed.clone());
+        }
+        by_doc
+            .into_values()
+            .filter(|snapshot| {
+                snapshot.pin.is_some()
+                    || snapshot.hold
+                    || snapshot.withdrawal.is_some()
+                    || !snapshot.layers.is_empty()
+            })
+            .collect()
+    }
+}
+
+const fn empty_snapshot(
+    doc: DocId,
+    space: SpaceId,
+    pin: Option<PinSnapshot>,
+    hold: bool,
+) -> DocSnapshot {
+    DocSnapshot {
+        doc,
+        space,
+        pin,
+        hold,
+        withdrawal: None,
+        layers: Vec::new(),
     }
 }
 
@@ -482,7 +505,7 @@ impl Inner {
 /// departed documents do not accumulate principals.
 fn forget_untracked(attribution: &Attribution, doc: DocId) {
     let policy = attribution.policy();
-    if policy.get(doc) == Record::default() {
+    if policy.get(doc) == PolicyRecord::default() {
         policy.forget_document(doc);
     }
 }
@@ -510,6 +533,7 @@ impl Replicas {
             peers:       HashMap::new(),
             docs:        HashMap::new(),
             minted:      HashSet::new(),
+            records:     Records::default(),
             sessions:    SessionLayers::default(),
             authors:     0,
             senders:     HashMap::new(),
@@ -565,98 +589,61 @@ impl Replicas {
         self.0.lock().broadcast(msg);
     }
 
-    /// Records `peer`'s pin on `doc`. The caller has checked that `peer`
-    /// proved `author` and that `proof` names it. Idempotent.
+    /// Records `peer`'s pin on `doc`, proving `did`. The caller has checked
+    /// that `proof` names `author`. The pin is by the author when `did` is it.
+    /// Idempotent.
     pub fn add_pin(
         &self,
         peer: EndpointId,
+        did: Option<&Did>,
         doc: DocId,
         space: SpaceId,
         author: Did,
         proof: Authorship,
         at: u64,
     ) -> Result<(), PinRefused> {
-        self.add_claim(Claim::Pin, peer, doc, space, Proven { author, proof }, at)
-    }
-
-    /// Records that `peer` keeps `doc`, authored by `author`, after the
-    /// author left. The caller has checked that `proof` names `author`.
-    /// Idempotent.
-    pub fn add_keep(
-        &self,
-        peer: EndpointId,
-        doc: DocId,
-        space: SpaceId,
-        author: Did,
-        proof: Authorship,
-        at: u64,
-    ) -> Result<(), PinRefused> {
-        self.add_claim(Claim::Keep, peer, doc, space, Proven { author, proof }, at)
-    }
-
-    fn add_claim(
-        &self,
-        claim: Claim,
-        peer: EndpointId,
-        doc: DocId,
-        space: SpaceId,
-        proven: Proven,
-        at: u64,
-    ) -> Result<(), PinRefused> {
-        let author = proven.author.clone();
+        let attributed_to = author.clone();
         let mut inner = self.0.lock();
-        let attributed = inner.add_claim(claim, peer, doc, space, proven, at)?;
+        let attributed = inner.add_pin(peer, did, doc, space, Proven { author, proof }, at)?;
         if attributed {
             inner.authors = inner.authors.wrapping_add(1);
         }
         let attribution = inner.attribution.clone();
         drop(inner);
         if attributed {
-            attribution.reassign(doc, Some(space), Some(&author));
+            attribution.reassign(doc, Some(space), Some(&attributed_to));
         }
         Ok(())
     }
 
     pub fn remove_pin(&self, peer: EndpointId, doc: DocId) {
-        self.0.lock().remove_claim(Claim::Pin, peer, doc);
+        self.0.lock().remove_pin(peer, doc);
     }
 
-    pub fn remove_keep(&self, peer: EndpointId, doc: DocId) {
-        self.0.lock().remove_claim(Claim::Keep, peer, doc);
-    }
-
-    /// The documents `peer` pins, with the space and the proof each pin
-    /// carried.
+    /// Whether `peer`'s pin on `doc` is by the author.
     #[must_use]
-    pub fn pins_of(&self, peer: EndpointId) -> Vec<(DocId, SpaceId, Proven)> {
+    pub fn pins_as_author(&self, peer: EndpointId, doc: DocId) -> bool {
+        self.0
+            .lock()
+            .peers
+            .get(&peer)
+            .and_then(|r| r.docs.get(&doc))
+            .and_then(|e| e.pin)
+            .is_some_and(|p| p.by_author)
+    }
+
+    /// The author and proof the first verified pin on `doc` carried.
+    #[must_use]
+    pub fn proven(&self, doc: DocId) -> Option<Proven> {
         let inner = self.0.lock();
-        let Some(replica) = inner.peers.get(&peer) else {
-            return Vec::new();
-        };
-        let pins = replica
-            .docs
-            .iter()
-            .filter(|(_, entry)| entry.pin.is_some())
-            .filter_map(|(doc, _)| {
-                let presence = inner.docs.get(doc)?;
-                Some((
-                    *doc,
-                    presence.space,
-                    Proven {
-                        author: presence.author.clone()?,
-                        proof:  presence.proof.clone()?,
-                    },
-                ))
+        let proven = inner.docs.get(&doc).and_then(|presence| {
+            Some(Proven {
+                author: presence.author.clone()?,
+                proof:  presence.proof.clone()?,
             })
-            .collect();
+        });
         drop(inner);
-        pins
-    }
-
-    /// Whether any peer keeps `doc` after its author left.
-    #[must_use]
-    pub fn is_kept(&self, doc: DocId) -> bool {
-        self.0.lock().docs.get(&doc).is_some_and(|p| p.keeps > 0)
+        proven
     }
 
     /// Whether `peer`, proving `did`, may hold `doc`.
@@ -690,67 +677,133 @@ impl Replicas {
         self.0.lock().remove_hold(peer, doc, to);
     }
 
-    /// Writes a batch into `writer`'s session layer on `doc`, all or none,
-    /// charging `writer`. Answers the opinions that changed.
+    /// Writes a batch, or the `live` writes of it, into its writer's session
+    /// layer, all or none, charging the writer. `source` is the peer the
+    /// layer is held through.
     pub(crate) fn add_session(
         &self,
-        writer: EndpointId,
-        did: Option<&Did>,
-        doc: DocId,
-        space: SpaceId,
-        batch: Vec<(SessionKey, Option<Vec<u8>>)>,
-        at: u64,
-    ) -> Result<Vec<Opinion>, SessionError> {
+        source: EndpointId,
+        batch: &Batch,
+        live: Option<Live<'_>>,
+    ) -> Result<Applied, SessionError> {
+        self.write_session(source, batch, live, false)
+    }
+
+    /// Writes a batch that restates the local writer's live cells, which may
+    /// take the layer past its batch cap until the older batches drop.
+    pub(crate) fn add_checkpoint(
+        &self,
+        source: EndpointId,
+        batch: &Batch,
+    ) -> Result<Applied, SessionError> {
+        self.write_session(source, batch, None, true)
+    }
+
+    fn write_session(
+        &self,
+        source: EndpointId,
+        batch: &Batch,
+        live: Option<Live<'_>>,
+        restating: bool,
+    ) -> Result<Applied, SessionError> {
         let mut inner = self.0.lock();
-        if inner.docs.get(&doc).is_some_and(|p| p.space != space) {
+        let payload = &batch.payload;
+        if inner
+            .docs
+            .get(&payload.doc)
+            .is_some_and(|p| p.space != payload.space)
+        {
             return Err(SessionError::WrongSpace);
         }
-        let quota = inner.attribution.writer_quota(writer, did);
-        let reserved = did.is_some()
-            && (inner.author_resolved(doc).as_ref() == did
-                || inner.attribution.local_did().as_ref() == did);
+        let did = Some(&payload.did);
+        let quota = inner.attribution.writer_quota(payload.writer, did);
+        let reserved = inner.author_resolved(payload.doc).as_ref() == did
+            || inner.attribution.local_did().as_ref() == did;
         let writer = Writer {
-            peer: writer,
-            did,
+            peer: payload.writer,
+            did: &payload.did,
             quota: &quota,
             reserved,
+            restating,
         };
-        inner.sessions.write(&writer, doc, space, batch, at)
+        inner.sessions.write(&writer, source, batch, live)
     }
 
-    /// Drops `peer`'s opinions on `keys` of `doc`, releasing what they held.
-    pub(crate) fn clear_session(&self, peer: EndpointId, doc: DocId, keys: &[SessionKey]) {
-        self.0.lock().sessions.clear(peer, doc, keys);
+    /// Records `source` as holding `writer`'s layer on `doc`. Answers whether
+    /// the layer exists.
+    pub(crate) fn add_session_source(
+        &self,
+        writer: EndpointId,
+        doc: DocId,
+        source: EndpointId,
+    ) -> bool {
+        self.0.lock().sessions.add_source(writer, doc, source)
     }
 
-    /// Drops `peer`'s session layer on `doc`.
-    pub(crate) fn remove_session_layer(&self, peer: EndpointId, doc: DocId) {
-        self.0.lock().sessions.remove(peer, doc);
+    /// Drops `source` from `writer`'s layer on `doc`, and the layer once no
+    /// source is left. Answers whether the layer is gone.
+    pub(crate) fn remove_session_source(
+        &self,
+        writer: EndpointId,
+        doc: DocId,
+        source: EndpointId,
+    ) -> bool {
+        self.0.lock().sessions.remove_source(writer, doc, source)
     }
 
-    /// Peers holding a session layer on `doc`, with the DID each proved.
-    pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(EndpointId, Option<Did>)> {
+    /// The peers `writer`'s layer on `doc` is held through.
+    pub(crate) fn session_sources(&self, writer: EndpointId, doc: DocId) -> Vec<EndpointId> {
+        self.0.lock().sessions.sources(writer, doc)
+    }
+
+    /// Each document `writer` has a layer on, with each peer it is held
+    /// through.
+    pub(crate) fn session_sources_of_writer(&self, writer: EndpointId) -> Vec<(DocId, EndpointId)> {
+        self.0.lock().sessions.sources_of_writer(writer)
+    }
+
+    /// Layers `source` alone holds, other than `me`'s own.
+    pub(crate) fn orphaned_by(&self, source: EndpointId, me: EndpointId) -> Vec<Orphan> {
+        self.0.lock().sessions.orphaned_by(source, me)
+    }
+
+    /// Whether `writer`'s retained batches on `doc` are due a checkpoint.
+    pub(crate) fn needs_checkpoint(&self, writer: EndpointId, doc: DocId) -> bool {
+        self.0.lock().sessions.needs_checkpoint(writer, doc)
+    }
+
+    /// Records how a checkpoint of `writer`'s layer on `doc` ended.
+    pub(crate) fn record_checkpoint(&self, writer: EndpointId, doc: DocId, succeeded: bool) {
+        self.0
+            .lock()
+            .sessions
+            .record_checkpoint(writer, doc, succeeded);
+    }
+
+    /// Writers holding a session layer on `doc`, with the DID each layer
+    /// names.
+    pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(EndpointId, Did)> {
         self.0.lock().sessions.layers(doc)
     }
 
-    /// Peers holding a session layer on `doc`.
+    /// Writers holding a session layer on `doc`.
     #[must_use]
-    pub fn session_peers(&self, doc: DocId) -> Vec<EndpointId> {
-        self.0.lock().sessions.peers(doc)
+    pub fn session_writers(&self, doc: DocId) -> Vec<EndpointId> {
+        self.0.lock().sessions.writers(doc)
     }
 
-    /// Every document `peer` holds a session layer on, with its space and
-    /// opinions.
-    pub(crate) fn session_layers_of(
+    /// `writer`'s session opinions on `doc`.
+    pub(crate) fn session_opinions(&self, writer: EndpointId, doc: DocId) -> Vec<Opinion> {
+        self.0.lock().sessions.opinions(writer, doc)
+    }
+
+    /// The keys `writer` has cleared on `doc`, with the stamp of each.
+    pub(crate) fn session_tombstones(
         &self,
-        peer: EndpointId,
-    ) -> Vec<(DocId, SpaceId, Vec<Opinion>)> {
-        self.0.lock().sessions.of_peer(peer)
-    }
-
-    /// `peer`'s session opinions on `doc`.
-    pub(crate) fn session_opinions(&self, peer: EndpointId, doc: DocId) -> Vec<Opinion> {
-        self.0.lock().sessions.opinions(peer, doc)
+        writer: EndpointId,
+        doc: DocId,
+    ) -> Vec<(SessionKey, u64)> {
+        self.0.lock().sessions.tombstones(writer, doc)
     }
 
     /// Who authors `doc`: the DID a pin proved, or this node for one it
@@ -817,8 +870,8 @@ impl Replicas {
             .is_some_and(|p| p.space == space)
     }
 
-    /// Remote peers pinning or keeping `doc`, which `me` can sync it from, the
-    /// author's endpoint first.
+    /// Remote peers pinning `doc`, which `me` can sync it from: the author's
+    /// endpoint first, then the rest by pin stamp and peer id.
     #[must_use]
     pub fn sync_sources(&self, doc: DocId, me: EndpointId) -> Vec<EndpointId> {
         let inner = self.0.lock();
@@ -826,19 +879,15 @@ impl Replicas {
             return Vec::new();
         };
         let author_endpoint = inner.author_endpoint(space, doc);
-        let mut sources = inner
+        let mut pinners = inner
             .peers
             .iter()
-            .filter(|(pid, r)| {
-                **pid != me
-                    && Some(**pid) != author_endpoint
-                    && r.docs
-                        .get(&doc)
-                        .is_some_and(|e| e.pin.is_some() || e.keep.is_some())
-            })
-            .map(|(pid, _)| *pid)
+            .filter(|(pid, _)| **pid != me && Some(**pid) != author_endpoint)
+            .filter_map(|(pid, r)| Some((r.docs.get(&doc)?.pin?.at, *pid)))
             .collect::<Vec<_>>();
         drop(inner);
+        pinners.sort_unstable();
+        let mut sources = pinners.into_iter().map(|(_, pid)| pid).collect::<Vec<_>>();
         if let Some(author_endpoint) = author_endpoint.filter(|o| *o != me) {
             sources.insert(0, author_endpoint);
         }
@@ -857,6 +906,27 @@ impl Replicas {
         self.0.lock().docs.get(&doc).is_some_and(|p| p.pins > 0)
     }
 
+    /// Whether a peer proving `doc`'s author currently pins it.
+    #[must_use]
+    pub fn is_author_pinned(&self, doc: DocId) -> bool {
+        self.0
+            .lock()
+            .docs
+            .get(&doc)
+            .is_some_and(|p| p.author_pins > 0)
+    }
+
+    /// Whether `peer` pins `doc`.
+    #[must_use]
+    pub fn pins_by(&self, peer: EndpointId, doc: DocId) -> bool {
+        self.0
+            .lock()
+            .peers
+            .get(&peer)
+            .and_then(|r| r.docs.get(&doc))
+            .is_some_and(|e| e.pin.is_some())
+    }
+
     /// A deterministically ordered snapshot, for inspection.
     #[must_use]
     pub fn snapshot(&self) -> snapshot::ReplicaSnapshot {
@@ -872,7 +942,7 @@ impl Replicas {
                         Some(snapshot::PeerDoc {
                             doc:   *doc,
                             space: inner.docs.get(doc)?.space,
-                            pin:   e.pin,
+                            pin:   e.pin.map(|p| p.at),
                             hold:  e.hold,
                         })
                     })

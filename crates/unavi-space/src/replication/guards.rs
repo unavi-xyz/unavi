@@ -1,26 +1,32 @@
 //! RAII guards tying replicated state to entities, and the world-side apply of
 //! local and remote changes.
 //!
-//! A pin, hold or cell lives exactly as long as its guard entity. Guards hang
-//! off the document they are about and the peer that stated them, so either
-//! despawning takes the state with it.
+//! A pin or hold lives exactly as long as its guard entity, and a session
+//! layer as long as any of its sources' guards. Guards hang off the document
+//! they are about and the peer that stated them, so either despawning takes
+//! the state with it.
 
-use std::collections::{
-    BTreeMap,
-    HashSet,
-};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_async::AsyncWorld;
 use bevy_hsd::document::DocIndex;
 use bevy_iroh::store::DataStore;
-use hsd::{
-    id::DocId,
-    property::name::PropName,
-};
+use hsd::id::DocId;
 use iroh::EndpointId;
-use unavi_identity::authorship;
-use unavi_policy::rules::Rules;
+use pins::{
+    PinClaim,
+    clear_pin,
+    note_record,
+    spawn_pin,
+};
+use unavi_identity::{
+    authorship::{
+        self,
+        AuthorshipError,
+    },
+    identity::Identity,
+};
 use xdid::core::did::Did;
 
 use crate::{
@@ -38,21 +44,30 @@ use crate::{
     pinned::PinnedDoc,
     replication::{
         clock,
+        frames,
         message::{
+            Batch,
             ClearedKey,
+            Live,
+            MAX_VALUE_BYTES,
+            MAX_WRITES_PER_BATCH,
             ReplicationMsg,
-            SESSION_NAME_MAX_BYTES,
-            SessionSnapshot,
+            Retained,
+            SessionBatch,
             SessionWrite,
+        },
+        record::{
+            PinRecord,
+            Record,
         },
         session::{
             SessionError,
-            SessionKey,
             compose::{
                 SessionLayerState,
                 compose,
                 uncompose,
             },
+            layers::Applied,
         },
         store::{
             Proven,
@@ -143,32 +158,38 @@ pub fn claim_remote_peer(
 }
 
 /// Despawns the peer's state entity only if `generation` still owns it,
-/// adopting what it leaves behind first.
+/// carrying what it leaves behind first.
 pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64) {
     if world
         .get::<StreamGen>(peer_ent)
         .is_some_and(|g| g.0 == generation)
     {
-        adopt_departing(world, peer_ent);
+        carry_departing(world, peer_ent);
+        if let Some(remote) = world.get::<RemotePeer>(peer_ent).map(|remote| remote.id)
+            && let Some(replicas) = world.get_resource::<Replicas>()
+        {
+            replicas.drop_hearsay(remote);
+        }
         world.despawn(peer_ent);
     }
 }
 
-/// Adopts what a departing peer leaves, when the local rules adopt its rung.
+/// Takes up the session layers a departing peer alone held, when the local
+/// rules adopt the rung of the DID each names.
 ///
-/// The documents it pinned are kept, and its session opinions are restated as
-/// this peer's own, so they outlive it for everyone this peer reaches. Every
-/// viewer judges the restated opinions by this peer's standing, so adoption
-/// never lets an opinion reach further than this peer could state it.
-fn adopt_departing(world: &mut World, peer_ent: Entity) {
+/// A carried layer stays its writer's: it is masked by the writer's standing,
+/// and this peer relays it in its snapshots. Documents need no carrying, since
+/// this peer and every other pinner already hold them.
+fn carry_departing(world: &mut World, peer_ent: Entity) {
     let Some(peer) = world.get::<RemotePeer>(peer_ent).map(|remote| remote.id) else {
         return;
     };
     let Some(view) = world.get_resource::<SpaceView>().cloned() else {
         return;
     };
-    let rules = world.get_resource::<Rules>().cloned().unwrap_or_default();
-    if !rules.grant(view.trust_of(peer)).adopts {
+    let replicas = view.replicas();
+    let orphans = replicas.orphaned_by(peer, view.me());
+    if orphans.is_empty() {
         return;
     }
     let me = Stater {
@@ -177,79 +198,17 @@ fn adopt_departing(world: &mut World, peer_ent: Entity) {
         did:    Some(view.did().clone()),
         local:  true,
     };
-    adopt(world, peer, &me);
-}
-
-/// Keeps every document `peer` pins and restates its session opinions as
-/// `me`'s, leaving any key `me` already states alone.
-fn adopt(world: &mut World, peer: EndpointId, me: &Stater) {
-    let replicas = world.resource::<Replicas>().clone();
-
-    for (doc, space, proven) in replicas.pins_of(peer) {
-        spawn_keep(world, me, doc, space, proven);
-    }
-
-    let at = clock::current_micros();
-    for (doc, space, opinions) in replicas.session_layers_of(peer) {
-        let mine = replicas
-            .session_opinions(me.id, doc)
-            .into_iter()
-            .map(|(key, ..)| key)
-            .collect::<HashSet<_>>();
-        let writes = opinions
-            .into_iter()
-            .filter(|(key, ..)| !mine.contains(key))
-            .map(|(key, value, _)| SessionWrite {
-                prim: key.prim,
-                name: key.name.to_string(),
-                value,
-            })
-            .collect::<Vec<_>>();
-        if writes.is_empty() {
-            continue;
-        }
-        if let Err(err) = set_session(world, me, doc, space, writes, at) {
-            debug!(%doc, ?err, "departing peer's session opinions not adopted");
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct PinState {
-    peer:     EndpointId,
-    doc:      DocId,
-    local:    bool,
-    /// Held because a drop takes no arguments.
-    replicas: Replicas,
-}
-
-impl Drop for PinState {
-    fn drop(&mut self) {
-        self.replicas.remove_pin(self.peer, self.doc);
-        if self.local {
-            self.replicas
-                .broadcast(&ReplicationMsg::Unpin { doc: self.doc });
-        }
-    }
-}
-
-/// A peer keeping a document after its author left. The local peer's keep
-/// lasts until the document's anchor goes.
-#[derive(Component)]
-pub struct KeepState {
-    peer:     EndpointId,
-    doc:      DocId,
-    local:    bool,
-    /// Held because a drop takes no arguments.
-    replicas: Replicas,
-}
-
-impl Drop for KeepState {
-    fn drop(&mut self) {
-        self.replicas.remove_keep(self.peer, self.doc);
-        if self.local {
-            self.replicas
-                .broadcast(&ReplicationMsg::Unkeep { doc: self.doc });
+    for orphan in orphans {
+        if view.adopts(&orphan.did) && replicas.add_session_source(orphan.writer, orphan.doc, me.id)
+        {
+            hold_layer(
+                world,
+                &me,
+                orphan.writer,
+                &orphan.did,
+                orphan.doc,
+                orphan.space,
+            );
         }
     }
 }
@@ -289,24 +248,17 @@ pub struct Stater {
     pub local:  bool,
 }
 
-/// A remote change whose authorship proofs are already checked.
+/// A remote change whose proofs and records are already checked.
 pub enum Remote {
     Snapshot(Vec<RemoteDoc>),
     Pin {
         doc:   DocId,
         space: SpaceId,
-        proof: Proven,
+        claim: PinClaim,
     },
     Unpin {
-        doc: DocId,
-    },
-    Keep {
-        doc:   DocId,
-        space: SpaceId,
-        proof: Proven,
-    },
-    Unkeep {
-        doc: DocId,
+        doc:        DocId,
+        withdrawal: Option<Record>,
     },
     Hold {
         doc:   DocId,
@@ -316,27 +268,25 @@ pub enum Remote {
         doc: DocId,
         to:  Option<EndpointId>,
     },
-    Session {
-        doc:    DocId,
-        space:  SpaceId,
-        writes: Vec<SessionWrite>,
-        at:     u64,
-    },
-    SessionClear {
-        doc:   DocId,
-        space: SpaceId,
-        keys:  Vec<ClearedKey>,
-    },
+    /// More of the snapshot in progress, which neither resets nor replaces
+    /// what the sender stated before.
+    SnapshotMore(Vec<RemoteDoc>),
+    /// A batch its writer sent over its own connection.
+    Session(Batch),
 }
 
 /// One document of a remote snapshot.
 pub struct RemoteDoc {
-    pub doc:     DocId,
-    pub space:   SpaceId,
-    pub pin:     Option<Proven>,
-    pub keep:    Option<Proven>,
-    pub hold:    bool,
-    pub session: Vec<SessionSnapshot>,
+    pub doc:        DocId,
+    pub space:      SpaceId,
+    /// Present only with a record saying the document is pinned.
+    pub pin:        Option<PinClaim>,
+    pub hold:       bool,
+    /// The newest withdrawal the sender knows.
+    pub withdrawal: Option<Record>,
+    /// Layers whose batches are vouched for: the sender's own, or relayed ones
+    /// whose signatures verified.
+    pub layers:     Vec<Vec<Retained>>,
 }
 
 fn space_entity(world: &World, space: SpaceId) -> Option<Entity> {
@@ -383,44 +333,6 @@ fn find_guard<C: Component>(
         .find(|e| world.get::<C>(*e).is_some_and(&pred))
 }
 
-fn spawn_pin(
-    world: &mut World,
-    stater: &Stater,
-    doc: DocId,
-    space: SpaceId,
-    proven: Proven,
-) -> bool {
-    if find_guard::<PinState>(world, stater.entity, |p| p.doc == doc).is_some() {
-        return true;
-    }
-    let replicas = world.resource::<Replicas>().clone();
-    let msg = stater.local.then(|| ReplicationMsg::Pin {
-        doc,
-        space,
-        author: proven.proof.clone(),
-    });
-    let at = clock::current_micros();
-    if let Err(err) = replicas.add_pin(stater.id, doc, space, proven.author, proven.proof, at) {
-        warn!(%doc, %err, "pin refused");
-        return false;
-    }
-    if let Some(msg) = msg {
-        replicas.broadcast(&msg);
-    }
-    let anchor = doc_anchor(world, doc, space);
-    world.spawn((
-        PinState {
-            peer: stater.id,
-            doc,
-            local: stater.local,
-            replicas,
-        },
-        ForDoc(anchor),
-        FromPeer(stater.entity),
-    ));
-    true
-}
-
 fn spawn_hold(world: &mut World, stater: &Stater, doc: DocId, space: SpaceId) -> bool {
     let replicas = world.resource::<Replicas>().clone();
     let at = clock::current_micros();
@@ -462,149 +374,228 @@ fn release_hold(world: &mut World, stater: &Stater, doc: DocId, to: Option<Endpo
     }
 }
 
-fn clear_pin(world: &mut World, peer_ent: Entity, doc: DocId) {
-    if let Some(e) = find_guard::<PinState>(world, peer_ent, |p| p.doc == doc) {
-        world.despawn(e);
-    }
-}
-
-/// Records that the stater keeps `doc` after its author left.
-fn spawn_keep(world: &mut World, stater: &Stater, doc: DocId, space: SpaceId, proven: Proven) {
-    if find_guard::<KeepState>(world, stater.entity, |k| k.doc == doc).is_some() {
+/// Holds `writer`'s layer on `doc` through `holder`'s guard owner, unless a
+/// guard for it already lives there.
+fn hold_layer(
+    world: &mut World,
+    holder: &Stater,
+    writer: EndpointId,
+    did: &Did,
+    doc: DocId,
+    space: SpaceId,
+) {
+    if find_guard::<SessionLayerState>(world, holder.entity, |layer| {
+        layer.writer == writer && layer.doc == doc
+    })
+    .is_some()
+    {
         return;
     }
     let replicas = world.resource::<Replicas>().clone();
-    let msg = stater.local.then(|| ReplicationMsg::Keep {
-        doc,
-        space,
-        author: proven.proof.clone(),
-    });
-    let at = clock::current_micros();
-    if let Err(err) = replicas.add_keep(stater.id, doc, space, proven.author, proven.proof, at) {
-        debug!(%doc, %err, "keep refused");
-        return;
-    }
-    if let Some(msg) = msg {
-        replicas.broadcast(&msg);
-    }
     let anchor = doc_anchor(world, doc, space);
     world.spawn((
-        KeepState {
-            peer: stater.id,
-            doc,
-            local: stater.local,
-            replicas,
-        },
+        SessionLayerState::new(holder.id, writer, did.clone(), doc, replicas),
         ForDoc(anchor),
-        FromPeer(stater.entity),
+        FromPeer(holder.entity),
     ));
 }
 
-fn clear_keep(world: &mut World, peer_ent: Entity, doc: DocId) {
-    if let Some(e) = find_guard::<KeepState>(world, peer_ent, |k| k.doc == doc) {
+/// Despawns `source`'s guard on `writer`'s layer on `doc`, which drops the
+/// layer if it was the last one.
+fn drop_source(world: &mut World, source: EndpointId, writer: EndpointId, doc: DocId) {
+    let owner = index::lookup::<RemotePeer>(world, source)
+        .filter(|e| world.get::<RemotePeer>(*e).is_some())
+        .or_else(|| index::lookup::<LocalPeer>(world, ()));
+    let Some(owner) = owner else {
+        return;
+    };
+    if let Some(e) = find_guard::<SessionLayerState>(world, owner, |layer| {
+        layer.writer == writer && layer.doc == doc
+    }) {
         world.despawn(e);
     }
 }
 
-/// Applies a batch of session opinions: records them, composes them into the
-/// document they speak for, and broadcasts them if they are this peer's.
+/// Applies a batch of session opinions, or the `live` writes of it: records
+/// them under `source`, composes them into the document they speak for, and
+/// holds the layer for as long as `source`'s guard owner lives.
 ///
 /// One batch, one write boundary. A script's tick flushes its whole dirty set
 /// through here, and a half-applied tick can render, so the batch is recorded
 /// all or none and composed as one tick.
-fn set_session(
+fn apply_batch(
     world: &mut World,
-    stater: &Stater,
-    doc: DocId,
-    space: SpaceId,
-    writes: Vec<SessionWrite>,
-    at: u64,
+    source: &Stater,
+    batch: &Batch,
+    live: Option<Live<'_>>,
 ) -> Result<(), SessionError> {
-    let named: Vec<(SessionWrite, PropName)> = writes
-        .into_iter()
-        .map(|w| valid_name(&w.name).map(|name| (w, name)))
-        .collect::<Result<_, _>>()?;
-
     let replicas = world.resource::<Replicas>().clone();
-    let changed = replicas.add_session(
-        stater.id,
-        stater.did.as_ref(),
+    let applied = replicas.add_session(source.id, batch, live)?;
+    land_batch(world, source, batch, &applied);
+    Ok(())
+}
+
+/// Holds the layer a batch landed in and composes what it changed.
+fn land_batch(world: &mut World, source: &Stater, batch: &Batch, applied: &Applied) {
+    let SessionBatch {
+        writer,
+        did,
         doc,
         space,
-        named
-            .iter()
-            .map(|(w, name)| {
-                (
-                    SessionKey {
-                        prim: w.prim,
-                        name: name.clone(),
-                    },
-                    w.value.clone(),
-                )
-            })
-            .collect(),
-        at,
-    )?;
+        ..
+    } = &batch.payload;
 
     // Spawned before composing, so the new layer is ordered among the other
     // session layers from its first opinion.
-    if find_guard::<SessionLayerState>(world, stater.entity, |layer| layer.doc == doc).is_none() {
-        let anchor = doc_anchor(world, doc, space);
-        world.spawn((
-            SessionLayerState::new(stater.id, doc, replicas.clone()),
-            ForDoc(anchor),
-            FromPeer(stater.entity),
-        ));
+    if applied.held {
+        hold_layer(world, source, *writer, did, *doc, *space);
     }
-    compose(world, stater.id, stater.did.as_ref(), doc, &changed);
+    if !applied.cleared.is_empty() {
+        uncompose(world, *writer, *doc, &applied.cleared);
+    }
+    if !applied.set.is_empty() {
+        compose(world, *writer, did, *doc, &applied.set);
+    }
+}
 
-    if stater.local {
-        let writes = named.iter().map(|(w, _)| w.clone()).collect();
-        replicas.broadcast(&ReplicationMsg::Session {
+/// Signs `payload` as the local peer's own word, applies it, and broadcasts it.
+/// A batch that `restating` the layer's live cells may take it past its batch
+/// cap until the older batches drop.
+fn write_signed(
+    world: &mut World,
+    identity: &Identity,
+    payload: SessionBatch,
+    restating: bool,
+) -> Result<(), SessionError> {
+    let batch = Batch::sign(payload, identity.signing_key()).map_err(|err| {
+        warn!(%err, "session batch not signed");
+        SessionError::Unsigned
+    })?;
+    let me = Stater {
+        entity: local_peer_entity(world),
+        id:     batch.payload.writer,
+        did:    Some(batch.payload.did.clone()),
+        local:  true,
+    };
+    let replicas = world.resource::<Replicas>().clone();
+    let applied = if restating {
+        replicas.add_checkpoint(me.id, &batch)?
+    } else {
+        replicas.add_session(me.id, &batch, None)?
+    };
+    land_batch(world, &me, &batch, &applied);
+    replicas.broadcast(&ReplicationMsg::Session(batch.signed));
+    Ok(())
+}
+
+/// Applies and broadcasts the local peer's own batch, then checkpoints its
+/// layer if the batches it retains have outgrown its content.
+///
+/// A batch is one atomic signed message, so one that exceeds
+/// [`MAX_WRITES_PER_BATCH`] or the content a frame holds is refused rather
+/// than split.
+pub(crate) fn local_write(
+    world: &mut World,
+    identity: &Identity,
+    payload: SessionBatch,
+) -> Result<(), SessionError> {
+    let too_large = |write: &SessionWrite| {
+        write
+            .value
+            .as_ref()
+            .is_some_and(|value| value.len() > MAX_VALUE_BYTES)
+    };
+    if payload.writes.iter().any(too_large)
+        || payload.clears.len() > MAX_WRITES_PER_BATCH
+        || !frames::fits_one_batch(&payload.writes)
+    {
+        return Err(SessionError::TooLarge);
+    }
+    let (writer, doc, space) = (payload.writer, payload.doc, payload.space);
+    // A layer at the trigger restates itself first, so a writer near its
+    // limits has room for the batch.
+    checkpoint(world, identity, writer, doc, space);
+    write_signed(world, identity, payload, false)?;
+    checkpoint(world, identity, writer, doc, space);
+    Ok(())
+}
+
+/// Re-signs the local peer's live cells on `doc` as fresh batches, so every
+/// older batch loses its last cell and is dropped by every holder. A failure
+/// is not retried until the layer has grown.
+fn checkpoint(world: &mut World, identity: &Identity, me: EndpointId, doc: DocId, space: SpaceId) {
+    let replicas = world.resource::<Replicas>().clone();
+    if !replicas.needs_checkpoint(me, doc) {
+        return;
+    }
+    let opinions = replicas.session_opinions(me, doc);
+    let tombstones = replicas.session_tombstones(me, doc);
+    let newest = opinions
+        .iter()
+        .map(|(.., at)| *at)
+        .chain(tombstones.iter().map(|(_, at)| *at))
+        .max()
+        .unwrap_or(0);
+    let at = clock::current_micros().max(newest.saturating_add(1));
+    let writes = opinions
+        .into_iter()
+        .map(|(key, value, _)| SessionWrite {
+            prim: key.prim,
+            name: key.name.to_string(),
+            value,
+        })
+        .collect();
+    let clears = tombstones
+        .into_iter()
+        .map(|(key, _)| ClearedKey {
+            prim: key.prim,
+            name: key.name.to_string(),
+        })
+        .collect::<Vec<_>>();
+    let restated = frames::chunk_writes(writes)
+        .into_iter()
+        .map(|writes| (writes, Vec::new()))
+        .chain(
+            clears
+                .chunks(MAX_WRITES_PER_BATCH)
+                .map(|clears| (Vec::new(), clears.to_vec())),
+        );
+    for (writes, clears) in restated {
+        let payload = SessionBatch {
+            writer: me,
+            did: identity.did().clone(),
             doc,
             space,
-            writes,
             at,
-        });
+            writes,
+            clears,
+        };
+        if let Err(err) = write_signed(world, identity, payload, true) {
+            warn!(%doc, ?err, "session checkpoint failed; retrying once the layer grows");
+            replicas.record_checkpoint(me, doc, false);
+            return;
+        }
     }
-
-    Ok(())
+    replicas.record_checkpoint(me, doc, true);
 }
 
-/// Drops the stater's own opinions on `keys`, and broadcasts the drop if they
-/// are this peer's.
-fn clear_session(
-    world: &World,
-    stater: &Stater,
-    doc: DocId,
-    space: SpaceId,
-    keys: Vec<ClearedKey>,
-) -> Result<(), SessionError> {
-    let named = keys
-        .iter()
-        .map(|key| {
-            valid_name(&key.name).map(|name| SessionKey {
-                prim: key.prim,
-                name,
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+/// Drops every guard on layers `writer` wrote, whoever holds them. The writer
+/// is present, so only its word counts.
+fn drop_layers_of(world: &mut World, writer: EndpointId) {
     let replicas = world.resource::<Replicas>().clone();
-    replicas.clear_session(stater.id, doc, &named);
-    uncompose(world, stater.id, doc, &named);
-    if stater.local {
-        replicas.broadcast(&ReplicationMsg::SessionClear { doc, space, keys });
+    for (doc, source) in replicas.session_sources_of_writer(writer) {
+        drop_source(world, source, writer, doc);
     }
-    Ok(())
 }
 
-/// A session name is a property name, so it answers to the same key-layout
-/// rule every document property does, plus a length the store will accept.
-fn valid_name(name: &str) -> Result<PropName, SessionError> {
-    if name.len() > SESSION_NAME_MAX_BYTES {
-        return Err(SessionError::BadName);
+/// Drops every guard on `writer`'s layer on `doc` except `keep`'s.
+fn drop_other_sources(world: &mut World, writer: EndpointId, doc: DocId, keep: EndpointId) {
+    let replicas = world.resource::<Replicas>().clone();
+    for source in replicas.session_sources(writer, doc) {
+        if source != keep {
+            drop_source(world, source, writer, doc);
+        }
     }
-    name.parse().map_err(|_| SessionError::BadName)
 }
 
 /// Why this node could not pin a document.
@@ -618,6 +609,8 @@ pub enum PinError {
     NotAuthor(#[from] unavi_identity::authorship::AuthorshipError),
     #[error("the pin was refused")]
     Refused,
+    #[error("the pin record could not be signed")]
+    Unsigned,
 }
 
 /// This node's own pins, holds and session writes. Each one is applied
@@ -665,26 +658,48 @@ impl LocalReplica {
             .map_err(|err| PinError::NotAuthor(err.into()))?
             .ok_or(PinError::NoStore)?;
         let proof = authorship::claim(&store, &held, &self.identity.identity).await?;
+        let key = store
+            .write_key(ns)
+            .await
+            .map_err(|err| PinError::NotAuthor(err.into()))?
+            .ok_or(PinError::NotAuthor(AuthorshipError::NotWritable))?;
 
         let this = self.clone();
-        let pinned = self
-            .async_world
+        self.async_world
             .commands()
             .send_with(move |world: &mut World| {
                 let stater = this.stater(world);
-                let proven = Proven {
-                    author: this.identity.identity.did().clone(),
-                    proof,
+                let floor = world.resource::<Replicas>().newest_record_at(doc);
+                let at = clock::current_micros().max(floor.map_or(0, |at| at.saturating_add(1)));
+                let payload = PinRecord {
+                    doc,
+                    space,
+                    at,
+                    pinned: true,
                 };
-                spawn_pin(world, &stater, doc, space, proven)
+                let record = match Record::sign(&key, payload) {
+                    Ok(record) => record,
+                    Err(err) => {
+                        warn!(%doc, %err, "pin record not signed");
+                        return Err(PinError::Unsigned);
+                    }
+                };
+                let claim = PinClaim {
+                    proven: Proven {
+                        author: this.identity.identity.did().clone(),
+                        proof,
+                    },
+                    record,
+                    signer: Some(this.clone()),
+                };
+                if spawn_pin(world, &stater, doc, space, claim) {
+                    Ok(())
+                } else {
+                    Err(PinError::Refused)
+                }
             })
             .await
-            .ok_or(PinError::Unavailable)?;
-        if pinned {
-            Ok(())
-        } else {
-            Err(PinError::Refused)
-        }
+            .ok_or(PinError::Unavailable)?
     }
 
     /// Takes hold of `doc`, unless the holder reserved the next hold for
@@ -715,40 +730,55 @@ impl LocalReplica {
             .try_send();
     }
 
-    /// Drops this node's own session opinions on `keys` of `doc`.
+    fn batch(
+        &self,
+        space: SpaceId,
+        doc: DocId,
+        writes: Vec<SessionWrite>,
+        clears: Vec<ClearedKey>,
+    ) -> SessionBatch {
+        SessionBatch {
+            writer: self.me,
+            did: self.identity.identity.did().clone(),
+            doc,
+            space,
+            at: clock::current_micros(),
+            writes,
+            clears,
+        }
+    }
+
+    /// Drops this node's own session opinions on `keys` of `doc`, as one
+    /// atomic batch.
     pub async fn clear_session(
         &self,
         space: SpaceId,
         doc: DocId,
         keys: Vec<ClearedKey>,
     ) -> Result<(), SessionError> {
-        let this = self.clone();
+        let batch = self.batch(space, doc, Vec::new(), keys);
+        let identity = Arc::clone(&self.identity.identity);
         self.async_world
             .commands()
-            .send_with(move |world: &mut World| {
-                let stater = this.stater(world);
-                clear_session(world, &stater, doc, space, keys)
-            })
+            .send_with(move |world: &mut World| local_write(world, &identity, batch))
             .await
             .unwrap_or(Err(SessionError::Unavailable))
     }
 
     /// States what this node says about `doc`'s prims for the rest of the
-    /// session, as one atomic batch. A write with no value blocks its key.
+    /// session, as one atomic batch signed with its DID. A write with no value
+    /// blocks its key.
     pub async fn set_session(
         &self,
         space: SpaceId,
         doc: DocId,
         writes: Vec<SessionWrite>,
     ) -> Result<(), SessionError> {
-        let at = clock::current_micros();
-        let this = self.clone();
+        let batch = self.batch(space, doc, writes, Vec::new());
+        let identity = Arc::clone(&self.identity.identity);
         self.async_world
             .commands()
-            .send_with(move |world: &mut World| {
-                let stater = this.stater(world);
-                set_session(world, &stater, doc, space, writes, at)
-            })
+            .send_with(move |world: &mut World| local_write(world, &identity, batch))
             .await
             .unwrap_or(Err(SessionError::Unavailable))
     }
@@ -773,63 +803,71 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
             for e in existing {
                 world.despawn(e);
             }
+            drop_layers_of(world, stater.id);
             for doc in docs {
                 apply_snapshot_doc(world, &stater, doc);
             }
         }
-        Remote::Pin { doc, space, proof } => {
-            spawn_pin(world, &stater, doc, space, proof);
+        Remote::SnapshotMore(docs) => {
+            for doc in docs {
+                apply_snapshot_doc(world, &stater, doc);
+            }
         }
-        Remote::Unpin { doc } => clear_pin(world, peer_ent, doc),
-        Remote::Keep { doc, space, proof } => {
-            spawn_keep(world, &stater, doc, space, proof);
+        Remote::Pin { doc, space, claim } => {
+            spawn_pin(world, &stater, doc, space, claim);
         }
-        Remote::Unkeep { doc } => clear_keep(world, peer_ent, doc),
+        Remote::Unpin { doc, withdrawal } => {
+            clear_pin(world, peer_ent, doc);
+            if let Some(record) = withdrawal {
+                note_record(world, &record, stater.id);
+            }
+        }
         Remote::Hold { doc, space } => {
             spawn_hold(world, &stater, doc, space);
         }
         Remote::ReleaseHold { doc, to } => release_hold(world, &stater, doc, to),
-        Remote::Session {
-            doc,
-            space,
-            writes,
-            at,
-        } => {
-            if let Err(err) = set_session(world, &stater, doc, space, writes, at) {
+        Remote::Session(batch) => {
+            let SessionBatch { writer, doc, .. } = &batch.payload;
+            drop_other_sources(world, *writer, *doc, stater.id);
+            if let Err(err) = apply_batch(world, &stater, &batch, None) {
                 debug!(%doc, ?err, "remote session batch refused");
-            }
-        }
-        Remote::SessionClear { doc, space, keys } => {
-            if let Err(err) = clear_session(world, &stater, doc, space, keys) {
-                debug!(%doc, ?err, "remote session clear refused");
             }
         }
     }
 }
 
 fn apply_snapshot_doc(world: &mut World, stater: &Stater, doc: RemoteDoc) {
-    if let Some(proof) = doc.pin {
-        spawn_pin(world, stater, doc.doc, doc.space, proof);
+    if let Some(record) = &doc.withdrawal {
+        note_record(world, record, stater.id);
     }
-    if let Some(proof) = doc.keep {
-        spawn_keep(world, stater, doc.doc, doc.space, proof);
+    if let Some(claim) = doc.pin {
+        spawn_pin(world, stater, doc.doc, doc.space, claim);
     }
     if doc.hold {
         spawn_hold(world, stater, doc.doc, doc.space);
     }
-    // One batch per stamp, so a snapshot lands the way the writes that made
-    // it did.
-    let mut by_stamp: BTreeMap<u64, Vec<SessionWrite>> = BTreeMap::new();
-    for cell in doc.session {
-        by_stamp.entry(cell.at).or_default().push(SessionWrite {
-            prim:  cell.prim,
-            name:  cell.name,
-            value: cell.value,
-        });
-    }
-    for (at, writes) in by_stamp {
-        if let Err(err) = set_session(world, stater, doc.doc, doc.space, writes, at) {
-            debug!(doc = %doc.doc, ?err, "snapshot session batch refused");
+    let replicas = world.resource::<Replicas>().clone();
+    let me = world.get_resource::<SpaceView>().map(SpaceView::me);
+    for layer in doc.layers {
+        let Some(first) = layer.first() else {
+            continue;
+        };
+        let writer = first.batch.payload.writer;
+        // A relayed layer is ignored while its writer is present, and when it
+        // is this peer's own, which a session does not outlive.
+        let present = index::lookup::<RemotePeer>(world, writer)
+            .is_some_and(|e| world.get::<RemotePeer>(e).is_some());
+        let relayed_over_writer = writer != stater.id
+            && (me == Some(writer)
+                || present
+                || replicas.session_sources(writer, doc.doc).contains(&writer));
+        if relayed_over_writer {
+            continue;
+        }
+        for retained in &layer {
+            if let Err(err) = apply_batch(world, stater, &retained.batch, Some(retained.live())) {
+                debug!(doc = %doc.doc, ?err, "snapshot session batch refused");
+            }
         }
     }
 }
@@ -843,4 +881,5 @@ pub fn init_indexes(world: &mut World) {
     world.init_resource::<DocIndex>();
 }
 
+pub mod pins;
 #[cfg(test)] mod tests;

@@ -119,7 +119,15 @@ fn fixture() -> Fixture {
     let policy = Policy::new();
     let replicas = Replicas::new(policy.clone(), Rules::default());
     replicas
-        .add_pin(other_device, doc, space, alice.did().clone(), proof, 1)
+        .add_pin(
+            other_device,
+            Some(alice.did()),
+            doc,
+            space,
+            alice.did().clone(),
+            proof,
+            1,
+        )
         .expect("this node's own pin of its own document is never refused");
 
     let local_identity = LocalIdentity {

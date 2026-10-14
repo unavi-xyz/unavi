@@ -13,12 +13,15 @@ use crate::{
     },
 };
 
-const SIZE: f32 = 5.0;
-/// The ring drawn around the dot when something is worth taking hold of.
-const RING_SIZE: f32 = 16.0;
-const RING_WIDTH: f32 = 1.5;
+/// The hover ring's footprint. Even, so it centres on the pixel grid.
+const RING_SIZE: f32 = 8.0;
+/// The resting dot, a touch smaller than the ring so the idle mark sits
+/// lighter. Even too, so it shares the ring's centre exactly.
+const DOT_SIZE: f32 = 6.0;
+/// The hollow ring's stroke. Whole pixels, so the circle stays even.
+const RING_WIDTH: f32 = 2.0;
 
-const RESTING: Color = Color::srgba(1.0, 1.0, 1.0, 0.55);
+const RESTING: Color = Color::srgba(1.0, 1.0, 1.0, 0.6);
 const OVER_GRABBABLE: Color = Color::srgba(1.0, 1.0, 1.0, 0.9);
 
 #[derive(Component)]
@@ -27,6 +30,9 @@ pub struct Crosshair;
 
 #[derive(Component)]
 pub(crate) struct CrosshairRing;
+
+#[derive(Component)]
+pub(crate) struct CrosshairDot;
 
 #[derive(Component, Default, PartialEq, Eq, Clone, Copy)]
 pub enum CrosshairMode {
@@ -65,6 +71,8 @@ pub(crate) fn spawn_crosshair(mut commands: Commands) {
             Visibility::Hidden,
         ))
         .with_children(|screen| {
+            // The hover ring: hollowed out, shown when something is worth
+            // taking hold of.
             screen.spawn((
                 CrosshairRing,
                 Node {
@@ -79,10 +87,14 @@ pub(crate) fn spawn_crosshair(mut commands: Commands) {
                 Pickable::IGNORE,
                 Visibility::Hidden,
             ));
+            // The resting dot: hidden while the ring shows, so the mark
+            // reads as one hollow circle rather than a dot inside a ring.
             screen.spawn((
+                CrosshairDot,
                 Node {
-                    width: Val::Px(SIZE),
-                    height: Val::Px(SIZE),
+                    position_type: PositionType::Absolute,
+                    width: Val::Px(DOT_SIZE),
+                    height: Val::Px(DOT_SIZE),
                     border_radius: BorderRadius::MAX,
                     ..default()
                 },
@@ -118,22 +130,35 @@ pub(crate) fn show_crosshair(
     }
 }
 
-/// Active state is the ring alone: reshaping the mark would move the eye.
+/// Active state swaps the fill for a hollow ring of the same size, so the mark
+/// stays put and only its shape changes.
 pub(crate) fn apply_crosshair_mode(
     crosshair: Query<&CrosshairMode, With<Crosshair>>,
-    mut ring: Query<&mut Visibility, With<CrosshairRing>>,
+    mut ring: Query<&mut Visibility, (With<CrosshairRing>, Without<CrosshairDot>)>,
+    mut dot: Query<&mut Visibility, (With<CrosshairDot>, Without<CrosshairRing>)>,
 ) {
-    let (Ok(mode), Ok(mut visibility)) = (crosshair.single(), ring.single_mut()) else {
+    let (Ok(mode), Ok(mut ring), Ok(mut dot)) =
+        (crosshair.single(), ring.single_mut(), dot.single_mut())
+    else {
         return;
     };
 
-    let wanted = if *mode == CrosshairMode::Active {
+    let active = *mode == CrosshairMode::Active;
+    let ring_wanted = if active {
         Visibility::Inherited
     } else {
         Visibility::Hidden
     };
-    if *visibility != wanted {
-        *visibility = wanted;
+    let dot_wanted = if active {
+        Visibility::Hidden
+    } else {
+        Visibility::Inherited
+    };
+    if *ring != ring_wanted {
+        *ring = ring_wanted;
+    }
+    if *dot != dot_wanted {
+        *dot = dot_wanted;
     }
 }
 

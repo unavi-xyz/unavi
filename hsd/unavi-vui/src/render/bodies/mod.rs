@@ -4,9 +4,12 @@
 //! icons, [`mod@hitbox`] reads the surface's own input listener. Both add
 //! `impl Bodies` blocks to the one type defined here.
 
-use std::cell::{
-    Cell,
-    RefCell,
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    f32::consts::FRAC_PI_4,
 };
 
 use smol_str::SmolStr;
@@ -86,8 +89,8 @@ pub enum Signal {
     Turn(isize),
 }
 
-/// The one resting collider a surface carries, and exactly the region its
-/// layout answers for.
+/// The one resting collider a surface carries. It covers the region its layout
+/// answers for and the page tabs standing outside it.
 #[derive(Debug, Clone, Copy)]
 pub enum Hit {
     /// An orbit's dial face.
@@ -174,7 +177,7 @@ struct SlotPrims {
     carved:      Cell<bool>,
     /// The mote's name, drawn always rather than on attention.
     label:       (u64, u64),
-    label_xform: Shadow<Vec3>,
+    label_xform: Shadow<Option<Vec3>>,
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
     icon:        RefCell<Option<Mote>>,
@@ -472,9 +475,7 @@ impl Bodies {
             }
 
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
-            if let Some(spec) = spec {
-                batch = Self::apply_label(batch, slot, view, spec, palette);
-            }
+            batch = Self::apply_label(batch, slot, view, spec, palette);
 
             let shell = Shell {
                 style: view.style,
@@ -565,17 +566,22 @@ impl Bodies {
     }
 
     /// Drawn always; only the attended name's brightness changes with
-    /// attention.
+    /// attention. A slot with no spec is a page tab, which has no name, and
+    /// whatever mote last used the slot must not leave its name behind.
     fn apply_label<'a>(
         mut batch: crate::Batch<'a>,
         slot: &SlotPrims,
         view: &SlotView,
-        spec: &MoteSpec,
+        spec: Option<&MoteSpec>,
         palette: &Palette,
     ) -> crate::Batch<'a> {
-        if let Some(offset) = slot.label_xform.diff(view.label_offset) {
-            batch = batch.set(slot.label, Property::Transform(draw::placed(offset, 1.0)));
+        let offset = spec.map(|_| view.label_offset);
+        if let Some(offset) = slot.label_xform.diff(offset) {
+            batch = batch.set(slot.label, Property::Transform(label_pose(offset)));
         }
+        let Some(spec) = spec else {
+            return batch;
+        };
 
         let Some((label, attention)) = slot.written.diff((spec.label.clone(), view.attention))
         else {
@@ -608,15 +614,16 @@ impl Bodies {
         )
     }
 
-    /// The way back wears a mark of its own, so a glance tells it from the
-    /// level it climbs out of.
+    /// The way back and the page tabs wear a chevron of their own, so a
+    /// glance tells them from the motes of the level. The way back points up;
+    /// a tab points the way it turns.
     fn apply_back<'a>(
         mut batch: crate::Batch<'a>,
         slot: &SlotPrims,
         view: &SlotView,
     ) -> crate::Batch<'a> {
-        let leaving = matches!(view.role, Role::Parent { .. });
-        if leaving && !slot.carved.get() {
+        let mark = chevron_transform(view);
+        if mark.is_some() && !slot.carved.get() {
             slot.carved.set(true);
             batch = draw::mesh(&mesh::chevron())
                 .into_iter()
@@ -624,11 +631,7 @@ impl Bodies {
         }
         batch.set(
             slot.back,
-            Property::Transform(if leaving {
-                draw::placed(Vec3::ZERO, view.radius)
-            } else {
-                draw::hidden()
-            }),
+            Property::Transform(mark.unwrap_or_else(draw::hidden)),
         )
     }
 
@@ -708,6 +711,31 @@ impl Bodies {
     }
 }
 
+/// Where a slot's name stands, or nowhere for a slot that has none.
+fn label_pose(offset: Option<Vec3>) -> Transform {
+    offset.map_or_else(draw::hidden, |offset| draw::placed(offset, 1.0))
+}
+
+/// Where a slot's chevron stands, for the roles that wear one.
+///
+/// The mesh points up, so a tab turns a quarter to face along the horizontal
+/// axis its page lies on.
+fn chevron_transform(view: &SlotView) -> Option<Transform> {
+    let rotation = match view.role {
+        Role::Parent { .. } => Quat::IDENTITY,
+        Role::Page { forward, .. } => {
+            let half = if forward { -FRAC_PI_4 } else { FRAC_PI_4 };
+            Quat::new(0.0, 0.0, half.sin(), half.cos())
+        }
+        _ => return None,
+    };
+    Some(Transform {
+        translation: Vec3::ZERO,
+        rotation,
+        scale: Vec3::splat(view.radius),
+    })
+}
+
 /// A slot's offset into the idle breath. The golden angle, so neighbours never
 /// land near each other and a form reads as several bodies rather than one.
 fn phase(slot: usize) -> f32 {
@@ -731,4 +759,16 @@ fn apply_run(
     draw::mesh(&mesh::cluster(start, len, total, arrange, spread, radius))
         .into_iter()
         .fold(batch, |batch, property| batch.set(prim, property))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_slot_with_no_name_hides_the_label_it_inherited() {
+        let named = label_pose(Some(Vec3::new(0.0, -0.04, 0.004)));
+        assert_eq!(named.scale, Vec3::ONE);
+        assert_eq!(label_pose(None), draw::hidden());
+    }
 }

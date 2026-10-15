@@ -22,6 +22,10 @@ pub struct Tuning {
     /// A grid level: columns by rows cells on one page.
     pub grid_columns: usize,
     pub grid_rows:    usize,
+    /// How far a page tab stands past the outermost slot of its layout.
+    pub tab_gap:      f32,
+    /// How near the pointer must come to a page tab to attend it.
+    pub tab_hit:      f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
@@ -105,6 +109,9 @@ pub struct Tuning {
     pub group_scale:  f32,
     pub action_scale: f32,
     pub parent_scale: f32,
+    /// A page tab's body, smaller than a mote so it reads as a control for the
+    /// level rather than as part of it.
+    pub tab_scale:    f32,
     /// Most interior bodies a group draws; beyond this it reports overflow.
     pub pip_cap:      usize,
 }
@@ -119,8 +126,10 @@ impl Tuning {
         stick:        0.18,
         grid_stick:   0.18,
         grid_pitch:   0.11,
-        grid_columns: 4,
+        grid_columns: 3,
         grid_rows:    3,
+        tab_gap:      0.12,
+        tab_hit:      0.035,
 
         attend_scale:     1.18,
         seize_scale:      1.30,
@@ -166,6 +175,7 @@ impl Tuning {
         group_scale:  1.25,
         action_scale: 1.0,
         parent_scale: 0.8,
+        tab_scale:    0.6,
         pip_cap:      9,
     };
 }

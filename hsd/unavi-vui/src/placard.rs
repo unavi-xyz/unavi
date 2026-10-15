@@ -63,6 +63,7 @@ const fn kind(role: Role) -> &'static str {
         // same kind of thing and read as one.
         Role::Group { .. } => "group",
         Role::Parent { .. } => "back",
+        Role::Page { .. } => "page",
         Role::Cast => "cast",
         Role::Item { unique: true } => "item",
         Role::Item { unique: false } => "source",

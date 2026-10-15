@@ -17,9 +17,14 @@ use crate::tuning::Tuning;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Reveal {
     /// 0 shut, 1 fully open.
-    t:    f32,
+    t:      f32,
+    /// How far the per-mote stagger has run. It travels with `t` except that
+    /// [`Reveal::restage`] sends it back to the start while the form stays
+    /// put, which is how a new level's motes arrive without the form
+    /// collapsing.
+    staged: f32,
     /// Which way it is travelling.
-    open: bool,
+    open:   bool,
 }
 
 impl Default for Reveal {
@@ -30,15 +35,17 @@ impl Default for Reveal {
 
 impl Reveal {
     pub const SHUT: Self = Self {
-        t:    0.0,
-        open: false,
+        t:      0.0,
+        staged: 0.0,
+        open:   false,
     };
 
     /// Shut, and on its way open. Where a surface starts: one is put up to be
     /// seen, and arriving is how it gets there.
     pub const ARRIVING: Self = Self {
-        t:    0.0,
-        open: true,
+        t:      0.0,
+        staged: 0.0,
+        open:   true,
     };
 
     pub const fn set_open(&mut self, open: bool) {
@@ -59,11 +66,28 @@ impl Reveal {
 
     pub fn update(&mut self, delta: f32, tuning: &Tuning) {
         let step = delta * tuning.reveal_speed;
-        self.t = if self.open {
-            (self.t + step).min(1.0)
-        } else {
-            (self.t - step).max(0.0)
+        let open = self.open;
+        let advance = |t: f32| {
+            if open {
+                (t + step).min(1.0)
+            } else {
+                (t - step).max(0.0)
+            }
         };
+        self.t = advance(self.t);
+        self.staged = advance(self.staged);
+    }
+
+    /// Replays the staggered arrival of the motes, leaving the form where it
+    /// is. A level change draws different motes into the same form, so they
+    /// settle in turn rather than the whole surface re-opening.
+    ///
+    /// A surface on its way out is left alone, so a level change and a
+    /// dismissal in the same tick still collapses it.
+    pub const fn restage(&mut self) {
+        if self.open {
+            self.staged = 0.0;
+        }
     }
 
     /// How far the form itself has come in, which its slot positions scale by.
@@ -89,7 +113,7 @@ impl Reveal {
         let start = slot as f32 * stagger / window;
         let span = 1.0 / window;
 
-        let local = ((self.t - start) / span).clamp(0.0, 1.0);
+        let local = ((self.staged - start) / span).clamp(0.0, 1.0);
         overshoot(local, tuning.reveal_overshoot)
     }
 }
@@ -183,6 +207,43 @@ mod tests {
             "staggered arrival is what reads as settling rather than popping \
              in; {first} vs {last}"
         );
+    }
+
+    #[test]
+    fn restaging_replays_the_motes_and_leaves_the_form() {
+        let mut reveal = opened();
+        settle(&mut reveal);
+        reveal.restage();
+
+        assert!((reveal.form() - 1.0).abs() < 1.0e-6, "the form stays open");
+        for slot in 0..SLOTS {
+            assert!(
+                reveal.slot(slot, SLOTS, &tuning()).abs() < 1.0e-6,
+                "every mote starts over"
+            );
+        }
+
+        for _ in 0..3 {
+            reveal.update(1.0 / 60.0, &tuning());
+        }
+        assert!(reveal.slot(0, SLOTS, &tuning()) > reveal.slot(SLOTS - 1, SLOTS, &tuning()));
+        settle(&mut reveal);
+        assert!((reveal.slot(SLOTS - 1, SLOTS, &tuning()) - 1.0).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn restaging_a_closing_surface_does_not_hold_it_open() {
+        let mut reveal = opened();
+        settle(&mut reveal);
+        reveal.set_open(false);
+        reveal.restage();
+        reveal.update(1.0 / 60.0, &tuning());
+        assert!(
+            reveal.slot(0, SLOTS, &tuning()) > 0.5,
+            "still leaving from where it was, not starting over"
+        );
+        settle(&mut reveal);
+        assert!(!reveal.is_visible());
     }
 
     #[test]

@@ -41,8 +41,10 @@ const MOUNT: Mount = Mount {
     bearing:  Bearing::Sight,
 };
 
-/// Every slot is drawn at once: a root that paged would not be a root.
-const CAPACITY: u32 = 3;
+/// The most motes an orbit level draws on one page: the way back and eight
+/// more, matching the cells of a grid level. The root has three slots, so it
+/// is still drawn whole and a root that paged would not be a root.
+const CAPACITY: u32 = 9;
 
 pub struct Root {
     /// Return, the fixed point.

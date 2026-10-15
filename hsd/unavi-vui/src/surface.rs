@@ -1,8 +1,10 @@
 //! What every VUI surface shares, independent of layout: attention, grasp,
 //! paging and the styles those produce.
 
+use smol_str::SmolStr;
 use wired_guest::math::{
     Color,
+    Vec2,
     Vec3,
 };
 
@@ -42,14 +44,22 @@ use crate::{
     },
 };
 
+/// Slots a surface keeps for its page tabs, on top of the ones it keeps for
+/// the level itself.
+pub const TAB_SLOTS: usize = 2;
+
 /// The machinery every VUI surface shares: what holds attention, what is in
 /// hand, which window of an oversized collection is drawn, and where every
 /// body currently belongs.
 ///
-/// Every public index is a **draw slot**, matching [`Surface::views`].
-/// [`Surface::spec_index`] is the one translation back to the collection.
+/// Every public index is a **draw slot**, matching [`Surface::views`]: the
+/// level's own slots first, then any page tabs after them.
+/// [`Surface::spec_index`] is the one translation back to the collection, and
+/// answers `None` for a tab, which stands for no mote.
 pub struct Surface {
     tuning:   Tuning,
+    /// Slots the level may fill, which is not counting the page tabs.
+    capacity: usize,
     palette:  Palette,
     reveal:   Reveal,
     tracker:  Tracker,
@@ -72,15 +82,17 @@ pub struct Surface {
 impl Surface {
     #[must_use]
     pub fn new(capacity: usize, tuning: Tuning, palette: Palette) -> Self {
+        let slots = capacity + TAB_SLOTS;
         Self {
             tuning,
+            capacity,
             palette,
             reveal: Reveal::ARRIVING,
             tracker: Tracker::new(),
             grasp: Grasp::new(),
-            lean: vec![Vec3::ZERO; capacity],
-            heat: vec![0.0; capacity],
-            views: Vec::with_capacity(capacity),
+            lean: vec![Vec3::ZERO; slots],
+            heat: vec![0.0; slots],
+            views: Vec::with_capacity(slots),
             drawn: Vec::with_capacity(capacity),
             placard: None,
             page: PageView::default(),
@@ -99,9 +111,16 @@ impl Surface {
         &self.palette
     }
 
+    /// The most motes of a level it can draw at once.
     #[must_use]
     pub const fn capacity(&self) -> usize {
-        self.lean.len()
+        self.capacity
+    }
+
+    /// Every slot it may ever draw: the level's, and the page tabs'.
+    #[must_use]
+    pub const fn slots(&self) -> usize {
+        self.capacity + TAB_SLOTS
     }
 
     #[must_use]
@@ -109,8 +128,8 @@ impl Surface {
         &self.views
     }
 
-    /// The collection index each drawn slot stands for, parallel to
-    /// [`Surface::views`].
+    /// The collection index each of the level's slots stands for. Parallel to
+    /// the leading [`Surface::views`]; the page tabs after them have none.
     #[must_use]
     pub fn drawn(&self) -> &[usize] {
         &self.drawn
@@ -176,16 +195,44 @@ impl Surface {
     ///
     /// Attention does not survive: the slot under the pointer now stands for
     /// something else.
-    pub const fn turn_to(&mut self, page: usize) {
+    pub fn turn_to(&mut self, page: usize) {
         if page != self.page.index {
             self.page.index = page;
-            self.tracker = Tracker::new();
+            self.forget_slots();
         }
     }
 
-    pub const fn turn_by(&mut self, delta: isize) {
+    /// Drops everything a slot has built up toward the mote that stood in
+    /// it: attention, warmth and lean. After a page turn or a level change
+    /// the slot stands for something else, and carrying these over shows as
+    /// the new occupant flashing in already lit.
+    fn forget_slots(&mut self) {
+        self.tracker = Tracker::new();
+        self.heat.fill(0.0);
+        self.lean.fill(Vec3::ZERO);
+    }
+
+    pub fn turn_by(&mut self, delta: isize) {
         let page = self.page.index.saturating_add_signed(delta);
         self.turn_to(page);
+    }
+
+    /// Turns the page if `slot` is a page tab, reporting whether it was one.
+    pub fn turn_tab(&mut self, slot: usize) -> bool {
+        let Some(Role::Page { forward, .. }) = self.views.get(slot).map(|view| view.role) else {
+            return false;
+        };
+        self.turn_by(if forward { 1 } else { -1 });
+        true
+    }
+
+    /// Starts over for a different level: nothing carries over from the
+    /// motes that stood in these slots. The motes arrive in turn again, but
+    /// the form stays open.
+    pub fn relevel(&mut self) {
+        self.page.index = 0;
+        self.forget_slots();
+        self.reveal.restage();
     }
 
     /// Presses the slot currently holding attention.
@@ -224,6 +271,8 @@ impl Surface {
         self.reveal.update(frame.delta, &self.tuning);
         self.repage(specs.len(), layout, pinned);
         self.collect(specs);
+        let level = self.drawn.len();
+        let tabs = self.tabs(&layout);
 
         // A mote in hand holds attention; nothing else is a drop target.
         let dragging = self.grasp.seized().is_some_and(|held| held.takeable);
@@ -239,8 +288,7 @@ impl Surface {
         } else {
             let candidate = frame
                 .aim
-                .and_then(|aim| layout.resolve(aim.local, self.tracker.current(), &self.tuning))
-                .filter(|slot| *slot < self.drawn.len());
+                .and_then(|aim| self.aimed_slot(aim.local, &layout, &tabs, level));
             self.tracker.update(candidate, frame.delta);
         }
 
@@ -256,9 +304,17 @@ impl Surface {
         let approaching = frame.aim.filter(|_| !dragging);
 
         self.views.clear();
-        for slot in 0..self.drawn.len() {
-            let (Some(spec), Some(plane)) = (specs.get(self.drawn[slot]), layout.slot(slot)) else {
-                continue;
+        let count = level + tabs.len();
+        for slot in 0..count {
+            let (spec, plane) = if slot < level {
+                let (Some(spec), Some(plane)) = (specs.get(self.drawn[slot]), layout.slot(slot))
+                else {
+                    continue;
+                };
+                (spec, plane)
+            } else {
+                let (spec, plane) = &tabs[slot - level];
+                (spec, *plane)
             };
             let local = Vec3::new(plane.x, plane.y, 0.0);
             let world = frame.anchor.translation + frame.anchor.rotation * local;
@@ -332,12 +388,63 @@ impl Surface {
                 bloom: if is_seized && dragging {
                     1.0
                 } else {
-                    self.reveal.slot(slot, self.drawn.len(), &self.tuning)
+                    self.reveal.slot(slot, count, &self.tuning)
                 },
             });
         }
 
         self.placard = self.build_placard(specs);
+    }
+
+    /// The tabs to draw this frame, each with where it sits: back a page when
+    /// there are pages behind, forward when there are pages ahead.
+    fn tabs(&self, layout: &Layout) -> Vec<(MoteSpec, Vec2)> {
+        let behind = self.page.index;
+        let ahead = self.page.count - self.page.index - 1;
+        [(false, behind), (true, ahead)]
+            .into_iter()
+            .filter(|(_, remaining)| *remaining > 0)
+            .map(|(forward, remaining)| {
+                let spec = MoteSpec {
+                    role:        Role::Page { forward, remaining },
+                    label:       SmolStr::default(),
+                    description: None,
+                    active:      false,
+                    icon:        false,
+                    tint:        None,
+                    film:        palette::FILM,
+                    frost:       0.0,
+                };
+                (spec, layout.tab(forward, &self.tuning))
+            })
+            .collect()
+    }
+
+    /// The slot under `local`: a tab if the pointer is over one, else
+    /// whichever of the level's `level` slots the layout resolves.
+    fn aimed_slot(
+        &self,
+        local: Vec2,
+        layout: &Layout,
+        tabs: &[(MoteSpec, Vec2)],
+        level: usize,
+    ) -> Option<usize> {
+        let current = self.tracker.current().filter(|slot| *slot < level);
+        self.tab_at(local, tabs, level).or_else(|| {
+            layout
+                .resolve(local, current, &self.tuning)
+                .filter(|slot| *slot < level)
+        })
+    }
+
+    /// The tab, as a draw slot after the `level` ones, the pointer is over.
+    fn tab_at(&self, local: Vec2, tabs: &[(MoteSpec, Vec2)], level: usize) -> Option<usize> {
+        tabs.iter()
+            .enumerate()
+            .map(|(index, (_, at))| (level + index, (local - *at).length()))
+            .filter(|(_, distance)| *distance <= self.tuning.tab_hit)
+            .min_by(|(_, a), (_, b)| a.total_cmp(b))
+            .map(|(slot, _)| slot)
     }
 
     /// Recomputes the window over `total`, clamping the current page into it.
@@ -354,7 +461,7 @@ impl Surface {
         };
         let index = self.page.index.min(count - 1);
         if index != self.page.index {
-            self.tracker = Tracker::new();
+            self.forget_slots();
         }
 
         self.page = PageView {
@@ -450,7 +557,9 @@ impl Surface {
             // not its hue, so the fill is the one thing that says it is on.
             (Role::Toggle, ..) if !active => self.palette.dim,
             (_, _, Some(tint)) => self.palette.tinted(tint, attention),
-            (Role::Parent { .. }, ..) if !attention.is_active() => self.palette.dim,
+            (Role::Parent { .. } | Role::Page { .. }, ..) if !attention.is_active() => {
+                self.palette.dim
+            }
             (Role::Item { .. }, ..) => self.palette.item(attention, role.is_source()),
             (_, _, None) => self.palette.tint(attention),
         };
@@ -462,9 +571,11 @@ impl Surface {
                 // on is the mote wearing its hue.
                 Role::Toggle if active => self.palette.toggle_active_alpha,
                 Role::Toggle => self.palette.toggle_idle_alpha,
-                Role::Action | Role::Item { .. } | Role::Cast | Role::Parent { .. } => {
-                    self.palette.solid_alpha
-                }
+                Role::Action
+                | Role::Item { .. }
+                | Role::Cast
+                | Role::Parent { .. }
+                | Role::Page { .. } => self.palette.solid_alpha,
             },
             emissive: self.palette.emissive_lit(attention, active),
         }
@@ -958,7 +1069,7 @@ mod tests {
         let specs = (0..10).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
 
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
-        assert_eq!(surface.views().len(), 3);
+        assert_eq!(surface.drawn().len(), 3);
         assert_eq!(surface.page().count, 4, "10 motes over 3 slots");
         assert_eq!(surface.page().total, 10);
         assert_eq!(surface.drawn(), vec![0, 1, 2]);
@@ -1055,11 +1166,16 @@ mod tests {
     }
 
     #[test]
-    fn views_never_exceed_capacity() {
+    fn a_level_draws_no_more_than_its_capacity_and_a_tab_says_there_is_more() {
         let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
         let specs = vec![spec(Role::Action); 10];
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
-        assert_eq!(surface.views().len(), 3);
+        assert_eq!(surface.drawn().len(), 3);
+        assert_eq!(
+            surface.views().len(),
+            3 + 1,
+            "the level's three slots, and the tab saying there is more"
+        );
     }
 
     #[test]
@@ -1329,7 +1445,7 @@ mod tests {
         let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
 
         grid_update(&mut surface, &specs, 2, 2);
-        assert_eq!(surface.views().len(), 4);
+        assert_eq!(surface.drawn().len(), 4);
         assert_eq!(surface.page().count, 3, "9 items over 4 cells");
         assert_eq!(surface.drawn(), vec![0, 1, 2, 3]);
 
@@ -1357,6 +1473,240 @@ mod tests {
         assert_eq!(surface.page().count, 1);
         assert_eq!(surface.page().total, 0);
         assert!(!surface.page().is_paged());
+    }
+
+    fn nested_specs(children: usize) -> Vec<MoteSpec> {
+        std::iter::once(spec(Role::Parent { depth: 1 }))
+            .chain((0..children).map(|i| named(&format!("m{i}"))))
+            .collect()
+    }
+
+    /// Steps a nested grid level until its form and motes have all arrived.
+    fn settle_nested(surface: &mut Surface, specs: &[MoteSpec], frame: &Frame) {
+        let layout = Layout::held_grid(3, 3, PITCH);
+        for _ in 0..60 {
+            surface.update(specs, layout, 1, frame);
+        }
+    }
+
+    fn tab_roles(surface: &Surface) -> Vec<Role> {
+        surface
+            .views()
+            .iter()
+            .skip(surface.drawn().len())
+            .map(|view| view.role)
+            .collect()
+    }
+
+    #[test]
+    fn the_way_back_sits_on_the_anchor_of_a_nested_grid() {
+        let mut surface = Surface::new(9, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = nested_specs(5);
+        settle_nested(&mut surface, &specs, &frame(None));
+
+        assert_eq!(surface.views()[0].role, Role::Parent { depth: 1 });
+        assert_eq!(surface.views()[0].position.truncate(), Vec2::ZERO);
+        let first = surface.views()[1].position.truncate();
+        assert!(
+            (first - Vec2::new(-PITCH.x, PITCH.y)).length() < 1.0e-5,
+            "content starts in the top left corner, not beside the way back"
+        );
+    }
+
+    #[test]
+    fn a_nested_grid_pages_eight_to_a_page() {
+        let mut surface = Surface::new(9, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = nested_specs(20);
+        let layout = Layout::held_grid(3, 3, PITCH);
+
+        surface.update(&specs, layout, 1, &frame(None));
+        assert_eq!(surface.page().count, 3, "20 children over 8 cells");
+        assert_eq!(surface.drawn(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+        surface.turn_by(1);
+        surface.update(&specs, layout, 1, &frame(None));
+        assert_eq!(
+            surface.drawn(),
+            vec![0, 9, 10, 11, 12, 13, 14, 15, 16],
+            "the way back stays in the middle of every page"
+        );
+    }
+
+    #[test]
+    fn a_root_orbit_draws_all_of_its_slots_whatever_the_surface_can_hold() {
+        let mut surface = Surface::new(9, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = [named("a"), named("b"), named("c")];
+        let (layout, pinned) = Layout::orbit(3, Centre::Open, 3, R);
+        surface.update(&specs, layout, pinned, &frame(None));
+
+        assert_eq!(surface.drawn(), vec![0, 1, 2]);
+        assert_eq!(surface.views().len(), 3, "a root that fits has no tabs");
+        assert!(!surface.page().is_paged());
+    }
+
+    #[test]
+    fn a_level_that_fits_has_no_tabs() {
+        let mut surface = surface();
+        let specs = [named("a"), named("b")];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(tab_roles(&surface), Vec::<Role>::new());
+    }
+
+    #[test]
+    fn tabs_appear_only_toward_the_pages_that_exist() {
+        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
+
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(
+            tab_roles(&surface),
+            vec![Role::Page {
+                forward:   true,
+                remaining: 2,
+            }],
+            "nothing is behind the first page"
+        );
+
+        surface.turn_by(1);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(
+            tab_roles(&surface),
+            vec![
+                Role::Page {
+                    forward:   false,
+                    remaining: 1,
+                },
+                Role::Page {
+                    forward:   true,
+                    remaining: 1,
+                }
+            ]
+        );
+
+        surface.turn_by(1);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(
+            tab_roles(&surface),
+            vec![Role::Page {
+                forward:   false,
+                remaining: 2,
+            }],
+            "nothing is ahead of the last page"
+        );
+    }
+
+    #[test]
+    fn a_tab_stands_beside_the_layout_at_rest() {
+        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
+        for _ in 0..60 {
+            ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        }
+        let (layout, _) = Layout::orbit(9, Centre::Open, 3, R);
+        let tab = surface.views()[3];
+        assert!((tab.position.truncate() - layout.tab(true, &Tuning::DEFAULT)).length() < 1.0e-5);
+        assert!(
+            tab.radius < surface.views()[0].radius,
+            "smaller than a mote"
+        );
+    }
+
+    #[test]
+    fn pressing_the_forward_tab_turns_the_page_and_activates_nothing() {
+        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
+        let (layout, _) = Layout::orbit(9, Centre::Open, 3, R);
+        let tab = layout.tab(true, &Tuning::DEFAULT);
+        let aim = aim_at(tab);
+
+        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
+        let slot = surface.attended().expect("the tab holds attention");
+        assert_eq!(slot, 3);
+        assert_eq!(surface.spec_index(slot), None, "a tab stands for no mote");
+        assert!(surface.views()[slot].attention.is_active());
+
+        surface.press(aim.world, true);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
+        assert_eq!(
+            surface.release(),
+            Some(Outcome::Tap(slot)),
+            "a tab is not takeable, so even a grip is a tap"
+        );
+        assert!(surface.turn_tab(slot));
+
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(surface.page().index, 1);
+        assert_eq!(surface.drawn(), vec![3, 4, 5]);
+    }
+
+    #[test]
+    fn a_page_turn_leaves_no_warmth_or_lean_on_the_slots() {
+        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
+        let aim = aim_at(Vec2::new(0.0, R));
+        for _ in 0..30 {
+            ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
+        }
+        assert!(surface.views()[0].heat > 0.0);
+
+        surface.turn_by(1);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert!(surface.views().iter().all(|view| view.heat == 0.0));
+    }
+
+    #[test]
+    fn a_mote_slot_is_not_a_tab() {
+        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert!(!surface.turn_tab(0));
+        assert!(!surface.turn_tab(99));
+        assert_eq!(surface.page().index, 0);
+    }
+
+    #[test]
+    fn a_nested_grid_tab_is_reached_beside_its_outer_column() {
+        let mut surface = Surface::new(9, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = nested_specs(20);
+        let layout = Layout::held_grid(3, 3, PITCH);
+        let aim = aim_at(layout.tab(true, &Tuning::DEFAULT));
+
+        surface.update(&specs, layout, 1, &frame(Some(aim)));
+        assert_eq!(surface.attended(), Some(9));
+        assert_eq!(surface.spec_index(9), None);
+    }
+
+    #[test]
+    fn a_new_level_starts_from_a_clean_surface_but_an_open_form() {
+        let mut surface = Surface::new(9, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = nested_specs(20);
+        let layout = Layout::held_grid(3, 3, PITCH);
+        let aim = aim_at(layout.slot(1).expect("cell"));
+
+        surface.turn_by(1);
+        for _ in 0..60 {
+            surface.update(&specs, layout, 1, &frame(Some(aim)));
+        }
+        assert_eq!(surface.page().index, 1);
+        assert!(surface.attended().is_some());
+        assert!(surface.views()[surface.attended().expect("attended")].heat > 0.0);
+
+        surface.relevel();
+        surface.update(&specs, layout, 1, &frame(None));
+
+        assert_eq!(surface.page().index, 0);
+        assert_eq!(surface.attended(), None);
+        assert!(surface.views().iter().all(|view| view.heat == 0.0));
+        assert_eq!(
+            surface.views()[1].position.truncate(),
+            layout.slot(1).expect("cell"),
+            "the form did not fall back to the anchor"
+        );
+        let (first, last) = (surface.views()[0].bloom, surface.views()[8].bloom);
+        assert!(
+            first < 1.0 && last < first,
+            "the motes arrive again in turn: {first} then {last}"
+        );
     }
 
     #[test]

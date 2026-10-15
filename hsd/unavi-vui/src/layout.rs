@@ -30,11 +30,15 @@ pub enum Layout {
     Star { points: usize, radius: f32 },
     /// [`Layout::Star`] plus a centre slot at index 0.
     Centred { points: usize, radius: f32 },
-    /// Row-major cells centred on the anchor, slot 0 at the top left.
+    /// Row-major cells centred on the anchor, slot 0 at the top left. A
+    /// `held` grid puts slot 0 in the centre cell instead and fills the rest
+    /// row-major around it, so the way back sits on the anchor as it does in
+    /// an orbit.
     Grid {
         columns: usize,
         rows:    usize,
         pitch:   Vec2,
+        held:    bool,
     },
 }
 
@@ -55,7 +59,33 @@ impl Layout {
             columns,
             rows,
             pitch,
+            held: false,
         }
+    }
+
+    /// [`Layout::grid`] with slot 0 held in the centre cell.
+    ///
+    /// Only an odd count of columns and rows has a cell on the anchor, so
+    /// see [`Layout::odd`].
+    #[must_use]
+    pub const fn held_grid(columns: usize, rows: usize, pitch: Vec2) -> Self {
+        debug_assert!(
+            columns % 2 == 1 && rows % 2 == 1,
+            "a held grid needs a cell on the anchor"
+        );
+        Self::Grid {
+            columns,
+            rows,
+            pitch,
+            held: true,
+        }
+    }
+
+    /// `count` rounded up to the nearest odd number, which is what a held
+    /// grid's dimensions must be.
+    #[must_use]
+    pub const fn odd(count: usize) -> usize {
+        count | 1
     }
 
     /// The orbit `count` motes take under `centre`, shrunk to `capacity` and
@@ -108,8 +138,9 @@ impl Layout {
         }
     }
 
-    /// Half-extents of the region this layout answers for. A binding sizes its
-    /// hit surface and any housing from this.
+    /// Half-extents of the region this layout's slots answer for, which is
+    /// what a drop is accepted within. A hit surface needs
+    /// [`Layout::hit_extents`] instead, to take in the page tabs.
     #[must_use]
     pub fn extents(&self, tuning: &Tuning) -> Vec2 {
         match *self {
@@ -120,8 +151,32 @@ impl Layout {
                 columns,
                 rows,
                 pitch,
+                ..
             } => Vec2::new(columns as f32 * pitch.x, rows as f32 * pitch.y) * 0.5,
         }
+    }
+
+    /// Half-extents a hit surface must cover: the region the slots answer
+    /// for, widened to take in the page tabs standing outside it.
+    #[must_use]
+    pub fn hit_extents(&self, tuning: &Tuning) -> Vec2 {
+        let slots = self.extents(tuning);
+        Vec2::new(
+            slots.x.max(self.tab(true, tuning).x + tuning.tab_hit),
+            slots.y,
+        )
+    }
+
+    /// Where a page tab sits: on the horizontal axis, just past the outermost
+    /// slot, `forward` to the right and back to the left.
+    #[must_use]
+    pub fn tab(&self, forward: bool, tuning: &Tuning) -> Vec2 {
+        let outermost = match *self {
+            Self::Star { radius, .. } | Self::Centred { radius, .. } => radius,
+            Self::Grid { columns, pitch, .. } => (columns.saturating_sub(1)) as f32 * 0.5 * pitch.x,
+        };
+        let x = outermost + tuning.tab_gap;
+        Vec2::new(if forward { x } else { -x }, 0.0)
     }
 
     #[must_use]
@@ -139,8 +194,9 @@ impl Layout {
                 columns,
                 rows,
                 pitch,
+                ..
             } => {
-                let (column, row) = (index % columns, index / columns);
+                let (column, row) = (self.cell_of(index) % columns, self.cell_of(index) / columns);
                 Some(Vec2::new(
                     ((columns - 1) as f32).mul_add(-0.5, column as f32) * pitch.x,
                     ((rows - 1) as f32).mul_add(0.5, -(row as f32)) * pitch.y,
@@ -160,12 +216,89 @@ impl Layout {
         }
         match *self {
             Self::Star { .. } | Self::Centred { .. } => self.resolve_radial(local, current, tuning),
-            Self::Grid {
-                columns,
-                rows,
-                pitch,
-            } => resolve_grid(local, columns, rows, pitch, current, tuning),
+            Self::Grid { .. } => self.resolve_grid(local, current, tuning),
         }
+    }
+
+    /// The grid cell, row-major from the top left, a slot occupies. Only a
+    /// held grid reorders: slot 0 takes the centre cell and the slots after
+    /// it fill the others in order.
+    const fn cell_of(&self, slot: usize) -> usize {
+        let Self::Grid {
+            columns,
+            rows,
+            held: true,
+            ..
+        } = *self
+        else {
+            return slot;
+        };
+        let centre = centre_cell(columns, rows);
+        match slot {
+            0 => centre,
+            _ if slot - 1 < centre => slot - 1,
+            _ => slot,
+        }
+    }
+
+    /// The inverse of [`Layout::cell_of`].
+    const fn slot_of(&self, cell: usize) -> usize {
+        let Self::Grid {
+            columns,
+            rows,
+            held: true,
+            ..
+        } = *self
+        else {
+            return cell;
+        };
+        let centre = centre_cell(columns, rows);
+        if cell == centre {
+            0
+        } else if cell < centre {
+            cell + 1
+        } else {
+            cell
+        }
+    }
+
+    fn resolve_grid(&self, local: Vec2, current: Option<usize>, tuning: &Tuning) -> Option<usize> {
+        let Self::Grid {
+            columns,
+            rows,
+            pitch,
+            ..
+        } = *self
+        else {
+            return None;
+        };
+        if pitch.x <= f32::EPSILON || pitch.y <= f32::EPSILON {
+            return None;
+        }
+        let cell = |index: usize| -> Vec2 {
+            Vec2::new(
+                ((columns - 1) as f32).mul_add(-0.5, (index % columns) as f32),
+                ((rows - 1) as f32).mul_add(0.5, -((index / columns) as f32)),
+            )
+        };
+        let unit = Vec2::new(local.x / pitch.x, local.y / pitch.y);
+
+        // The attended cell keeps the pointer until it is well inside a
+        // neighbour, the same hysteresis a ring gets from `Tuning::stick`.
+        if let Some(index) = current.filter(|index| *index < columns * rows) {
+            let held = cell(self.cell_of(index));
+            let stuck = 0.5 + tuning.grid_stick;
+            if (unit.x - held.x).abs() <= stuck && (unit.y - held.y).abs() <= stuck {
+                return Some(index);
+            }
+        }
+
+        let column = ((columns - 1) as f32).mul_add(0.5, unit.x).round();
+        let row = ((rows - 1) as f32).mul_add(0.5, -unit.y).round();
+        if column < 0.0 || column >= columns as f32 || row < 0.0 || row >= rows as f32 {
+            return None;
+        }
+        Some(self.slot_of(row as usize * columns + column as usize))
     }
 
     fn resolve_radial(
@@ -220,41 +353,9 @@ fn orbit_position(index: usize, points: usize, radius: f32) -> Vec2 {
     polar(index as f32 * TAU / points as f32, radius)
 }
 
-fn resolve_grid(
-    local: Vec2,
-    columns: usize,
-    rows: usize,
-    pitch: Vec2,
-    current: Option<usize>,
-    tuning: &Tuning,
-) -> Option<usize> {
-    if pitch.x <= f32::EPSILON || pitch.y <= f32::EPSILON {
-        return None;
-    }
-    let cell = |index: usize| -> Vec2 {
-        Vec2::new(
-            ((columns - 1) as f32).mul_add(-0.5, (index % columns) as f32),
-            ((rows - 1) as f32).mul_add(0.5, -((index / columns) as f32)),
-        )
-    };
-    let unit = Vec2::new(local.x / pitch.x, local.y / pitch.y);
-
-    // The attended cell keeps the pointer until it is well inside a
-    // neighbour, the same hysteresis a ring gets from `Tuning::stick`.
-    if let Some(index) = current.filter(|index| *index < columns * rows) {
-        let held = cell(index);
-        let stuck = 0.5 + tuning.grid_stick;
-        if (unit.x - held.x).abs() <= stuck && (unit.y - held.y).abs() <= stuck {
-            return Some(index);
-        }
-    }
-
-    let column = ((columns - 1) as f32).mul_add(0.5, unit.x).round();
-    let row = ((rows - 1) as f32).mul_add(0.5, -unit.y).round();
-    if column < 0.0 || column >= columns as f32 || row < 0.0 || row >= rows as f32 {
-        return None;
-    }
-    Some(row as usize * columns + column as usize)
+/// The middle cell of a grid; exactly central only for odd dimensions.
+const fn centre_cell(columns: usize, rows: usize) -> usize {
+    rows / 2 * columns + columns / 2
 }
 
 /// Shortest absolute angle between two directions, in `0..=PI`.
@@ -508,6 +609,125 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(down[0].y > down[3].y, "a column lays downward");
         assert!((down[0].x - down[3].x).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn a_held_grid_keeps_slot_zero_on_the_anchor() {
+        let layout = Layout::held_grid(3, 3, PITCH);
+        assert_eq!(layout.len(), 9);
+        assert_eq!(layout.slot(0), Some(Vec2::ZERO));
+        assert_eq!(
+            layout.slot(1),
+            Layout::grid(3, 3, PITCH).slot(0),
+            "content starts at the top left"
+        );
+        assert_eq!(
+            layout.slot(5),
+            Layout::grid(3, 3, PITCH).slot(5),
+            "and carries on row-major past the middle without a gap"
+        );
+        assert_eq!(layout.slot(9), None);
+
+        for (columns, rows) in [(5_usize, 3_usize), (3, 5), (1, 1)] {
+            let layout = Layout::held_grid(columns, rows, PITCH);
+            assert_eq!(layout.slot(0), Some(Vec2::ZERO), "{columns}x{rows}");
+        }
+    }
+
+    #[test]
+    fn a_held_grid_rounds_its_dimensions_up_to_odd() {
+        assert_eq!(Layout::odd(3), 3);
+        assert_eq!(Layout::odd(4), 5);
+        assert_eq!(Layout::odd(0), 1);
+    }
+
+    #[test]
+    fn a_held_grid_fills_every_cell_exactly_once() {
+        let layout = Layout::held_grid(3, 3, PITCH);
+        let plain = Layout::grid(3, 3, PITCH);
+        for cell in 0..plain.len() {
+            let position = plain.slot(cell).expect("cell");
+            assert!(
+                (0..layout.len()).any(|slot| layout.slot(slot) == Some(position)),
+                "cell {cell} is held by some slot"
+            );
+        }
+    }
+
+    #[test]
+    fn every_held_grid_cell_resolves_to_its_slot() {
+        for (columns, rows) in [(3_usize, 3_usize), (5, 3), (5, 5)] {
+            let layout = Layout::held_grid(columns, rows, PITCH);
+            for index in 0..layout.len() {
+                let position = layout.slot(index).expect("cell");
+                assert_eq!(
+                    layout.resolve(position, None, &tuning()),
+                    Some(index),
+                    "{columns}x{rows} index={index}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn tabs_stand_outside_the_slots_on_the_horizontal_axis() {
+        for layout in [
+            Layout::centred(8, R),
+            Layout::star(5, R),
+            Layout::held_grid(3, 3, PITCH),
+        ] {
+            let (back, forward) = (layout.tab(false, &tuning()), layout.tab(true, &tuning()));
+            assert!(back.x < 0.0 && forward.x > 0.0);
+            assert!(close(back.y, 0.0) && close(forward.y, 0.0));
+            assert!(close(back.x, -forward.x));
+            let outermost = (0..layout.len())
+                .filter_map(|slot| layout.slot(slot))
+                .map(|at| at.x.abs())
+                .fold(0.0_f32, f32::max);
+            assert!(forward.x > outermost, "{layout:?}: past the last slot");
+        }
+    }
+
+    #[test]
+    fn the_hit_surface_covers_the_tabs() {
+        let tuning = tuning();
+        let grid = Layout::held_grid(3, 3, PITCH);
+        let tab = grid.tab(true, &tuning);
+        assert!(grid.hit_extents(&tuning).x >= tab.x + tuning.tab_hit);
+        assert!(
+            !grid.accepts(Vec2::new(tab.x, 0.0), &tuning),
+            "a shelf's drop region is unchanged by its tabs"
+        );
+
+        let ring = Layout::centred(8, R);
+        assert!(ring.hit_extents(&tuning).x >= ring.tab(true, &tuning).x + tuning.tab_hit);
+    }
+
+    /// The worst case on a tab's side: the biggest slot body, attended and
+    /// leaned out toward it, against the tab body at its own largest.
+    #[test]
+    fn a_tab_clears_the_largest_slot_body_beside_it() {
+        let tuning = tuning();
+        let slot_reach = tuning
+            .mote_radius
+            .mul_add(tuning.group_scale * tuning.seize_scale, tuning.lean_dist);
+        let tab_body = tuning.mote_radius * tuning.tab_scale * tuning.seize_scale;
+        let margin = 0.015;
+
+        for layout in [
+            Layout::centred(8, tuning.orbit_radius),
+            Layout::held_grid(3, 3, Vec2::splat(tuning.grid_pitch)),
+        ] {
+            let outermost = (0..layout.len())
+                .filter_map(|slot| layout.slot(slot))
+                .map(|at| at.x)
+                .fold(0.0_f32, f32::max);
+            let gap = layout.tab(true, &tuning).x - outermost;
+            assert!(
+                gap >= slot_reach + tab_body + margin,
+                "{layout:?}: {gap} between centres"
+            );
+        }
     }
 
     #[test]

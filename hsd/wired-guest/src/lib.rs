@@ -1,24 +1,16 @@
-//! Shared bindings and sugar for every `hsd/` guest.
+//! Bindings and sugar shared by every `hsd/` guest.
 //!
-//! Merges the former `wired-prelude`, `wired-math`, `wired-scene` and
-//! `unavi-script-util` crates into one, so a guest depends on a single
-//! `wired-guest` plus `wit-bindgen` itself.
+//! # Entry Points
 //!
-//! A guest calls [`generate_script!`] once, which:
-//! - runs `wit_bindgen::generate!` for its own world, mapping `wired:core/math`
-//!   onto [`math`] so `vec2`/`vec3` are `glam`'s own types;
-//! - defines a local `ScriptBehavior` trait (`init`, `update(tick)`,
-//!   `fixed_update(tick)`) and wires it to `wired:script/lifecycle`;
-//! - adds `Document::local()`/`Document::shared()` batchers, `find_one`, a
-//!   `camera_pose` helper, and `Default`/builders for `Material`, `RigidBody`
-//!   and `Text`.
+//! [`generate_script!`] for a `script` world, [`generate!`] for a `library`
+//! world. Each runs `wit_bindgen::generate!` and expands its additions at the
+//! invocation site.
 //!
-//! These additions live in the calling crate's own root module (the macro
-//! expands there), because the resource and record types they extend are
-//! generated fresh by each crate's own `wit_bindgen::generate!` call and
-//! cannot be named from here ahead of time. [`math`] is the exception: it is
-//! plain data shared by every guest through the `with:` mapping, so it is a
-//! real, inherent part of this crate's public API.
+//! # Shared Data
+//!
+//! [`math`] holds the `wired:core/math` records, mapped onto the world's
+//! import by the macros. [`color`], [`xform`] and [`beacon`] are helpers over
+//! that data.
 
 pub mod beacon;
 pub mod color;
@@ -27,11 +19,15 @@ pub mod xform;
 
 pub use wired_state_macro::state;
 
-/// [`wit_bindgen::generate!`] for a guest's own world, plus the ergonomics.
+/// `wit_bindgen::generate!` for a guest's own world, plus the ergonomics.
 ///
-/// Documented on the crate itself. Call this directly only for a `library`
-/// world (no lifecycle export); a `script` world should use
-/// [`generate_script!`] instead.
+/// Expands at the invocation site and adds:
+/// - `Document::local()`/`Document::shared()` batchers and `find_one`;
+/// - `camera_pose`;
+/// - `Default`/builders for `Material`, `RigidBody` and `Text`.
+///
+/// `wired:core/math` is mapped onto [`math`]. [`generate_script!`] wraps this
+/// with the lifecycle glue.
 #[macro_export]
 macro_rules! generate {
     () => {
@@ -216,8 +212,8 @@ macro_rules! generate {
     };
 }
 
-/// [`generate!`], plus a local `ScriptBehavior` trait and the glue that
-/// drives `$script: ScriptBehavior` from `wired:script/lifecycle`.
+/// [`generate!`], plus a local `ScriptBehavior` trait and the
+/// `wired:script/lifecycle` export that drives it.
 ///
 /// ```ignore
 /// wired_guest::generate_script!(Script);

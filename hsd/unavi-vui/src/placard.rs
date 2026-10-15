@@ -332,8 +332,6 @@ mod tests {
         assert!(texts(&view).contains(&"group"));
     }
 
-    /// The counts and the kind readout were removed on purpose: the pips
-    /// already show how much a group holds.
     #[test]
     fn it_says_nothing_the_body_already_shows() {
         let view = view_of(&Placard::describing(&group()));

@@ -1,4 +1,4 @@
-//! Colour helpers shared across guests (formerly `unavi-script-util::color`).
+//! Colour helpers shared across guests.
 
 use blake3::Hash;
 

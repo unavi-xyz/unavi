@@ -1,7 +1,4 @@
-//! Small `Transform`/`Quat` helpers duplicated across guests.
-//!
-//! `wired:scene` has no visibility flag (see the WIT gaps in the phase A
-//! handoff), so [`hidden`] is the zero-scale workaround every guest used.
+//! `Transform`/`Quat` helpers shared across guests.
 
 use crate::math::{
     Quat,
@@ -21,9 +18,9 @@ pub fn yaw(radians: f32) -> Quat {
     Quat::from_rotation_y(radians)
 }
 
-/// Where a held tool or artifact rides, in the viewer's own frame.
+/// The viewer-frame position a held tool or artifact rides at.
 ///
-/// Forward and slightly down-right, clear of the body. Shared by halo,
-/// physgun and spawner so the physgun's muzzle and every tool's visible body
-/// agree on where "in hand" is.
+/// Forward and slightly down-right, clear of the body. Every held body and
+/// the muzzle it fires from share this offset, so they agree on where "in
+/// hand" is.
 pub const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);

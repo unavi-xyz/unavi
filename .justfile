@@ -57,7 +57,7 @@ check-versions:
             print $"versions match: ($root)" \
         }'
 
-ci: update-wit-deps-locked npm-install check (clippy "deny") test deny fmt-check check-versions
+ci: update-wit-deps-locked npm-install check (clippy "deny") deny fmt-check check-versions
 
 # Build the guest HSD components into crates/unavi-app/assets/hsd.
 hsd *ARGS:

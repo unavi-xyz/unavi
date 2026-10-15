@@ -71,12 +71,13 @@ interface local {
     bone(humanoid-bone),
   }
 
-  /// The camera's world transform this frame. Fails with `not-ready`
-  /// until the user's body has loaded.
+  /// The camera's transform this frame, in the calling script's own document
+  /// frame. Fails with `not-ready` until the user's body has loaded.
   camera-transform: func() -> result<transform, error>;
 
-  /// A bone's world transform this frame, or `none` when the user's avatar
-  /// lacks it. Fails with `not-ready` until the avatar has loaded.
+  /// A bone's transform this frame, in the calling script's own document
+  /// frame, or `none` when the user's avatar lacks it. Fails with `not-ready`
+  /// until the avatar has loaded.
   bone-transform: func(bone: humanoid-bone) -> result<option<transform>, error>;
 
   /// Places a document the script may write at `offset` from the camera or a

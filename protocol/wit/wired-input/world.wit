@@ -22,7 +22,8 @@ interface types {
     menu,
   }
 
-  /// Where a pointer's ray met a collider.
+  /// Where a pointer's ray met a collider, in the calling script's own
+  /// document frame.
   record hit {
     /// The prim whose collider it met, when it belongs to a document.
     target:   option<prim-ref>,
@@ -50,6 +51,7 @@ interface types {
     left,
   }
 
+  /// The ray and hit are in the calling script's own document frame.
   record input-event {
     pointer: pointer-kind,
     action:  action,
@@ -57,7 +59,8 @@ interface types {
     hit:     option<hit>,
   }
 
-  /// A pointer's state this frame.
+  /// A pointer's state this frame. The ray and hit are in the calling
+  /// script's own document frame.
   record pointer {
     kind:    pointer-kind,
     /// Whether it is tracked and usable this frame. An inactive pointer's

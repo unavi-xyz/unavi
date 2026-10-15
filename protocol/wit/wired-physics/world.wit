@@ -30,22 +30,25 @@ interface simulation {
     exclude-documents:   list<document-id>,
   }
 
-  /// How a body is moving this step.
+  /// How a body is moving this step, in the calling script's own document
+  /// frame.
   record body-velocity {
-    /// Meters per second, world space.
+    /// Meters per second.
     linear:  vec3,
-    /// Radians per second about each world axis.
+    /// Radians per second about each axis.
     angular: vec3,
   }
 
-  /// The closest collider along `ray` within `max-distance`.
+  /// The closest collider along `ray` within `max-distance`. The ray and the
+  /// hit are in the calling script's own document frame.
   raycast: func(ray: ray, max-distance: f32, filter: ray-filter) -> result<option<ray-hit>, error>;
 
   /// Fails with `not-ready` until the prim's body is in the simulation, and
   /// `invalid-argument` for a body that is not dynamic.
   velocity: func(document: borrow<document>, prim: prim-id) -> result<body-velocity, error>;
 
-  /// Sets either velocity of a dynamic body, leaving `none` unchanged.
+  /// Sets either velocity of a dynamic body, leaving `none` unchanged. Both
+  /// are in the calling script's own document frame.
   set-velocity: func(
     document: borrow<document>,
     prim:     prim-id,
@@ -53,7 +56,7 @@ interface simulation {
     angular:  option<vec3>,
   ) -> result<_, error>;
 
-  /// A world-space force the simulation applies every step until it is set
-  /// again. Zero clears it.
+  /// A force the simulation applies every step until it is set again, in the
+  /// calling script's own document frame. Zero clears it.
   set-force: func(document: borrow<document>, prim: prim-id, force: vec3) -> result<_, error>;
 }

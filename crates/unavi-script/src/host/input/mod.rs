@@ -33,6 +33,7 @@ use crate::{
     error::ScriptError,
     host::{
         ScriptHost,
+        frame::Frame,
         queue::Queue,
         shared_state::input_listeners::{
             InputListeners,
@@ -200,9 +201,37 @@ fn subscribe(host: &mut ScriptHost, target: Target) -> Result<u32, ScriptError> 
     Ok(host.inputs.insert(subscription, &host.quota)?)
 }
 
+/// `ray`, restated in the script's own frame.
+fn ray_in_frame(frame: Frame, ray: Ray) -> Ray {
+    Ray {
+        origin:    frame.point_to_frame(ray.origin),
+        direction: frame.vector_to_frame(ray.direction).normalize_or_zero(),
+    }
+}
+
+/// `hit`, restated in the script's own frame.
+fn hit_in_frame(frame: Frame, hit: Hit) -> Hit {
+    Hit {
+        position: frame.point_to_frame(hit.position),
+        normal:   frame.vector_to_frame(hit.normal).normalize_or_zero(),
+        ..hit
+    }
+}
+
 pub fn pointers(host: &ScriptHost) -> Result<Vec<Pointer>, ScriptError> {
     host.require(HostApi::InputContext)?;
-    Ok(host.shared.pointers.all())
+    let frame = host.frame();
+    Ok(host
+        .shared
+        .pointers
+        .all()
+        .into_iter()
+        .map(|pointer| Pointer {
+            ray: ray_in_frame(frame, pointer.ray),
+            hit: pointer.hit.map(|h| hit_in_frame(frame, h)),
+            ..pointer
+        })
+        .collect())
 }
 
 pub fn drain(
@@ -210,7 +239,18 @@ pub fn drain(
     subscription: u32,
     max: u32,
 ) -> Result<Vec<InputEvent>, ScriptError> {
-    Ok(host.inputs.get(subscription)?.drain(max))
+    let frame = host.frame();
+    Ok(host
+        .inputs
+        .get(subscription)?
+        .drain(max)
+        .into_iter()
+        .map(|event| InputEvent {
+            ray: ray_in_frame(frame, event.ray),
+            hit: event.hit.map(|h| hit_in_frame(frame, h)),
+            ..event
+        })
+        .collect())
 }
 
 pub fn dropped(host: &ScriptHost, subscription: u32) -> Result<u64, ScriptError> {

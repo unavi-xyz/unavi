@@ -162,6 +162,13 @@ impl HostDocument for HostCtx {
         Ok(scene::offset_to(&self.host, doc.rep(), other.rep())?.map(convert::wit_transform))
     }
 
+    fn world_frame(
+        &mut self,
+        _doc: Resource<DocumentRes>,
+    ) -> Result<Option<Transform>, ScriptError> {
+        Ok(scene::world_frame(&self.host)?.map(convert::wit_transform))
+    }
+
     async fn create_prim(
         &mut self,
         doc: Resource<DocumentRes>,

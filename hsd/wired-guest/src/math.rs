@@ -150,6 +150,34 @@ impl Transform {
     }
 }
 
+impl Mul for Transform {
+    type Output = Self;
+
+    /// `self`, then `rhs`: the transform that applies `rhs` first, matching
+    /// how a parent composes a child's local transform.
+    fn mul(self, rhs: Self) -> Self {
+        Self::new(
+            self.transform_point(rhs.translation),
+            self.rotation * rhs.rotation,
+            self.scale * rhs.scale,
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn composing_applies_the_right_hand_transform_first() {
+        let outer = Transform::new(Vec3::new(1.0, 2.0, 3.0), Quat::IDENTITY, Vec3::ONE);
+        let inner = Transform::new(Vec3::new(-4.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        let point = Vec3::new(5.0, 0.0, 0.0);
+        let composed = outer * inner;
+        assert!((composed.transform_point(point) - outer.transform_point(inner.transform_point(point))).length() < 1.0e-5);
+    }
+}
+
 /// Linear RGB with straight alpha, matching `wired:core/math.color`.
 #[derive(Debug, Default, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct Color {

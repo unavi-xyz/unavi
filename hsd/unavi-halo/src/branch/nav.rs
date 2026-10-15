@@ -274,12 +274,20 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
     // named for its space, and a referenced document realizes as a child, so
     // the script would be looking in the wrong document.
     let beacon = copy_document(&template)?;
+    // The landing is in the halo's frame, but the beacon document sits at
+    // the space root: convert before writing, or it plants where the halo's
+    // frame sits, not where it was let go.
+    beacon.place(Anchor::Space, Transform::IDENTITY)?;
+    let to_world = doc.world_frame().unwrap_or(Transform::IDENTITY);
     let prim = beacon.create_prim(Layer::Local, None)?;
     // The beacon script finds itself by a prim named for its space.
     beacon
         .local()
         .set(prim, Property::Name(hex.to_owned()))
-        .set(prim, Property::Transform(Transform::from_translation(at)))
+        .set(
+            prim,
+            Property::Transform(to_world * Transform::from_translation(at)),
+        )
         .flush()?;
     // Planting runs on this peer alone, so the prim must be committed for
     // anyone else's copy of the beacon to find itself.
@@ -289,7 +297,6 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
         .map(|key| (prim, key))
         .collect();
     beacon.commit(&keys)?;
-    beacon.place(Anchor::Space, Transform::IDENTITY)?;
 
     Ok(beacon)
 }

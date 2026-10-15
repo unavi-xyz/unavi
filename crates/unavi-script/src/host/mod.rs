@@ -55,6 +55,7 @@ use crate::{
 
 pub mod agent;
 pub mod event;
+pub mod frame;
 pub mod handles;
 pub mod input;
 pub mod peer;
@@ -219,6 +220,27 @@ impl ScriptHost {
             .send_with(f)
             .await
             .ok_or_else(|| ScriptError::Internal("the world is gone".into()))
+    }
+
+    /// The frame this script authors in: its own document's root. Identity
+    /// when the document root is not in this frame's snapshot.
+    #[must_use]
+    pub fn frame(&self) -> frame::Frame {
+        self.shared
+            .transforms
+            .doc_root(&self.doc)
+            .map_or(frame::Frame::IDENTITY, frame::Frame::from_root)
+    }
+
+    /// The transform from this script's document root to the engine world,
+    /// or `None` when the document is not placed. The escape hatch for
+    /// placing into a document that is not this one.
+    #[must_use]
+    pub fn frame_to_world(&self) -> Option<Transform> {
+        self.shared
+            .transforms
+            .doc_root(&self.doc)
+            .map(|root| root.compute_transform())
     }
 
     /// Holds every document this script can write open for one tick, so a

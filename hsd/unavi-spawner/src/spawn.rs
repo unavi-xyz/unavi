@@ -22,6 +22,7 @@ use crate::{
                 Document,
                 create_document,
                 open_document,
+                script_document,
             },
             properties::{
                 Property,
@@ -44,6 +45,13 @@ const MIN_DIST: f32 = 1.2;
 /// whatever is being pointed at.
 pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     let doc = create_document()?;
+    // Place before writing: a prim transform is stated in its document's
+    // frame, and `landing` is measured in the spawner's. The minted
+    // document's frame must exist before the two can be compared.
+    doc.place(Anchor::Space, Transform::IDENTITY)?;
+    let to_world = script_document()?
+        .world_frame()
+        .unwrap_or(Transform::IDENTITY);
 
     // `set-doc` takes the document by value; a fresh handle is spent on it
     // (rather than `doc` itself) so the mesh lands in the minted document
@@ -59,7 +67,7 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         .set(cube, Property::Material(palette::cube(color)))
         .set(
             cube,
-            Property::Transform(Transform {
+            Property::Transform(to_world * Transform {
                 translation: landing(cam),
                 rotation:    cam.rotation,
                 scale:       Vec3::ONE,
@@ -76,8 +84,6 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         .flat_map(|prim| doc.keys(prim).into_iter().map(move |key| (prim, key)))
         .collect();
     doc.commit(&keys)?;
-
-    doc.place(Anchor::Space, Transform::IDENTITY)?;
 
     Ok(())
 }

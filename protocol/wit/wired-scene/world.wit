@@ -373,12 +373,21 @@ interface document {
     /// Every key that has a value on `prim`.
     keys:     func(prim: prim-id) -> list<property-key>;
 
-    /// Where `prim` is in the world this frame, including what physics and
-    /// animation did to it since its `transform` was written.
+    /// Where `prim` is this frame, in the calling script's own document
+    /// frame, including what physics and animation did to it since its
+    /// `transform` was written. Never the engine world: loaded spaces sit at
+    /// different offsets there, and a script never sees them.
     world-transform: func(prim: prim-id) -> result<transform, error>;
     /// The transform from this document's root to `other`'s, or `none` when
     /// either is not placed.
     offset-to: func(other: borrow<document>) -> option<transform>;
+    /// The transform from the calling script's own document root to the
+    /// engine world, or `none` when its document is not placed.
+    ///
+    /// A script authors in its own document's frame, so this is what turns a
+    /// frame-relative transform into one another document can hold. Only for
+    /// placing into a document that is not this one.
+    world-frame: func() -> option<transform>;
 
     /// Adds a prim under `parent`, or as a root, and answers its id.
     create-prim: func(layer: layer, parent: option<prim-id>) -> result<prim-id, error>;

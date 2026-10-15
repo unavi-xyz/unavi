@@ -187,8 +187,8 @@ pub fn keys(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<Vec<PropertyKey
         .read(|state| PropertyKey::all(state, prim))
 }
 
-/// Where `prim` is in the world this frame, composed from the transform
-/// snapshot so physics and animation show.
+/// Where `prim` is in the script's own frame this frame, composed from the
+/// transform snapshot so physics and animation show.
 pub fn world_transform(
     host: &ScriptHost,
     doc: u32,
@@ -202,7 +202,20 @@ pub fn world_transform(
     let affine = host.shared.transforms.world_of(doc.id, prim, |id| {
         state.lock().ok().and_then(|state| state.parent(id))
     });
-    Ok(Transform::from_matrix(affine.into()))
+    Ok(host
+        .frame()
+        .transform_to_frame(Transform::from_matrix(affine.into())))
+}
+
+/// The transform from the script's own document root to the engine world,
+/// `None` when the document is not placed.
+///
+/// A script authors in its own document's frame, so this is what turns a
+/// frame-relative transform into one another document can hold. Only for
+/// placing into a document that is not this one.
+pub fn world_frame(host: &ScriptHost) -> Result<Option<Transform>, ScriptError> {
+    host.require(HostApi::Scene)?;
+    Ok(host.frame_to_world())
 }
 
 /// The transform from `doc`'s root to `other`'s, `None` when either is not

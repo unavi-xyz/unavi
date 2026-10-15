@@ -83,8 +83,9 @@ pub async fn raycast(
     filter: RayFilter,
 ) -> Result<Option<RayHit>, ScriptError> {
     host.require(HostApi::Physics)?;
-    let origin = checked(origin)?;
-    let direction = Dir3::new(checked(direction)?)
+    let frame = host.frame();
+    let origin = frame.point_to_world(checked(origin)?);
+    let direction = Dir3::new(frame.vector_to_world(checked(direction)?))
         .map_err(|_| ScriptError::invalid("a ray direction must not be zero"))?;
     if !finite::nonnegative_length(max_distance) {
         return Err(ScriptError::invalid(
@@ -98,41 +99,47 @@ pub async fn raycast(
     }
     let excluded = filter.exclude_documents.into_iter().collect::<HashSet<_>>();
 
-    host.world_call(move |world| {
-        let mut state = SystemState::<RayQuery>::new(world);
-        let (spatial, prims, prim_of, docs, parents, agents) = state.get(world).ok()?;
-        let doc_of = |entity: Entity| {
-            ancestors(entity, &parents).find_map(|at| {
-                prim_of
-                    .get(at)
-                    .ok()
-                    .and_then(|of| docs.get(of.0).ok())
-                    .or_else(|| docs.get(at).ok())
-                    .map(|id| id.0)
+    let hit = host
+        .world_call(move |world| {
+            let mut state = SystemState::<RayQuery>::new(world);
+            let (spatial, prims, prim_of, docs, parents, agents) = state.get(world).ok()?;
+            let doc_of = |entity: Entity| {
+                ancestors(entity, &parents).find_map(|at| {
+                    prim_of
+                        .get(at)
+                        .ok()
+                        .and_then(|of| docs.get(of.0).ok())
+                        .or_else(|| docs.get(at).ok())
+                        .map(|id| id.0)
+                })
+            };
+            let skip = |entity: Entity| {
+                (filter.exclude_local_agent
+                    && ancestors(entity, &parents).any(|at| agents.contains(at)))
+                    || doc_of(entity).is_some_and(|doc| excluded.contains(&doc))
+            };
+            let hit = spatial.cast_ray_predicate(
+                origin,
+                direction,
+                max_distance,
+                true,
+                &SpatialQueryFilter::default(),
+                &|entity| !skip(entity),
+            )?;
+            Some(RayHit {
+                document: doc_of(hit.entity)?,
+                prim:     prims.get(hit.entity).ok()?.0,
+                point:    origin + direction.as_vec3() * hit.distance,
+                normal:   hit.normal,
+                distance: hit.distance,
             })
-        };
-        let skip = |entity: Entity| {
-            (filter.exclude_local_agent
-                && ancestors(entity, &parents).any(|at| agents.contains(at)))
-                || doc_of(entity).is_some_and(|doc| excluded.contains(&doc))
-        };
-        let hit = spatial.cast_ray_predicate(
-            origin,
-            direction,
-            max_distance,
-            true,
-            &SpatialQueryFilter::default(),
-            &|entity| !skip(entity),
-        )?;
-        Some(RayHit {
-            document: doc_of(hit.entity)?,
-            prim:     prims.get(hit.entity).ok()?.0,
-            point:    origin + direction.as_vec3() * hit.distance,
-            normal:   hit.normal,
-            distance: hit.distance,
         })
-    })
-    .await
+        .await?;
+    Ok(hit.map(|hit| RayHit {
+        point:  frame.point_to_frame(hit.point),
+        normal: frame.vector_to_frame(hit.normal).normalize_or_zero(),
+        ..hit
+    }))
 }
 
 fn body(world: &World, doc: DocId, prim: PrimId) -> Result<Entity, ScriptError> {
@@ -163,19 +170,25 @@ pub async fn velocity(
     prim: PrimId,
 ) -> Result<BodyVelocity, ScriptError> {
     host.require(HostApi::Physics)?;
+    let frame = host.frame();
     let doc = host.document(doc)?.id;
-    host.world_call(move |world| {
-        let entity = dynamic_body(world, doc, prim)?;
-        Ok(BodyVelocity {
-            linear:  world
-                .get::<LinearVelocity>(entity)
-                .map_or(Vec3::ZERO, |v| v.0),
-            angular: world
-                .get::<AngularVelocity>(entity)
-                .map_or(Vec3::ZERO, |v| v.0),
+    let velocity = host
+        .world_call(move |world| {
+            let entity = dynamic_body(world, doc, prim)?;
+            Ok(BodyVelocity {
+                linear:  world
+                    .get::<LinearVelocity>(entity)
+                    .map_or(Vec3::ZERO, |v| v.0),
+                angular: world
+                    .get::<AngularVelocity>(entity)
+                    .map_or(Vec3::ZERO, |v| v.0),
+            })
         })
+        .await??;
+    Ok(BodyVelocity {
+        linear:  frame.vector_to_frame(velocity.linear),
+        angular: frame.vector_to_frame(velocity.angular),
     })
-    .await?
 }
 
 pub async fn set_velocity(
@@ -186,9 +199,16 @@ pub async fn set_velocity(
     angular: Option<Vec3>,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Physics)?;
+    let frame = host.frame();
     let doc = host.writable_document(doc)?.id;
-    let linear = linear.map(checked).transpose()?;
-    let angular = angular.map(checked).transpose()?;
+    let linear = linear
+        .map(checked)
+        .transpose()?
+        .map(|v| frame.vector_to_world(v));
+    let angular = angular
+        .map(checked)
+        .transpose()?
+        .map(|v| frame.vector_to_world(v));
     host.world_call(move |world| {
         let entity = dynamic_body(world, doc, prim)?;
         let mut body = world.entity_mut(entity);
@@ -211,8 +231,9 @@ pub async fn set_force(
     force: Vec3,
 ) -> Result<(), ScriptError> {
     host.require(HostApi::Physics)?;
+    let frame = host.frame();
     let doc = host.writable_document(doc)?.id;
-    let force = checked(force)?;
+    let force = frame.vector_to_world(checked(force)?);
     host.world_call(move |world| {
         let entity = dynamic_body(world, doc, prim)?;
         let mut body = world.entity_mut(entity);

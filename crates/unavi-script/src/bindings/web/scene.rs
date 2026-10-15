@@ -161,6 +161,13 @@ impl DocumentHandle {
             .map_err(convert::into_trap)
     }
 
+    #[wasm_bindgen(js_name = "worldFrame")]
+    pub fn world_frame(&self) -> Result<JsValue, JsValue> {
+        scene::world_frame(&self.host.borrow())
+            .map(|t| t.map_or(JsValue::UNDEFINED, convert::wit_transform))
+            .map_err(convert::into_trap)
+    }
+
     #[wasm_bindgen(js_name = "createPrim")]
     pub fn create_prim(&self, layer: String, parent: JsValue) -> js_sys::Promise {
         let host = Rc::clone(&self.host);

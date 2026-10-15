@@ -1,3 +1,6 @@
+//! Script stdout and stderr, gathered into runs and logged.
+
+use bevy_async::task;
 use smol_str::SmolStr;
 use tokio::io::{
     AsyncRead,
@@ -5,7 +8,6 @@ use tokio::io::{
     BufReader,
     DuplexStream,
 };
-use unavi_util::async_task::spawn_async_task;
 use wasmtime_wasi::cli::AsyncStdoutStream;
 
 use crate::engine::log::{
@@ -30,7 +32,7 @@ impl ScriptStderr {
     }
 
     pub fn drain(self, script: SmolStr) {
-        spawn_async_task(drain_stream(self.0, script, Level::Warn));
+        task::spawn(drain_stream(self.0, script, Level::Warn));
     }
 }
 
@@ -44,7 +46,7 @@ impl ScriptStdout {
     }
 
     pub fn drain(self, script: SmolStr) {
-        spawn_async_task(drain_stream(self.0, script, Level::Info));
+        task::spawn(drain_stream(self.0, script, Level::Info));
     }
 }
 

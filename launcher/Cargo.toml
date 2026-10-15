@@ -68,6 +68,9 @@ tempfile.workspace      = true
 tokio.workspace         = true
 tracing.workspace       = true
 
+[dev-dependencies]
+tokio = { features = ["macros", "rt"], workspace = true }
+
 # Linux ships an AppImage, which needs no unpacking.
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 tar = "0.4.46"

@@ -18,25 +18,24 @@ use self::unix::set_executable;
 #[path = "unix.rs"] mod unix;
 
 pub const RELEASE_TARGET: &str = "macos";
-pub const CLIENT_EXE: &str = "unavi-client";
-pub const CLIENT_EXT: &str = "xz";
+pub const APP_EXE: &str = "unavi-app";
+pub const APP_EXT: &str = "xz";
 pub const LAUNCHER_EXT: &str = "xz";
 
 const LAUNCHER_EXE: &str = "unavi-launcher";
 
-pub fn client_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
+pub fn app_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
     Ok(Command::new(exe))
 }
 
-pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+pub fn install_app(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
     archive::unpack_tar_xz(downloaded, dest_dir)?;
 
     // The bundle inside the archive is named after the build target, not the
     // crate, so the launcher would not find it under the name it looks up.
-    let exe = dest_dir.join(CLIENT_EXE);
+    let exe = dest_dir.join(APP_EXE);
     if !exe.exists() {
-        fs::rename(find_bundled(dest_dir, CLIENT_EXE)?, &exe)
-            .context("failed to install client")?;
+        fs::rename(find_bundled(dest_dir, APP_EXE)?, &exe).context("failed to install app")?;
     }
 
     set_executable(&exe)
@@ -59,15 +58,14 @@ pub fn install_launcher(downloaded: &Path) -> anyhow::Result<Command> {
     Ok(Command::new(exe))
 }
 
-fn find_bundled(dir: &Path, prefix: &str) -> anyhow::Result<PathBuf> {
+/// Looks for a file literally named `name` (not merely a prefix match, which
+/// could pick an unrelated entry such as `unavi-app.dSYM` over the real
+/// binary) in `dir`.
+fn find_bundled(dir: &Path, name: &str) -> anyhow::Result<PathBuf> {
     fs::read_dir(dir)
         .with_context(|| format!("failed to read {}", dir.display()))?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
-        .find(|path| {
-            path.file_name()
-                .and_then(OsStr::to_str)
-                .is_some_and(|name| name.starts_with(prefix))
-        })
-        .with_context(|| format!("{prefix} not found in {}", dir.display()))
+        .find(|path| path.file_name().and_then(OsStr::to_str) == Some(name))
+        .with_context(|| format!("{name} not found in {}", dir.display()))
 }

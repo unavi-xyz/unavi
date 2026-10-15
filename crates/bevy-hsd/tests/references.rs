@@ -9,7 +9,7 @@ use bevy_hsd::{
     },
     reference::ReferenceInstance,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use hsd::{
     attributes::reference::ReferenceAttr,
     format::package::Package,
@@ -17,7 +17,6 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use rstest::rstest;
-use unavi_util::UtilPlugin;
 
 use crate::common::*;
 
@@ -25,8 +24,7 @@ mod common;
 
 fn with_store(ctx: &mut TestContext) -> Backing {
     let backing = Backing::new();
-    ctx.app.add_plugins(UtilPlugin);
-    ctx.app.world_mut().spawn(LocalStore(backing.store()));
+    ctx.app.insert_resource(DataStore(backing.store()));
     backing
 }
 

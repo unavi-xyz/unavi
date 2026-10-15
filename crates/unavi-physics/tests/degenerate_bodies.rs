@@ -1,17 +1,24 @@
-//! A scene, a script, or an avatar rig may drive a transform to zero scale or
-//! to NaN. Physics has to survive it and recover when the transform does.
+//! A scene, a script, or an avatar rig may drive a transform to zero scale,
+//! to NaN, or to an extreme scale. Physics has to survive it and recover
+//! when the transform does.
 
-use avian3d::prelude::{
-    Collider,
-    Position,
-    RigidBody,
-    Rotation,
+use avian3d::{
+    physics_transform::PhysicsTransformSystems,
+    prelude::{
+        Collider,
+        Position,
+        RigidBody,
+        Rotation,
+    },
 };
-use bevy::prelude::*;
-use unavi_physics::body::{
-    DisabledCollider,
-    DisabledRigidBody,
-    insert_collider,
+use bevy::{
+    app::FixedPostUpdate,
+    prelude::*,
+};
+use unavi_physics::{
+    degenerate::Parked,
+    finite::MAX_EXTENT,
+    shape::insert_collider,
 };
 
 mod common;
@@ -49,7 +56,7 @@ fn a_zero_scale_collider_is_parked_and_restored() {
         "collider stayed active at zero scale"
     );
     assert!(
-        has::<DisabledCollider>(&app, entity),
+        has::<Parked>(&app, entity),
         "parked collider was dropped rather than stashed"
     );
 
@@ -59,7 +66,7 @@ fn a_zero_scale_collider_is_parked_and_restored() {
         has::<Collider>(&app, entity),
         "collider was not restored once the scale recovered"
     );
-    assert!(!has::<DisabledCollider>(&app, entity));
+    assert!(!has::<Parked>(&app, entity));
 }
 
 /// The NaN a VRM rig can produce from degenerate bone geometry.
@@ -82,7 +89,7 @@ fn a_nan_transform_parks_the_rigid_body_and_restores_it() {
         !has::<RigidBody>(&app, entity),
         "rigid body stayed active with a NaN transform"
     );
-    assert!(has::<DisabledRigidBody>(&app, entity));
+    assert!(has::<Parked>(&app, entity));
     assert!(
         !has::<Position>(&app, entity),
         "a NaN Position was left for the solver to read"
@@ -94,7 +101,39 @@ fn a_nan_transform_parks_the_rigid_body_and_restores_it() {
         has::<RigidBody>(&app, entity),
         "rigid body was not restored once the transform recovered"
     );
-    assert!(!has::<DisabledRigidBody>(&app, entity));
+    assert!(!has::<Parked>(&app, entity));
+}
+
+/// A scale past [`MAX_EXTENT`] overflows the solver's area/volume math the
+/// same way a zero scale collapses it, so it has to park too.
+#[test]
+fn an_extreme_scale_parks_the_collider_and_restores_it() {
+    let mut app = app();
+    let entity = app
+        .world_mut()
+        .spawn((Collider::cuboid(1.0, 1.0, 1.0), Transform::default()))
+        .id();
+    step(&mut app, 2);
+    assert!(has::<Collider>(&app, entity));
+
+    set_transform(
+        &mut app,
+        entity,
+        Transform::from_scale(Vec3::splat(MAX_EXTENT * 10.0)),
+    );
+    step(&mut app, 2);
+    assert!(
+        !has::<Collider>(&app, entity),
+        "collider stayed active at an extreme scale"
+    );
+    assert!(has::<Parked>(&app, entity));
+
+    set_transform(&mut app, entity, Transform::from_scale(Vec3::ONE));
+    step(&mut app, 2);
+    assert!(
+        has::<Collider>(&app, entity),
+        "collider was not restored once the scale recovered"
+    );
 }
 
 /// A child inherits its parent's degenerate scale through propagation, so the
@@ -117,7 +156,7 @@ fn a_child_of_a_zero_scale_parent_is_parked() {
     step(&mut app, 2);
 
     assert!(
-        has::<DisabledCollider>(&app, child),
+        has::<Parked>(&app, child),
         "a child under a collapsed parent kept an active collider"
     );
 
@@ -127,6 +166,31 @@ fn a_child_of_a_zero_scale_parent_is_parked() {
         has::<Collider>(&app, child),
         "the child's collider was not restored with its parent"
     );
+}
+
+/// A `RigidBody` inserted onto a transform that was already degenerate (and
+/// so does not change this frame) has no `insert_collider`-style self-check;
+/// the guard's `Added<RigidBody>` arm is what has to catch it instead of
+/// `Changed<GlobalTransform>`.
+#[test]
+fn a_rigid_body_added_onto_an_already_degenerate_transform_is_parked() {
+    let mut app = app();
+    let entity = app
+        .world_mut()
+        .spawn(Transform::from_scale(Vec3::ZERO))
+        .id();
+    step(&mut app, 2);
+
+    app.world_mut()
+        .entity_mut(entity)
+        .insert(RigidBody::Dynamic);
+    step(&mut app, 2);
+
+    assert!(
+        !has::<RigidBody>(&app, entity),
+        "a rigid body added onto an already-degenerate transform stayed active"
+    );
+    assert!(has::<Parked>(&app, entity));
 }
 
 #[test]
@@ -176,7 +240,7 @@ fn insert_collider_parks_a_degenerate_seed_without_touching_physics() {
     step(&mut app, 2);
 
     assert!(
-        has::<DisabledCollider>(&app, entity),
+        has::<Parked>(&app, entity),
         "a degenerate seed produced a live collider"
     );
     assert!(!has::<Collider>(&app, entity));
@@ -201,8 +265,7 @@ fn ordinary_bodies_are_untouched() {
 
     step(&mut app, 240);
 
-    assert!(!has::<DisabledCollider>(&app, falling));
-    assert!(!has::<DisabledRigidBody>(&app, falling));
+    assert!(!has::<Parked>(&app, falling));
     let y = app
         .world()
         .entity(falling)
@@ -213,5 +276,60 @@ fn ordinary_bodies_are_untouched() {
     assert!(
         (0.5..1.5).contains(&y),
         "a body that should have landed on the ground is at y = {y}"
+    );
+}
+
+/// The guard has to run before avian's `TransformToPosition` set, which
+/// converts a degenerate `Transform` into a non-finite `Position` — not
+/// merely somewhere inside `PhysicsSchedule`, which never configures that
+/// set at all (see `degenerate.rs`'s module-level comment on
+/// `DegenerateBodyPlugin`). A plain end-of-step read of `Position` cannot
+/// tell the two apart: both a correctly-ordered guard and one that ran late
+/// end the step with no `Position` on the entity, since parking removes it
+/// either way. This probes `Position` the instant after `TransformToPosition`
+/// could have written it, before anything removes it, which only a
+/// correctly-ordered guard leaves untouched.
+#[test]
+fn a_degenerate_transform_never_reaches_position_before_the_guard_runs() {
+    #[derive(Resource, Default)]
+    struct Probe {
+        entity:                  Option<Entity>,
+        saw_non_finite_position: bool,
+    }
+
+    fn probe(mut probe: ResMut<Probe>, positions: Query<&Position>) {
+        let Some(entity) = probe.entity else { return };
+        if let Ok(pos) = positions.get(entity)
+            && !pos.0.is_finite()
+        {
+            probe.saw_non_finite_position = true;
+        }
+    }
+
+    let mut app = app();
+    app.insert_resource(Probe::default()).add_systems(
+        FixedPostUpdate,
+        probe.after(PhysicsTransformSystems::TransformToPosition),
+    );
+
+    let entity = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.5),
+            Transform::default(),
+        ))
+        .id();
+    app.world_mut().resource_mut::<Probe>().entity = Some(entity);
+    step(&mut app, 2);
+
+    set_transform(&mut app, entity, Transform::from_xyz(f32::NAN, 0.0, 0.0));
+    step(&mut app, 2);
+
+    assert!(
+        !app.world().resource::<Probe>().saw_non_finite_position,
+        "a non-finite Position reached the point right after \
+         TransformToPosition, meaning the guard ran too late relative to it \
+         (or not at all)"
     );
 }

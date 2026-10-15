@@ -1,5 +1,5 @@
 //! A face parsed once and kept: the font half of runtime generation. The
-//! glyph store half lives in `runtime`.
+//! glyph store half lives in [`crate::atlas`].
 //!
 //! Layout asks for a glyph index and a pair adjustment per character, so the
 //! parsed tables and the shaper are built at construction and the pair
@@ -25,7 +25,7 @@ use ttf_parser::{
     GlyphId,
 };
 
-use crate::atlas::VerticalMetrics;
+use crate::glyph::VerticalMetrics;
 
 /// Pair adjustments remembered at once. Text is untrusted and a pair is any
 /// two characters, so the memo is emptied rather than grown once it fills.
@@ -55,6 +55,8 @@ self_cell!(
     }
 );
 
+/// A parsed, shapeable face: parsing and the per-pair kern memo are the only
+/// cost a lookup pays more than once.
 pub struct Font {
     shaper:       Shaper,
     pub vertical: VerticalMetrics,
@@ -224,7 +226,7 @@ mod tests {
         let font = font();
         assert!(
             font.kern('A', 'V') < 0.0,
-            "GPOS pair adjustments must survive outside the bake"
+            "GPOS pair adjustments are shaped on demand, not precomputed"
         );
         assert!(font.kern('x', 'y').abs() < 1.0e-6);
     }

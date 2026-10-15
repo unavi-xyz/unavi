@@ -1,12 +1,15 @@
+//! The local node's identity, as the rest of the app reads it.
+
 use std::sync::Arc;
 
 use bevy::prelude::*;
 use iroh_docs::NamespaceId;
 use unavi_identity::{
-    auth::bindings::Bindings,
+    auth::Bindings,
     identity::Identity,
+    resolver::Resolver,
 };
-use xdid::resolver::DidResolver;
+use unavi_registry::client::Followed;
 
 /// The node's identity handles, inserted once its keys are loaded.
 ///
@@ -16,7 +19,9 @@ use xdid::resolver::DidResolver;
 pub struct LocalIdentity {
     pub identity: Arc<Identity>,
     pub bindings: Arc<Bindings>,
-    pub resolver: Arc<DidResolver>,
+    pub resolver: Arc<Resolver>,
+    /// The registries this node follows. Empty until they are reached.
+    pub followed: Followed,
 }
 
 /// The namespace of this node's root document.

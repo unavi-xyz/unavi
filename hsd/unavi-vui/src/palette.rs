@@ -1,4 +1,7 @@
-use wired_scene::types::Color;
+//! Every colour VUI draws with, and the rules that turn a role and an
+//! attention state into one.
+
+use wired_guest::math::Color;
 
 use crate::attention::Attention;
 
@@ -108,7 +111,11 @@ impl Palette {
     /// brighter along its own hue rather than washed toward white or toward
     /// the accent, which is what makes a selected mote read as *glowing*
     /// rather than grey.
+    ///
+    /// Takes no palette value today, but stays a method so a call site reads
+    /// the same as every other colour rule here (`palette.tint`, `.item`).
     #[must_use]
+    #[expect(clippy::unused_self)]
     pub const fn tinted(&self, tint: Color, attention: Attention) -> Color {
         match attention {
             Attention::Engaged => glow(tint, 0.9),
@@ -167,9 +174,9 @@ pub const fn shade(lightness: f32) -> Color {
 #[must_use]
 pub const fn lift(color: Color, amount: f32) -> Color {
     Color {
-        r: color.r + (1.0 - color.r) * amount,
-        g: color.g + (1.0 - color.g) * amount,
-        b: color.b + (1.0 - color.b) * amount,
+        r: (1.0 - color.r).mul_add(amount, color.r),
+        g: (1.0 - color.g).mul_add(amount, color.g),
+        b: (1.0 - color.b).mul_add(amount, color.b),
         a: color.a,
     }
 }
@@ -178,30 +185,10 @@ pub const fn lift(color: Color, amount: f32) -> Color {
 #[must_use]
 pub const fn blend(color: Color, toward: Color, amount: f32) -> Color {
     Color {
-        r: color.r + (toward.r - color.r) * amount,
-        g: color.g + (toward.g - color.g) * amount,
-        b: color.b + (toward.b - color.b) * amount,
+        r: (toward.r - color.r).mul_add(amount, color.r),
+        g: (toward.g - color.g).mul_add(amount, color.g),
+        b: (toward.b - color.b).mul_add(amount, color.b),
         a: color.a,
-    }
-}
-
-#[must_use]
-pub const fn with_alpha(color: Color, a: f32) -> Color {
-    Color {
-        r: color.r,
-        g: color.g,
-        b: color.b,
-        a,
-    }
-}
-
-#[must_use]
-pub const fn scale(color: Color, factor: f32) -> Color {
-    Color {
-        r: color.r * factor,
-        g: color.g * factor,
-        b: color.b * factor,
-        a: 1.0,
     }
 }
 

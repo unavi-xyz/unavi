@@ -11,7 +11,7 @@ use bevy_vrm::{
 use super::{
     AnimationName,
     bone_mask_group,
-    mixamo::MIXAMO_BONE_NAMES,
+    mixamo::MIXAMO_BONE_BY_NAME,
     raw::RawAnimations,
 };
 
@@ -55,19 +55,16 @@ pub(crate) fn load_animation_nodes(
             let mut clip = AnimationClip::default();
 
             for channel in &animation.channels {
-                let Some((bone_name, _)) = MIXAMO_BONE_NAMES
-                    .iter()
-                    .find(|(_, v)| **v == channel.target)
-                else {
+                let Some(&bone_name) = MIXAMO_BONE_BY_NAME.get(channel.target.as_str()) else {
                     continue;
                 };
 
                 // Head transform is set by user's camera.
-                if *bone_name == BoneName::Head {
+                if bone_name == BoneName::Head {
                     continue;
                 }
 
-                let vrm_target = VRM_ANIMATION_TARGETS[bone_name];
+                let vrm_target = VRM_ANIMATION_TARGETS[&bone_name];
 
                 let Some(mixamo_node) = raw.nodes.get(&channel.target) else {
                     warn!("No animation gltf node for {}", channel.target);
@@ -112,7 +109,7 @@ pub(crate) fn load_animation_nodes(
             let clip_handle = clips.add(clip);
 
             let node_idx = graph.add_clip(clip_handle, 1.0, graph.root);
-            animation_nodes.insert(name.clone(), node_idx);
+            animation_nodes.insert(*name, node_idx);
         }
 
         let graph = graphs.add(graph);

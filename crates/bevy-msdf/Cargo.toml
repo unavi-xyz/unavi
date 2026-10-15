@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 bevy.workspace      = true
-image               = { features = ["png"], workspace = true }
+image               = { workspace = true }
 msdf                = { path = "../msdf" }
 smol_str.workspace  = true
 thiserror.workspace = true

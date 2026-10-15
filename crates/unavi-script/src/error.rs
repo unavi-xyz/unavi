@@ -1,45 +1,70 @@
+//! The one error every host call returns, mirroring `wired:core/error`.
+
+use std::{
+    borrow::Cow,
+    fmt::Display,
+};
+
 use unavi_policy::{
-    error::PolicyError,
+    permissions::{
+        HostApi,
+        PermissionDenied,
+    },
     quota::{
         Flow,
         QuotaError,
         Stock,
     },
 };
-use unavi_space::state::cell::SessionError;
+use unavi_space::replication::session::SessionError;
 
-/// Host-side canonical error, mirroring `wired:error/types.error`.
+/// Why a host call failed.
 ///
-/// Every variant but `Other` carries structured data rather than a rendered
-/// sentence: the matching WIT variants have no payload, so a formatted message
-/// would be allocated on every refused call and dropped at the boundary — on
-/// the one path a hostile script is expected to hammer.
+/// Every variant but [`Self::InvalidArgument`] and [`Self::Internal`] carries
+/// data rather than a sentence, and those two take a `&'static str` where they
+/// can: a hostile script hammers the refusal paths, so a refusal should not
+/// allocate.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ScriptError {
-    #[error("{0}")]
-    Other(String),
-    /// A rate limit, which refills on its own: a retry may succeed.
-    #[error("rate limit exceeded: {0:?}")]
-    QuotaFlow(Flow),
-    /// A ceiling on a held resource, which frees only when something else
-    /// releases: a retry without freeing will not.
-    #[error("resource ceiling reached: {0:?}")]
-    QuotaStock(Stock),
-    #[error(transparent)]
-    Policy(PolicyError),
+    #[error("invalid argument: {0}")]
+    InvalidArgument(Cow<'static, str>),
+    #[error("not found")]
+    NotFound,
+    #[error("not ready")]
+    NotReady,
+    #[error("permission denied: {0:?}")]
+    Permission(HostApi),
+    /// The script may not act on this target, such as a document it does not
+    /// own.
+    #[error("forbidden")]
+    Forbidden,
+    #[error("rate limited: {0:?}")]
+    RateLimited(Flow),
+    #[error("limit reached: {0:?}")]
+    LimitReached(Stock),
+    #[error("internal: {0}")]
+    Internal(Cow<'static, str>),
+    /// A handle the guest does not hold. Lowered as a trap, never as a WIT
+    /// error.
+    #[error("invalid handle")]
+    InvalidHandle,
 }
 
 impl ScriptError {
-    pub fn other(detail: impl Into<String>) -> Self {
-        Self::Other(detail.into())
+    pub fn invalid(detail: impl Into<Cow<'static, str>>) -> Self {
+        Self::InvalidArgument(detail.into())
+    }
+
+    pub fn internal(err: impl Display) -> Self {
+        Self::Internal(err.to_string().into())
     }
 }
 
 impl From<QuotaError> for ScriptError {
     fn from(err: QuotaError) -> Self {
         match err {
-            QuotaError::Stock(stock) => Self::QuotaStock(stock),
-            QuotaError::Flow(flow) => Self::QuotaFlow(flow),
+            QuotaError::Stock(stock) => Self::LimitReached(stock),
+            QuotaError::Flow(flow) => Self::RateLimited(flow),
         }
     }
 }
@@ -47,69 +72,46 @@ impl From<QuotaError> for ScriptError {
 impl From<SessionError> for ScriptError {
     fn from(err: SessionError) -> Self {
         match err {
-            SessionError::QuotaExceeded => Self::QuotaStock(Stock::SessionMemory),
-            SessionError::NotOwner => Self::Policy(PolicyError::NotOwner),
-            SessionError::BadName | SessionError::Other => Self::Other(err.to_string()),
+            SessionError::QuotaExceeded => Self::LimitReached(Stock::SessionMemory),
+            SessionError::WrongSpace => Self::Forbidden,
+            SessionError::BadName => Self::invalid("invalid shared property name"),
+            SessionError::TooLarge => Self::invalid("too many shared writes in one tick"),
+            SessionError::Stale => {
+                Self::Internal("the shared write is older than its layer".into())
+            }
+            SessionError::Unsigned => Self::Internal("the shared write could not be signed".into()),
+            SessionError::Unavailable => Self::Internal("the world is gone".into()),
         }
     }
 }
 
-impl From<PolicyError> for ScriptError {
-    fn from(err: PolicyError) -> Self {
-        Self::Policy(err)
-    }
-}
-
-impl From<anyhow::Error> for ScriptError {
-    fn from(err: anyhow::Error) -> Self {
-        let err = match err.downcast::<QuotaError>() {
-            Ok(quota) => return quota.into(),
-            Err(err) => err,
-        };
-        // Before the `Self` arm: a policy denial boxed into `anyhow` and
-        // re-raised by a caller must keep its variant, not fall through to
-        // `Other` and change the error a guest sees.
-        let err = match err.downcast::<PolicyError>() {
-            Ok(policy) => return policy.into(),
-            Err(err) => err,
-        };
-        match err.downcast::<Self>() {
-            Ok(script) => script,
-            Err(err) => Self::Other(err.to_string()),
-        }
+impl From<PermissionDenied> for ScriptError {
+    fn from(PermissionDenied(api): PermissionDenied) -> Self {
+        Self::Permission(api)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use unavi_policy::permissions::ApiName;
-
     use super::*;
-
-    #[test]
-    fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
-        for policy in [
-            PolicyError::Permission(ApiName::Physics),
-            PolicyError::NotOwner,
-        ] {
-            assert_eq!(
-                ScriptError::from(anyhow::Error::new(policy)),
-                ScriptError::Policy(policy),
-                "a denial that reaches a guest as `other` is a different WIT \
-                 error than the one raised"
-            );
-        }
-    }
 
     #[test]
     fn a_quota_error_keeps_the_resource_it_names() {
         assert_eq!(
             ScriptError::from(QuotaError::Stock(Stock::Prims)),
-            ScriptError::QuotaStock(Stock::Prims)
+            ScriptError::LimitReached(Stock::Prims)
         );
         assert_eq!(
             ScriptError::from(QuotaError::Flow(Flow::Emit)),
-            ScriptError::QuotaFlow(Flow::Emit)
+            ScriptError::RateLimited(Flow::Emit)
+        );
+    }
+
+    #[test]
+    fn a_shared_write_into_another_space_is_forbidden() {
+        assert_eq!(
+            ScriptError::from(SessionError::WrongSpace),
+            ScriptError::Forbidden
         );
     }
 }

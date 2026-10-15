@@ -8,10 +8,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::package::ImportPackage;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalStore,
-};
+use bevy_iroh::store::DataStore;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
@@ -22,21 +19,21 @@ use bevy_vrm::first_person::{
 };
 use unavi_agent::LocalAgent;
 
-use crate::util::create_client_store;
+use crate::util::create_app_store;
 
 mod util;
 
 const SCRIPT_PATH: &str = "hsd/example_wired_agent.hsdz";
 
 fn main() {
-    let assets_path = "../unavi-client/assets/".to_string();
+    let assets_path = "../unavi-app/assets/".to_string();
 
-    let store = create_client_store();
+    let store = create_app_store();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before
     // `AssetPlugin` builds the sources it knows about.
-    app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
+    app.add_plugins(unavi_assets::AssetsPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -53,7 +50,7 @@ fn main() {
         bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        unavi_util::UtilPlugin,
+        bevy_async::AsyncPlugin,
         unavi_agent::AgentPlugin,
         unavi_avatar::AvatarPlugin,
         unavi_script::ScriptPlugin,
@@ -61,10 +58,7 @@ fn main() {
     .add_observer(on_agent_load)
     .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((
-        LocalBlobs(store.store.blobs().clone()),
-        LocalStore(store.store.clone()),
-    ));
+    app.insert_resource(DataStore(store.store));
 
     app.run();
 }

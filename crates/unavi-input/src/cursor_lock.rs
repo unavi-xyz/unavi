@@ -7,7 +7,14 @@ use bevy::{
     },
 };
 
-use crate::capture::Captured;
+use crate::{
+    action::{
+        Action,
+        ActionState,
+    },
+    capture::Captured,
+    pointer::PointerKind,
+};
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum CursorGrabState {
@@ -16,9 +23,14 @@ pub enum CursorGrabState {
     Locked,
 }
 
+/// Locks the cursor on the screen pointer's trigger (so a click both picks
+/// and locks, as a desktop FPS does) and frees it on [`Action::Release`],
+/// rather than the raw `MouseButton::Left`/`KeyCode::Escape` this used to
+/// read directly: routing through [`ActionState`] means a locked cursor
+/// honours capture silencing the same way everything else bound to an
+/// action does.
 pub(crate) fn cursor_grab(
-    key: Res<ButtonInput<KeyCode>>,
-    mouse: Res<ButtonInput<MouseButton>>,
+    action: Res<ActionState>,
     captured: Res<Captured>,
     state: Res<State<CursorGrabState>>,
     mut next_state: ResMut<NextState<CursorGrabState>>,
@@ -39,13 +51,13 @@ pub(crate) fn cursor_grab(
     }
 
     for mut cursor in &mut windows {
-        if mouse.just_pressed(MouseButton::Left) {
+        if action.just_pressed(Action::Trigger(PointerKind::Screen)) {
             cursor.visible = false;
             cursor.grab_mode = CursorGrabMode::Locked;
             next_state.set(CursorGrabState::Locked);
         }
 
-        if key.just_pressed(KeyCode::Escape) {
+        if action.just_pressed(Action::Release) {
             cursor.visible = true;
             cursor.grab_mode = CursorGrabMode::None;
             next_state.set(CursorGrabState::Unlocked);

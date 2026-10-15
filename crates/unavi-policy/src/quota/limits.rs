@@ -1,11 +1,10 @@
+//! The caps each scope gets: node, space, peer and document.
+
 use std::collections::HashMap;
 
-use crate::{
-    quota::{
-        Flow,
-        Stock,
-    },
-    trust::Trust,
+use crate::quota::{
+    Flow,
+    Stock,
 };
 
 #[derive(Clone, Copy)]
@@ -186,18 +185,11 @@ impl Limits {
         )
     }
 
-    /// [`Self::peer`] scaled by the share a peer at `trust` may consume.
+    /// Every cap multiplied by `share`. A share of zero leaves zero-capacity
+    /// buckets, which are refused on sight rather than waited on.
     #[must_use]
-    pub fn for_trust(trust: Trust) -> Self {
-        let mut limits = Self::peer();
-        let share = match trust {
-            // A zero-capacity bucket is refused on sight rather than waited
-            // on.
-            Trust::Blocked => 0.0,
-            Trust::Guest => 0.25,
-            Trust::Trusted | Trust::Myself => return limits,
-        };
-
+    pub fn scaled(&self, share: f64) -> Self {
+        let mut limits = self.clone();
         for cap in limits.stock.values_mut() {
             *cap = (*cap as f64 * share) as u64;
         }
@@ -231,11 +223,10 @@ mod tests {
 
         for _ in 0..32 * BLOBS_PER_MESH {
             assert_eq!(
-                doc.reserve_inner(Flow::BlobUpload, 1.0, now),
+                doc.try_take_at(Flow::BlobUpload, 1.0, now),
                 Reservation::Ready,
                 "building init geometry must not exhaust the blob-upload quota"
             );
-            doc.commit_inner(Flow::BlobUpload, 1.0, now);
         }
     }
 
@@ -271,38 +262,14 @@ mod tests {
     }
 
     #[test]
-    fn a_blocked_peer_gets_nothing_and_is_refused_immediately() {
-        let quota = Quota::new(Limits::for_trust(Trust::Blocked), None);
+    fn scaling_multiplies_stock_caps_and_flow_rates() {
+        let scaled = Limits::peer().scaled(0.5);
+        let prims = |limits: &Limits| limits.stock[&Stock::Prims];
+        assert_eq!(prims(&scaled), prims(&Limits::peer()) / 2);
 
-        assert_eq!(
-            quota.reserve(Flow::CreatePrim, 1.0),
-            Reservation::Never,
-            "a zero bucket never fills, so waiting on it would be a lie"
-        );
-        assert!(quota.charge(Stock::Prims, 1).is_err());
-    }
-
-    #[test]
-    fn the_trust_levels_are_ordered_by_what_they_may_consume() {
-        let prims = |trust| {
-            *Limits::for_trust(trust)
-                .stock
-                .get(&Stock::Prims)
-                .expect("peer limits cap prims")
-        };
-
-        assert!(prims(Trust::Blocked) < prims(Trust::Guest));
-        assert!(prims(Trust::Guest) < prims(Trust::Trusted));
-        assert_eq!(prims(Trust::Trusted), prims(Trust::Myself));
-    }
-
-    #[test]
-    fn a_guest_still_gets_a_workable_budget() {
-        let quota = Quota::new(Limits::for_trust(Trust::Guest), None);
-        assert_eq!(
-            quota.reserve(Flow::CreatePrim, 100.0),
-            Reservation::Ready,
-            "a first-time visitor's prop must build without waiting"
-        );
+        let emit = |limits: &Limits| limits.flow[&Flow::Emit];
+        let full = emit(&Limits::peer());
+        assert!((emit(&scaled).capacity - full.capacity / 2.0).abs() < 1.0e-9);
+        assert!((emit(&scaled).refill_per_sec - full.refill_per_sec / 2.0).abs() < 1.0e-9);
     }
 }

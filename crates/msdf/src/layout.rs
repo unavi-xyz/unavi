@@ -1,13 +1,18 @@
 use std::collections::HashSet;
 
-use crate::atlas::{
+use crate::glyph::{
     GlyphSource,
     Rect,
 };
 
-/// Cap on the glyphs one string may lay out; past it the pipeline errors
-/// rather than running long.
+/// Cap on the glyphs one string may lay out; past it the rest of the text is
+/// dropped and [`Layout::truncated`] is set, rather than running long.
 pub const MAX_GLYPHS: usize = 4096;
+
+/// Cap on the lines one string may lay out, independent of the glyph cap: a
+/// string of nothing but newlines would otherwise build one [`Line`] per
+/// character for free.
+const MAX_LINES: usize = 4096;
 
 /// Spaces a tab stands in for. Tabs are rare in world text and a real tab stop
 /// needs a grid this layout does not have.
@@ -30,9 +35,10 @@ pub struct LayoutOpts {
     /// Wrap width. `None` breaks only on newlines.
     pub wrap:        Option<f32>,
     pub align:       Align,
-    /// Multiple of the font's own baseline-to-baseline distance.
+    /// Multiple of the font's own baseline-to-baseline distance. Negative
+    /// values are clamped to zero, so a hostile multiplier cannot stack every
+    /// line on the one before it.
     pub line_height: f32,
-    pub max_glyphs:  usize,
 }
 
 impl Default for LayoutOpts {
@@ -42,7 +48,6 @@ impl Default for LayoutOpts {
             wrap:        None,
             align:       Align::Left,
             line_height: 1.0,
-            max_glyphs:  MAX_GLYPHS,
         }
     }
 }
@@ -62,28 +67,28 @@ pub struct Quad {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Laid {
-    pub quads:   Vec<Quad>,
+pub struct Layout {
+    pub quads:     Vec<Quad>,
     /// The metric box a backing surface should be sized to.
-    pub bounds:  Rect,
-    pub ink:     Rect,
-    pub lines:   usize,
+    pub bounds:    Rect,
+    pub ink:       Rect,
+    pub lines:     usize,
     /// Characters the source fell back on rather than drawing a real glyph.
     /// The caller decides what to do with them; a runtime atlas requests them.
-    pub missing: Vec<char>,
+    pub missing:   Vec<char>,
+    /// The string held more than [`MAX_GLYPHS`] expanded characters or more
+    /// than [`MAX_LINES`] lines, so the rest was dropped rather than laid out.
+    pub truncated: bool,
 }
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
-pub enum LayoutError {
-    #[error("{count} glyphs exceeds the {cap} cap")]
-    TooManyGlyphs { count: usize, cap: usize },
-}
-
-/// A glyph at `pen` em units from the line's start.
+/// A glyph at `pen` em units from the line's start, with the advance it was
+/// placed with so a later pass (wrapping, width) does not have to look the
+/// glyph up again.
 #[derive(Debug, Clone, Copy)]
 struct Placed {
-    ch:  char,
-    pen: f32,
+    ch:      char,
+    pen:     f32,
+    advance: f32,
 }
 
 #[derive(Debug, Default)]
@@ -99,33 +104,16 @@ impl Line {
 
     /// Ink width, ignoring trailing spaces so a wrapped centred line does not
     /// drift by the spaces at each break.
-    fn width(&self, source: &impl GlyphSource) -> f32 {
+    fn width(&self) -> f32 {
         self.placed
             .iter()
             .rev()
             .find(|placed| !placed.ch.is_whitespace())
-            .map_or(0.0, |placed| {
-                placed.pen + source.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance)
-            })
+            .map_or(0.0, |placed| placed.pen + placed.advance)
     }
 }
 
-pub fn layout(
-    text: &str,
-    source: &impl GlyphSource,
-    opts: &LayoutOpts,
-) -> Result<Laid, LayoutError> {
-    let cap = opts.max_glyphs.min(MAX_GLYPHS);
-    let too_long = |count: usize| LayoutError::TooManyGlyphs { count, cap };
-    let raw = text.chars().count();
-    if raw > cap {
-        return Err(too_long(raw));
-    }
-    let count = expanded(text).count();
-    if count > cap {
-        return Err(too_long(count));
-    }
-
+pub fn layout(text: &str, source: &impl GlyphSource, opts: &LayoutOpts) -> Layout {
     let size = opts.size.max(0.0);
     let wrap_em = opts
         .wrap
@@ -136,12 +124,24 @@ pub fn layout(
     let mut line = Line::default();
     let mut missing = Vec::new();
     let mut reported = HashSet::new();
+    let mut glyphs = 0_usize;
+    let mut truncated = false;
 
     for ch in expanded(text) {
         if ch == '\n' {
+            if lines.len() + 1 >= MAX_LINES {
+                truncated = true;
+                break;
+            }
             lines.push(std::mem::take(&mut line));
             continue;
         }
+        if glyphs >= MAX_GLYPHS {
+            truncated = true;
+            break;
+        }
+        glyphs += 1;
+
         if source.missing(ch) && reported.insert(ch) {
             missing.push(ch);
         }
@@ -154,17 +154,21 @@ pub fn layout(
             && !line.placed.is_empty()
             && line.pen + kern + glyph.advance > wrap
         {
-            line = wrap_line(&mut lines, line, source, ch);
+            line = wrap_line(&mut lines, line, ch);
             kern = line.last().map_or(0.0, |prev| source.kern(prev, ch));
         }
 
         let pen = line.pen + kern;
-        line.placed.push(Placed { ch, pen });
+        line.placed.push(Placed {
+            ch,
+            pen,
+            advance: glyph.advance,
+        });
         line.pen = pen + glyph.advance;
     }
     lines.push(line);
 
-    Ok(assemble(&lines, source, opts, missing))
+    assemble(&lines, source, opts, missing, truncated)
 }
 
 /// The characters a line is actually made of. A tab stands in for spaces, and
@@ -203,7 +207,7 @@ const fn is_ignorable(ch: char) -> bool {
 /// opportunity, except right before closing punctuation the script keeps
 /// glued to the previous glyph (`next` is the character about to start the
 /// new line).
-fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource, next: char) -> Line {
+fn wrap_line(lines: &mut Vec<Line>, line: Line, next: char) -> Line {
     let break_at = line
         .placed
         .iter()
@@ -220,14 +224,14 @@ fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource, next:
 
     let mut head = line;
     let tail = head.placed.split_off(break_at);
-    head.pen = head.width(source);
+    head.pen = head.width();
     lines.push(head);
 
     let mut next = Line::default();
     let origin = tail.first().map_or(0.0, |placed| placed.pen);
     for placed in tail {
         let pen = placed.pen - origin;
-        next.pen = pen + source.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance);
+        next.pen = pen + placed.advance;
         next.placed.push(Placed { pen, ..placed });
     }
     next
@@ -275,7 +279,8 @@ fn assemble(
     source: &impl GlyphSource,
     opts: &LayoutOpts,
     missing: Vec<char>,
-) -> Laid {
+    truncated: bool,
+) -> Layout {
     // A size or spacing a document supplied may be anything a float can hold;
     // a non-finite one would put NaN in every vertex of the mesh.
     let size = if opts.size.is_finite() {
@@ -284,7 +289,7 @@ fn assemble(
         0.0
     };
     let line_height = if opts.line_height.is_finite() {
-        opts.line_height
+        opts.line_height.max(0.0)
     } else {
         1.0
     };
@@ -294,7 +299,7 @@ fn assemble(
     let mut bounds = None;
 
     for (index, line) in lines.iter().enumerate() {
-        let width = line.width(source);
+        let width = line.width();
         let offset = match opts.align {
             Align::Left => 0.0,
             Align::Center => -width / 2.0,
@@ -330,12 +335,13 @@ fn assemble(
         }
     }
 
-    Laid {
+    Layout {
         quads,
         bounds: bounds.unwrap_or(Rect::ZERO),
         ink: ink.unwrap_or(Rect::ZERO),
         lines: lines.len(),
         missing,
+        truncated,
     }
 }
 
@@ -351,7 +357,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::atlas::{
+    use crate::glyph::{
         Glyph,
         VerticalMetrics,
     };
@@ -425,12 +431,12 @@ mod tests {
         }
     }
 
-    fn laid(text: &str, opts: &LayoutOpts) -> Laid {
-        layout(text, &atlas(), opts).expect("layout")
+    fn laid(text: &str, opts: &LayoutOpts) -> Layout {
+        layout(text, &atlas(), opts)
     }
 
     /// Line starts, top line first.
-    fn line_starts(laid: &Laid) -> Vec<f32> {
+    fn line_starts(laid: &Layout) -> Vec<f32> {
         let mut starts = Vec::new();
         let mut current: Option<(f32, f32)> = None;
         for quad in &laid.quads {
@@ -502,8 +508,23 @@ mod tests {
                 ..opts()
             },
         );
-        let drop = |laid: &Laid| laid.quads[0].plane.min[1] - laid.quads[1].plane.min[1];
+        let drop = |laid: &Layout| laid.quads[0].plane.min[1] - laid.quads[1].plane.min[1];
         assert!(2.0f32.mul_add(-drop(&single), drop(&double)).abs() < 1.0e-4);
+    }
+
+    #[test]
+    fn a_negative_line_height_is_clamped_rather_than_stacking_lines_in_place() {
+        let laid = laid(
+            "a\nb",
+            &LayoutOpts {
+                line_height: -5.0,
+                ..opts()
+            },
+        );
+        assert!(
+            laid.quads[1].plane.min[1] <= laid.quads[0].plane.min[1],
+            "a clamped height never pushes a later line above an earlier one"
+        );
     }
 
     #[test]
@@ -618,18 +639,14 @@ mod tests {
         assert_eq!(laid.quads.len(), 0);
         assert_eq!(laid.ink, Rect::ZERO);
         assert_eq!(laid.lines, 1);
+        assert!(!laid.truncated);
     }
 
     #[test]
-    fn too_much_text_is_an_error_rather_than_a_slow_frame() {
-        let opts = LayoutOpts {
-            max_glyphs: 4,
-            ..opts()
-        };
-        assert_eq!(
-            layout("abcde", &atlas(), &opts),
-            Err(LayoutError::TooManyGlyphs { count: 5, cap: 4 })
-        );
+    fn too_much_text_is_truncated_rather_than_slowing_the_frame() {
+        let laid = laid(&"a".repeat(MAX_GLYPHS + 1), &opts());
+        assert!(laid.truncated);
+        assert_eq!(laid.quads.len(), MAX_GLYPHS);
     }
 
     #[test]
@@ -653,8 +670,7 @@ mod tests {
                 wrap: Some(5.0),
                 ..opts()
             },
-        )
-        .expect("layout");
+        );
         assert!(laid.lines > 1, "a space-less run still wraps");
         assert!(laid.ink.max[0] <= 5.0 + 1.0e-4, "nothing escapes the box");
     }
@@ -668,8 +684,7 @@ mod tests {
                 wrap: Some(4.0),
                 ..opts()
             },
-        )
-        .expect("layout");
+        );
         let last = laid.quads.len() - 1;
         assert!(
             (laid.quads[last - 1].plane.min[1] - laid.quads[last].plane.min[1]).abs() < 1.0e-4,
@@ -700,19 +715,13 @@ mod tests {
         }
     }
 
+    /// Tabs expand to four spaces each; counting the cap on the raw string
+    /// rather than after expansion would let a run of tabs blow straight
+    /// through it.
     #[test]
-    fn a_run_of_tabs_cannot_expand_past_the_cap() {
-        let opts = LayoutOpts {
-            max_glyphs: 8,
-            ..opts()
-        };
-        assert_eq!(
-            layout("\t\t\t", &atlas(), &opts),
-            Err(LayoutError::TooManyGlyphs {
-                count: 12,
-                cap:   8,
-            })
-        );
+    fn a_run_of_tabs_cannot_expand_past_the_glyph_cap() {
+        let laid = laid(&"\t".repeat(MAX_GLYPHS), &opts());
+        assert!(laid.truncated, "tabs expand to 4x as many glyphs as chars");
     }
 
     #[test]
@@ -726,5 +735,12 @@ mod tests {
                 "no vertex of the mesh is a NaN"
             );
         }
+    }
+
+    #[test]
+    fn a_string_of_only_newlines_cannot_build_unbounded_lines() {
+        let laid = laid(&"\n".repeat(MAX_LINES + 8), &opts());
+        assert!(laid.truncated);
+        assert!(laid.lines <= MAX_LINES);
     }
 }

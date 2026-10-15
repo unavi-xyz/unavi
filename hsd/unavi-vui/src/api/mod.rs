@@ -8,13 +8,11 @@ use crate::{
         Event,
         Guest,
     },
-    palette::Palette,
-    scene::{
+    render::{
         SurfaceId,
         Vui,
     },
-    tuning::Tuning,
-    wired::error::types::Error,
+    wired::core::error::Error,
 };
 
 mod convert;
@@ -28,15 +26,15 @@ thread_local! {
 
 impl Guest for World {
     type Grid = surface::Grid;
-    type Mote = mote::Mote;
+    type Mote = mote::MoteRes;
     type Orbit = surface::Orbit;
 
     fn fixed_update() -> Result<(), Error> {
         drive(Vui::fixed_update)
     }
 
-    fn update() -> Result<(), Error> {
-        drive(Vui::update)
+    fn update(dt: f32) -> Result<(), Error> {
+        drive(|vui| vui.update(dt))
     }
 }
 
@@ -44,8 +42,7 @@ fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<S
     VUI.with_borrow_mut(|slot| {
         let vui = match slot {
             Some(vui) => vui,
-            None => slot
-                .insert(Vui::new(Tuning::DEFAULT, Palette::DEFAULT).map_err(|err| failed(&err))?),
+            None => slot.insert(Vui::new().map_err(|err| failed(&err))?),
         };
         shape(vui).map_err(|err| failed(&err))
     })
@@ -70,6 +67,14 @@ fn dismiss(surface: SurfaceId) -> Result<(), Error> {
     drive(|vui| vui.dismiss(surface))
 }
 
+/// Frees a surface's prims. Called when the `orbit`/`grid` handle drawing it
+/// is dropped, so nothing the script let go of keeps costing frames.
+fn remove(surface: SurfaceId) {
+    if let Err(err) = drive(|vui| vui.remove(surface)) {
+        eprintln!("vui: could not free a dropped surface: {err:?}");
+    }
+}
+
 fn shown(surface: SurfaceId) -> bool {
     VUI.with_borrow(|vui| vui.as_ref().is_some_and(|vui| vui.is_shown(surface)))
 }
@@ -84,5 +89,5 @@ fn drive(step: impl FnOnce(&mut Vui) -> anyhow::Result<()>) -> Result<(), Error>
 }
 
 fn failed(err: &anyhow::Error) -> Error {
-    Error::Other(format!("{err:?}"))
+    Error::Internal(format!("{err:?}"))
 }

@@ -16,7 +16,7 @@ pub(crate) fn apply(
 ) -> Result<(), postcard::Error> {
     apply_simple::<SpawnAttr, SpawnPoint>(commands, prim, payload, |attr| {
         let radius = attr.radius as f32;
-        let radius = if finite::nonneg(radius) {
+        let radius = if finite::nonnegative_length(radius) {
             radius
         } else {
             warn!("spawn: radius must be finite and >= 0 (got {radius}); using 0");

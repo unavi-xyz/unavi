@@ -1,0 +1,214 @@
+//! The inspector's navigation list.
+
+use bevy::{
+    ecs::{
+        relationship::RelatedSpawnerCommands,
+        spawn::Spawn,
+    },
+    feathers::controls::{
+        ButtonBundleProps,
+        ButtonVariant,
+    },
+    prelude::*,
+};
+use iroh::EndpointId;
+use iroh_docs::NamespaceId;
+use unavi_space::{
+    authority::SpaceView,
+    grid::ActiveSpace,
+    link::PeerLink,
+    membership::Space,
+    replication::Replicas,
+};
+
+use crate::{
+    inspect::{
+        CurrentPage,
+        LinkTo,
+        Page,
+        effective_page,
+        model,
+        widgets,
+    },
+    short,
+};
+
+/// The scrollable navigation list: spaces on top, then every known peer.
+#[derive(Component)]
+pub struct SidebarList;
+
+/// A sidebar entry navigating to its page; only these highlight as selected.
+#[derive(Component)]
+pub struct SidebarButton(Page);
+
+#[derive(Clone, PartialEq, Eq)]
+pub enum SidebarRow {
+    Header(&'static str),
+    Entry { page: Page, label: String },
+}
+
+#[derive(Resource, Default)]
+pub struct SidebarEntries(Vec<SidebarRow>);
+
+fn rows(
+    spaces: &Query<(Entity, &Space)>,
+    replicas: &Replicas,
+    link: Option<&PeerLink>,
+    me: Option<EndpointId>,
+    active: Option<NamespaceId>,
+) -> Vec<SidebarRow> {
+    let snap = replicas.snapshot();
+    let mut out = Vec::new();
+
+    let mut space_ids = spaces
+        .iter()
+        .map(|(_, s)| s.namespace())
+        .collect::<Vec<_>>();
+    space_ids.extend(
+        snap.peers
+            .iter()
+            .flat_map(|p| p.docs.iter())
+            .map(|d| NamespaceId::from(&d.space.0))
+            .chain(snap.docs.iter().map(|d| NamespaceId::from(&d.space.0))),
+    );
+    space_ids.sort_unstable_by_key(|s| *s.as_bytes());
+    space_ids.dedup();
+    if !space_ids.is_empty() {
+        out.push(SidebarRow::Header("Spaces"));
+        if let Some(active) = active {
+            space_ids.retain(|s| *s != active);
+            out.push(SidebarRow::Entry {
+                page:  Page::Space(active),
+                label: format!("{} (active)", short(active.as_bytes())),
+            });
+        }
+        for space in space_ids {
+            out.push(SidebarRow::Entry {
+                page:  Page::Space(space),
+                label: short(space.as_bytes()),
+            });
+        }
+    }
+
+    let mut peer_ids =
+        link.map_or_default(|l| l.net_stats().iter().map(|s| s.peer).collect::<Vec<_>>());
+    peer_ids.extend(snap.peers.iter().map(|p| p.peer));
+    peer_ids.sort_unstable();
+    peer_ids.dedup();
+    out.push(SidebarRow::Header("Peers"));
+    if let Some(me) = me {
+        peer_ids.retain(|p| *p != me);
+        out.push(SidebarRow::Entry {
+            page:  Page::Peer(me),
+            label: format!("{} (self)", short(me.as_bytes())),
+        });
+    }
+    for peer in peer_ids {
+        out.push(SidebarRow::Entry {
+            page:  Page::Peer(peer),
+            label: short(peer.as_bytes()),
+        });
+    }
+    out
+}
+
+#[expect(
+    deprecated,
+    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
+)]
+fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: String) {
+    let bytes = match page {
+        Page::Peer(id) => *id.as_bytes(),
+        Page::Space(hash) | Page::Doc(hash) => *hash.as_bytes(),
+    };
+    let color = widgets::hash_color(&bytes);
+    l.spawn(bevy::feathers::controls::button_bundle(
+        ButtonBundleProps::default(),
+        (SidebarButton(page), LinkTo(page)),
+        (
+            Spawn(widgets::swatch(color)),
+            Spawn((
+                Text::new(label),
+                TextFont {
+                    font_size: FontSize::Px(12.0),
+                    ..default()
+                },
+                TextColor(color),
+            )),
+        ),
+    ))
+    .insert(Node {
+        width: Val::Percent(100.0),
+        padding: UiRect::axes(Val::Px(6.0), Val::Px(3.0)),
+        column_gap: Val::Px(5.0),
+        align_items: AlignItems::Center,
+        justify_content: JustifyContent::FlexStart,
+        flex_shrink: 0.0,
+        border_radius: BorderRadius::all(Val::Px(3.0)),
+        ..default()
+    });
+}
+
+pub fn sync(
+    spaces: Query<(Entity, &Space)>,
+    active: Res<ActiveSpace>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
+    link: Option<Res<PeerLink>>,
+    mut stored: ResMut<SidebarEntries>,
+    list: Query<Entity, With<SidebarList>>,
+    mut commands: Commands,
+) {
+    let rows = rows(
+        &spaces,
+        &replicas,
+        link.as_deref(),
+        view.as_deref().map(SpaceView::me),
+        model::active_space(&spaces, active.0),
+    );
+    if rows == stored.0 {
+        return;
+    }
+    stored.0.clone_from(&rows);
+
+    let Ok(list) = list.single() else {
+        return;
+    };
+    commands.entity(list).despawn_related::<Children>();
+    commands.entity(list).with_children(|l| {
+        for row in rows {
+            match row {
+                SidebarRow::Header(header) => {
+                    l.spawn((
+                        widgets::header_cell(header),
+                        Node {
+                            margin: UiRect::top(Val::Px(8.0)),
+                            ..default()
+                        },
+                    ));
+                }
+                SidebarRow::Entry { page, label } => entry_button(l, page, label),
+            }
+        }
+    });
+}
+
+/// Paints the entry matching the current page in the primary variant.
+pub fn highlight(
+    current: Res<CurrentPage>,
+    view: Option<Res<SpaceView>>,
+    added: Query<(), Added<SidebarButton>>,
+    mut buttons: Query<(&SidebarButton, &mut ButtonVariant)>,
+) {
+    if !current.is_changed() && added.is_empty() {
+        return;
+    }
+    let chosen = effective_page(&current, view.as_deref().map(SpaceView::me));
+    for (button, mut variant) in &mut buttons {
+        *variant = if Some(button.0) == chosen {
+            ButtonVariant::Primary
+        } else {
+            ButtonVariant::Normal
+        };
+    }
+}

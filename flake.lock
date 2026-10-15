@@ -3,22 +3,6 @@
     "advisory-db": {
       "flake": false,
       "locked": {
-        "lastModified": 1788169444,
-        "narHash": "sha256-YgUmf4f44yGqgjUsZIJwSJ4RJMA7pXg5WKbfOKlTJ8U=",
-        "owner": "rustsec",
-        "repo": "advisory-db",
-        "rev": "ba9db2a77a6a0fe93bc63a3d9b730e08b145aff5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "rustsec",
-        "repo": "advisory-db",
-        "type": "github"
-      }
-    },
-    "advisory-db_2": {
-      "flake": false,
-      "locked": {
         "lastModified": 1779896033,
         "narHash": "sha256-5S8o0NPChnsNsD58xabMx1KV43LIkZ1Q9CtyUKkI/JM=",
         "owner": "rustsec",
@@ -247,7 +231,6 @@
       "original": {
         "owner": "ralismark",
         "repo": "nix-appimage",
-        "rev": "7946addbc0d97e358a6d7aefe5e82310f0fe6b18",
         "type": "github"
       }
     },
@@ -309,7 +292,7 @@
     },
     "nixify": {
       "inputs": {
-        "advisory-db": "advisory-db_2",
+        "advisory-db": "advisory-db",
         "crane": "crane_2",
         "fenix": "fenix_2",
         "flake-utils": "flake-utils_2",
@@ -454,7 +437,6 @@
     },
     "root": {
       "inputs": {
-        "advisory-db": "advisory-db",
         "crane": "crane",
         "deploy-rs": "deploy-rs",
         "fenix": "fenix",

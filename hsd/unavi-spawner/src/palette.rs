@@ -1,6 +1,8 @@
-use wired_prelude::prelude::*;
+//! Colour defaults for the spawner's cube and its preview.
 
-use crate::wired::scene::types::{
+use wired_guest::math::Color;
+
+use crate::wired::scene::properties::{
     AlphaMode,
     Material,
 };

@@ -5,23 +5,14 @@ use unavi_avatar::bones::AvatarBones;
 use crate::{
     AgentAvatar,
     LocalAgentEntities,
-    tracking::{
-        TrackedHead,
-        TrackedPose,
-    },
 };
 
 pub fn apply_head_tracking(
     agents: Query<(&AgentAvatar, &LocalAgentEntities)>,
-    tracked_heads: Query<&TrackedPose, With<TrackedHead>>,
     avatars: Query<&AvatarBones>,
-    mut bones: Query<&mut Transform, With<BoneName>>,
+    mut transforms: Query<&mut Transform>,
 ) {
     for (avatar_ent, entities) in agents.iter() {
-        let Ok(pose) = tracked_heads.get(entities.tracked_head) else {
-            continue;
-        };
-
         let Ok(avatar_bones) = avatars.get(avatar_ent.0) else {
             continue;
         };
@@ -30,10 +21,13 @@ pub fn apply_head_tracking(
             continue;
         };
 
-        let Ok(mut head_transform) = bones.get_mut(head_bone) else {
+        let Ok(head_transform) = transforms.get(entities.tracked_head) else {
             continue;
         };
+        let rotation = head_transform.rotation;
 
-        head_transform.rotation = pose.rotation;
+        if let Ok(mut bone_transform) = transforms.get_mut(head_bone) {
+            bone_transform.rotation = rotation;
+        }
     }
 }

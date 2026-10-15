@@ -126,8 +126,31 @@ pub fn compile_file<S: std::hash::BuildHasher>(
     input: &Path,
     built: &mut HashMap<String, Vec<u8>, S>,
 ) -> Result<Package> {
+    let mut visiting = Vec::new();
+    compile_file_inner(input, built, &mut visiting).map(|(package, _)| package)
+}
+
+/// `visiting` is the chain of `.hsda` files currently being compiled, so a
+/// reference cycle is caught before it recurses into a stack overflow.
+/// Returns the canonical input path alongside the package, so
+/// [`Compiler::compile_reference`] does not have to canonicalize it again.
+fn compile_file_inner<S: std::hash::BuildHasher>(
+    input: &Path,
+    built: &mut HashMap<String, Vec<u8>, S>,
+    visiting: &mut Vec<PathBuf>,
+) -> Result<(Package, PathBuf)> {
     let input_abs =
         std::fs::canonicalize(input).with_context(|| format!("resolving {}", input.display()))?;
+
+    if let Some(start) = visiting.iter().position(|p| *p == input_abs) {
+        let mut cycle: Vec<_> = visiting[start..]
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect();
+        cycle.push(input_abs.display().to_string());
+        bail!("reference cycle: {}", cycle.join(" -> "));
+    }
+
     let input_dir = input_abs
         .parent()
         .context("input has no parent dir")?
@@ -140,7 +163,9 @@ pub fn compile_file<S: std::hash::BuildHasher>(
     let source = source_identity(&input_abs)?;
 
     let mut names = HashMap::new();
-    index_names(&doc.0, &source, &mut Vec::new(), &mut names)?;
+    index_names(&doc.prims, &source, &mut Vec::new(), &mut names)?;
+
+    visiting.push(input_abs.clone());
 
     let mut compiler = Compiler {
         source,
@@ -149,16 +174,34 @@ pub fn compile_file<S: std::hash::BuildHasher>(
         entries: BTreeMap::new(),
         documents: BTreeMap::new(),
         built,
+        visiting,
+    };
+    let meta = DocMeta {
+        name: doc
+            .meta
+            .as_ref()
+            .and_then(|m| m.name.clone())
+            .map(Into::into),
+        description: doc
+            .meta
+            .as_ref()
+            .and_then(|m| m.description.clone())
+            .map(Into::into),
+        public: doc.meta.as_ref().and_then(|m| m.public).unwrap_or(false),
+        ..DocMeta::default()
     };
     compiler.entries.insert(
         key::META.to_owned(),
-        DocMeta::default().encode().context("encoding meta")?,
+        meta.encode().context("encoding meta")?,
     );
-    compiler.emit(&doc.0, ParentAttr::Root, &mut Vec::new())?;
+    let emitted = compiler.emit(&doc.prims, ParentAttr::Root, &mut Vec::new());
+
+    compiler.visiting.pop();
+    emitted?;
 
     let mut package = Package::new(compiler.entries);
     package.documents = compiler.documents.into_iter().collect();
-    Ok(package)
+    Ok((package, input_abs))
 }
 
 fn index_names(
@@ -191,6 +234,9 @@ struct Compiler<'a, S: std::hash::BuildHasher> {
     /// unchanged input still compiles to identical bytes.
     documents: BTreeMap<DocId, Vec<(String, Vec<u8>)>>,
     built:     &'a mut HashMap<String, Vec<u8>, S>,
+    /// Shared with every nested [`compile_file_inner`] call, so a cycle
+    /// anywhere in the reference graph is caught.
+    visiting:  &'a mut Vec<PathBuf>,
 }
 
 impl<S: std::hash::BuildHasher> Compiler<'_, S> {
@@ -350,9 +396,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
     /// naming one file share a single copy of it.
     fn compile_reference(&mut self, rel: &str) -> Result<DocId> {
         let path = self.input_dir.join(rel);
-        let package = compile_file(&path, self.built)
+        let (package, input_abs) = compile_file_inner(&path, self.built, self.visiting)
             .with_context(|| format!("compiling reference {}", path.display()))?;
-        let placeholder = Package::placeholder(&source_identity(&std::fs::canonicalize(&path)?)?);
+        let placeholder = Package::placeholder(&source_identity(&input_abs)?);
 
         self.documents.extend(package.documents);
         self.documents.insert(placeholder, package.entries);

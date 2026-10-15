@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-guest"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace       = true
+blake3.workspace       = true
+glam                   = { features = ["serde"], workspace = true }
+serde                  = { features = ["derive"], workspace = true }
+wired-state-macro.path = "../wired-state-macro"

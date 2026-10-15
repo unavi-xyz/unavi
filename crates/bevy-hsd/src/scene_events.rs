@@ -65,7 +65,7 @@ fn staged_rels<'a>(
 ) -> &'a mut BTreeMap<PropName, PrimId> {
     staged
         .entry(prim_ent)
-        .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
+        .or_insert_with(|| live.get(prim_ent).map_or_default(|r| r.0.clone()))
 }
 
 pub fn discard_unplaced_events(docs: Query<&Hsd, With<Unplaced>>) {
@@ -118,9 +118,8 @@ pub fn drain_scene_events(
                 continue;
             }
 
-            let old_targets: HashSet<PrimId> = live
-                .map(|live| live.values().copied().collect())
-                .unwrap_or_default();
+            let old_targets: HashSet<PrimId> =
+                live.map_or_default(|live| live.values().copied().collect());
             let new_targets: HashSet<PrimId> = rels.values().copied().collect();
             for target in old_targets.difference(&new_targets) {
                 index.unlink(*target, prim_ent);
@@ -167,12 +166,9 @@ fn process_event(
             let Some(prim_ent) = index.remove(prim) else {
                 return;
             };
-            let final_rels = staged.remove(&prim_ent).unwrap_or_else(|| {
-                rels_now
-                    .get(prim_ent)
-                    .map(|r| r.0.clone())
-                    .unwrap_or_default()
-            });
+            let final_rels = staged
+                .remove(&prim_ent)
+                .unwrap_or_else(|| rels_now.get(prim_ent).map_or_default(|r| r.0.clone()));
             for target in final_rels.values() {
                 index.unlink(*target, prim_ent);
             }

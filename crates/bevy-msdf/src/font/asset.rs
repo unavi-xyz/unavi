@@ -60,12 +60,12 @@ impl AssetLoader for FontBytesLoader {
 /// The entity is a request and is despawned once it resolves, so spawn one per
 /// face rather than adding this to an entity that holds anything else.
 #[derive(Component, Debug)]
-pub struct FontFace {
+pub struct FontRequest {
     pub handle: Handle<FontBytes>,
     pub order:  u32,
 }
 
-impl FontFace {
+impl FontRequest {
     #[must_use]
     pub const fn new(handle: Handle<FontBytes>, order: u32) -> Self {
         Self { handle, order }
@@ -74,7 +74,7 @@ impl FontFace {
 
 pub(crate) fn register_loaded_faces(
     mut commands: Commands,
-    faces: Query<(Entity, &FontFace)>,
+    faces: Query<(Entity, &FontRequest)>,
     bytes: Res<Assets<FontBytes>>,
     assets: Res<AssetServer>,
 ) {
@@ -132,14 +132,14 @@ mod tests {
     fn a_loaded_face_joins_the_stack() {
         let mut app = app();
         let handle = insert(&mut app, notosans::REGULAR_TTF);
-        app.world_mut().spawn(FontFace::new(handle, 0));
+        app.world_mut().spawn(FontRequest::new(handle, 0));
 
         app.update();
         app.update();
 
         let stack = app.world().resource::<DefaultFontStack>();
         assert_eq!(stack.0.len(), 1);
-        assert!(stack.0[0].state().atlas.can_render('a'));
+        assert!(stack.0[0].can_render('a'));
     }
 
     /// A fallback that downloads first must not become the primary.
@@ -147,9 +147,9 @@ mod tests {
     fn a_face_waits_for_every_lower_order() {
         let mut app = app();
         let fallback = insert(&mut app, notosans::REGULAR_TTF);
-        app.world_mut().spawn(FontFace::new(fallback, 1));
+        app.world_mut().spawn(FontRequest::new(fallback, 1));
         app.world_mut()
-            .spawn(FontFace::new(Handle::<FontBytes>::default(), 0));
+            .spawn(FontRequest::new(Handle::<FontBytes>::default(), 0));
 
         app.update();
         app.update();

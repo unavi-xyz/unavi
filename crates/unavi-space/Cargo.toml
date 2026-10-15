@@ -9,14 +9,12 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-devtools = ["dep:unavi-devtools"]
-
 [dependencies]
 anyhow.workspace        = true
 async-channel.workspace = true
 avian3d.workspace       = true
 bevy.workspace          = true
+bevy-async.path         = "../bevy-async"
 bevy-hsd.path           = "../bevy-hsd"
 bevy-iroh.path          = "../bevy-iroh"
 blake3.workspace        = true
@@ -37,14 +35,14 @@ tokio.workspace         = true
 tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-avatar.path       = "../unavi-avatar"
-unavi-devtools          = { optional = true, path = "../unavi-devtools" }
+unavi-grab.path         = "../unavi-grab"
 unavi-identity.path     = "../unavi-identity"
+unavi-input.path        = "../unavi-input"
 unavi-local.path        = "../unavi-local"
-unavi-manifold.path     = "../unavi-manifold"
 unavi-policy.path       = "../unavi-policy"
-unavi-registry.path     = "../unavi-registry"
-unavi-util.path         = "../unavi-util"
-wds.path                = "../wds"
+unavi-portal.path       = "../unavi-portal"
+unavi-registry          = { features = ["client"], path = "../unavi-registry" }
+unavi-store.path        = "../unavi-store"
 web-time.workspace      = true
 xdid.workspace          = true
 

@@ -1,0 +1,94 @@
+name: Build macOS
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: ref to build
+        type: string
+permissions:
+  contents: read
+jobs:
+  build-hsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Generate missing WIT
+        run: nix develop .#minimal -c just update-wit-deps-locked
+      - name: Install npm dependencies
+        run: nix develop .#minimal -c just npm-install
+      - name: Build HSD assets
+        run: nix develop .#minimal -c just hsd-release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: assets-macos
+          path: crates/unavi-app/assets/hsd
+          retention-days: 1
+      - name: Upload WIT deps
+        uses: actions/upload-artifact@v7
+        with:
+          name: wit-deps-macos
+          path: |
+            protocol/wit
+            crates/unavi-script/wit
+          retention-days: 1
+  build-macos:
+    needs: build-hsd
+    # The launcher selects its macOS asset by name alone, so a second
+    # architecture would be ambiguous.
+    runs-on: macos-14
+    strategy:
+      matrix:
+        package: [unavi-app, unavi-launcher]
+    name: ${{ matrix.package }}-aarch64-macos
+    env:
+      CARGO_TARGET_DIR: target
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: assets-macos
+          path: crates/unavi-app/assets/hsd
+      - name: Download WIT deps
+        uses: actions/download-artifact@v8
+        with:
+          name: wit-deps-macos
+          path: .
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-14
+      - name: Build app
+        if: ${{ matrix.package == 'unavi-app' }}
+        run: cargo build -p unavi-app --release --no-default-features
+      - name: Build launcher
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        run: cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
+      - name: Package release
+        run: |
+          mkdir result
+          if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
+            cp target/release/unavi-launcher result/
+          else
+            cp target/release/unavi-app result/
+            cp -r crates/unavi-app/assets result/
+          fi
+          cp LICENSE result
+      - name: Create tar.xz
+        # The launcher unpacks this expecting the executable at the archive
+        # root, not in a nested directory.
+        run: |
+          cd result
+          tar -cJf ../${{ matrix.package }}-aarch64-macos.tar.xz .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-${{ matrix.package }}-aarch64-macos
+          path: ${{ matrix.package }}-aarch64-macos.tar.xz
+          retention-days: 1

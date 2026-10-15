@@ -1,3 +1,6 @@
+//! Desktop, gamepad and `OpenXR` input as one [`action::ActionState`], plus
+//! the pointers that aim from it.
+
 use bevy::{
     input::InputSystems,
     picking::{
@@ -25,16 +28,12 @@ pub struct InputReadSet;
 pub struct InputPlugin {
     /// Where the config persists. `None` falls back to the defaults every
     /// session.
-    pub storage: Option<unavi_local::LocalStorage>,
+    pub storage: Option<unavi_local::DeviceStorage>,
 }
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        let config = self
-            .storage
-            .as_ref()
-            .map(config::file::load)
-            .unwrap_or_default();
+        let config = self.storage.as_ref().map_or_default(config::file::load);
 
         app.insert_resource(config)
             .init_resource::<action::ActionState>()
@@ -96,6 +95,7 @@ impl Plugin for InputPlugin {
             .add_systems(
                 Update,
                 (
+                    crosshair::set_crosshair_mode,
                     crosshair::show_crosshair,
                     crosshair::apply_crosshair_mode,
                     cursor_lock::cursor_grab,

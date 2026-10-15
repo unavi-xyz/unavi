@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use super::{
-    client_update::ClientUpdate,
+    app_update::AppUpdate,
     home::Home,
     self_update::SelfUpdate,
     settings::Settings,
@@ -20,8 +20,8 @@ pub enum Route {
     #[layout(Title)]
     #[route("/")]
     SelfUpdate,
-    #[route("/client-update")]
-    ClientUpdate,
+    #[route("/app-update")]
+    AppUpdate,
     #[route("/home")]
     Home,
     // Kept for future use; no button in the UI currently links here.

@@ -1,3 +1,5 @@
+//! A cylinder with flat caps, optionally ringed along its length.
+
 use std::{
     cell::{
         Cell,
@@ -9,16 +11,22 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCylinder,
-    wired::scene::types::{
-        Collider,
-        ColliderCylinder,
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::{
+            document::Document,
+            properties::{
+                Collider,
+                ColliderCylinder,
+            },
+        },
     },
 };
 
-#[derive(Default)]
-pub struct CylinderWrapped {
+const MAX_RESOLUTION: u32 = 128;
+const MAX_SEGMENTS: u32 = 64;
+
+pub struct Cylinder {
     doc:         RefCell<Option<Document>>,
     radius:      f32,
     half_height: f32,
@@ -26,14 +34,14 @@ pub struct CylinderWrapped {
     segments:    Cell<u32>,
 }
 
-impl GuestCylinder for CylinderWrapped {
+impl GuestCylinder for Cylinder {
     fn new(radius: f32, height: f32) -> Self {
         Self {
+            doc: RefCell::new(None),
             radius,
             half_height: height * 0.5,
             resolution: Cell::new(32),
             segments: Cell::new(1),
-            ..Default::default()
         }
     }
 
@@ -44,9 +52,9 @@ impl GuestCylinder for CylinderWrapped {
         })
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(
-            self.doc.borrow().as_ref(),
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(
+            &self.doc,
             &build(
                 self.radius,
                 self.half_height,
@@ -64,16 +72,28 @@ impl GuestCylinder for CylinderWrapped {
         self.resolution.get()
     }
 
-    fn set_resolution(&self, value: u32) {
+    fn set_resolution(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_RESOLUTION {
+            return Err(Error::InvalidArgument(format!(
+                "resolution must be at most {MAX_RESOLUTION}"
+            )));
+        }
         self.resolution.set(value);
+        Ok(())
     }
 
     fn segments(&self) -> u32 {
         self.segments.get()
     }
 
-    fn set_segments(&self, value: u32) {
+    fn set_segments(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_SEGMENTS {
+            return Err(Error::InvalidArgument(format!(
+                "segments must be at most {MAX_SEGMENTS}"
+            )));
+        }
         self.segments.set(value);
+        Ok(())
     }
 }
 

@@ -1,8 +1,10 @@
 use std::mem::size_of;
 
 use bytemuck::Pod;
-use hsd::bounds::MAX_MESH_STREAM_BYTES;
 use thiserror::Error;
+
+/// Largest vertex or index stream a single mesh may carry, in bytes.
+pub const MAX_MESH_STREAM_BYTES: usize = 4 * 1024 * 1024;
 
 #[derive(Debug, Error)]
 pub enum BufferError {

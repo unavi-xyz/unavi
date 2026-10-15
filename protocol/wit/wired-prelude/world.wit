@@ -1,50 +1,22 @@
 package wired:prelude;
 
-world types {
-  import wired:agent/types;
-  import wired:event/types;
+world imports {
+  import wired:script/host;
+  import wired:scene/properties;
+  import wired:scene/document;
+  import wired:shading/graph;
+  import wired:physics/simulation;
+  import wired:peer/identity;
+  import wired:peer/authority;
+  import wired:event/messaging;
   import wired:input/types;
-  import wired:math/types;
-  import wired:peer/types;
-  import wired:scene/types;
-  import wired:storage/types;
-}
-
-/// What any document in a space may reach.
-world api {
-  import wired:event/api;
-  import wired:input/api;
-  import wired:peer/api;
-  import wired:portal/api;
-  import wired:scene/api;
-}
-
-/// What only the shell and the tools it ships with may reach: the local
-/// agent's body, device-level input, physics authority, and the docs this
-/// node holds. Strictly more authority than `api`, never less.
-world api-privileged {
-  import wired:agent/api;
-  import wired:input/context;
-  import wired:physics/api;
-  import wired:storage/api;
-}
-
-world lib {
-  include api;
-  include types;
-}
-
-world lib-privileged {
-  include api-privileged;
-  include lib;
+  import wired:input/targeted;
+  import wired:input/device;
+  import wired:agent/local;
+  import wired:portal/portals;
 }
 
 world script {
-  include lib;
-  include wired:script/guest;
-}
-
-world script-privileged {
-  include lib-privileged;
-  include wired:script/guest;
+  include imports;
+  export wired:script/lifecycle;
 }

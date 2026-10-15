@@ -4,3 +4,31 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ["*"]
+  - package-ecosystem: cargo
+    directory: /launcher
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ["*"]
+  - package-ecosystem: cargo
+    directory: /hsd
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /crates/unavi-script
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]

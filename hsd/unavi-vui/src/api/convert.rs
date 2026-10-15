@@ -1,3 +1,5 @@
+//! Converts between `unavi:vui`'s WIT-generated types and this crate's own.
+
 use crate::{
     api::mote::handle,
     exports::unavi::vui::api::{
@@ -6,9 +8,10 @@ use crate::{
         Landing,
         Mount,
         Page,
+        Planted,
     },
-    scene::{
-        event as scene,
+    render::{
+        event,
         mount,
     },
 };
@@ -23,30 +26,30 @@ pub const fn mount(mount: Mount) -> mount::Mount {
     }
 }
 
-pub fn event(event: scene::Event) -> Event {
+pub fn event(event: event::Event) -> Event {
     match event {
-        scene::Event::Opened(mote) => Event::Opened(handle(mote)),
-        scene::Event::Closed(mote) => Event::Closed(handle(mote)),
-        scene::Event::Activated(mote) => Event::Activated(handle(mote)),
-        scene::Event::Casting(mote) => Event::Casting(handle(mote)),
-        scene::Event::Cast(mote) => Event::Cast(handle(mote)),
-        scene::Event::Aborted(mote) => Event::Aborted(handle(mote)),
-        scene::Event::Planted(mote, landing) => Event::Planted((
-            handle(mote),
-            Landing {
+        event::Event::Opened(mote) => Event::Opened(handle(mote)),
+        event::Event::Closed(mote) => Event::Closed(handle(mote)),
+        event::Event::Activated(mote) => Event::Activated(handle(mote)),
+        event::Event::Casting(mote) => Event::Casting(handle(mote)),
+        event::Event::Cast(mote) => Event::Cast(handle(mote)),
+        event::Event::Aborted(mote) => Event::Aborted(handle(mote)),
+        event::Event::Planted(mote, landing) => Event::Planted(Planted {
+            mote:    handle(mote),
+            landing: Landing {
                 at:       landing.at,
                 velocity: landing.velocity,
             },
-        )),
-        scene::Event::Filed(mote) => Event::Filed(handle(mote)),
-        scene::Event::Paged {
+        }),
+        event::Event::Filed(mote) => Event::Filed(handle(mote)),
+        event::Event::Paged {
             index,
             count,
             total,
         } => Event::Paged(Page {
             index: index as u32,
-            count: count as u32,
-            total: total as u32,
+            pages: count as u32,
+            motes: total as u32,
         }),
     }
 }

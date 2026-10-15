@@ -1,16 +1,16 @@
 package unavi:vui;
 
 world guest {
-  include wired:prelude/lib-privileged;
+  include wired:prelude/imports;
   export api;
 }
 
 /// Spatial UI, drawn into the calling script's own document and driven from
 /// its update loop.
 interface api {
-  use wired:error/types.{error};
-  use wired:math/types.{vec2, vec3};
-  use wired:scene/types.{color, prim};
+  use wired:core/error.{error};
+  use wired:core/math.{color, vec2, vec3};
+  use wired:scene/document.{document, prim-id};
 
   /// What a mote is: how it draws, and what selecting it does.
   enum kind {
@@ -46,24 +46,34 @@ interface api {
   /// it is up redraws. A mote is the child of one level at a time: adding it
   /// somewhere else moves it.
   resource mote {
-    constructor(kind: kind, label: string);
+    /// `label` is at most 256 bytes; over that is `invalid-argument`.
+    constructor(kind: kind, label: string) -> result<mote, error>;
 
     /// Whether both handles name the same mote.
     is: func(other: borrow<mote>) -> bool;
 
     label: func() -> string;
-    set-label: func(value: string);
-    /// What it does, shown on its placard once attention has been held.
-    describe: func(text: string);
+    /// At most 256 bytes.
+    set-label: func(value: string) -> result<_, error>;
 
-    /// What this mote looks like, drawn inside its shell — a prim the
-    /// consumer built, in the same document the surface draws into.
+    /// What it does, shown on its placard once attention has been held.
+    description: func() -> option<string>;
+    /// At most 1024 bytes.
+    set-description: func(value: string) -> result<_, error>;
+
+    /// A number identifying this mote, stable for as long as some handle
+    /// keeps it alive. Key a map by this instead of comparing every entry
+    /// with `is`.
+    id: func() -> u64;
+
+    /// What this mote looks like, drawn inside its shell — a prim in `doc`,
+    /// the same document the surface draws into.
     ///
     /// Author it to fit a unit sphere: the surface parents it and scales it
     /// to whatever the mote is drawn at, so it grows with attention like the
     /// shell around it. An item holding an icon draws see-through so the icon
     /// reads; an item without one is solid.
-    set-icon: func(value: option<borrow<prim>>);
+    set-icon: func(doc: borrow<document>, value: option<prim-id>);
 
     /// The hue this mote's glass carries, or none for the neutral one.
     ///
@@ -152,9 +162,16 @@ interface api {
 
   record page {
     index: u32,
-    count: u32,
+    /// Pages the level takes in all.
+    pages: u32,
     /// Motes the level holds in all.
-    total: u32,
+    motes: u32,
+  }
+
+  /// A mote let go in the room with nowhere of its own to go.
+  record planted {
+    mote: mote,
+    landing: landing,
   }
 
   /// What a surface did, in the terms a consumer thinks in.
@@ -178,7 +195,7 @@ interface api {
     /// Let go in the room by a mote with nowhere of its own to go: the
     /// surface draws nothing there. What lands, if anything, is the
     /// consumer's to place at the landing.
-    planted(tuple<mote, landing>),
+    planted(planted),
     /// Carried out and filed into a grid.
     filed(mote),
     /// The page turned.
@@ -188,7 +205,7 @@ interface api {
   /// A level of motes arranged around an anchor, selected by direction.
   resource orbit {
     /// Puts one up over `root`, drawing `capacity` motes at once and paging
-    /// anything past that.
+    /// anything past that. `capacity` is at most 64.
     new: static func(root: borrow<mote>, mount: mount, capacity: u32) -> result<orbit, error>;
 
     /// Everything this orbit did since the last call.
@@ -209,6 +226,7 @@ interface api {
   /// lands in: a mote filed here is taken out of the level it came from and
   /// hung under `root`.
   resource grid {
+    /// `columns * rows` is at most 256.
     new: static func(
       root: borrow<mote>,
       columns: u32,
@@ -227,7 +245,7 @@ interface api {
   /// from the script's `fixed-update`, where state belongs.
   fixed-update: func() -> result<_, error>;
 
-  /// Steps and draws every surface. Call from the script's `update`, where
-  /// animation belongs.
-  update: func() -> result<_, error>;
+  /// Steps and draws every surface. Call from the script's `update`, passing
+  /// `tick.dt`, where animation belongs.
+  update: func(dt: f32) -> result<_, error>;
 }

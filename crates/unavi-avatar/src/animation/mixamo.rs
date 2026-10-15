@@ -1,137 +1,108 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::LazyLock,
-};
+//! Mixamo's bone-naming convention, used to retarget downloaded Mixamo clips
+//! onto a VRM's humanoid bones.
 
-use bevy::{
-    animation::AnimationTargetId,
-    platform::collections::HashMap,
-};
-use bevy_vrm::{
-    BoneName,
-    animations::target_chain::TargetChain,
-};
+use std::sync::LazyLock;
 
-macro_rules! finger {
-   ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
-      paste::paste! {
-          {
-              let mut chain = $chain.clone();
+use bevy::platform::collections::HashMap;
+use bevy_vrm::BoneName;
 
-              chain.push_bone(
-                  BoneName::[<$side $finger_vrm Proximal>],
-                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "1"),
-              );
-              chain.push_bone(
-                  BoneName::[<$side $finger_vrm Intermediate>],
-                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "2"),
-              );
-              chain.push_bone(
-                  BoneName::[<$side $finger_vrm Distal>],
-                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "3"),
-              );
-          }
-      }
-   };
-}
+/// `(VRM bone, Mixamo node name)` pairs for every bone a Mixamo rig covers.
+/// Eyes and jaw are Mixamo has no equivalent for and are tracked separately.
+const MIXAMO_BONES: &[(BoneName, &str)] = &[
+    (BoneName::Hips, "mixamorig:Hips"),
+    (BoneName::LeftUpperLeg, "mixamorig:LeftUpLeg"),
+    (BoneName::LeftLowerLeg, "mixamorig:LeftLeg"),
+    (BoneName::LeftFoot, "mixamorig:LeftFoot"),
+    (BoneName::LeftToes, "mixamorig:LeftToeBase"),
+    (BoneName::RightUpperLeg, "mixamorig:RightUpLeg"),
+    (BoneName::RightLowerLeg, "mixamorig:RightLeg"),
+    (BoneName::RightFoot, "mixamorig:RightFoot"),
+    (BoneName::RightToes, "mixamorig:RightToeBase"),
+    (BoneName::Spine, "mixamorig:Spine"),
+    (BoneName::Chest, "mixamorig:Spine1"),
+    (BoneName::UpperChest, "mixamorig:Spine2"),
+    (BoneName::LeftShoulder, "mixamorig:LeftShoulder"),
+    (BoneName::LeftUpperArm, "mixamorig:LeftArm"),
+    (BoneName::LeftLowerArm, "mixamorig:LeftForeArm"),
+    (BoneName::LeftHand, "mixamorig:LeftHand"),
+    (BoneName::LeftThumbProximal, "mixamorig:LeftHandThumb1"),
+    (BoneName::LeftThumbIntermediate, "mixamorig:LeftHandThumb2"),
+    (BoneName::LeftThumbDistal, "mixamorig:LeftHandThumb3"),
+    (BoneName::LeftIndexProximal, "mixamorig:LeftHandIndex1"),
+    (BoneName::LeftIndexIntermediate, "mixamorig:LeftHandIndex2"),
+    (BoneName::LeftIndexDistal, "mixamorig:LeftHandIndex3"),
+    (BoneName::LeftMiddleProximal, "mixamorig:LeftHandMiddle1"),
+    (
+        BoneName::LeftMiddleIntermediate,
+        "mixamorig:LeftHandMiddle2",
+    ),
+    (BoneName::LeftMiddleDistal, "mixamorig:LeftHandMiddle3"),
+    (BoneName::LeftRingProximal, "mixamorig:LeftHandRing1"),
+    (BoneName::LeftRingIntermediate, "mixamorig:LeftHandRing2"),
+    (BoneName::LeftRingDistal, "mixamorig:LeftHandRing3"),
+    (BoneName::LeftLittleProximal, "mixamorig:LeftHandPinky1"),
+    (BoneName::LeftLittleIntermediate, "mixamorig:LeftHandPinky2"),
+    (BoneName::LeftLittleDistal, "mixamorig:LeftHandPinky3"),
+    (BoneName::RightShoulder, "mixamorig:RightShoulder"),
+    (BoneName::RightUpperArm, "mixamorig:RightArm"),
+    (BoneName::RightLowerArm, "mixamorig:RightForeArm"),
+    (BoneName::RightHand, "mixamorig:RightHand"),
+    (BoneName::RightThumbProximal, "mixamorig:RightHandThumb1"),
+    (
+        BoneName::RightThumbIntermediate,
+        "mixamorig:RightHandThumb2",
+    ),
+    (BoneName::RightThumbDistal, "mixamorig:RightHandThumb3"),
+    (BoneName::RightIndexProximal, "mixamorig:RightHandIndex1"),
+    (
+        BoneName::RightIndexIntermediate,
+        "mixamorig:RightHandIndex2",
+    ),
+    (BoneName::RightIndexDistal, "mixamorig:RightHandIndex3"),
+    (BoneName::RightMiddleProximal, "mixamorig:RightHandMiddle1"),
+    (
+        BoneName::RightMiddleIntermediate,
+        "mixamorig:RightHandMiddle2",
+    ),
+    (BoneName::RightMiddleDistal, "mixamorig:RightHandMiddle3"),
+    (BoneName::RightRingProximal, "mixamorig:RightHandRing1"),
+    (BoneName::RightRingIntermediate, "mixamorig:RightHandRing2"),
+    (BoneName::RightRingDistal, "mixamorig:RightHandRing3"),
+    (BoneName::RightLittleProximal, "mixamorig:RightHandPinky1"),
+    (
+        BoneName::RightLittleIntermediate,
+        "mixamorig:RightHandPinky2",
+    ),
+    (BoneName::RightLittleDistal, "mixamorig:RightHandPinky3"),
+    (BoneName::Neck, "mixamorig:Neck"),
+    (BoneName::Head, "mixamorig:Head"),
+];
 
-macro_rules! arm {
-    ($chain:ident, $side:ident) => {
-        paste::paste! {
-            {
-                let mut chain = $chain.clone();
-
-                chain.push_bone(BoneName::[<$side Shoulder>], concat!("mixamorig:", stringify!($side), "Shoulder"));
-                chain.push_bone(BoneName::[<$side UpperArm>], concat!("mixamorig:", stringify!($side), "Arm"));
-                chain.push_bone(BoneName::[<$side LowerArm>], concat!("mixamorig:", stringify!($side), "ForeArm"));
-                chain.push_bone(BoneName::[<$side Hand>], concat!("mixamorig:", stringify!($side), "Hand"));
-
-                finger!(chain, $side, Thumb, Thumb);
-                finger!(chain, $side, Index, Index);
-                finger!(chain, $side, Middle, Middle);
-                finger!(chain, $side, Ring, Ring);
-                finger!(chain, $side, Little, Pinky);
-            }
-        }
-    };
-}
-
-macro_rules! leg {
-    ($chain:ident, $side:ident) => {
-        paste::paste! {
-            {
-                let mut chain = $chain.clone();
-
-                chain.push_bone(BoneName::[<$side UpperLeg>], concat!("mixamorig:", stringify!($side), "UpLeg"));
-                chain.push_bone(BoneName::[<$side LowerLeg>], concat!("mixamorig:", stringify!($side), "Leg"));
-                chain.push_bone(BoneName::[<$side Foot>], concat!("mixamorig:", stringify!($side), "Foot"));
-                chain.push_bone(BoneName::[<$side Toes>], concat!("mixamorig:", stringify!($side), "ToeBase"));
-            }
-        }
-    };
-}
-
-/// Wrapper around [`TargetChain`].
-/// Allows code re-use for both animation targets and bone names.
-#[derive(Clone)]
-struct ChainWrapper<'a> {
-    chain:   TargetChain,
-    names:   Rc<RefCell<HashMap<BoneName, &'a str>>>,
-    targets: Rc<RefCell<HashMap<BoneName, AnimationTargetId>>>,
-}
-
-impl<'a> ChainWrapper<'a> {
-    fn new(chain: TargetChain) -> Self {
-        Self {
-            chain,
-            names: Rc::default(),
-            targets: Rc::default(),
-        }
-    }
-
-    fn push_bone(&mut self, bone: BoneName, name: &'a str) {
-        self.names.borrow_mut().insert(bone, name);
-        let target = self.chain.push_target(name.to_string());
-        self.targets.borrow_mut().insert(bone, target);
-    }
-
-    fn into_maps(
-        self,
-    ) -> (
-        HashMap<BoneName, &'a str>,
-        HashMap<BoneName, AnimationTargetId>,
-    ) {
-        (self.names.take(), self.targets.take())
-    }
-}
-
-fn create_chain() -> ChainWrapper<'static> {
-    let mut chain = TargetChain::default();
-    chain.push_target("Armature".to_string());
-
-    let mut chain = ChainWrapper::new(chain);
-
-    chain.push_bone(BoneName::Hips, "mixamorig:Hips");
-
-    leg!(chain, Left);
-    leg!(chain, Right);
-
-    chain.push_bone(BoneName::Spine, "mixamorig:Spine");
-    chain.push_bone(BoneName::Chest, "mixamorig:Spine1");
-    chain.push_bone(BoneName::UpperChest, "mixamorig:Spine2");
-
-    arm!(chain, Left);
-    arm!(chain, Right);
-
-    chain.push_bone(BoneName::Neck, "mixamorig:Neck");
-    chain.push_bone(BoneName::Head, "mixamorig:Head");
-
-    chain
-}
-
-pub static MIXAMO_BONE_NAMES: LazyLock<HashMap<BoneName, &'static str>> = LazyLock::new(|| {
-    let chain = create_chain();
-    let (names, _) = chain.into_maps();
-    names
+/// Mixamo node name to VRM bone, for retargeting a clip's channels in one
+/// lookup per channel instead of a linear scan of [`MIXAMO_BONES`].
+pub static MIXAMO_BONE_BY_NAME: LazyLock<HashMap<&'static str, BoneName>> = LazyLock::new(|| {
+    MIXAMO_BONES
+        .iter()
+        .map(|(bone, name)| (*name, *bone))
+        .collect()
 });
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        MIXAMO_BONE_BY_NAME,
+        MIXAMO_BONES,
+    };
+
+    #[test]
+    fn every_table_entry_is_reachable_by_name() {
+        for (bone, name) in MIXAMO_BONES {
+            assert_eq!(MIXAMO_BONE_BY_NAME.get(name), Some(bone));
+        }
+    }
+
+    #[test]
+    fn mixamo_names_are_unique() {
+        assert_eq!(MIXAMO_BONE_BY_NAME.len(), MIXAMO_BONES.len());
+    }
+}

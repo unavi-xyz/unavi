@@ -36,7 +36,16 @@ jobs:
           rustup default nightly
           nix profile add nixpkgs#cargo-release
       - name: Bump version
-        run: cargo release version ${{ inputs.increment }} -x --no-confirm
+        # A stale launcher CARGO_PKG_VERSION update-loops against the new tag,
+        # so the root, launcher/ and hsd/ workspaces bump together.
+        run: |
+          cargo release version ${{ inputs.increment }} -x --no-confirm
+          cargo release version ${{ inputs.increment }} -x --no-confirm --manifest-path launcher/Cargo.toml --workspace
+          cargo release version ${{ inputs.increment }} -x --no-confirm --manifest-path hsd/Cargo.toml --workspace
+          cargo update --workspace --manifest-path launcher/Cargo.toml
+          cargo update --workspace --manifest-path hsd/Cargo.toml
+      - name: Check versions agree
+        run: nix develop .#minimal -c just check-versions
       - id: version
         run: |
           VERSION=$(grep '^version' Cargo.toml | sed -E 's/^version[[:space:]]*=[[:space:]]*"//; s/"$//')
@@ -63,7 +72,14 @@ jobs:
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
-    secrets: inherit
+    secrets:
+      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+    with:
+      ref: release/v${{ needs.version.outputs.version }}
+  build-macos:
+    needs: version
+    uses: ./.github/workflows/build-macos.yml
     with:
       ref: release/v${{ needs.version.outputs.version }}
   deploy:
@@ -72,7 +88,8 @@ jobs:
       - build-nix
       - build-windows
     uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+    secrets:
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
     with:
       ref: release/v${{ needs.version.outputs.version }}
   publish:
@@ -80,6 +97,7 @@ jobs:
       - version
       - build-nix
       - build-windows
+      - build-macos
       - deploy
     runs-on: ubuntu-latest
     permissions:
@@ -108,6 +126,7 @@ jobs:
       - publish
       - build-nix
       - build-windows
+      - build-macos
     runs-on: ubuntu-latest
     permissions:
       contents: write

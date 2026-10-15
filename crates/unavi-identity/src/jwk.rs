@@ -1,3 +1,5 @@
+//! Signature checks against a DID document's JSON Web Keys.
+
 use jose_jwk::{
     EcCurves,
     Jwk,
@@ -19,6 +21,7 @@ pub enum JwkError {
     Mismatch,
 }
 
+/// Checks `signature` (DER) over `signed_bytes` against an EC `jwk`.
 pub fn verify(jwk: &Jwk, signature: &[u8], signed_bytes: &[u8]) -> Result<(), JwkError> {
     let Key::Ec(ec) = &jwk.key else {
         return Err(JwkError::UnsupportedKey);

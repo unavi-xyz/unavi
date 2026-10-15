@@ -1,3 +1,5 @@
+//! A cylinder capped with two hemispheres.
+
 use std::{
     cell::{
         Cell,
@@ -12,16 +14,23 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCapsule,
-    wired::scene::types::{
-        Collider,
-        ColliderCapsule,
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::{
+            document::Document,
+            properties::{
+                Collider,
+                ColliderCapsule,
+            },
+        },
     },
 };
 
-#[derive(Default)]
-pub struct CapsuleWrapped {
+const MAX_LATITUDES: u32 = 64;
+const MAX_LONGITUDES: u32 = 128;
+const MAX_RINGS: u32 = 32;
+
+pub struct Capsule {
     doc:         RefCell<Option<Document>>,
     radius:      f32,
     half_length: f32,
@@ -30,15 +39,15 @@ pub struct CapsuleWrapped {
     rings:       Cell<u32>,
 }
 
-impl GuestCapsule for CapsuleWrapped {
+impl GuestCapsule for Capsule {
     fn new(radius: f32, height: f32) -> Self {
         Self {
+            doc: RefCell::new(None),
             radius,
             half_length: height * 0.5,
             latitudes: Cell::new(16),
             longitudes: Cell::new(32),
             rings: Cell::new(0),
-            ..Default::default()
         }
     }
 
@@ -49,9 +58,9 @@ impl GuestCapsule for CapsuleWrapped {
         })
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(
-            self.doc.borrow().as_ref(),
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(
+            &self.doc,
             &build(
                 self.radius,
                 self.half_length,
@@ -70,24 +79,42 @@ impl GuestCapsule for CapsuleWrapped {
         self.latitudes.get()
     }
 
-    fn set_latitudes(&self, value: u32) {
+    fn set_latitudes(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_LATITUDES {
+            return Err(Error::InvalidArgument(format!(
+                "latitudes must be at most {MAX_LATITUDES}"
+            )));
+        }
         self.latitudes.set(value);
+        Ok(())
     }
 
     fn longitudes(&self) -> u32 {
         self.longitudes.get()
     }
 
-    fn set_longitudes(&self, value: u32) {
+    fn set_longitudes(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_LONGITUDES {
+            return Err(Error::InvalidArgument(format!(
+                "longitudes must be at most {MAX_LONGITUDES}"
+            )));
+        }
         self.longitudes.set(value);
+        Ok(())
     }
 
     fn rings(&self) -> u32 {
         self.rings.get()
     }
 
-    fn set_rings(&self, value: u32) {
+    fn set_rings(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_RINGS {
+            return Err(Error::InvalidArgument(format!(
+                "rings must be at most {MAX_RINGS}"
+            )));
+        }
         self.rings.set(value);
+        Ok(())
     }
 }
 

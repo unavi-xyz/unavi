@@ -9,7 +9,6 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy_msdf::{
     MsdfPlugin,
-    billboard::Billboard,
     font::RegisterFont,
     mesh::Anchor,
     text::{
@@ -37,7 +36,7 @@ fn main() {
         .run();
 }
 
-/// The client fetches its faces over iroh; this example has no network, so it
+/// The app fetches its faces over iroh; this example has no network, so it
 /// registers Noto Sans from the `notosans` crate as the primary.
 ///
 /// That face has no CJK, so the Japanese specimen draws tofu until one that
@@ -131,7 +130,8 @@ fn setup(
         ));
     }
 
-    // Wrapping, alignment and a billboard that turns to follow the camera.
+    // Wrapping and alignment: a word too long for the box breaks rather than
+    // escaping it.
     commands.spawn((
         MsdfText {
             value: SmolStr::new(
@@ -146,13 +146,12 @@ fn setup(
         Transform::from_xyz(-1.8, 1.2, 0.0),
     ));
     commands.spawn((
-        text("billboard", 0.05),
+        text("no billboard here", 0.05),
         MsdfStyle {
             color: Color::srgb(0.6, 0.85, 1.0),
             emissive: 2.0,
             ..Default::default()
         },
-        Billboard::Yaw,
         Transform::from_xyz(1.8, 1.2, 0.0),
     ));
 

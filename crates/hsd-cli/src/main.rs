@@ -6,15 +6,16 @@ use std::{
 use anyhow::{
     Context,
     Result,
+    bail,
 };
 use clap::{
     Args,
     Parser,
 };
-use hsd::format::source::Source;
 use hsd_cli::{
     compile,
     dump,
+    fmt,
 };
 
 #[derive(Parser, Debug)]
@@ -22,7 +23,8 @@ use hsd_cli::{
 enum HsdCli {
     Build(Build),
     Dump(Dump),
-    Format(Format),
+    #[command(alias = "format")]
+    Fmt(Fmt),
 }
 
 /// Compile a `.hsda` source into a single `.hsdz` package.
@@ -45,11 +47,19 @@ struct Dump {
     input: PathBuf,
 }
 
-/// Pretty-print a `.hsda` source file in place.
+/// Pretty-print `.hsda` sources in place.
+///
+/// A path is either a `.hsda` file or a directory, which is walked for
+/// `.hsda` files. `--check` writes nothing and exits non-zero when any file
+/// would change.
 #[derive(Args, Debug)]
-struct Format {
-    /// `.hsda` file to format
-    input: PathBuf,
+struct Fmt {
+    /// `.hsda` files or directories to format
+    #[arg(required = true)]
+    inputs: Vec<PathBuf>,
+    /// Report what would change without writing it
+    #[arg(long)]
+    check:  bool,
 }
 
 fn main() -> Result<()> {
@@ -73,13 +83,24 @@ fn main() -> Result<()> {
         HsdCli::Dump(Dump { input }) => {
             println!("{}", dump::dump_file(&input)?);
         }
-        HsdCli::Format(Format { input }) => {
-            let src = std::fs::read_to_string(&input)
-                .with_context(|| format!("reading {}", input.display()))?;
-            let doc =
-                Source::parse(&src).with_context(|| format!("parsing {}", input.display()))?;
-            std::fs::write(&input, doc.to_ron()?)
-                .with_context(|| format!("writing {}", input.display()))?;
+        HsdCli::Fmt(Fmt { inputs, check }) => {
+            let changed = fmt::run(&inputs, !check)?;
+
+            if check {
+                for file in &changed {
+                    eprintln!("would reformat {}", file.display());
+                }
+                if !changed.is_empty() {
+                    bail!(
+                        "{} file(s) need formatting; run `hsd-cli fmt`",
+                        changed.len()
+                    );
+                }
+            } else {
+                for file in &changed {
+                    println!("formatted {}", file.display());
+                }
+            }
         }
     }
     Ok(())

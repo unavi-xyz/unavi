@@ -7,30 +7,27 @@ use std::sync::{
     LazyLock,
 };
 
+use bevy_async::task;
 use directories::ProjectDirs;
 use iroh::{
     endpoint::presets::N0,
     protocol::Router,
 };
 use iroh_blobs::api::blobs::Blobs;
-use unavi_assets_fetch::MANIFEST;
+use unavi_assets::MANIFEST;
 use unavi_identity::identity::{
     Identity,
     NodeIdentity,
 };
-use unavi_local::LocalStorage;
-use unavi_util::async_task::spawn_async_task;
-use wds::{
+use unavi_local::DeviceStorage;
+use unavi_store::{
     Store,
-    builder::{
-        Spawned,
-        StoreBuilder,
-    },
+    StoreBuilder,
 };
 
 /// The app's data directory, created on first use.
 static DIRS: LazyLock<ProjectDirs> =
-    LazyLock::new(|| ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs"));
+    LazyLock::new(|| ProjectDirs::from("", "UNAVI", "unavi-app").expect("project dirs"));
 
 pub struct TestStore {
     pub identity: Arc<Identity>,
@@ -43,23 +40,23 @@ pub fn create_test_store() -> TestStore {
     build(false)
 }
 
-/// The client's persistent store, which holds the manifest assets it fetched
+/// The app's persistent store, which holds the manifest assets it fetched
 /// over iroh. Reused so an example resolves them locally with no provider.
 #[must_use]
-pub fn create_client_store() -> TestStore {
+pub fn create_app_store() -> TestStore {
     build(true)
 }
 
 fn build(persistent: bool) -> TestStore {
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
-        // The persistent store's documents were authored under the client's
+    task::spawn(async move {
+        // The persistent store's documents were authored under the app's
         // identity, so an example reading them back has to load the same key.
         let storage = if persistent {
-            LocalStorage::Path(DIRS.data_local_dir().to_path_buf())
+            DeviceStorage::at(DIRS.data_local_dir().to_path_buf())
         } else {
-            LocalStorage::default()
+            DeviceStorage::memory()
         };
         let node = NodeIdentity::load(&storage).expect("identity");
 
@@ -70,10 +67,10 @@ fn build(persistent: bool) -> TestStore {
             .expect("iroh endpoint");
 
         let builder = StoreBuilder::new(endpoint.clone(), node.author()).storage(storage);
-        let Spawned { store, router } = builder.build().await.expect("data store");
+        let store = builder.build().await.expect("data store");
 
         let rb = Router::builder(endpoint);
-        let rb = router(rb);
+        let rb = store.accept(rb);
         let _router = rb.spawn();
 
         if persistent {
@@ -95,17 +92,16 @@ fn build(persistent: bool) -> TestStore {
     rx.recv_blocking().expect("store setup")
 }
 
-/// The client fetches manifest assets over iroh into its own store; one it
+/// The app fetches manifest assets over iroh into its own store; one it
 /// has not pulled yet leaves the avatar — and with it the agent's camera
 /// proxy — waiting on a provider the harness does not have.
 async fn warn_missing_manifest_assets(blobs: &Blobs) {
     for asset in MANIFEST {
-        let hash = blake3::Hash::from_hex(asset.hash).expect("manifest hash");
-        if blobs.has(hash).await.unwrap_or(false) {
+        if blobs.has(asset.hash).await.unwrap_or(false) {
             continue;
         }
         println!(
-            "missing manifest asset, run the client once to fetch it: {}",
+            "missing manifest asset, run the app once to fetch it: {}",
             asset.rel_path
         );
     }

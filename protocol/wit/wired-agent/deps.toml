@@ -1,2 +1,2 @@
-wired-error = "../wired-error"
+wired-core  = "../wired-core"
 wired-scene = "../wired-scene"

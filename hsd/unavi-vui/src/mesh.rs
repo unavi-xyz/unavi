@@ -1,3 +1,6 @@
+//! Mesh generators for the shapes a surface draws: bodies, pips and the
+//! overflow and way-back markers.
+
 use std::f32::consts::{
     PI,
     TAU,

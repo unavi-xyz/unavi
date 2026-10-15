@@ -1,11 +1,7 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+//! Every feel constant VUI animates by, in one place.
 
 /// Every feel constant in one place.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tuning {
     pub orbit_radius: f32,
     pub mote_radius:  f32,
@@ -55,26 +51,20 @@ pub struct Tuning {
     /// How far in front of its mote a label sits.
     pub label_lift: f32,
 
-    /// Spacing between trail beads, out of the plane toward the viewer.
-    pub trail_pitch: f32,
-    /// How much each further bead shrinks and fades, so the stack recedes
-    /// rather than competing with the level.
-    pub trail_taper: f32,
-
     /// Seconds a consequential action fills for before it fires.
     pub cast_duration: f32,
     /// Full rings per second an abandoned cast unwinds, which is faster than
     /// it filled: letting go is a snap back, not a rewind.
     pub cast_recoil:   f32,
 
-    /// How fast a surface opens and closes, in full blooms per second.
-    pub bloom_speed:     f32,
+    /// How fast a surface opens and closes, in full reveals per second.
+    pub reveal_speed:     f32,
     /// How far each slot lags the one before it, as a fraction of one slot's
     /// own ramp. Zero makes a level arrive all at once, which reads as a panel
     /// rather than as objects.
-    pub bloom_stagger:   f32,
+    pub reveal_stagger:   f32,
     /// How far past its size a mote lands before settling back onto it.
-    pub bloom_overshoot: f32,
+    pub reveal_overshoot: f32,
 
     /// How much of its brightness a mote keeps while another holds
     /// attention. The field receding is what makes the chosen one stand out;
@@ -149,15 +139,12 @@ impl Tuning {
         label_gap:  0.007,
         label_lift: 0.004,
 
-        trail_pitch: 0.055,
-        trail_taper: 0.82,
-
         cast_duration: 0.9,
         cast_recoil:   4.0,
 
-        bloom_speed:     6.5,
-        bloom_stagger:   0.22,
-        bloom_overshoot: 1.5,
+        reveal_speed:     6.5,
+        reveal_stagger:   0.22,
+        reveal_overshoot: 1.5,
 
         sibling_dim: 0.8,
 

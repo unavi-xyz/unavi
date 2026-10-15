@@ -1,5 +1,10 @@
-use wired_math::types::Vec3;
-use wired_scene::types::Color;
+//! What every VUI surface shares, independent of layout: attention, grasp,
+//! paging and the styles those produce.
+
+use wired_guest::math::{
+    Color,
+    Vec3,
+};
 
 use crate::{
     assist,
@@ -8,7 +13,6 @@ use crate::{
         Attention,
         Tracker,
     },
-    bloom::Bloom,
     grasp::{
         Grasp,
         Outcome,
@@ -28,6 +32,7 @@ use crate::{
         Placard,
         PlacardView,
     },
+    reveal::Reveal,
     tuning::Tuning,
     view::{
         Frame,
@@ -46,7 +51,7 @@ use crate::{
 pub struct Surface {
     tuning:   Tuning,
     palette:  Palette,
-    bloom:    Bloom,
+    reveal:   Reveal,
     tracker:  Tracker,
     grasp:    Grasp,
     lean:     Vec<Vec3>,
@@ -70,7 +75,7 @@ impl Surface {
         Self {
             tuning,
             palette,
-            bloom: Bloom::ARRIVING,
+            reveal: Reveal::ARRIVING,
             tracker: Tracker::new(),
             grasp: Grasp::new(),
             lean: vec![Vec3::ZERO; capacity],
@@ -148,14 +153,14 @@ impl Surface {
 
     /// Starts the surface arriving, or sends it away.
     pub const fn set_open(&mut self, open: bool) {
-        self.bloom.set_open(open);
+        self.reveal.set_open(open);
     }
 
     /// Whether anything is still drawn. A surface that has finished going away
     /// needs no more frames.
     #[must_use]
     pub fn is_visible(&self) -> bool {
-        self.bloom.is_visible()
+        self.reveal.is_visible()
     }
 
     /// The attended mote's placard, or `None` until attention has been held
@@ -163,12 +168,6 @@ impl Surface {
     #[must_use]
     pub const fn placard(&self) -> Option<&PlacardView> {
         self.placard.as_ref()
-    }
-
-    /// A mote's style with no attention on it.
-    #[must_use]
-    pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
-        self.style(spec.role, Attention::Idle, spec.active, spec.tint)
     }
 
     /// Turns to `page`, settled against what the collection actually has by
@@ -222,13 +221,13 @@ impl Surface {
     ///
     /// Anything past one page's worth paginates rather than being dropped.
     pub fn update(&mut self, specs: &[MoteSpec], layout: Layout, pinned: usize, frame: &Frame) {
-        self.bloom.update(frame.delta, &self.tuning);
+        self.reveal.update(frame.delta, &self.tuning);
         self.repage(specs.len(), layout, pinned);
         self.collect(specs);
 
         // A mote in hand holds attention; nothing else is a drop target.
         let dragging = self.grasp.seized().is_some_and(|held| held.takeable);
-        if !self.bloom.is_open() {
+        if !self.reveal.is_open() {
             // Nothing on its way out is attending anything. Its slots collapse
             // to the anchor but the placard hangs off the surface rather than
             // off a slot, so it would otherwise be left full-size over the
@@ -310,7 +309,7 @@ impl Surface {
                 (true, Some(hand)) => {
                     frame.anchor.rotation.inverse() * (hand - frame.anchor.translation)
                 }
-                _ => (local + self.lean[slot]) * self.bloom.form(),
+                _ => (local + self.lean[slot]) * self.reveal.form(),
             };
 
             let presentation = mote::present(spec, heat, &self.tuning);
@@ -333,7 +332,7 @@ impl Surface {
                 bloom: if is_seized && dragging {
                     1.0
                 } else {
-                    self.bloom.slot(slot, self.drawn.len(), &self.tuning)
+                    self.reveal.slot(slot, self.drawn.len(), &self.tuning)
                 },
             });
         }
@@ -475,7 +474,7 @@ impl Surface {
 #[cfg(test)]
 mod tests {
     use smol_str::SmolStr;
-    use wired_math::types::{
+    use wired_guest::math::{
         Quat,
         Transform,
         Vec2,
@@ -546,7 +545,6 @@ mod tests {
 
     fn frame(aim: Option<Aim>) -> Frame {
         Frame {
-            eye: Vec3::new(0.0, 0.0, 1.0),
             anchor: anchor(),
             aim,
             hand: aim.map(|aim| aim.world),
@@ -976,7 +974,8 @@ mod tests {
             vec![9],
             "a short last page draws what is left rather than wrapping"
         );
-        assert!(!surface.page().has_next());
+        let page = surface.page();
+        assert_eq!(page.index + 1, page.count, "on the last page");
     }
 
     #[test]
@@ -1031,8 +1030,7 @@ mod tests {
         let specs = [named("a"), named("b")];
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
         assert!(!surface.page().is_paged());
-        assert!(!surface.page().has_next());
-        assert!(!surface.page().has_previous());
+        assert_eq!(surface.page().index, 0);
     }
 
     #[test]
@@ -1346,8 +1344,9 @@ mod tests {
             vec![8],
             "the last page is as short as it is"
         );
-        assert!(!surface.page().has_next());
-        assert!(surface.page().has_previous());
+        let page = surface.page();
+        assert_eq!(page.index + 1, page.count, "on the last page");
+        assert!(page.index > 0);
     }
 
     #[test]

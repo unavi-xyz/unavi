@@ -10,19 +10,18 @@ use bevy::{
     prelude::*,
     tasks::futures_lite::StreamExt,
 };
+use bevy_async::task;
 use bevy_iroh::{
     IrohPlugin,
-    blob::request::{
+    blob::{
         BlobRequest,
         BlobResponse,
     },
     store::{
-        LocalBlobs,
-        LocalDownloader,
+        DataStore,
         SyncTargets,
     },
 };
-use blake3::Hash;
 use bytes::Bytes;
 use iroh::{
     Endpoint,
@@ -32,13 +31,15 @@ use iroh::{
     endpoint::presets::N0DisableRelay,
     protocol::Router,
 };
-use iroh_blobs::api::{
-    blobs::Blobs,
-    downloader::Downloader,
+use iroh_blobs::{
+    Hash,
+    api::blobs::Blobs,
 };
 use iroh_docs::Author;
-use unavi_util::async_task::spawn_async_task;
-use wds::builder::StoreBuilder;
+use unavi_store::{
+    Store,
+    StoreBuilder,
+};
 
 const CONTENT: &[u8] = b"content only the provider holds";
 /// Bounds the wait for the blob to land in the client's local store; a real
@@ -49,10 +50,9 @@ const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30);
 const RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct Fixture {
-    blobs:    Blobs,
+    store:    Store,
     hash:     Hash,
     provider: EndpointAddr,
-    download: Downloader,
     _routers: Vec<Router>,
 }
 
@@ -62,7 +62,7 @@ struct Fixture {
 fn fixture() -> Fixture {
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let host_key = SecretKey::generate();
         let host_author = Author::from_bytes(&host_key.to_bytes());
         let host_endpoint = Endpoint::builder(N0DisableRelay)
@@ -74,10 +74,9 @@ fn fixture() -> Fixture {
             .build()
             .await
             .expect("host store");
-        let host_router = (host.router)(Router::builder(host_endpoint.clone())).spawn();
+        let host_router = host.accept(Router::builder(host_endpoint.clone())).spawn();
 
         let hash = host
-            .store
             .blobs()
             .add_bytes(Bytes::from_static(CONTENT))
             .await
@@ -99,15 +98,14 @@ fn fixture() -> Fixture {
             .build()
             .await
             .expect("client store");
-        let router = (store.router)(Router::builder(endpoint.clone())).spawn();
+        let router = store.accept(Router::builder(endpoint.clone())).spawn();
 
         let provider = host_endpoint.addr();
 
         tx.send(Fixture {
-            blobs: store.store.blobs().clone(),
-            hash: hash.into(),
+            store,
+            hash,
             provider,
-            download: store.store.blob_store().downloader(&endpoint),
             _routers: vec![host_router, router],
         })
         .await
@@ -129,7 +127,7 @@ fn wait_for_download(blobs: &Blobs, hash: Hash) {
     let blobs = blobs.clone();
     let (tx, rx) = async_channel::bounded(1);
 
-    spawn_async_task(async move {
+    task::spawn(async move {
         let arrived = n0_future::time::timeout(DOWNLOAD_TIMEOUT, async {
             let mut stream = blobs.observe(hash).stream().await.expect("observe");
             while let Some(field) = stream.next().await {
@@ -155,16 +153,13 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
 
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, IrohPlugin));
-    app.world_mut().spawn((
-        LocalBlobs(fixture.blobs.clone()),
-        LocalDownloader(fixture.download.clone()),
-        SyncTargets(vec![fixture.provider.clone()]),
-    ));
+    app.insert_resource(DataStore(fixture.store.clone()))
+        .insert_resource(SyncTargets(vec![fixture.provider.clone()]));
 
     let entity = app.world_mut().spawn(BlobRequest(fixture.hash)).id();
     app.update();
 
-    wait_for_download(&fixture.blobs, fixture.hash);
+    wait_for_download(fixture.store.blobs(), fixture.hash);
 
     let start = Instant::now();
     while start.elapsed() < RESPONSE_TIMEOUT {

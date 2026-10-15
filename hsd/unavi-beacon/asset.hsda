@@ -1,9 +1,11 @@
-[
-    (
-        attributes: (
-            name: "beacon",
-            script: "./Cargo.toml",
+(
+    prims: [
+        (
+            attributes: (
+                name: "beacon",
+                script: "./Cargo.toml",
+            ),
+            children: [],
         ),
-        children: [],
-    ),
-]
+    ],
+)

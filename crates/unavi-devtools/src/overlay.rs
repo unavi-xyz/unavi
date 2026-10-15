@@ -3,20 +3,27 @@ use bevy::prelude::*;
 /// Whether the overlay is currently open. Other crates read this to suppress
 /// gameplay input while dev tools have focus.
 #[derive(Resource, Default)]
-pub struct DevToolsActive(pub bool);
+pub struct DevToolsActive(pub(crate) bool);
+
+impl DevToolsActive {
+    #[must_use]
+    pub const fn is_open(&self) -> bool {
+        self.0
+    }
+}
 
 /// Handles to the overlay's structural nodes, used when mounting panels.
 #[derive(Resource)]
-pub struct DevOverlay {
+pub(crate) struct DevOverlay {
     pub root:    Entity,
     pub tab_bar: Entity,
     pub body:    Entity,
 }
 
 #[derive(Component)]
-pub struct OverlayRoot;
+pub(crate) struct OverlayRoot;
 
-pub fn spawn_overlay(mut commands: Commands) {
+pub(crate) fn spawn_overlay(mut commands: Commands) {
     let tab_bar = commands
         .spawn((
             Node {
@@ -64,7 +71,7 @@ pub fn spawn_overlay(mut commands: Commands) {
     });
 }
 
-pub fn toggle_overlay(
+pub(crate) fn toggle_overlay(
     keys: Res<ButtonInput<KeyCode>>,
     overlay: Option<Res<DevOverlay>>,
     mut active: ResMut<DevToolsActive>,

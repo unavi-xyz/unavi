@@ -1,3 +1,7 @@
+//! The `.wasm` asset a script runs.
+
+use std::sync::Arc;
+
 use bevy::{
     asset::{
         AssetLoader,
@@ -9,8 +13,23 @@ use bevy::{
     tasks::ConditionalSendFuture,
 };
 
-#[derive(Asset, Debug, Deref, DerefMut, TypePath)]
-pub struct Wasm(pub Vec<u8>);
+/// A script's component bytes, and their hash, which compiled code is cached
+/// by.
+#[derive(Asset, Debug, TypePath)]
+pub struct Wasm {
+    pub bytes: Arc<[u8]>,
+    pub hash:  blake3::Hash,
+}
+
+impl Wasm {
+    #[must_use]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self {
+            hash:  blake3::hash(&bytes),
+            bytes: bytes.into(),
+        }
+    }
+}
 
 #[derive(Default, TypePath)]
 pub struct WasmLoader;
@@ -29,7 +48,7 @@ impl AssetLoader for WasmLoader {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
-            Ok(Wasm(bytes))
+            Ok(Wasm::new(bytes))
         })
     }
 

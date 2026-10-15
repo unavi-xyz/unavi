@@ -14,8 +14,8 @@ use semver::Version;
 use tracing::info;
 
 pub const RELEASE_TARGET: &str = "linux";
-pub const CLIENT_EXE: &str = "unavi-client.AppImage";
-pub const CLIENT_EXT: &str = "AppImage";
+pub const APP_EXE: &str = "unavi-app.AppImage";
+pub const APP_EXT: &str = "AppImage";
 pub const LAUNCHER_EXT: &str = "AppImage";
 
 const NIXOS_MARKER: &str = "/etc/NIXOS";
@@ -23,11 +23,11 @@ const NIXOS_MARKER: &str = "/etc/NIXOS";
 // An AppImage on NixOS chroots into its own bundled /nix, so it cannot see the
 // host GPU driver exposed at /run/opengl-driver and only produces a blank
 // window. Refuse rather than launch something that cannot work, and point at
-// the release tag matching the installed client.
+// the release tag matching the installed app.
 fn nixos_refusal(version: &Version) -> String {
     format!(
-        "UNAVI's AppImage cannot reach the host GPU driver on NixOS. Run the client from \
-         the flake instead: nix run github:unavi-xyz/unavi/v{version}#unavi-client"
+        "UNAVI's AppImage cannot reach the host GPU driver on NixOS. Run the app from \
+         the flake instead: nix run github:unavi-xyz/unavi/v{version}#unavi-app"
     )
 }
 
@@ -40,21 +40,21 @@ const BUNDLE_ENV: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "LD_LIBRARY_PATH", 
 // binfmt_misc; these copies are not the user's to keep.
 const INTEGRATION_ENV: (&str, &str) = ("APPIMAGELAUNCHER_DISABLE", "1");
 
-pub fn client_command(exe: &Path, version: &Version) -> anyhow::Result<Command> {
-    client_command_for(exe, version, is_nixos())
+pub fn app_command(exe: &Path, version: &Version) -> anyhow::Result<Command> {
+    app_command_for(exe, version, is_nixos())
 }
 
-fn client_command_for(exe: &Path, version: &Version, nixos: bool) -> anyhow::Result<Command> {
+fn app_command_for(exe: &Path, version: &Version, nixos: bool) -> anyhow::Result<Command> {
     if nixos {
         anyhow::bail!("{}", nixos_refusal(version));
     }
     Ok(build_command(exe))
 }
 
-pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    let exe = dest_dir.join(CLIENT_EXE);
+pub fn install_app(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+    let exe = dest_dir.join(APP_EXE);
     info!("Installing to: {}", exe.display());
-    fs::copy(downloaded, &exe).context("failed to install client")?;
+    fs::copy(downloaded, &exe).context("failed to install app")?;
     set_executable(&exe)
 }
 
@@ -122,12 +122,12 @@ mod tests {
 
     use super::*;
 
-    const APPIMAGE: &str = "/home/user/.local/share/unavi/clients/1.0.0/unavi-client.AppImage";
+    const APPIMAGE: &str = "/home/user/.local/share/unavi/apps/1.0.0/unavi-app.AppImage";
 
     #[test]
     fn refuses_to_launch_on_nixos() {
         let version = Version::new(1, 2, 3);
-        let err = client_command_for(Path::new(APPIMAGE), &version, true)
+        let err = app_command_for(Path::new(APPIMAGE), &version, true)
             .expect_err("NixOS should refuse to launch the AppImage");
         assert!(err.to_string().contains("v1.2.3"));
     }
@@ -135,7 +135,8 @@ mod tests {
     #[test]
     fn runs_appimage_directly() {
         let version = Version::new(1, 2, 3);
-        let cmd = client_command_for(Path::new(APPIMAGE), &version, false).unwrap();
+        let cmd = app_command_for(Path::new(APPIMAGE), &version, false)
+            .expect("non-nixos should launch the AppImage");
         assert_eq!(cmd.get_program(), OsStr::new(APPIMAGE));
         assert_eq!(cmd.get_args().count(), 0);
     }

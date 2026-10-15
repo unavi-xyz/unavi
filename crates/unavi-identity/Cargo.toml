@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace      = true
+hsd.path              = "../hsd"
 iroh.workspace        = true
 iroh-docs.workspace   = true
 jose-jwk              = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }
@@ -26,7 +27,7 @@ thiserror.workspace   = true
 tokio                 = { features = ["io-util", "sync"], workspace = true }
 tracing.workspace     = true
 unavi-local.path      = "../unavi-local"
-wds.path              = "../wds"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true
 zeroize.workspace     = true
 

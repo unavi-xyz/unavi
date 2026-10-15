@@ -10,14 +10,12 @@
 //! knowing about — the glyphs inside its motes, and the body of whatever tool
 //! is in hand.
 
-use std::time::SystemTime;
-
-use wired_prelude::prelude::*;
+use wired_guest::math::Transform;
 
 use crate::{
     artifact::Artifact,
     branch::{
-        hand::Hand,
+        hand::Toolbelt,
         home::Home,
         nav::Nav,
     },
@@ -31,16 +29,13 @@ use crate::{
         Event,
         Mote,
     },
-    wired::{
-        agent::api::local_camera,
-        input::{
-            context::register_global_input_listener,
-            types::{
-                InputAction,
-                InputListener,
-            },
+    wired::input::{
+        device,
+        types::{
+            Action,
+            Button,
+            InputSubscription,
         },
-        scene::types::Prim,
     },
 };
 
@@ -51,11 +46,11 @@ mod palette;
 mod root;
 mod summon;
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
 struct Script {
     root:     Root,
-    hand:     Hand,
+    hand:     Toolbelt,
     home:     Home,
     nav:      Nav,
     summon:   Summon,
@@ -64,50 +59,41 @@ struct Script {
     /// The menu button, which is the one thing halo takes globally. Grabs
     /// belong to whichever surface was pressed, and VUI's surfaces have their
     /// own listeners.
-    input:    InputListener,
-    camera:   Option<Prim>,
-    drawn_at: SystemTime,
+    input:    InputSubscription,
 }
 
 impl Script {
-    fn eye(&mut self) -> Option<Transform> {
-        if self.camera.is_none() {
-            self.camera = local_camera().ok();
-        }
-        self.camera.as_ref().map(Prim::global_xform)
-    }
-
-    fn apply(&self, command: Command) -> anyhow::Result<()> {
+    fn apply(&self, command: Option<Command>) -> anyhow::Result<()> {
         match command {
             // Whatever is in hand stays in hand: a tool is put away by
             // choosing it again or choosing another, never by looking at the
             // halo. Opening a menu is not a decision about what you are
             // holding.
-            Command::Summon => self.root.orbit.summon()?,
-            Command::Dismiss => self.root.orbit.dismiss()?,
-            Command::None => {}
+            Some(Command::Summon) => self.root.orbit.summon()?,
+            Some(Command::Dismiss) => self.root.orbit.dismiss()?,
+            None => {}
         }
         Ok(())
     }
 
     /// Routes one thing a surface did, by the mote it happened to. Never by a
     /// label: two motes with the same name are still two motes.
-    fn route(&mut self, event: &Event, eye: &Transform) -> anyhow::Result<()> {
+    fn route(&mut self, event: &Event) -> anyhow::Result<()> {
         match event {
             Event::Opened(mote) => self.opened(mote),
             Event::Cast(mote) => self.cast(mote),
-            Event::Activated(mote) => self.activated(mote, eye)?,
-            Event::Planted((mote, landing)) => {
+            Event::Activated(mote) => self.activated(mote)?,
+            Event::Planted(planted) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
-                if self.nav.plant(mote, *landing) {
+                if self.nav.plant(&planted.mote, planted.landing) {
                     let dismiss = self.summon.taken();
                     self.apply(dismiss)?;
                 }
             }
             Event::Closed(_) | Event::Casting(_) | Event::Aborted(_) | Event::Filed(_) => {}
             Event::Paged(page) => {
-                println!("halo: page {} of {}", page.index + 1, page.count);
+                println!("halo: page {} of {}", page.index + 1, page.pages);
             }
         }
         Ok(())
@@ -129,8 +115,8 @@ impl Script {
         }
     }
 
-    fn activated(&mut self, mote: &Mote, eye: &Transform) -> anyhow::Result<()> {
-        if !self.hand.equip(mote, eye) {
+    fn activated(&mut self, mote: &Mote) -> anyhow::Result<()> {
+        if !self.hand.equip(mote) {
             return Ok(());
         }
         if let Some(color) = self.hand.held_color() {
@@ -142,33 +128,33 @@ impl Script {
 
     /// The menu button, and the primary action while the halo is down.
     fn read_input(&mut self, eye: &Transform) -> anyhow::Result<()> {
-        while let Some(event) = self.input.poll() {
+        for event in self.input.drain(8) {
             match event.action {
-                InputAction::MenuPress => {
+                Action::Pressed(Button::Menu) => {
                     let command = self.summon.press(eye);
                     self.apply(command)?;
                 }
-                InputAction::MenuRelease => self.summon.release(),
+                Action::Released(Button::Menu) => self.summon.release(),
                 // Forwarded only while the halo is down. With it up, a press
                 // belongs to whichever surface was pressed, and VUI's own
                 // listener is what hears it.
-                InputAction::Press => self.forward(|hand| hand.trigger(true)),
-                InputAction::Release => self.forward(|hand| hand.trigger(false)),
-                InputAction::Scroll(delta) => self.forward(|hand| hand.scroll(delta.y)),
+                Action::Pressed(Button::Trigger) => self.forward(|hand| hand.trigger(true)),
+                Action::Released(Button::Trigger) => self.forward(|hand| hand.trigger(false)),
+                Action::Scroll(delta) => self.forward(|hand| hand.scroll(delta.y)),
                 // The grip is the host's, for carrying things about: a tool is
                 // worked with its trigger, so an equipped one hears nothing of
                 // it and the two never answer the same press. Hover is
                 // per-prim, so a global listener never sees that either.
-                InputAction::GripPress
-                | InputAction::GripRelease
-                | InputAction::Enter
-                | InputAction::Leave => {}
+                Action::Pressed(Button::Grip)
+                | Action::Released(Button::Grip)
+                | Action::Entered
+                | Action::Left => {}
             }
         }
         Ok(())
     }
 
-    fn forward(&self, to_hand: impl FnOnce(&Hand)) {
+    fn forward(&self, to_hand: impl FnOnce(&Toolbelt)) {
         if !self.summon.is_up() {
             to_hand(&self.hand);
         }
@@ -179,24 +165,22 @@ impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
             root:     Root::new()?,
-            hand:     Hand::new(),
+            hand:     Toolbelt::new(),
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
             artifact: Artifact::new()?,
-            input:    register_global_input_listener()?,
-            camera:   None,
-            drawn_at: SystemTime::now(),
+            input:    device::listen()?,
         })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
         self.home.fixed_update();
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
 
-        let Some(eye) = self.eye() else {
+        let Some(eye) = camera_pose() else {
             return Ok(());
         };
         self.read_input(&eye)?;
@@ -205,19 +189,15 @@ impl ScriptBehavior for Script {
         self.apply(walked_away)
     }
 
-    fn update(&mut self) -> anyhow::Result<()> {
-        api::update()?;
-        // Animation runs at render rate; pinning it to the fixed rate makes
-        // motion visibly step.
-        let delta = self.drawn_at.elapsed().unwrap_or_default().as_secs_f32();
-        self.drawn_at = SystemTime::now();
+    fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
+        api::update(tick.dt)?;
 
-        let Some(eye) = self.eye() else {
+        let Some(eye) = camera_pose() else {
             return Ok(());
         };
         for event in self.root.orbit.events() {
-            self.route(&event, &eye)?;
+            self.route(&event)?;
         }
-        self.artifact.update(&eye, self.hand.is_holding(), delta)
+        self.artifact.update(&eye, self.hand.is_holding(), tick.dt)
     }
 }

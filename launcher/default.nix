@@ -74,7 +74,7 @@
       desktopItem = pkgs.makeDesktopItem {
         name = pname;
         desktopName = "UNAVI";
-        comment = "Launcher for the UNAVI client";
+        comment = "Launcher for the UNAVI app";
         exec = pname;
         icon = pname;
         categories = [ "Network" ];

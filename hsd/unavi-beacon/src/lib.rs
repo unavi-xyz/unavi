@@ -1,48 +1,58 @@
+//! A beacon: a small pulsing marker planted by halo's `Nav` that announces
+//! the space it was copied for over [`CHANNEL`] so a gate nearby can open to
+//! it. The authored template prim does nothing; a real beacon is a document
+//! of its own, minted by copying the template and naming a prim for its
+//! space.
+
 use std::{
     f32::consts::TAU,
     str::FromStr,
-    time::{
-        Duration,
-        SystemTime,
-    },
 };
 
 use blake3::Hash;
-use unavi_script_util::color::generate_color;
-use wired_prelude::prelude::*;
+use wired_guest::{
+    color::generate_color,
+    math::{
+        Color,
+        Transform,
+        Vec3,
+    },
+};
 
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
-        event::types::{
-            EventFilter,
-            EventScope,
-            SpatialScope,
+        event::messaging::{
+            Scope,
+            Spatial,
         },
         input::{
-            api::register_input_listener,
+            targeted,
             types::{
-                InputAction,
-                InputListener,
+                Action,
+                Button,
+                InputSubscription,
             },
         },
+        peer::authority::is_author,
         scene::{
-            api::self_document,
-            types::{
+            document::{
                 Document,
+                script_document,
+            },
+            properties::{
                 Material,
-                Prim,
+                Property,
+                PropertyKey,
                 RigidBody,
-                RigidBodyKind,
             },
         },
     },
 };
 
-wired_prelude::generate_script!(Script);
+wired_guest::generate_script!(Script);
 
-const CHANNEL: &str = "unavi::beacon::id";
-const EMIT_INTERVAL: Duration = Duration::from_secs(3);
+const EMIT_INTERVAL: f32 = 3.0;
 
 const SIZE: f32 = 0.095;
 const EVENT_RADIUS: f32 = SIZE * 3.0;
@@ -50,7 +60,7 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 // Larger corners leave only a thin gap between them; the recessed core cube
 // shows through that negative space as a 2D cross on each face.
 const CORNER: f32 = SIZE * 0.44;
-const CORNER_OFFSET: f32 = SIZE * 0.5 - CORNER * 0.5;
+const CORNER_OFFSET: f32 = (SIZE - CORNER) * 0.5;
 const CORE_SIZE: f32 = SIZE * 0.84;
 const CORE_NAME: &str = "core";
 
@@ -66,28 +76,9 @@ const PULSE_LEVELS: u32 = 12;
 const PULSE_MIN_EMISSIVE: f32 = 0.25;
 const PULSE_MAX_EMISSIVE: f32 = 0.95;
 
-const IDENTITY_QUAT: Quat = Quat {
-    x: 0.0,
-    y: 0.0,
-    z: 0.0,
-    w: 1.0,
-};
-
-fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(Transform {
-        translation,
-        rotation: IDENTITY_QUAT,
-        scale: Vec3::splat(1.0),
-    }))
-    .ok();
-}
-
 const fn material(color: Color, emissive_scale: f32) -> Material {
     Material {
-        alpha_cutoff: None,
-        alpha_mode:   None,
         base_color:   Some(color),
-        double_sided: None,
         emissive:     Some(Color {
             r: color.r * emissive_scale,
             g: color.g * emissive_scale,
@@ -96,110 +87,176 @@ const fn material(color: Color, emissive_scale: f32) -> Material {
         }),
         metallic:     Some(0.3),
         roughness:    Some(0.7),
+        alpha_mode:   None,
+        alpha_cutoff: None,
+        double_sided: None,
     }
 }
 
-fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
-    let shape = Cuboid::new(Vec3::splat(SIZE));
-    let group = doc.create_prim().expect("create_prim");
-    group.set_collider(Some(shape.collider())).ok();
-    group
-        .set_rigid_body(Some(RigidBody {
-            kind:            RigidBodyKind::Dynamic,
-            angular_damping: None,
-            friction:        None,
-            linear_damping:  None,
-            mass:            None,
-            restitution:     None,
-        }))
-        .ok();
+fn prim_name(doc: &Document, prim: (u64, u64)) -> Option<String> {
+    match doc.get(prim, &PropertyKey::Name) {
+        Some(Property::Name(name)) => Some(name),
+        _ => None,
+    }
+}
+
+/// Makes the space-named prim the beacon's body. Every peer's copy of the
+/// script does the same to the same committed prim, so the holder's pose
+/// stream drives one body everywhere.
+fn make_body(doc: &Document, body: (u64, u64)) -> anyhow::Result<()> {
+    doc.local()
+        .set(
+            body,
+            Property::Collider(Cuboid::new(Vec3::splat(SIZE)).collider()),
+        )
+        .set(body, Property::RigidBody(RigidBody::dynamic()))
+        .flush()?;
+    Ok(())
+}
+
+/// Builds the visible shell under the body. Its prims are this peer's own, so
+/// they carry no physics and only follow the body.
+fn build_shell(
+    doc: &Document,
+    parent: (u64, u64),
+    id: Hash,
+) -> anyhow::Result<((u64, u64), (u64, u64))> {
+    let group = doc.create_prim(wired::scene::document::Layer::Local, Some(parent))?;
+
+    let mut batch = doc.local();
 
     let shell_mat = material(SHELL_COLOR, 0.0);
     for x in [-1.0_f32, 1.0] {
         for y in [-1.0_f32, 1.0] {
             for z in [-1.0_f32, 1.0] {
-                let corner = Cuboid::new(Vec3::splat(CORNER)).mesh();
-                corner.set_material(Some(shell_mat)).ok();
-                set_translation(&corner, Vec3::new(x, y, z) * CORNER_OFFSET);
-                group.add_child(&corner).ok();
+                let corner_shape = Cuboid::new(Vec3::splat(CORNER));
+                let corner = corner_shape.mesh()?;
+                batch = batch
+                    .set(corner, Property::Material(shell_mat))
+                    .set(
+                        corner,
+                        Property::Transform(Transform::from_translation(
+                            Vec3::new(x, y, z) * CORNER_OFFSET,
+                        )),
+                    )
+                    .set(corner, Property::Parent(Some(group)));
             }
         }
     }
 
-    let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh();
-    core.set_material(Some(material(generate_color(id), PULSE_MIN_EMISSIVE)))
-        .ok();
-    core.set_name(Some(CORE_NAME)).ok();
-    group.add_child(&core).ok();
+    let core_shape = Cuboid::new(Vec3::splat(CORE_SIZE));
+    let core = core_shape.mesh()?;
+    batch = batch
+        .set(
+            core,
+            Property::Material(material(generate_color(id), PULSE_MIN_EMISSIVE)),
+        )
+        .set(core, Property::Name(CORE_NAME.to_owned()))
+        .set(core, Property::Parent(Some(group)));
 
-    parent.add_child(&group).ok();
-    group
+    batch.flush()?;
+
+    Ok((group, core))
 }
 
-/// No space-named prim means the authored template, which does nothing; a
-/// real beacon is minted as a document of its own.
-struct Script(Option<Beacon>);
+/// Ticks between looks for the space-named prim while none is found.
+const FIND_INTERVAL: u32 = 30;
+
+/// No space-named prim means the authored template, which does nothing, or a
+/// minted beacon whose committed prim has not synced to this peer yet, which
+/// is looked for again every [`FIND_INTERVAL`] ticks.
+struct Script {
+    beacon: Option<Beacon>,
+    waited: u32,
+}
 
 struct Beacon {
-    color:      Color,
-    core:       Prim,
-    group:      Prim,
-    id:         Hash,
-    input:      InputListener,
-    emit_time:  SystemTime,
-    published:  bool,
-    pulse_step: u32,
-    tick:       u32,
+    doc:          Document,
+    color:        Color,
+    core:         (u64, u64),
+    /// The space-named prim, which carries the collider and rigid body.
+    body:         (u64, u64),
+    id:           Hash,
+    input:        InputSubscription,
+    emit_elapsed: f32,
+    published:    bool,
+    pulse_step:   u32,
+    tick:         u32,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let doc = self_document()?;
-
-        let Some((id, prim)) = doc.prims().into_iter().find_map(|p| {
-            Hash::from_str(&p.name().unwrap_or_default())
-                .ok()
-                .map(|id| (id, p))
-        }) else {
-            return Ok(Self(None));
-        };
-
-        let group = prim
-            .children()
-            .into_iter()
-            .next()
-            .unwrap_or_else(|| build_shell(&doc, &prim, id));
-        let core = group
-            .children()
-            .into_iter()
-            .find(|c| c.name().as_deref() == Some(CORE_NAME))
-            .expect("beacon core prim");
-
-        let input = register_input_listener(&group)?;
-        println!("Beacon initialized: space={id}");
-        Ok(Self(Some(Beacon {
-            color: generate_color(id),
-            core,
-            group,
-            id,
-            input,
-            emit_time: SystemTime::now(),
-            published: false,
-            pulse_step: u32::MAX,
-            tick: 0,
-        })))
+        Ok(Self {
+            beacon: Beacon::find()?,
+            waited: 0,
+        })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
-        self.0.as_mut().map_or_else(|| Ok(()), Beacon::fixed_update)
+    fn fixed_update(&mut self, tick: Tick) -> anyhow::Result<()> {
+        if self.beacon.is_none() {
+            self.waited += 1;
+            if self.waited < FIND_INTERVAL {
+                return Ok(());
+            }
+            self.waited = 0;
+            self.beacon = Beacon::find()?;
+        }
+        self.beacon
+            .as_mut()
+            .map_or_else(|| Ok(()), |beacon| beacon.fixed_update(tick.dt))
     }
 }
 
 impl Beacon {
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
-        while let Some(event) = self.input.poll() {
+    /// The beacon this script's document is, once its space-named prim is
+    /// present.
+    fn find() -> anyhow::Result<Option<Self>> {
+        let doc = script_document()?;
+
+        let Some((id, prim)) = doc
+            .prims()
+            .into_iter()
+            .find_map(|p| Hash::from_str(&prim_name(&doc, p)?).ok().map(|id| (id, p)))
+        else {
+            return Ok(None);
+        };
+
+        make_body(&doc, prim)?;
+        let existing_group = doc.children(prim).into_iter().next();
+        let (_, core) = if let Some(group) = existing_group {
+            let core = doc
+                .children(group)
+                .into_iter()
+                .find(|&c| prim_name(&doc, c).as_deref() == Some(CORE_NAME))
+                .ok_or_else(|| anyhow::anyhow!("beacon core prim not found"))?;
+            (group, core)
+        } else {
+            build_shell(&doc, prim, id)?
+        };
+
+        let input = targeted::listen(&doc, prim)?;
+        println!("Beacon initialized: space={id}");
+        Ok(Some(Self {
+            doc,
+            color: generate_color(id),
+            core,
+            body: prim,
+            id,
+            input,
+            emit_elapsed: 0.0,
+            published: false,
+            pulse_step: u32::MAX,
+            tick: 0,
+        }))
+    }
+
+    fn fixed_update(&mut self, dt: f32) -> anyhow::Result<()> {
+        for event in self.input.drain(8) {
             if !self.published
-                && matches!(event.action, InputAction::Press | InputAction::GripPress)
+                && matches!(
+                    event.action,
+                    Action::Pressed(Button::Trigger | Button::Grip)
+                )
             {
                 // The copied template is already durable in its own
                 // namespace, so pressing the beacon only marks it published.
@@ -208,45 +265,52 @@ impl Beacon {
             }
         }
 
-        if !wired::peer::api::is_self_owner()? {
+        if !is_author(&self.doc)? {
             return Ok(());
         }
 
-        self.pulse();
+        self.pulse()?;
 
-        if self.emit_time.elapsed().expect("elapsed") < EMIT_INTERVAL {
+        self.emit_elapsed += dt;
+        if self.emit_elapsed < EMIT_INTERVAL {
             return Ok(());
         }
-        self.emit_time = SystemTime::now();
+        self.emit_elapsed = 0.0;
 
-        wired::event::api::emit(
-            CHANNEL,
+        wired::event::messaging::emit(
+            wired_guest::beacon::CHANNEL,
             self.id.as_bytes(),
-            EventFilter {
-                documents: None,
-                scope:     EventScope::Spatial(SpatialScope {
-                    prim:   self.group.clone(),
-                    radius: EVENT_RADIUS,
-                }),
-            },
+            None,
+            Scope::Spatial(Spatial {
+                origin: wired::core::ids::PrimRef {
+                    document: self.doc.id(),
+                    prim:     self.body,
+                },
+                radius: EVENT_RADIUS,
+            }),
         )?;
         Ok(())
     }
 
-    fn pulse(&mut self) {
+    fn pulse(&mut self) -> anyhow::Result<()> {
         self.tick = self.tick.wrapping_add(1);
         let phase = (self.tick % PULSE_TICKS) as f32 / PULSE_TICKS as f32;
         let level = (phase * TAU).sin().mul_add(0.5, 0.5);
         let step = (level * PULSE_LEVELS as f32).round() as u32;
         if step == self.pulse_step {
-            return;
+            return Ok(());
         }
         self.pulse_step = step;
 
         let emissive = (step as f32 / PULSE_LEVELS as f32)
             .mul_add(PULSE_MAX_EMISSIVE - PULSE_MIN_EMISSIVE, PULSE_MIN_EMISSIVE);
-        self.core
-            .set_material(Some(material(self.color, emissive)))
-            .ok();
+        self.doc
+            .local()
+            .set(
+                self.core,
+                Property::Material(material(self.color, emissive)),
+            )
+            .flush()?;
+        Ok(())
     }
 }

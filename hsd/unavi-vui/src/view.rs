@@ -1,9 +1,11 @@
-use wired_math::types::{
+//! What a surface hands a renderer: concrete values, no further state.
+
+use wired_guest::math::{
+    Color,
     Transform,
     Vec2,
     Vec3,
 };
-use wired_scene::types::Color;
 
 use crate::{
     attention::Attention,
@@ -61,16 +63,6 @@ impl PageView {
     pub const fn is_paged(&self) -> bool {
         self.count > 1
     }
-
-    #[must_use]
-    pub const fn has_previous(&self) -> bool {
-        self.index > 0
-    }
-
-    #[must_use]
-    pub const fn has_next(&self) -> bool {
-        self.index + 1 < self.count
-    }
 }
 
 /// Where the pointer is, in the surface's own coordinates and in the world.
@@ -82,7 +74,6 @@ pub struct Aim {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Frame {
-    pub eye:    Vec3,
     pub anchor: Transform,
     /// Resolves which slot is targeted. A held mote follows [`Frame::hand`]
     /// instead.

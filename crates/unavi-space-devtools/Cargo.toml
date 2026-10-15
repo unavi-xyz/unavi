@@ -1,0 +1,23 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-space-devtools"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy                = { features = ["bevy_feathers"], workspace = true }
+bevy-hsd.path       = "../bevy-hsd"
+hsd.path            = "../hsd"
+iroh.workspace      = true
+iroh-docs.workspace = true
+unavi-devtools.path = "../unavi-devtools"
+unavi-policy.path   = "../unavi-policy"
+unavi-space.path    = "../unavi-space"
+
+[dev-dependencies]
+blake3.workspace = true

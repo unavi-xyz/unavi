@@ -3,15 +3,15 @@
     ./common.nix
     ./hardware.nix
     ./services/nginx.nix
-    ./services/unavi-server.nix
+    ./services/unavi-node.nix
   ];
 
   networking.hostName = "unavi-stable";
 
   services = {
-    unavi-server = {
+    unavi-node = {
       enable = true;
-      package = inputs.self.packages.${pkgs.system}.unavi-server;
+      package = inputs.self.packages.${pkgs.system}.unavi-node;
     };
   };
 

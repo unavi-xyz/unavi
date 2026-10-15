@@ -1,6 +1,6 @@
 // Two prims sharing one shader graph: `default_glow` uses its defaults,
 // `red_glow` overrides public input 0 (the rim tint) to red.
-[
+(prims: [
     (
         attributes: (
             name: "default_glow",
@@ -16,4 +16,4 @@
             ),
         ),
     ),
-]
+])

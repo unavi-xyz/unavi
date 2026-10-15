@@ -14,11 +14,6 @@ use thiserror::Error;
 
 use crate::{
     attributes::reference::ReferenceAttr,
-    bounds::{
-        MAX_ENTRY_BYTES,
-        MAX_PACKAGE_BYTES,
-        MAX_PACKAGE_DOCUMENTS,
-    },
     format::meta::DOC_VERSION,
     id::DocId,
     key,
@@ -34,6 +29,16 @@ use crate::{
 
 pub const MAGIC: &[u8; 4] = b"HSDZ";
 pub const EXTENSION: &str = "hsdz";
+
+const MIB: usize = 1024 * 1024;
+
+/// Largest value one package entry may hold.
+pub const MAX_ENTRY_BYTES: usize = 32 * MIB;
+/// Largest package a loader reads.
+const MAX_PACKAGE_BYTES: usize = 256 * MIB;
+/// Most sub-documents one package may carry. Each mints a namespace when the
+/// package is instanced.
+const MAX_PACKAGE_DOCUMENTS: usize = 256;
 
 #[derive(Error, Debug)]
 pub enum PackageError {

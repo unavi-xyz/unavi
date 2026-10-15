@@ -3,7 +3,7 @@ use tracing::error;
 
 use crate::{
     CONFIG,
-    update::client,
+    update::app,
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -11,21 +11,21 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[component]
 pub fn Home() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
-    let mut client_running = use_signal(|| crate::CLIENT_PROCESS.is_running());
+    let mut app_running = use_signal(|| crate::APP_PROCESS.is_running());
     let mut xr_mode = use_signal(|| CONFIG.get().xr_mode);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let is_running = crate::CLIENT_PROCESS.is_running();
-            client_running.set(is_running);
+            let is_running = crate::APP_PROCESS.is_running();
+            app_running.set(is_running);
         }
     });
 
-    let mut handle_launch = move |_| match client::launch_client() {
+    let mut handle_launch = move |_| match app::launch_app() {
         Ok(()) => {
             launch_error.set(None);
-            client_running.set(true);
+            app_running.set(true);
 
             spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -33,7 +33,7 @@ pub fn Home() -> Element {
             });
         }
         Err(e) => {
-            error!("Failed to launch client: {e:?}");
+            error!("Failed to launch app: {e:?}");
             launch_error.set(Some(e.to_string()));
         }
     };
@@ -50,13 +50,13 @@ pub fn Home() -> Element {
 
     rsx! {
         button {
-            class: if client_running() { "home-button running" } else { "home-button" },
+            class: if app_running() { "home-button running" } else { "home-button" },
             onclick: move |e| {
-                if !client_running() {
+                if !app_running() {
                     handle_launch(e);
                 }
             },
-            {if client_running() { "⟨  connected  ⟩" } else { "Enter" }}
+            {if app_running() { "⟨  connected  ⟩" } else { "Enter" }}
         }
 
         div { class: "settings",
@@ -91,9 +91,9 @@ pub fn Home() -> Element {
         div { class: "version",
             div { "launcher v{VERSION}" }
             {
-                client::installed_client_version().map_or_else(
-                    || rsx! { div { "client not found" } },
-                    |client_ver| rsx! { div { "client v{client_ver}" } }
+                app::installed_app_version().map_or_else(
+                    || rsx! { div { "app not found" } },
+                    |app_ver| rsx! { div { "app v{app_ver}" } }
                 )
             }
         }

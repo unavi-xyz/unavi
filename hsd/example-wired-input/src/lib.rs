@@ -1,22 +1,21 @@
-use crate::wired::input::{
-    context::register_global_input_listener,
-    types::InputListener,
-};
+//! Logs every device input event, to show `wired:input/device` listening.
 
-wired_prelude::generate_script!(Script);
+use crate::wired::input::types::InputSubscription;
+
+wired_guest::generate_script!(Script);
 
 struct Script {
-    input: InputListener,
+    input: InputSubscription,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let input = register_global_input_listener()?;
+        let input = wired::input::device::listen()?;
         Ok(Self { input })
     }
 
-    fn fixed_update(&mut self) -> anyhow::Result<()> {
-        while let Some(event) = self.input.poll() {
+    fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
+        for event in self.input.drain(32) {
             println!("got input: {event:#?}");
         }
         Ok(())

@@ -6,10 +6,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::package::ImportPackage;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalStore,
-};
+use bevy_iroh::store::DataStore;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
@@ -28,7 +25,7 @@ fn main() {
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: "../unavi-client/assets/".to_string(),
+                file_path: "../unavi-app/assets/".to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {
@@ -40,16 +37,13 @@ fn main() {
         bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        unavi_util::UtilPlugin,
+        bevy_async::AsyncPlugin,
         unavi_input::InputPlugin { storage: None },
         unavi_script::ScriptPlugin,
     ))
     .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((
-        LocalBlobs(store.store.blobs().clone()),
-        LocalStore(store.store.clone()),
-    ));
+    app.insert_resource(DataStore(store.store));
 
     app.run();
 }

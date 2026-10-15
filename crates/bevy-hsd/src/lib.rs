@@ -12,13 +12,16 @@ use bevy::{
 
 pub mod anchor;
 pub mod attributes;
+pub mod billboard;
 pub mod document;
 pub mod feed;
+pub mod hierarchy;
 pub mod loaded;
 pub mod package;
 pub mod prim;
 pub mod reference;
 mod scene_events;
+pub mod stack;
 
 /// Applies document changes to the world. A write made before this set is
 /// visible the same frame.
@@ -34,7 +37,14 @@ impl Plugin for HsdPlugin {
         app.add_plugins((
             MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),
             bevy_msdf::MsdfPlugin,
+            billboard::plugin,
         ))
+            // Scene attributes insert `RigidBody`/`Collider` whether or not
+            // `unavi_physics::PhysicsPlugin` (which owns this resource too)
+            // is in the same app, so the limit it enforces must not depend
+            // on that plugin being present.
+            .init_resource::<unavi_physics::PhysicsLimits>()
+            .init_resource::<document::DocIndex>()
             .init_asset::<package::PackageAsset>()
             .init_resource::<attributes::shader::cache::ShaderGraphCache>()
             .register_asset_loader(package::PackageLoader)
@@ -50,6 +60,7 @@ impl Plugin for HsdPlugin {
                         scene_events::discard_unplaced_events,
                         scene_events::drain_scene_events,
                         attributes::xform::apply_xform,
+                        attributes::rigid_body::enforce_rigid_body_limit,
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
                         attributes::image::apply_sampler,
@@ -71,7 +82,7 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdSystems),
             )
-            .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdSystems))
+            .configure_sets(Update, bevy_msdf::MsdfSystems.after(HsdSystems))
             // `apply_xform` seeds physics positions from the anchored transform.
             .add_systems(Update, anchor::apply_anchors.before(HsdSystems))
             .add_systems(

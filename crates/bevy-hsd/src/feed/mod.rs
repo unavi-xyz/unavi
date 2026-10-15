@@ -9,13 +9,16 @@ use async_channel::{
     TryRecvError,
 };
 use bevy::prelude::*;
+use bevy_async::task;
 use hsd::{
     attributes::reference::LayerKey,
     state::entry::Entry,
 };
 use n0_future::FutureExt;
-use unavi_util::async_task::spawn_async_task;
-use wds::document::Document;
+use unavi_store::{
+    Document,
+    Events,
+};
 
 use crate::{
     document::{
@@ -24,6 +27,7 @@ use crate::{
     },
     prim::PrimIndex,
     reference::ReferenceInstances,
+    stack,
 };
 
 mod reader;
@@ -58,16 +62,26 @@ pub struct DocFeed {
 }
 
 impl DocFeed {
-    /// Subscribes to `doc` before anything else reads it, so a feed made
-    /// ahead of a sync sees every entry that sync brings.
+    /// Subscribes to `doc` before reading it.
     #[must_use]
     pub fn spawn(doc: Document, ready: FeedReady) -> Self {
+        Self::start(doc, None, ready)
+    }
+
+    /// Feeds from the events [`Store::join`](unavi_store::Store::join)
+    /// returned, which saw everything since before the sync started.
+    #[must_use]
+    pub fn joined(doc: Document, events: Events, ready: FeedReady) -> Self {
+        Self::start(doc, Some(events), ready)
+    }
+
+    fn start(doc: Document, events: Option<Events>, ready: FeedReady) -> Self {
         let (tx, rx) = async_channel::bounded(DELTA_CAPACITY);
         let (cancel, cancelled) = async_channel::bounded::<()>(1);
 
         let id = doc.id();
         let read = async move {
-            if let Err(err) = reader::Reader::new(doc, tx).run(ready).await {
+            if let Err(err) = reader::Reader::new(doc, tx).run(events, ready).await {
                 warn!(%id, ?err, "document feed stopped");
             }
         };
@@ -77,7 +91,7 @@ impl DocFeed {
                 Ok(()) | Err(_) => {}
             }
         };
-        spawn_async_task(read.or(stop));
+        task::spawn(read.or(stop));
 
         Self {
             rx,
@@ -154,7 +168,7 @@ pub(crate) fn apply_doc_deltas(
                 let Some(mut state) = reference.lock() else {
                     continue;
                 };
-                if let Err(err) = state.project_override(entry) {
+                if let Err(err) = state.project_override(&stack::OVERRIDE, entry) {
                     warn!(key = %entry.key, ?err, "dropping an unreadable override");
                 }
             }

@@ -8,7 +8,8 @@ use hsd::{
     property::Payload,
 };
 use unavi_physics::finite;
-use unavi_util::hierarchy::global_transform;
+
+use crate::hierarchy::global_transform;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct XformData(pub XformAttr);

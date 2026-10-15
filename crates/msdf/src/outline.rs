@@ -3,7 +3,7 @@
 //! Fonts are untrusted: a face may hand back a curve before it opens a
 //! contour, or a glyph made of a hundred thousand segments whose field would
 //! take minutes to sample. Neither may panic or run long, so a stray segment
-//! is dropped and a glyph past [`Limits::segments`] is refused whole.
+//! is dropped and a glyph past [`OutlineLimits::segments`] is refused whole.
 
 use fdsm::{
     bezier::{
@@ -21,14 +21,15 @@ use ttf_parser::{
     OutlineBuilder,
 };
 
+/// Caps on how expensive one glyph's outline may be to load.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Limits {
+pub struct OutlineLimits {
     /// Segments one glyph may hold. Every texel of the field measures its
     /// distance to every segment, so this bounds generation time.
     pub segments: usize,
 }
 
-impl Default for Limits {
+impl Default for OutlineLimits {
     fn default() -> Self {
         Self { segments: 4096 }
     }
@@ -37,7 +38,7 @@ impl Default for Limits {
 /// `None` when the face has no outline for the glyph, or when the outline is
 /// past `limits`.
 #[must_use]
-pub fn load(face: &Face, id: GlyphId, limits: Limits) -> Option<Shape<Contour>> {
+pub fn load(face: &Face, id: GlyphId, limits: OutlineLimits) -> Option<Shape<Contour>> {
     let mut builder = Builder {
         shape: Shape::default(),
         start: None,
@@ -58,7 +59,7 @@ struct Builder {
     start:  Option<Point>,
     last:   Option<Point>,
     count:  usize,
-    limits: Limits,
+    limits: OutlineLimits,
 }
 
 impl Builder {
@@ -151,7 +152,7 @@ mod tests {
     fn a_letter_loads_as_closed_contours() {
         let font = font();
         let id = font.glyph_index('O').expect("O");
-        let shape = load(font.face(), id, Limits::default()).expect("outline");
+        let shape = load(font.face(), id, OutlineLimits::default()).expect("outline");
         assert_eq!(shape.contours.len(), 2, "an O is a ring inside a ring");
         for contour in &shape.contours {
             let first = contour.segments.first().expect("segment").start();
@@ -164,7 +165,7 @@ mod tests {
     fn a_space_has_no_outline() {
         let font = font();
         let id = font.glyph_index(' ').expect("space");
-        assert!(load(font.face(), id, Limits::default()).is_none());
+        assert!(load(font.face(), id, OutlineLimits::default()).is_none());
     }
 
     #[test]
@@ -172,11 +173,11 @@ mod tests {
         let font = font();
         let id = font.glyph_index('@').expect("@");
         assert!(
-            load(font.face(), id, Limits { segments: 4 }).is_none(),
+            load(font.face(), id, OutlineLimits { segments: 4 }).is_none(),
             "a glyph whose field would take minutes never starts"
         );
         assert!(
-            segments(&load(font.face(), id, Limits::default()).expect("outline")) > 4,
+            segments(&load(font.face(), id, OutlineLimits::default()).expect("outline")) > 4,
             "and the same glyph loads under the real cap"
         );
     }
@@ -188,7 +189,7 @@ mod tests {
             start:  None,
             last:   None,
             count:  0,
-            limits: Limits::default(),
+            limits: OutlineLimits::default(),
         };
         builder.line_to(1.0, 1.0);
         builder.quad_to(1.0, 1.0, 2.0, 2.0);

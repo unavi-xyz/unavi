@@ -1,9 +1,11 @@
-[
-    (
-        attributes: (
-            name: "spawner",
-            script: "./Cargo.toml",
+(
+    prims: [
+        (
+            attributes: (
+                name: "spawner",
+                script: "./Cargo.toml",
+            ),
+            children: [],
         ),
-        children: [],
-    ),
-]
+    ],
+)

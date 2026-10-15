@@ -1,3 +1,5 @@
+//! A torus, swept as a ring of rings.
+
 use std::{
     cell::{
         Cell,
@@ -6,19 +8,21 @@ use std::{
     f32::consts::TAU,
 };
 
-use glam::Vec3;
+use wired_guest::math::Vec3;
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestTorus,
-    wired::scene::types::{
-        Document,
-        Prim,
+    wired::{
+        core::error::Error,
+        scene::document::Document,
     },
 };
 
-#[derive(Default)]
-pub struct TorusWrapped {
+const MAX_MINOR_RESOLUTION: u32 = 64;
+const MAX_MAJOR_RESOLUTION: u32 = 128;
+
+pub struct Torus {
     doc:              RefCell<Option<Document>>,
     minor_radius:     f32,
     major_radius:     f32,
@@ -26,20 +30,20 @@ pub struct TorusWrapped {
     major_resolution: Cell<u32>,
 }
 
-impl GuestTorus for TorusWrapped {
+impl GuestTorus for Torus {
     fn new(minor_radius: f32, major_radius: f32) -> Self {
         Self {
+            doc: RefCell::new(None),
             minor_radius,
             major_radius,
             minor_resolution: Cell::new(24),
             major_resolution: Cell::new(32),
-            ..Default::default()
         }
     }
 
-    fn mesh(&self) -> Prim {
-        crate::convert_raw_mesh(
-            self.doc.borrow().as_ref(),
+    fn mesh(&self) -> Result<(u64, u64), Error> {
+        crate::mesh_into(
+            &self.doc,
             &build(
                 self.minor_radius,
                 self.major_radius,
@@ -57,16 +61,28 @@ impl GuestTorus for TorusWrapped {
         self.minor_resolution.get()
     }
 
-    fn set_minor_resolution(&self, value: u32) {
+    fn set_minor_resolution(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_MINOR_RESOLUTION {
+            return Err(Error::InvalidArgument(format!(
+                "minor-resolution must be at most {MAX_MINOR_RESOLUTION}"
+            )));
+        }
         self.minor_resolution.set(value);
+        Ok(())
     }
 
     fn major_resolution(&self) -> u32 {
         self.major_resolution.get()
     }
 
-    fn set_major_resolution(&self, value: u32) {
+    fn set_major_resolution(&self, value: u32) -> Result<(), Error> {
+        if value > MAX_MAJOR_RESOLUTION {
+            return Err(Error::InvalidArgument(format!(
+                "major-resolution must be at most {MAX_MAJOR_RESOLUTION}"
+            )));
+        }
         self.major_resolution.set(value);
+        Ok(())
     }
 }
 

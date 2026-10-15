@@ -4,7 +4,7 @@ use bevy_hsd::{
     document::HsdDocId,
     loaded::HsdLoaded,
 };
-use bevy_iroh::store::LocalStore;
+use bevy_iroh::store::DataStore;
 use bytemuck::cast_slice;
 use hsd::{
     attributes::{
@@ -26,7 +26,6 @@ use hsd::{
 };
 use rstest::rstest;
 use tracing_test::traced_test;
-use unavi_util::UtilPlugin;
 
 use crate::common::*;
 
@@ -138,8 +137,7 @@ fn test_loaded_after_collider_built(mut ctx: TestContext) {
 #[rstest]
 fn test_loaded_despite_a_reference_past_the_depth_cap(mut ctx: TestContext) {
     let backing = Backing::new();
-    ctx.app.add_plugins(UtilPlugin);
-    ctx.app.world_mut().spawn(LocalStore(backing.store()));
+    ctx.app.insert_resource(DataStore(backing.store()));
     ctx.app
         .world_mut()
         .entity_mut(ctx.doc)

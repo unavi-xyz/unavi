@@ -1,3 +1,5 @@
+//! The hold-to-confirm state for a consequential action.
+
 use crate::tuning::Tuning;
 
 /// Where a cast is.
@@ -55,11 +57,6 @@ impl Cast {
         Self::new(tuning.cast_duration)
     }
 
-    #[must_use]
-    pub const fn state(&self) -> State {
-        self.state
-    }
-
     /// Advances the fill. `held` is whether attention is still on the site;
     /// losing it aborts immediately, with no grace period to learn.
     ///
@@ -103,11 +100,6 @@ mod tests {
 
     fn cast() -> Cast {
         Cast::new(DURATION)
-    }
-
-    #[test]
-    fn a_fresh_cast_has_not_started() {
-        assert_eq!(cast().state(), State::Filling(0.0));
     }
 
     #[test]

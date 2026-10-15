@@ -1,5 +1,8 @@
+//! What a mote is, independent of where it sits in a tree: its role, its
+//! pips, and how both are drawn at a given heat.
+
 use smol_str::SmolStr;
-use wired_scene::types::Color;
+use wired_guest::math::Color;
 
 use crate::{
     attention::{

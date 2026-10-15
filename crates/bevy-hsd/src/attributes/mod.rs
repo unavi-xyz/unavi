@@ -10,7 +10,7 @@ use hsd::{
     },
 };
 
-mod buffer;
+pub mod buffer;
 pub mod collider;
 mod gravity_scale;
 pub mod image;
@@ -18,7 +18,7 @@ pub mod material;
 pub(crate) mod mesh;
 mod name;
 pub mod portal;
-mod rigid_body;
+pub(crate) mod rigid_body;
 pub mod script;
 pub mod shader;
 pub mod spawn;

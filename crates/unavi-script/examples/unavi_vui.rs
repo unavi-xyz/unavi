@@ -12,28 +12,25 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::package::ImportPackage;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalStore,
-};
+use bevy_iroh::store::DataStore;
 use unavi_agent::LocalAgent;
 
-use crate::util::create_client_store;
+use crate::util::create_app_store;
 
 mod util;
 
 const SCRIPT_PATH: &str = "hsd/example_unavi_vui.hsdz";
-const ASSETS_PATH: &str = "../unavi-client/assets/";
+const ASSETS_PATH: &str = "../unavi-app/assets/";
 const GROUND_SIZE: f32 = 24.0;
 const GROUND_THICKNESS: f32 = 0.5;
 
 fn main() {
-    let store = create_client_store();
+    let store = create_app_store();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before
     // `AssetPlugin` builds the sources it knows about.
-    app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
+    app.add_plugins(unavi_assets::AssetsPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -47,7 +44,7 @@ fn main() {
         unavi_physics::PhysicsPlugin,
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        unavi_util::UtilPlugin,
+        bevy_async::AsyncPlugin,
         unavi_input::InputPlugin { storage: None },
         unavi_grab::GrabPlugin,
         unavi_agent::AgentPlugin,
@@ -57,10 +54,7 @@ fn main() {
     .insert_resource(ClearColor(Color::srgb(0.05, 0.06, 0.09)))
     .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((
-        LocalBlobs(store.store.blobs().clone()),
-        LocalStore(store.store.clone()),
-    ));
+    app.insert_resource(DataStore(store.store));
 
     app.run();
 }

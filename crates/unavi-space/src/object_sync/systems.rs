@@ -1,0 +1,348 @@
+//! Sending held prims' poses, and driving remotely held prims as kinematic
+//! replicas.
+
+use std::time::Duration;
+
+use async_channel::TrySendError;
+use avian3d::prelude::{
+    AngularVelocity,
+    LinearVelocity,
+    Position,
+    RigidBody,
+    Rotation,
+};
+use bevy::{
+    ecs::system::ParallelCommands,
+    platform::collections::HashMap,
+    prelude::*,
+};
+use bevy_hsd::{
+    document::{
+        DocIndex,
+        Hsd,
+        HsdDocId,
+    },
+    prim::{
+        Prim,
+        PrimIndex,
+        PrimOf,
+    },
+    stack::RUNTIME,
+};
+use unavi_input::crosshair::Grabbable;
+use web_time::Instant;
+
+use crate::{
+    authority::SpaceView,
+    index::Index,
+    link::{
+        PeerLink,
+        senders::{
+            LastSent,
+            PeerSender,
+        },
+    },
+    membership::Space,
+    object_sync::{
+        ObjectSender,
+        OutgoingObject,
+    },
+};
+
+/// Objects move slowly relative to avatars and are dead-reckoned between
+/// updates, so they tick far less often than agent poses.
+const OBJECT_INTERVAL: Duration = Duration::from_millis(200);
+
+/// Broadcasts every dynamic prim that peers share in documents the local peer
+/// holds over.
+///
+/// A prim only this peer's layer states is skipped: no other peer has it.
+/// Poses are space-relative; velocities are space-invariant (spaces only
+/// translate).
+pub fn send_object_poses(
+    time: Res<Time>,
+    spaces: Query<(&Space, &GlobalTransform)>,
+    roots: Query<&HsdDocId>,
+    docs: Query<&Hsd>,
+    prims: Query<(
+        &Prim,
+        &PrimOf,
+        &RigidBody,
+        &GlobalTransform,
+        Option<&LinearVelocity>,
+        Option<&AngularVelocity>,
+    )>,
+    mut streams: Query<(Entity, &ObjectSender, &mut LastSent), With<PeerSender>>,
+    view: Option<Res<SpaceView>>,
+    commands: ParallelCommands,
+) {
+    let Some(view) = view else {
+        return;
+    };
+    let now = time.elapsed();
+    let me = view.me();
+
+    let space_origins = spaces
+        .iter()
+        .map(|(space, gt)| (space.id(), gt.translation()))
+        .collect::<HashMap<_, _>>();
+    let mut held = HashMap::new();
+
+    let outgoing = prims
+        .iter()
+        .filter_map(|(prim, child_of, body, global, lin, ang)| {
+            if !matches!(body, RigidBody::Dynamic) {
+                return None;
+            }
+            // A prim only this peer's layer states has no copy on any other
+            // peer, so its id and pose mean nothing to them.
+            let replicated = docs
+                .get(child_of.0)
+                .ok()
+                .and_then(Hsd::lock)
+                .is_some_and(|state| state.is_replicated(prim.0, &RUNTIME));
+            if !replicated {
+                return None;
+            }
+            let doc = roots.get(child_of.0).ok()?.0;
+            let space = *held.entry(doc).or_insert_with(|| {
+                // The presence space is what `holder` is keyed on, so it is
+                // the one that decides who may drive the document.
+                view.replicas()
+                    .space_of(doc)
+                    .filter(|space| view.replicas().is_holder(*space, doc, me))
+            });
+            let space = space?;
+            let origin = space_origins.get(&space)?;
+            let world = global.compute_transform();
+            Some(OutgoingObject {
+                doc,
+                space,
+                prim: prim.0,
+                root: Transform {
+                    translation: world.translation - *origin,
+                    rotation: world.rotation,
+                    ..Default::default()
+                },
+                lin: lin.map_or(Vec3::ZERO, |v| v.0),
+                ang: ang.map_or(Vec3::ZERO, |v| v.0),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if outgoing.is_empty() {
+        return;
+    }
+
+    streams
+        .par_iter_mut()
+        .for_each(|(entity, sender, mut last_sent)| {
+            if sender.0.is_full() {
+                if sender.0.is_closed() {
+                    commands.command_scope(|mut commands| commands.entity(entity).despawn());
+                }
+                return;
+            }
+            if !last_sent.take_due(OBJECT_INTERVAL, now) {
+                return;
+            }
+
+            match sender.0.try_send(outgoing.clone()) {
+                Ok(()) | Err(TrySendError::Full(_)) => {}
+                Err(TrySendError::Closed(_)) => {
+                    commands.command_scope(|mut commands| commands.entity(entity).despawn());
+                }
+            }
+        });
+}
+
+/// Drives a remotely held prim from network updates.
+///
+/// The replica is held [`RigidBody::Kinematic`] so local physics never fights
+/// the holder; its pose is smoothed toward the last received space-relative
+/// target each tick.
+#[derive(Component)]
+pub struct ObjectInterp {
+    space:     Entity,
+    target:    Transform,
+    lin:       Vec3,
+    ang:       Vec3,
+    last_recv: Instant,
+}
+
+/// Window a target is dead-reckoned past its last update before holding.
+const MAX_EXTRAPOLATION: Duration = Duration::from_millis(300);
+
+/// Exponential rate the replica chases its target; converges in ~100ms.
+const SMOOTH_RATE: f32 = 16.0;
+
+pub fn apply_remote_objects(
+    roots: Query<&PrimIndex>,
+    doc_index: Res<DocIndex>,
+    spaces: Res<Index<Space>>,
+    mut interps: Query<&mut ObjectInterp>,
+    view: Option<Res<SpaceView>>,
+    link: Option<Res<PeerLink>>,
+    mut commands: Commands,
+) {
+    let (Some(view), Some(link)) = (view, link) else {
+        return;
+    };
+    let updates = link.objects().drain();
+    let mut holders = HashMap::new();
+
+    for ((peer, doc, prim), (recv, resolved)) in updates {
+        // Only the document's current holder may move it, and never the
+        // local peer. The holder is keyed on the document's presence space,
+        // which is what `reconcile_object_holds` parks a body from, so the
+        // sender's space is only the coordinate frame. Where the two
+        // disagree, the presence space decides, or a parked replica would
+        // never be driven.
+        let holder = *holders.entry((resolved.space, doc)).or_insert_with(|| {
+            view.replicas().holder(resolved.space, doc).or_else(|| {
+                view.replicas()
+                    .space_of(doc)
+                    .and_then(|space| view.replicas().holder(space, doc))
+            })
+        });
+        if holder != Some(peer) || holder == Some(view.me()) {
+            continue;
+        }
+        let Some(prim_entity) = doc_index
+            .get(doc)
+            .and_then(|e| roots.get(e).ok())
+            .and_then(|index| index.get(prim))
+        else {
+            continue;
+        };
+        let Some(space) = spaces.get(resolved.space) else {
+            continue;
+        };
+
+        if let Ok(mut interp) = interps.get_mut(prim_entity) {
+            interp.space = space;
+            interp.target = resolved.root;
+            interp.lin = resolved.lin;
+            interp.ang = resolved.ang;
+            interp.last_recv = recv;
+        } else {
+            commands.entity(prim_entity).insert((
+                ObjectInterp {
+                    space,
+                    target: resolved.root,
+                    lin: resolved.lin,
+                    ang: resolved.ang,
+                    last_recv: recv,
+                },
+                RigidBody::Kinematic,
+                ReplicaObject,
+            ));
+        }
+    }
+}
+
+/// Smooths each replica toward its velocity-extrapolated target. The body is
+/// kinematic, so writing [`Position`]/[`Rotation`] places it without
+/// contention.
+pub fn advance_object_interp(
+    time: Res<Time>,
+    spaces: Query<&GlobalTransform, With<Space>>,
+    mut objects: Query<(&ObjectInterp, &mut Position, &mut Rotation)>,
+) {
+    let now = Instant::now();
+    let alpha = 1.0 - (-SMOOTH_RATE * time.delta_secs()).exp();
+
+    for (interp, mut position, mut rotation) in &mut objects {
+        let Ok(origin) = spaces.get(interp.space).map(GlobalTransform::translation) else {
+            continue;
+        };
+
+        let extrap = now
+            .saturating_duration_since(interp.last_recv)
+            .min(MAX_EXTRAPOLATION)
+            .as_secs_f32();
+        let target_pos = origin
+            + interp
+                .lin
+                .mul_add(Vec3::splat(extrap), interp.target.translation);
+        let target_rot = Quat::from_scaled_axis(interp.ang * extrap) * interp.target.rotation;
+
+        position.0 = position.0.lerp(target_pos, alpha);
+        rotation.0 = rotation.0.slerp(target_rot, alpha);
+    }
+}
+
+/// A prim parked [`RigidBody::Kinematic`] because a remote peer holds over
+/// its document.
+///
+/// It never free-falls before its first update, and it is still worth
+/// grabbing: a grab takes the hold over, which makes it dynamic here.
+#[derive(Component)]
+pub struct ReplicaObject;
+
+/// Parks remotely-controlled prims as kinematic replicas and runs local or
+/// unheld ones as dynamic. `replicas::holder` resolves the latest claim,
+/// so only the accepted controller drives a prim.
+pub fn reconcile_object_holds(
+    roots: Query<&HsdDocId>,
+    docs: Query<&Hsd>,
+    prims: Query<
+        (
+            Entity,
+            &Prim,
+            &PrimOf,
+            &RigidBody,
+            Has<ReplicaObject>,
+            Has<Grabbable>,
+        ),
+        With<Prim>,
+    >,
+    view: Option<Res<SpaceView>>,
+    mut commands: Commands,
+) {
+    let Some(view) = view else {
+        return;
+    };
+    let mut remote = HashMap::new();
+    for (entity, prim, child_of, body, is_replica, grabbable) in &prims {
+        // A local-only prim is this peer's own; a remote holder has no copy
+        // of it to drive, so it keeps simulating here.
+        let replicated = docs
+            .get(child_of.0)
+            .ok()
+            .and_then(Hsd::lock)
+            .is_some_and(|state| state.is_replicated(prim.0, &RUNTIME));
+        if !replicated {
+            continue;
+        }
+        let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
+            continue;
+        };
+        let remote_controlled = *remote.entry(doc).or_insert_with(|| {
+            view.replicas().space_of(doc).is_some_and(|space| {
+                let holder = view.replicas().holder(space, doc);
+                holder.is_some() && holder != Some(view.me())
+            })
+        });
+
+        match (remote_controlled, is_replica) {
+            (true, false) if matches!(body, RigidBody::Dynamic) => {
+                commands
+                    .entity(entity)
+                    .insert((ReplicaObject, RigidBody::Kinematic));
+                // A replica a remote peer drives is still something to
+                // point at and take over, so it carries the hover ring.
+                if !grabbable {
+                    commands.entity(entity).insert(Grabbable);
+                }
+            }
+            (false, true) => {
+                commands
+                    .entity(entity)
+                    .remove::<(ReplicaObject, ObjectInterp)>()
+                    .insert(RigidBody::Dynamic);
+            }
+            _ => {}
+        }
+    }
+}

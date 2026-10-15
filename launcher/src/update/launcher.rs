@@ -7,6 +7,7 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
+        MAX_DOWNLOAD_BYTES,
         download_with_progress,
         fetch_latest_release,
         find_asset,
@@ -47,7 +48,8 @@ where
     }
 
     info!("Updating to {}", latest.version);
-    let asset = find_asset(latest.assets, "unavi-launcher", platform::LAUNCHER_EXT)
+
+    let asset = find_asset(&latest.assets, "unavi-launcher", platform::LAUNCHER_EXT)
         .context("launcher asset not found in release")?;
 
     on_status(UpdateStatus::Downloading {
@@ -59,12 +61,17 @@ where
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
     info!("Downloading to: {}", tmp_archive_path.display());
 
-    download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
-        on_status(UpdateStatus::Downloading {
-            version:  latest.version.to_string(),
-            progress: Some(progress),
-        });
-    })
+    download_with_progress(
+        &asset.browser_download_url,
+        &tmp_archive_path,
+        MAX_DOWNLOAD_BYTES,
+        |progress| {
+            on_status(UpdateStatus::Downloading {
+                version:  latest.version.to_string(),
+                progress: Some(progress),
+            });
+        },
+    )
     .await?;
 
     on_status(UpdateStatus::UpdatedNeedsRestart);

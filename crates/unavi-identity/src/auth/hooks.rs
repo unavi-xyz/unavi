@@ -1,3 +1,6 @@
+//! Endpoint hooks: prove ahead of every dial, and track each peer's
+//! connections so its binding ends with them.
+
 use std::sync::Arc;
 
 use iroh::{
@@ -20,8 +23,6 @@ use crate::auth::{
     bindings::Bindings,
 };
 
-/// Intercepts connection establishment so a peer is identified before the
-/// protocol that wanted it runs.
 #[derive(Debug)]
 pub struct Hooks {
     pub tx:       mpsc::Sender<Message>,
@@ -56,8 +57,20 @@ impl EndpointHooks for Hooks {
 
     fn after_handshake<'a>(
         &'a self,
-        _conn: &'a Connection,
+        conn: &'a Connection,
     ) -> impl Future<Output = AfterHandshakeOutcome> + Send + 'a {
+        let peer = conn.remote_id();
+        // Registered now, while this call still holds the connection, so the
+        // close is seen however soon it comes.
+        let closed = conn.weak_handle().closed();
+        self.bindings.connection_opened(peer);
+
+        let bindings = Arc::clone(&self.bindings);
+        n0_future::task::spawn(async move {
+            closed.await;
+            bindings.connection_closed(peer);
+        });
+
         std::future::ready(AfterHandshakeOutcome::accept())
     }
 }

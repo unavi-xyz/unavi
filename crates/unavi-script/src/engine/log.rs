@@ -1,3 +1,5 @@
+//! Script output, logged through `tracing`.
+
 use tracing::{
     info,
     warn,
@@ -14,7 +16,7 @@ pub enum Level {
 /// What counts as a run belongs to the transport — a read off wasmtime's
 /// stream, a microtask's worth of `jco` writes — so a caller hands one over
 /// already gathered. Both then land in `tracing`, and so obey the same filter
-/// as everything else the client logs.
+/// as everything else the app logs.
 pub fn emit(script: &str, level: Level, run: &str) {
     let run = run.trim_end();
     if run.is_empty() {

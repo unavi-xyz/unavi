@@ -10,18 +10,18 @@ use tracing::info;
 #[path = "archive.rs"] mod archive;
 
 pub const RELEASE_TARGET: &str = "windows";
-pub const CLIENT_EXE: &str = "unavi-client.exe";
-pub const CLIENT_EXT: &str = "xz";
+pub const APP_EXE: &str = "unavi-app.exe";
+pub const APP_EXT: &str = "xz";
 pub const LAUNCHER_EXT: &str = "msi";
 
 /// `msiexec` reports success but defers the file swap to the next boot.
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 
-pub fn client_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
+pub fn app_command(exe: &Path, _version: &semver::Version) -> anyhow::Result<Command> {
     Ok(Command::new(exe))
 }
 
-pub fn install_client(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+pub fn install_app(downloaded: &Path, dest_dir: &Path) -> anyhow::Result<()> {
     archive::unpack_tar_xz(downloaded, dest_dir)
 }
 

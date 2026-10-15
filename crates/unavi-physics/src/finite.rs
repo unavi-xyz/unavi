@@ -7,14 +7,36 @@ use bevy::prelude::{
     Vec3,
 };
 
+/// Past this, a length is scene-hostile rather than merely large.
+///
+/// The solver squares distances internally (contact separation, kinetic
+/// energy), and a value this size is already close to overflowing `f32`
+/// once squared.
+pub const MAX_EXTENT: f32 = 1.0e6;
+
+/// Determinant bounds on a transform's linear part (rotation times scale).
+///
+/// Below [`MIN_DETERMINANT`] the shape has collapsed, indistinguishable from
+/// zero scale; above [`MAX_DETERMINANT`] it has blown up enough to overflow
+/// the solver's area/volume math the same way a NaN does.
+pub const MIN_DETERMINANT: f32 = 1.0e-12;
+
+/// See [`MIN_DETERMINANT`].
+pub const MAX_DETERMINANT: f32 = 1.0e12;
+
+/// A length (radius, mass, height), accepted only if finite, strictly
+/// positive, and no larger than [`MAX_EXTENT`].
 #[must_use]
-pub fn positive(v: f32) -> bool {
-    v.is_finite() && v > 0.0
+pub fn positive_length(v: f32) -> bool {
+    v.is_finite() && v > 0.0 && v <= MAX_EXTENT
 }
 
+/// A length that may be zero (a capsule's straight section, a damping
+/// coefficient), accepted only if finite, non-negative, and no larger than
+/// [`MAX_EXTENT`].
 #[must_use]
-pub fn nonneg(v: f32) -> bool {
-    v.is_finite() && v >= 0.0
+pub fn nonnegative_length(v: f32) -> bool {
+    v.is_finite() && (0.0..=MAX_EXTENT).contains(&v)
 }
 
 /// A velocity, force, or point, accepted only if every component is finite.
@@ -46,8 +68,9 @@ mod tests {
     };
 
     use super::{
-        nonneg,
-        positive,
+        MAX_EXTENT,
+        nonnegative_length,
+        positive_length,
         quat,
         vec3,
     };
@@ -84,15 +107,15 @@ mod tests {
 
     #[test]
     fn zero_is_not_positive_but_is_nonneg() {
-        assert!(!positive(0.0));
-        assert!(nonneg(0.0));
+        assert!(!positive_length(0.0));
+        assert!(nonnegative_length(0.0));
     }
 
     #[test]
     fn non_finite_values_are_rejected() {
         for v in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-            assert!(!positive(v), "{v} passed positive");
-            assert!(!nonneg(v), "{v} passed nonneg");
+            assert!(!positive_length(v), "{v} passed positive_length");
+            assert!(!nonnegative_length(v), "{v} passed nonnegative_length");
         }
     }
 
@@ -100,7 +123,15 @@ mod tests {
     /// actually sees, so the check has to happen after it.
     #[test]
     fn an_f64_that_flushes_to_zero_or_infinity_in_f32_is_rejected() {
-        assert!(!positive(1.0e-300_f64 as f32));
-        assert!(!positive(1.0e300_f64 as f32));
+        assert!(!positive_length(1.0e-300_f64 as f32));
+        assert!(!positive_length(1.0e300_f64 as f32));
+    }
+
+    #[test]
+    fn a_length_beyond_max_extent_is_rejected() {
+        assert!(!positive_length(MAX_EXTENT * 2.0));
+        assert!(!nonnegative_length(MAX_EXTENT * 2.0));
+        assert!(positive_length(MAX_EXTENT));
+        assert!(nonnegative_length(MAX_EXTENT));
     }
 }

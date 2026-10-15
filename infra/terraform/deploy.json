@@ -6,11 +6,11 @@
   "stable": {
     "server_ipv4": "161.35.135.143",
     "services": {
-      "unavi_server": {
+      "unavi_node": {
         "domain": "node.unavi.xyz",
         "port": 5000
       },
-      "web_client": {
+      "web_app": {
         "domain": "app.unavi.xyz",
         "static": true
       }

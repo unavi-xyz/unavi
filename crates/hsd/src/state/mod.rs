@@ -1,5 +1,5 @@
-//! A document composed through its layer stack into the view its prims
-//! enter the scene from, with the [`SceneEvent`]s describing each change.
+//! A document resolved from its layer stack into the view its prims enter the
+//! scene from, with the [`SceneEvent`]s describing each change.
 
 use std::collections::{
     BTreeSet,
@@ -19,19 +19,20 @@ use crate::{
     },
     state::{
         event::SceneEvent,
-        layer::{
-            Layer,
-            LayerId,
-        },
+        layer::Layer,
         prim::PrimState,
+        stack::{
+            LayerId,
+            Stacked,
+        },
     },
 };
 
+mod apply;
 mod commit;
 mod compose;
 mod project;
 mod reference;
-mod session;
 mod write;
 
 pub mod entry;
@@ -39,6 +40,7 @@ pub mod event;
 pub mod layer;
 pub mod opinion;
 pub mod prim;
+pub mod stack;
 
 #[cfg(test)] mod tests;
 
@@ -52,6 +54,8 @@ pub enum StateError {
     Value(#[from] PropertyError),
     #[error("postcard {0}")]
     Postcard(#[from] postcard::Error),
+    #[error(transparent)]
+    Stack(#[from] stack::StackError),
 }
 
 /// Deepest parent chain a prim may have and still be in the scene.
@@ -63,37 +67,40 @@ pub const MAX_PRIM_DEPTH: usize = 512;
 pub const MAX_SCENE_PRIMS: usize = 100_000;
 
 /// The layer a [`HsdState::commit`] promotes opinions into.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommitTarget {
-    /// Written to this document's store.
-    Document,
-    /// Durable in the document referencing this one through `site`.
-    Override { site: PrimId },
-    /// Held for this session only.
-    Session,
+    /// The base layer, written to this document's store.
+    Base,
+    /// The override `layer`, durable in the document referencing this one
+    /// through `site`.
+    Override { layer: LayerId, site: PrimId },
+    /// Another layer of the stack, held only as long as it is.
+    Layer(LayerId),
 }
 
 #[derive(Debug)]
 pub struct HsdState {
-    meta:       DocMeta,
-    /// Indexed by [`LayerId`], weakest first.
-    layers:     [Layer; LayerId::ALL.len()],
+    meta:        DocMeta,
+    /// Weakest first. The base layer is always first.
+    stack:       Vec<Stacked>,
+    /// Where plain writes go.
+    edit_target: LayerId,
     /// This document's opinions about the prims of the documents it
     /// references, keyed by reference site. They compose only once installed
     /// into the referenced document.
-    references: HashMap<PrimId, Layer>,
-    resolved:   HashMap<PrimId, PrimState>,
+    references:  HashMap<PrimId, Layer>,
+    resolved:    HashMap<PrimId, PrimState>,
     /// Keyed by resolved parent, including parents that do not exist yet.
-    children:   HashMap<PrimId, BTreeSet<PrimId>>,
+    children:    HashMap<PrimId, BTreeSet<PrimId>>,
     /// Prims in the scene and their parent, `None` for a root.
-    in_scene:   HashMap<PrimId, Option<PrimId>>,
+    in_scene:    HashMap<PrimId, Option<PrimId>>,
     /// Prims held only because [`MAX_SCENE_PRIMS`] was full when last
     /// placed. [`HsdState::refresh`] re-admits them as room frees.
-    capped:     BTreeSet<PrimId>,
-    events:     Vec<SceneEvent>,
-    ticks:      usize,
+    capped:      BTreeSet<PrimId>,
+    events:      Vec<SceneEvent>,
+    ticks:       usize,
     /// Where the oldest open write boundary started writing.
-    tick_start: usize,
+    tick_start:  usize,
 }
 
 impl Default for HsdState {
@@ -106,16 +113,17 @@ impl HsdState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            meta:       DocMeta::default(),
-            layers:     LayerId::ALL.map(|_| Layer::default()),
-            references: HashMap::new(),
-            resolved:   HashMap::new(),
-            children:   HashMap::new(),
-            in_scene:   HashMap::new(),
-            capped:     BTreeSet::new(),
-            events:     Vec::new(),
-            ticks:      0,
-            tick_start: 0,
+            meta:        DocMeta::default(),
+            stack:       vec![Stacked::base()],
+            edit_target: LayerId::BASE,
+            references:  HashMap::new(),
+            resolved:    HashMap::new(),
+            children:    HashMap::new(),
+            in_scene:    HashMap::new(),
+            capped:      BTreeSet::new(),
+            events:      Vec::new(),
+            ticks:       0,
+            tick_start:  0,
         }
     }
 
@@ -169,6 +177,11 @@ impl HsdState {
             .collect::<Vec<_>>();
         out.sort_unstable();
         out
+    }
+
+    #[must_use]
+    pub const fn meta(&self) -> &DocMeta {
+        &self.meta
     }
 
     #[must_use]

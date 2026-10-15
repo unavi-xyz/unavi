@@ -1,3 +1,6 @@
+//! What a mote's attention state is, and the continuous heat a surface eases
+//! along between states.
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Attention {
     #[default]

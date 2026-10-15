@@ -1,4 +1,4 @@
-//! Compiles a validated [`ShaderGraph`] to WGSL, client-side, at load time.
+//! Compiles a validated [`ShaderGraph`] to WGSL locally at load time.
 //!
 //! Only the graph travels over the network. Every peer that loads it
 //! generates its own source text from the same validated data. A graph

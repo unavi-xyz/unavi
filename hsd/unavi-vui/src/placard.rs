@@ -1,6 +1,8 @@
+//! A mote's expanded text, laid out as lines a renderer can place directly.
+
 use arrayvec::ArrayVec;
 use smol_str::SmolStr;
-use wired_math::types::{
+use wired_guest::math::{
     Vec2,
     Vec3,
 };

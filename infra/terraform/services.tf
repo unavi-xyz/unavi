@@ -3,11 +3,11 @@ locals {
 
   services = {
     stable = {
-      unavi_server = {
+      unavi_node = {
         port      = 5000
         subdomain = "node"
       }
-      web_client = {
+      web_app = {
         subdomain = "app"
         static    = true
       }

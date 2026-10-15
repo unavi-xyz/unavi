@@ -20,7 +20,7 @@ use syn::{
 /// with no annotation is ordinary memory and is left alone.
 ///
 /// ```ignore
-/// #[wired_prelude::state]
+/// #[wired_guest::state]
 /// #[derive(Default)]
 /// struct GateState {
 ///     #[state(session)]
@@ -31,7 +31,7 @@ use syn::{
 /// `state.set_link(..)` marks the field dirty; `state.sync(&prim)` flushes
 /// what changed and adopts what other peers said. A `session` field lives for
 /// the session and is replicated; a `document` field is committed after the
-/// flush, which survives only on a client that holds the document's key —
+/// flush, which survives only on a peer that holds the document's key —
 /// that is the point of declaring the destination rather than the mechanism.
 #[proc_macro_attribute]
 pub fn state(_args: TokenStream, input: TokenStream) -> TokenStream {

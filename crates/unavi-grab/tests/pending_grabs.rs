@@ -37,11 +37,11 @@ fn app() -> App {
     .add_message::<GripPressed>()
     .add_message::<GripReleased>()
     .add_message::<PointerPressed>()
+    .init_resource::<unavi_input::action::ActionState>()
     // A grab is recognized by the `GravityScale` the grab itself adds, which
     // would fight real gravity on a falling body.
     .insert_resource(Gravity(Vec3::ZERO))
-    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP))
-    .init_resource::<unavi_space::state::replicas::Replicas>();
+    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP));
     app.finish();
     app.cleanup();
     app
@@ -215,6 +215,27 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
     step(&mut app, 1);
 
     assert!(is_grabbed(&app, target));
+}
+
+/// A body a peer holds as a kinematic replica is still something to take
+/// over: the grab must start, so the hold claim can make it dynamic.
+#[test]
+fn a_kinematic_replica_is_grabbed_when_marked_grabbable() {
+    let mut app = app();
+    let pointer = spawn_pointer(&mut app);
+    let target = spawn_target(&mut app);
+    app.world_mut()
+        .entity_mut(target)
+        .insert((RigidBody::Kinematic, unavi_input::crosshair::Grabbable));
+    step(&mut app, 1);
+
+    squeeze_down(&mut app, Some(target), pointer);
+    step(&mut app, 1);
+
+    assert!(
+        is_grabbed(&app, target),
+        "a grabbable replica was refused a grab"
+    );
 }
 
 #[test]

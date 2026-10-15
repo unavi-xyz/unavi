@@ -10,6 +10,8 @@ on:
         required: false
       WINDOWS_CERTIFICATE_PASSWORD:
         required: false
+permissions:
+  contents: read
 jobs:
   build-hsd:
     runs-on: ubuntu-latest
@@ -31,20 +33,22 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: assets
-          path: crates/unavi-client/assets/hsd
+          path: crates/unavi-app/assets/hsd
           retention-days: 1
       - name: Upload WIT deps
         uses: actions/upload-artifact@v7
         with:
-          name: protocol-wit-deps
-          path: protocol/wit
+          name: wit-deps
+          path: |
+            protocol/wit
+            crates/unavi-script/wit
           retention-days: 1
   build-windows:
     needs: build-hsd
     runs-on: windows-latest
     strategy:
       matrix:
-        package: [unavi-client, unavi-launcher]
+        package: [unavi-app, unavi-launcher]
     name: ${{ matrix.package }}-x86_64-windows
     env:
       CARGO_TARGET_DIR: target
@@ -56,12 +60,12 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: assets
-          path: crates/unavi-client/assets/hsd
+          path: crates/unavi-app/assets/hsd
       - name: Download WIT deps
         uses: actions/download-artifact@v8
         with:
-          name: protocol-wit-deps
-          path: protocol/wit
+          name: wit-deps
+          path: .
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-08-14
@@ -74,22 +78,21 @@ jobs:
           if [ "${{ matrix.package }}" = "unavi-launcher" ]; then
             cargo build -p unavi-launcher --release --manifest-path launcher/Cargo.toml
           else
-            cargo build -p unavi-client --release
+            cargo build -p unavi-app --release --no-default-features
           fi
       - name: Check DLL dependencies
-        if: ${{ matrix.package == 'unavi-client' }}
+        if: ${{ matrix.package == 'unavi-app' }}
         shell: powershell
         run: |
           Write-Host "=== Checking DLL dependencies ==="
           $dumpbin = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\dumpbin.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
           if ($dumpbin) {
-            & $dumpbin /dependents target\release\unavi-client.exe
+            & $dumpbin /dependents target\release\unavi-app.exe
           }
       - name: Bundle VC++ runtime DLLs
         shell: powershell
         run: |
-          # The exe links the MSVC CRT dynamically, so these must ship
-          # alongside it — a bare Windows install doesn't have them.
+          # The exe links the MSVC CRT dynamically.
           $dll = Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Filter "vcruntime140.dll" -Recurse -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match "\\Redist\\MSVC\\.*\\x64\\" } |
             Select-Object -First 1
@@ -111,8 +114,7 @@ jobs:
             echo "$CERTIFICATE_BASE64" | base64 -d > "${{ env.CERTIFICATE_PATH }}"
             echo "SIGNING_ENABLED=true" >> "$GITHUB_ENV"
           fi
-      # Signing has to happen before wix runs, or the exe the installer
-      # embeds is the unsigned one.
+      # Signing must precede wix, or the installer embeds the unsigned exe.
       - name: Sign executable
         if: ${{ env.SIGNING_ENABLED == 'true' }}
         env:

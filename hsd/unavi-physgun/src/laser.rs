@@ -1,15 +1,37 @@
+//! The beam drawn from the physgun's muzzle to the grabbed point, bowed by
+//! how fast the muzzle is moving.
+
 use std::cell::Cell;
 
-use wired_prelude::prelude::*;
+use wired_guest::{
+    math::{
+        Color,
+        Quat,
+        Transform,
+        Vec3,
+    },
+    xform::hidden,
+};
 
 use crate::{
+    find_one,
     palette,
     unavi::shapes::api::Cylinder,
-    wired::scene::{
-        api::self_document,
-        types::{
+    wired::{
+        scene::{
+            document::{
+                Document,
+                Layer,
+                script_document,
+            },
+            properties::{
+                Property,
+                Relation,
+            },
+        },
+        shading::graph::{
             GraphValue,
-            Prim,
+            set_overrides,
         },
     },
 };
@@ -39,16 +61,8 @@ const TINT_INPUT: u16 = 0;
 /// Rope-drag input: a world-space offset applied at the beam's midpoint.
 const DRAG_INPUT: u16 = 4;
 
-const fn hidden() -> Transform {
-    Transform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
-    }
-}
-
-/// Rotation mapping +Y onto `dir`, built by hand since the script `Quat` has
-/// no axis-angle helpers.
+/// Rotation mapping +Y onto `dir`, built by hand since `wired-guest`'s `Quat`
+/// has no axis-angle helpers.
 fn align_y_to(dir: Vec3) -> Quat {
     let d = dir.normalize_or_zero();
     let dot = Vec3::Y.dot(d).clamp(-1.0, 1.0);
@@ -72,7 +86,8 @@ fn clamp_length(v: Vec3, max: f32) -> Vec3 {
 /// A segmented cylinder between the muzzle and the grab point, bowed while
 /// dragged. Only the endpoints and the drag offset move per frame.
 pub struct Laser {
-    prim:   Prim,
+    doc:    Document,
+    prim:   (u64, u64),
     color:  Cell<Option<Color>>,
     /// Where the midpoint would be if the rope were rigid, last frame.
     anchor: Cell<Option<Vec3>>,
@@ -81,36 +96,38 @@ pub struct Laser {
 }
 
 impl Laser {
-    #[must_use]
-    pub fn new() -> Self {
-        let doc = self_document().expect("self_document");
+    pub fn new() -> anyhow::Result<Self> {
+        let doc = script_document()?;
 
         let cylinder = Cylinder::new(1.0, 1.0);
-        cylinder.set_resolution(RESOLUTION);
-        cylinder.set_segments(SEGMENTS);
-        cylinder.set_doc(doc.clone());
+        cylinder.set_resolution(RESOLUTION)?;
+        cylinder.set_segments(SEGMENTS)?;
+        let prim = cylinder.mesh()?;
+        doc.local()
+            .set(prim, Property::Transform(hidden()))
+            .flush()?;
 
-        let prim = cylinder.mesh();
-        prim.set_xform(Some(hidden())).ok();
-
-        match doc
-            .prims()
-            .into_iter()
-            .find(|p| p.name().is_some_and(|n| n == TEMPLATE_PRIM_NAME))
-        {
-            Some(template) => {
-                prim.set_relationship("material/binding", Some(&template.id()))
-                    .ok();
+        match find_one(&doc, TEMPLATE_PRIM_NAME) {
+            Ok(template) => {
+                doc.local()
+                    .set(
+                        prim,
+                        Property::Relation((Relation::ShaderBinding, template)),
+                    )
+                    .flush()?;
             }
-            None => eprintln!("physgun: HSD missing {TEMPLATE_PRIM_NAME} prim; beam unshaded"),
+            Err(err) => {
+                eprintln!("physgun: HSD missing {TEMPLATE_PRIM_NAME} prim; beam unshaded: {err:?}");
+            }
         }
 
-        Self {
+        Ok(Self {
+            doc,
             prim,
             color: Cell::new(None),
             anchor: Cell::new(None),
             drag: Cell::new(Vec3::ZERO),
-        }
+        })
     }
 
     pub fn show(&self, from: Vec3, to: Vec3, color: Color) {
@@ -126,13 +143,21 @@ impl Laser {
             return;
         }
 
-        self.prim
-            .set_xform(Some(Transform {
-                translation: (from + to) * 0.5,
-                rotation:    align_y_to(delta),
-                scale:       Vec3::new(WIDTH, len, WIDTH),
-            }))
-            .ok();
+        if let Err(err) = self
+            .doc
+            .local()
+            .set(
+                self.prim,
+                Property::Transform(Transform {
+                    translation: (from + to) * 0.5,
+                    rotation:    align_y_to(delta),
+                    scale:       Vec3::new(WIDTH, len, WIDTH),
+                }),
+            )
+            .flush()
+        {
+            eprintln!("physgun: show beam: {err:?}");
+        }
 
         self.update_drag((from + to) * 0.5);
     }
@@ -158,18 +183,33 @@ impl Laser {
     /// Writes both overrides at once: the host call replaces the whole map,
     /// and the shared graph re-uploads only these values.
     fn push_overrides(&self) {
-        let tint = palette::beam_tint(self.color.get().unwrap_or(palette::DEFAULT));
+        // The beam graph multiplies its output by this tint; brightness
+        // lives in the graph's own intensity input, so alpha is always 1.
+        let color = self.color.get().unwrap_or(palette::DEFAULT);
+        let tint = Color { a: 1.0, ..color };
         let drag = self.drag.get();
-        self.prim
-            .set_graph_overrides(&[
+        if let Err(err) = set_overrides(
+            &self.doc,
+            self.prim,
+            Layer::Local,
+            &[
                 (TINT_INPUT, GraphValue::Color(tint)),
                 (DRAG_INPUT, GraphValue::Vec3(drag)),
-            ])
-            .ok();
+            ],
+        ) {
+            eprintln!("physgun: set_overrides: {err:?}");
+        }
     }
 
     pub fn hide(&self) {
-        self.prim.set_xform(Some(hidden())).ok();
+        if let Err(err) = self
+            .doc
+            .local()
+            .set(self.prim, Property::Transform(hidden()))
+            .flush()
+        {
+            eprintln!("physgun: hide beam: {err:?}");
+        }
         self.anchor.set(None);
         self.drag.set(Vec3::ZERO);
     }

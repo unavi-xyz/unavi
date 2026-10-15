@@ -1,3 +1,6 @@
+//! Dev overlay with tabbed panels contributed by spawning a [`tabs::DevPanel`].
+//! `~` toggles it; other crates own what their panel shows.
+
 use bevy::{
     app::PluginGroup,
     feathers::{
@@ -9,7 +12,6 @@ use bevy::{
     prelude::*,
 };
 
-pub mod channel;
 pub mod overlay;
 pub mod scroll;
 pub mod tabs;
@@ -32,7 +34,7 @@ impl Plugin for DevToolsPlugin {
                     tabs::apply_active_panel,
                     tabs::highlight_active_tab,
                     scroll::apply_wheel_scroll
-                        .run_if(|active: Res<overlay::DevToolsActive>| active.0),
+                        .run_if(|active: Res<overlay::DevToolsActive>| active.is_open()),
                 ),
             )
             .add_observer(tabs::register_panel)

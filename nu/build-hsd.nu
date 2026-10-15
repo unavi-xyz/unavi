@@ -1,4 +1,4 @@
-const hsd_out = "crates/unavi-client/assets/hsd"
+const hsd_out = "crates/unavi-app/assets/hsd"
 const hsd_src = "hsd"
 
 def main [
@@ -47,13 +47,6 @@ def main [
     if $build.exit_code != 0 {
       error make {
         msg: $"HSD build failed for ($crate): ($build.stderr | str trim)"
-      }
-    }
-
-    let fmt = (cargo run --quiet -p hsd-cli --release -- format $hsda | complete)
-    if $fmt.exit_code != 0 {
-      error make {
-        msg: $"HSD format failed for ($crate): ($fmt.stderr | str trim)"
       }
     }
   }

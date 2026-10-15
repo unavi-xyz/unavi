@@ -29,7 +29,7 @@ pub fn SelfUpdate() -> Element {
         match handle.await {
             Ok(Ok(())) => {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                nav.push(Route::ClientUpdate);
+                nav.push(Route::AppUpdate);
             }
             Ok(Err(e)) => {
                 error!("Error updating launcher: {e:?}");
@@ -65,7 +65,7 @@ pub fn SelfUpdate() -> Element {
                 button {
                     class: "nav-button",
                     onclick: move |_| {
-                        nav.push(Route::ClientUpdate);
+                        nav.push(Route::AppUpdate);
                     },
                     "Continue"
                 }
@@ -77,7 +77,7 @@ pub fn SelfUpdate() -> Element {
                 button {
                     class: "nav-button",
                     onclick: move |_| {
-                        nav.push(Route::ClientUpdate);
+                        nav.push(Route::AppUpdate);
                     },
                     "Continue Anyway"
                 }

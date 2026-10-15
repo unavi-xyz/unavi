@@ -7,6 +7,6 @@
     "@bytecodealliance/preview2-shim": "^0.17.9"
   },
   "devDependencies": {
-    "esbuild": "^0.27.2"
+    "esbuild": "^0.28.1"
   }
 }

@@ -46,6 +46,16 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
     format!("{ACTIVE_PREFIX}{rank:08}/{ns}")
 }
 
+fn active_value(space: &ActiveSpace) -> anyhow::Result<Vec<u8>> {
+    let occupants = u32::try_from(space.occupants).unwrap_or(u32::MAX);
+    let idle_secs = space.idle_secs / 60 * 60;
+    Ok(postcard::to_stdvec(&(
+        occupants,
+        idle_secs,
+        space.title.as_str(),
+    ))?)
+}
+
 /// Each view is recorded under its own key, so one lost view is reminted
 /// without disturbing the others.
 async fn open_view(store: &Store, name: &str) -> anyhow::Result<Document> {
@@ -86,12 +96,7 @@ impl Views {
     ) -> anyhow::Result<()> {
         let mut entries = BTreeMap::new();
         for (rank, space) in active.iter().take(capacity).enumerate() {
-            let occupants = u32::try_from(space.occupants).unwrap_or(u32::MAX);
-            let idle_secs = space.idle_secs / 60 * 60;
-            entries.insert(
-                active_key(rank, space.ns),
-                postcard::to_stdvec(&(occupants, idle_secs))?,
-            );
+            entries.insert(active_key(rank, space.ns), active_value(space)?);
         }
         sync(&self.active, ACTIVE_PREFIX, entries).await
     }
@@ -156,4 +161,24 @@ async fn sync(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_active_value_carries_occupancy_whole_minutes_and_the_title() {
+        let space = ActiveSpace {
+            ns:        NamespaceId::from(&[1; 32]),
+            occupants: 3,
+            idle_secs: 125,
+            title:     "Plaza".into(),
+        };
+
+        let value = active_value(&space).expect("encode");
+        let decoded: (u32, u64, String) = postcard::from_bytes(&value).expect("decode");
+
+        assert_eq!(decoded, (3, 120, "Plaza".to_owned()));
+    }
 }

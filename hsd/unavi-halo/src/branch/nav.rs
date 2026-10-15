@@ -168,19 +168,20 @@ struct Listing {
     ns:        (u64, u64, u64, u64),
     occupants: u32,
     idle_secs: u64,
+    /// The listing title as the registry wrote it; may be blank.
+    title:     String,
 }
 
 /// Decodes an `active/<rank>/<space-hex>` entry.
 ///
-/// The value carries occupancy. There is no display name in this view — that
-/// lives in the registry's other views behind a payload a guest cannot decode
-/// — so a space is named by the head of its namespace, and the placard says
-/// only what is actually known.
+/// The value carries occupancy and the listing title, which is all the view
+/// holds: the rest of a listing lives in the registry's other views behind a
+/// payload a guest cannot decode.
 fn entry(entry: &Entry) -> Option<Listing> {
     let mut parts = entry.key.strip_prefix(ACTIVE_PREFIX)?.split('/');
     let rank = parts.next()?.parse().ok()?;
     let space = parts.next().filter(|space| !space.is_empty())?;
-    let (occupants, idle_secs) = postcard::from_bytes(&entry.value).ok()?;
+    let (occupants, idle_secs, title) = postcard::from_bytes(&entry.value).ok()?;
 
     Some(Listing {
         rank,
@@ -188,6 +189,7 @@ fn entry(entry: &Entry) -> Option<Listing> {
         hex: space.to_owned(),
         occupants,
         idle_secs,
+        title,
     })
 }
 
@@ -204,7 +206,7 @@ fn entry(entry: &Entry) -> Option<Listing> {
 fn build(listing: &Listing) -> Option<Space> {
     let color = generate_color(Hash::from_str(&listing.hex).ok()?);
 
-    let group = Mote::new(Kind::Group, listing.hex.get(..8)?).ok()?;
+    let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
     group.set_description(&describe(listing)).ok()?;
     group.set_tint(Some(color));
     // The space wears its beacon's form: in the grid it reads as the marker
@@ -243,17 +245,42 @@ fn build(listing: &Listing) -> Option<Space> {
     })
 }
 
+/// The most characters a space's label shows, which is what fits under a mote.
+const LABEL_MAX: usize = 24;
+
+/// The space's title, shortened to fit under its mote; the head of its
+/// namespace when the listing has no title.
+fn label(listing: &Listing) -> Option<String> {
+    let title = listing.title.trim();
+    if title.is_empty() {
+        return listing.hex.get(..8).map(str::to_owned);
+    }
+    if title.chars().count() <= LABEL_MAX {
+        return Some(title.to_owned());
+    }
+    let mut label: String = title.chars().take(LABEL_MAX - 1).collect();
+    label.push('…');
+    Some(label)
+}
+
 /// Occupancy is a real fact about a real place, so a full space reads as full
 /// and the halo never offers to make another copy of one.
+///
+/// The full title leads, since the label may have shortened it.
 fn describe(listing: &Listing) -> String {
     let people = match listing.occupants {
         1 => "1 person here".to_owned(),
         count => format!("{count} people here"),
     };
-    if listing.idle_secs < 60 {
-        return people;
+    let people = if listing.idle_secs < 60 {
+        people
+    } else {
+        format!("{people}, quiet for {} min", listing.idle_secs / 60)
+    };
+    match listing.title.trim() {
+        "" => people,
+        title => format!("{title} — {people}"),
     }
-    format!("{people}, quiet for {} min", listing.idle_secs / 60)
 }
 
 fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
@@ -324,4 +351,51 @@ fn document_id_from_hex(hex: &str) -> Option<(u64, u64, u64, u64)> {
         u64::from_le_bytes(bytes[16..24].try_into().ok()?),
         u64::from_le_bytes(bytes[24..32].try_into().ok()?),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn listing(title: &str) -> Listing {
+        Listing {
+            rank:      0,
+            hex:       "0123456789abcdef".to_owned(),
+            ns:        (0, 0, 0, 0),
+            occupants: 3,
+            idle_secs: 0,
+            title:     title.to_owned(),
+        }
+    }
+
+    #[test]
+    fn a_short_title_labels_the_space_trimmed() {
+        assert_eq!(label(&listing("  Plaza ")).as_deref(), Some("Plaza"));
+    }
+
+    #[test]
+    fn a_blank_title_falls_back_to_the_namespace_head() {
+        assert_eq!(label(&listing("")).as_deref(), Some("01234567"));
+        assert_eq!(label(&listing("   ")).as_deref(), Some("01234567"));
+    }
+
+    #[test]
+    fn a_long_title_is_cut_to_the_label_width_with_an_ellipsis() {
+        let exact = "a".repeat(LABEL_MAX);
+        assert_eq!(label(&listing(&exact)), Some(exact));
+
+        let label = label(&listing(&"b".repeat(LABEL_MAX + 1))).expect("label");
+        assert_eq!(label.chars().count(), LABEL_MAX);
+        assert!(label.ends_with('…'));
+    }
+
+    #[test]
+    fn the_description_keeps_the_full_title_beside_occupancy() {
+        let title = "c".repeat(40);
+        assert_eq!(
+            describe(&listing(&title)),
+            format!("{title} — 3 people here")
+        );
+        assert_eq!(describe(&listing("")), "3 people here");
+    }
 }

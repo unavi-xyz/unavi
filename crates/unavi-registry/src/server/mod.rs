@@ -126,7 +126,7 @@ async fn maintenance(shared: Arc<Shared>) {
         shared.presence.sweep(window);
         let active = shared
             .presence
-            .active(window, |ns| shared.catalog.is_live_space(ns));
+            .active(window, |ns| shared.catalog.live_space_title(ns));
         if let Err(err) = shared
             .views
             .write_active(&active, shared.config.view_capacity)

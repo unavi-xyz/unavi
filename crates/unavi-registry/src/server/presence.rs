@@ -9,6 +9,7 @@ use std::{
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use parking_lot::Mutex;
+use smol_str::SmolStr;
 use time::OffsetDateTime;
 use unavi_identity::signed::Signed;
 use xdid::core::did::Did;
@@ -40,6 +41,9 @@ pub struct ActiveSpace {
     pub ns:        NamespaceId,
     pub occupants: usize,
     pub idle_secs: u64,
+    /// The space's listing title, which is the name in its document's metadata
+    /// as submitted, so a client can name it without fetching the listing.
+    pub title:     SmolStr,
 }
 
 struct Occupant {
@@ -127,15 +131,16 @@ impl PresenceTable {
             })
     }
 
-    /// Spaces active within `window` that satisfy `listed`, most recently
-    /// active first, then busiest.
+    /// Spaces active within `window` that `title` names, most recently active
+    /// first, then busiest.
     ///
     /// Presence can name any namespace, so the caller says which may be
-    /// published.
+    /// published by returning the title of each live space and `None` for the
+    /// rest.
     pub fn active(
         &self,
         window: Duration,
-        listed: impl Fn(NamespaceId) -> bool,
+        title: impl Fn(NamespaceId) -> Option<SmolStr>,
     ) -> Vec<ActiveSpace> {
         let now = now();
         let cutoff = now - i64::try_from(window.as_secs()).unwrap_or(i64::MAX);
@@ -146,17 +151,16 @@ impl PresenceTable {
             .spaces
             .iter()
             .filter_map(|(ns, occupants)| {
-                if !listed(*ns) {
-                    return None;
-                }
+                let title = title(*ns)?;
                 let seen = occupants
                     .iter()
                     .filter(|o| o.last_seen > cutoff && o.expires > now);
                 let last_seen = seen.clone().map(|o| o.last_seen).max()?;
                 Some(ActiveSpace {
-                    ns:        *ns,
+                    ns: *ns,
                     occupants: seen.count(),
                     idle_secs: u64::try_from(now - last_seen).unwrap_or(0),
+                    title,
                 })
             })
             .collect::<Vec<_>>();
@@ -396,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn the_active_list_holds_only_listed_namespaces() {
+    fn the_active_list_holds_only_listed_namespaces_and_carries_their_titles() {
         let table = PresenceTable::default();
         let config = Config::default();
         for ns in [1, 2] {
@@ -405,10 +409,13 @@ mod tests {
         }
 
         let listed = NamespaceId::from(&[1; 32]);
-        let active = table.active(Duration::from_mins(5), |ns| ns == listed);
+        let active = table.active(Duration::from_mins(5), |ns| {
+            (ns == listed).then(|| SmolStr::new("Plaza"))
+        });
 
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].ns, listed);
+        assert_eq!(active[0].title, "Plaza");
         assert_eq!(table.occupants(NamespaceId::from(&[2; 32])).len(), 1);
     }
 }

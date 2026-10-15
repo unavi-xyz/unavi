@@ -67,11 +67,14 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         .set(cube, Property::Material(palette::cube(color)))
         .set(
             cube,
-            Property::Transform(to_world * Transform {
-                translation: landing(cam),
-                rotation:    cam.rotation,
-                scale:       Vec3::ONE,
-            }),
+            Property::Transform(
+                to_world
+                    * Transform {
+                        translation: landing(cam),
+                        rotation:    cam.rotation,
+                        scale:       Vec3::ONE,
+                    },
+            ),
         )
         .flush()?;
 

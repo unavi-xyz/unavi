@@ -130,11 +130,17 @@ impl Fruit {
     /// it, so moving the frame under a body that avian is already simulating
     /// moves nothing; writing the body's own transform teleports it.
     pub fn deliver(&mut self, landing: Landing) -> anyhow::Result<Throw> {
+        // The landing is in this script's frame; the fruit document sits at
+        // the space root. Convert, or it appears where the script's frame
+        // sits rather than where the mote was let go.
+        let to_world = crate::wired::scene::document::script_document()?
+            .world_frame()
+            .unwrap_or(Transform::IDENTITY);
         if let Some((document_id, body)) = self.placed {
             let document = reopen(document_id)?;
             document
                 .local()
-                .set(body, Property::Transform(at(landing.at)))
+                .set(body, Property::Transform(to_world * at(landing.at)))
                 .flush()?;
             return Ok(Throw::new(document_id, body, landing.velocity));
         }
@@ -147,7 +153,7 @@ impl Fruit {
         let body = self.body(&document)?;
         document
             .local()
-            .set(body, Property::Transform(at(landing.at)))
+            .set(body, Property::Transform(to_world * at(landing.at)))
             .set(
                 body,
                 Property::RigidBody(RigidBody {

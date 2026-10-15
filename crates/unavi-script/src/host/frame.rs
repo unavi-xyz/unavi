@@ -50,12 +50,6 @@ impl Frame {
         self.0.inverse().transform_vector3(vector)
     }
 
-    /// `transform`, in the engine world.
-    #[must_use]
-    pub fn transform_to_world(self, transform: Transform) -> Transform {
-        Transform::from_matrix((self.0 * transform.compute_affine()).into())
-    }
-
     /// `transform`, in this script's frame.
     #[must_use]
     pub fn transform_to_frame(self, transform: Transform) -> Transform {
@@ -86,10 +80,11 @@ mod tests {
 
     #[test]
     fn a_transform_round_trips_through_the_frame() {
-        let frame = Frame::from_root(tilted());
+        let root = tilted();
         let transform =
             Transform::from_xyz(0.5, -1.0, 2.0).with_rotation(Quat::from_rotation_x(0.3));
-        let round = frame.transform_to_frame(frame.transform_to_world(transform));
+        let world = root.mul_transform(transform);
+        let round = Frame::from_root(root).transform_to_frame(world.compute_transform());
         assert!(
             (round.translation - transform.translation).length() < 1.0e-4,
             "translation round trip gave {}",

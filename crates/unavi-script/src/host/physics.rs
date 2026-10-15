@@ -136,7 +136,7 @@ pub async fn raycast(
         })
         .await?;
     Ok(hit.map(|hit| RayHit {
-        point:  frame.point_to_frame(hit.point),
+        point: frame.point_to_frame(hit.point),
         normal: frame.vector_to_frame(hit.normal).normalize_or_zero(),
         ..hit
     }))
@@ -173,7 +173,7 @@ pub async fn velocity(
     let frame = host.frame();
     let doc = host.document(doc)?.id;
     let velocity = host
-        .world_call(move |world| {
+        .world_call(move |world| -> Result<BodyVelocity, ScriptError> {
             let entity = dynamic_body(world, doc, prim)?;
             Ok(BodyVelocity {
                 linear:  world

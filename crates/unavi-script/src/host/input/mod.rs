@@ -213,7 +213,7 @@ fn ray_in_frame(frame: Frame, ray: Ray) -> Ray {
 fn hit_in_frame(frame: Frame, hit: Hit) -> Hit {
     Hit {
         position: frame.point_to_frame(hit.position),
-        normal:   frame.vector_to_frame(hit.normal).normalize_or_zero(),
+        normal: frame.vector_to_frame(hit.normal).normalize_or_zero(),
         ..hit
     }
 }

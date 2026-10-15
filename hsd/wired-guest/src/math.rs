@@ -174,7 +174,11 @@ mod tests {
         let inner = Transform::new(Vec3::new(-4.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
         let point = Vec3::new(5.0, 0.0, 0.0);
         let composed = outer * inner;
-        assert!((composed.transform_point(point) - outer.transform_point(inner.transform_point(point))).length() < 1.0e-5);
+        assert!(
+            (composed.transform_point(point) - outer.transform_point(inner.transform_point(point)))
+                .length()
+                < 1.0e-5
+        );
     }
 }
 

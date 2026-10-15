@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@e379ba59405864059cedd318f38b6574dffd0ef8 # v4
+      - uses: AdityaGarg8/remove-unwanted-software@v4
         with:
           remove-android: true
           remove-cached-tools: true
@@ -33,10 +33,10 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
+      - uses: DeterminateSystems/determinate-nix-action@v3
         with:
           extra-conf: |
             extra-experimental-features = pipe-operators
@@ -44,7 +44,7 @@ jobs:
             require-sigs = false
       - name: Fetch build-nix deploy cache
         run: mkdir -p nix-cache
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           pattern: nix-cache-*

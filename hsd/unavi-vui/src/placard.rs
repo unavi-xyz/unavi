@@ -281,6 +281,7 @@ mod tests {
             description: Some(SmolStr::new_static("Sharp and bright")),
             active: false,
             icon: false,
+            glyph: None,
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,

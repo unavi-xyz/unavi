@@ -40,6 +40,25 @@ interface api {
     grid,
   }
 
+  /// A face made of dots, the way a dot-matrix display is: a square grid,
+  /// each cell lit or not.
+  ///
+  /// Cells run in rows from the top left, left to right. Cell `i` is bit
+  /// `i % 8` of `bits[i / 8]`, counting from the least significant bit, so the
+  /// first cell is the low bit of the first byte and a nine-cell row spills one
+  /// bit into the second.
+  ///
+  /// The grid is clipped to a circle: a cell whose centre lies more than
+  /// `(size - 1) / 2 + 0.6` cells from the grid's centre is never drawn,
+  /// whatever its bit says. That takes the corners off a square grid so the
+  /// face reads as round, like the shell it sits in.
+  record glyph {
+    /// Cells along each side, from 1 to 13.
+    size: u8,
+    /// At least `ceil(size * size / 8)` bytes. Bytes past that are ignored.
+    bits: list<u8>,
+  }
+
   /// A mote, and the level of children under it.
   ///
   /// A handle stays good after the mote is mounted, so a level edited while
@@ -86,6 +105,20 @@ interface api {
     /// shell around it. An item holding an icon draws see-through so the icon
     /// reads; an item without one is solid.
     set-icon: func(doc: borrow<document>, value: option<prim-id>);
+
+    /// What this mote looks like as a grid of dots, drawn on its face instead
+    /// of an icon. An icon the mote also holds is put away while it has a
+    /// glyph, and comes back when the glyph is set to none.
+    ///
+    /// Lit dots wear the mote's colour and unlit ones stay faintly drawn, so
+    /// the face reads as a display rather than a sticker. Setting a different
+    /// glyph on a mote that is already drawn flips the dots over, a column at a
+    /// time from the left; a mote that has only just appeared, or a glyph of a
+    /// different size, simply shows.
+    ///
+    /// `invalid-argument` for a `size` outside 1 to 13, or for `bits` shorter
+    /// than the grid needs. The previous glyph is kept when it is refused.
+    set-glyph: func(value: option<glyph>) -> result<_, error>;
 
     /// The hue this mote's glass carries, or none for the neutral one.
     ///

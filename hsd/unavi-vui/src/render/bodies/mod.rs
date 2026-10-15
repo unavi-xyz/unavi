@@ -1,8 +1,9 @@
 //! Transcribes the [`SlotView`]s a surface computes into prims.
 //!
 //! Split across this module's files by concern: [`mod@dock`] parks and fits
-//! icons, [`mod@hitbox`] reads the surface's own input listener. Both add
-//! `impl Bodies` blocks to the one type defined here.
+//! icons, [`mod@face`] draws and flips glyphs, [`mod@hitbox`] reads the
+//! surface's own input listener. Each adds `impl Bodies` blocks to the one
+//! type defined here.
 
 use std::{
     cell::{
@@ -75,7 +76,13 @@ use crate::{
 };
 
 mod dock;
+mod face;
 mod hitbox;
+
+use face::{
+    Face,
+    Wear,
+};
 
 /// What a surface's own listener heard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -179,6 +186,12 @@ impl Mark {
         }
     }
 
+    /// Takes back what was written, for a frame whose edits did not land.
+    fn forget(&self) {
+        self.carved.set(false);
+        self.pose.clear();
+    }
+
     fn apply<'a>(
         &self,
         mut batch: crate::Batch<'a>,
@@ -215,6 +228,26 @@ const fn bar_color(palette: &Palette, active: bool) -> Color {
     if active { palette.base } else { palette.dim }
 }
 
+impl SlotPrims {
+    /// Takes back everything written to the slot's prims, so the next frame
+    /// writes it all again. For a frame whose batch failed to flush.
+    fn forget(&self) {
+        self.root_xform.clear();
+        self.body_xform.clear();
+        self.marked.set(false);
+        self.carved.set(false);
+        self.back_pose.clear();
+        self.label_xform.clear();
+        self.shell.clear();
+        self.shape.clear();
+        self.written.clear();
+        self.marks.bar.forget();
+        self.marks.ring.forget();
+        self.marks.grip.forget();
+        self.face.forget();
+    }
+}
+
 struct SlotPrims {
     root:        (u64, u64),
     root_xform:  Shadow<Transform>,
@@ -236,6 +269,8 @@ struct SlotPrims {
     /// The mote's name, drawn always rather than on attention.
     label:       (u64, u64),
     marks:       Marks,
+    /// The mote's glyph, when it has one, drawn in place of its icon.
+    face:        Face,
     label_xform: Shadow<Option<Vec3>>,
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
@@ -253,9 +288,13 @@ struct SlotPrims {
 ///
 /// `drawn` maps each view back to its spec, which pagination makes a real
 /// translation rather than an identity. `held` is the slot the engine is
-/// carrying, whose transform belongs to the solver rather than to us.
+/// carrying, whose transform belongs to the solver rather than to us. `motes`
+/// lines up with `specs`, and says whose face each slot is wearing.
 #[derive(Clone, Copy)]
 pub struct Drawing<'a> {
+    pub motes:   &'a [Mote],
+    /// Seconds since the last frame, which a flip runs on.
+    pub delta:   f32,
     pub views:   &'a [SlotView],
     pub specs:   &'a [MoteSpec],
     pub drawn:   &'a [usize],
@@ -378,7 +417,9 @@ impl Bodies {
             let bar = doc.create_prim(Layer::Local, Some(slot_root))?;
             let ring = doc.create_prim(Layer::Local, Some(slot_root))?;
             let grip = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let face = doc.create_prim(Layer::Local, Some(slot_root))?;
             doc.local()
+                .set(face, Property::Transform(draw::hidden()))
                 .set(bar, Property::Transform(draw::hidden()))
                 .set(ring, Property::Transform(draw::hidden()))
                 .set(grip, Property::Transform(draw::hidden()))
@@ -409,6 +450,7 @@ impl Bodies {
                     ring: Mark::new(ring),
                     grip: Mark::new(grip),
                 },
+                face: Face::new(face),
                 label_xform: Shadow::new(),
                 icon: RefCell::new(None),
                 shell: Shadow::new(),
@@ -525,6 +567,8 @@ impl Bodies {
 
     pub fn apply(&self, doc: &Document, drawing: &Drawing<'_>) -> anyhow::Result<()> {
         let Drawing {
+            motes,
+            delta,
             views,
             specs,
             drawn,
@@ -560,9 +604,10 @@ impl Bodies {
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
             batch = Self::apply_label(batch, slot, view, spec, palette);
 
+            let glyph = spec.and_then(|spec| spec.glyph.as_ref());
             let shell = Shell {
                 style:  view.style,
-                icon:   slot.icon.borrow().is_some(),
+                icon:   slot.icon.borrow().is_some() || glyph.is_some(),
                 active: spec.is_some_and(|spec| spec.active),
                 film:   spec.map_or(0.0, |spec| spec.film),
                 frost:  spec.map_or(0.0, |spec| spec.frost),
@@ -589,16 +634,33 @@ impl Bodies {
             batch = Self::apply_pips(batch, slot, view);
             batch = Self::apply_back(batch, slot, view);
             batch = Self::apply_marks(batch, slot, view);
-            batch.flush()?;
+            // Every shadow above was committed as it was diffed, so a flush
+            // that fails must take them back or its edits are never retried.
+            if let Err(err) = batch.flush() {
+                slot.forget();
+                return Err(err.into());
+            }
 
             if let Some((index, shell)) = overrides {
                 Self::apply_shell(doc, slot, view, index, shell, palette)?;
             }
+
+            let owner = drawn.get(index).and_then(|index| motes.get(*index));
+            self.apply_face(doc, slot, view, Wear { owner, glyph }, delta)?;
         }
 
         let mut batch = doc.local();
         for slot in slots.iter().skip(views.len()) {
+            slot.face.unseen();
             batch = batch.set(slot.root, Property::Transform(draw::hidden()));
+        }
+        if !self.shown.get() {
+            // A dismissed surface stops being stepped once it has left, so a
+            // glyph changed while it is down should appear on return rather
+            // than flip.
+            for slot in slots.iter() {
+                slot.face.unseen();
+            }
         }
         batch.flush()?;
         Ok(())

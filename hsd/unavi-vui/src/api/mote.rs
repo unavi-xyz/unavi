@@ -6,11 +6,13 @@ use super::VUI;
 use crate::{
     exports::unavi::vui::api::{
         Arrange,
+        Glyph as GlyphRecord,
         GuestMote,
         Kind,
         Mote as Handle,
         MoteBorrow,
     },
+    glyph::Glyph,
     mote,
     render::{
         Vui,
@@ -94,6 +96,15 @@ impl GuestMote for MoteRes {
             );
         }
         self.0.set_icon(value);
+    }
+
+    fn set_glyph(&self, value: Option<GlyphRecord>) -> Result<(), Error> {
+        let glyph = value
+            .map(|record| Glyph::new(record.size, &record.bits))
+            .transpose()
+            .map_err(|refused| Error::InvalidArgument(refused.to_string()))?;
+        self.0.set_glyph(glyph);
+        Ok(())
     }
 
     fn unique(&self) -> bool {

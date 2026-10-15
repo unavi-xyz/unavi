@@ -42,10 +42,11 @@ impl Bodies {
         let slots = self.slots.borrow();
 
         // The spec decides, not the mote: a slot standing for a level rather
-        // than showing it wears none of that level's glyph.
+        // than showing it wears none of that level's glyph. A glyph takes the
+        // face instead of the icon, which waits parked until it is gone.
         let wanted = |slot: usize| {
             let index = *drawn.get(slot)?;
-            let worn = specs.get(index).is_some_and(|spec| spec.icon);
+            let worn = specs.get(index).is_some_and(wears_icon);
             motes
                 .get(index)
                 .filter(|mote| worn && slot < views.len() && mote.has_icon())
@@ -93,5 +94,40 @@ impl Bodies {
                 .flush()?;
         }
         Ok(())
+    }
+}
+
+/// Whether a mote's icon is the face its slot shows. A glyph takes the face
+/// instead, and the icon waits parked until it is gone.
+const fn wears_icon(spec: &MoteSpec) -> bool {
+    spec.icon && spec.glyph.is_none()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        glyph::Glyph,
+        tree::Kind,
+    };
+
+    fn mote() -> Mote {
+        let mote = Mote::new(Kind::Item, "Tool");
+        mote.set_icon(Some((1, 1)));
+        mote
+    }
+
+    #[test]
+    fn an_icon_is_worn_until_a_glyph_takes_its_place() {
+        let mote = mote();
+        assert!(wears_icon(&mote.spec()));
+
+        mote.set_glyph(Some(
+            Glyph::new(3, &[0b0001_0000, 0]).expect("a three grid"),
+        ));
+        assert!(!wears_icon(&mote.spec()), "the icon is parked");
+
+        mote.set_glyph(None);
+        assert!(wears_icon(&mote.spec()), "and returns with the glyph gone");
     }
 }

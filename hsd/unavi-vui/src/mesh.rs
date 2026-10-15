@@ -274,6 +274,32 @@ pub fn panel() -> MeshData {
     }
 }
 
+/// A unit square facing +Z, centred on the origin: the surface a glyph's dots
+/// are shaded across.
+///
+/// u runs left to right and v top to bottom, the order a glyph's cells are
+/// numbered in, so the shader can turn a coordinate straight into a row and
+/// column.
+#[must_use]
+pub fn face() -> MeshData {
+    MeshData {
+        positions: vec![
+            -0.5, 0.5, 0.0, //
+            0.5, 0.5, 0.0, //
+            -0.5, -0.5, 0.0, //
+            0.5, -0.5, 0.0,
+        ],
+        normals:   [0.0, 0.0, 1.0].repeat(4),
+        uvs:       vec![
+            0.0, 0.0, //
+            1.0, 0.0, //
+            0.0, 1.0, //
+            1.0, 1.0,
+        ],
+        indices:   vec![0, 2, 1, 1, 2, 3],
+    }
+}
+
 fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize, segments: usize) {
     let rings = rings.max(2);
     let segments = segments.max(3);
@@ -430,6 +456,17 @@ mod tests {
     #[test]
     fn a_panel_is_well_formed() {
         assert_well_formed(&panel());
+    }
+
+    #[test]
+    fn a_face_is_a_centred_square_numbered_from_its_top_left() {
+        let face = face();
+        assert_well_formed(&face);
+        assert_unit_normals(&face);
+        // The top left vertex is the origin of the glyph's rows and columns.
+        assert_eq!(face.positions[..3], [-0.5, 0.5, 0.0]);
+        assert_eq!(face.uvs[..2], [0.0, 0.0]);
+        assert_eq!(face.uvs[6..], [1.0, 1.0]);
     }
 
     #[test]

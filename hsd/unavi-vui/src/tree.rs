@@ -23,6 +23,7 @@ use crate::{
         self,
         Fit,
     },
+    glyph::Glyph,
     mote::{
         Arrange,
         MoteSpec,
@@ -91,6 +92,9 @@ struct Data {
     /// reads every piece's stream back over the interface, which is cheap
     /// once and not something to repeat every frame.
     fit:         Cell<Option<Fit>>,
+    /// The dot grid drawn on its face in place of the icon. Shared so that a
+    /// frame's spec copies a pointer rather than the grid.
+    glyph:       Option<Rc<Glyph>>,
     /// Whether this mote stands for the one of its thing rather than for a
     /// source of them. Meaningless on anything but an item.
     unique:      bool,
@@ -122,6 +126,7 @@ impl Mote {
             description: None,
             icon: None,
             fit: Cell::new(None),
+            glyph: None,
             unique: false,
             arrange: Arrange::Orbit,
             tint: None,
@@ -190,6 +195,12 @@ impl Mote {
         let computed = fit::fit(min, max, fraction);
         self.0.borrow().fit.set(Some(computed));
         Ok(computed)
+    }
+
+    /// Draws `glyph` on the face instead of the icon, or the icon again on
+    /// none.
+    pub fn set_glyph(&self, glyph: Option<Glyph>) {
+        self.0.borrow_mut().glyph = glyph.map(Rc::new);
     }
 
     pub fn set_unique(&self, unique: bool) {
@@ -343,7 +354,8 @@ impl Mote {
             label:       data.label.clone(),
             description: data.description.clone(),
             active:      data.active,
-            icon:        data.icon.is_some(),
+            icon:        data.icon.is_some() || data.glyph.is_some(),
+            glyph:       data.glyph.clone(),
             tint:        data.tint,
             film:        data.film,
             frost:       data.frost,
@@ -484,6 +496,7 @@ impl Tree {
             description: Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
             active:      false,
             icon:        false,
+            glyph:       None,
             tint:        None,
             film:        crate::palette::FILM,
             frost:       0.0,
@@ -684,6 +697,22 @@ mod tests {
                 arrange:  Arrange::Orbit,
             }
         );
+    }
+
+    #[test]
+    fn a_glyph_is_a_face_of_its_own_and_clearing_it_gives_the_face_back() {
+        let node = mote(Kind::Group, "Tools");
+        assert!(!node.spec().icon);
+
+        let glyph = Glyph::new(3, &[0b0001_0000, 0]).expect("a three grid");
+        node.set_glyph(Some(glyph));
+        let spec = node.spec();
+        assert!(spec.icon, "a group wearing a glyph previews no contents");
+        assert!(spec.glyph.is_some());
+
+        node.set_glyph(None);
+        assert!(node.spec().glyph.is_none());
+        assert!(!node.spec().icon);
     }
 
     #[test]

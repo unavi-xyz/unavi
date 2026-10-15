@@ -1,6 +1,8 @@
 //! What a mote is, independent of where it sits in a tree: its role, its
 //! pips, and how both are drawn at a given heat.
 
+use std::rc::Rc;
+
 use smol_str::SmolStr;
 use wired_guest::math::Color;
 
@@ -9,6 +11,7 @@ use crate::{
         self,
         Attention,
     },
+    glyph::Glyph,
     tuning::Tuning,
 };
 
@@ -80,9 +83,11 @@ pub struct MoteSpec {
     /// Whether the mote is on: a toggle, held until something clears it,
     /// rather than the pulse an activation is.
     pub active:      bool,
-    /// Whether the mote wears a body of its own, which is drawn where a
-    /// group's contents would otherwise be previewed.
+    /// Whether the mote wears a body of its own, an icon or a glyph, which is
+    /// drawn where a group's contents would otherwise be previewed.
     pub icon:        bool,
+    /// The dot grid drawn on its face instead of an icon.
+    pub glyph:       Option<Rc<Glyph>>,
     /// The hue its glass carries, or none for the neutral one. Identity,
     /// where every other colour here is state.
     pub tint:        Option<Color>,
@@ -252,6 +257,7 @@ mod tests {
             description: None,
             active: false,
             icon: false,
+            glyph: None,
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,

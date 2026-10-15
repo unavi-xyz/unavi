@@ -86,11 +86,15 @@ pub struct Tuning {
 
     /// Radians per second an icon turns inside its shell. Gentle by default;
     /// zero holds every icon still.
-    pub icon_spin: f32,
+    pub icon_spin:     f32,
     /// An icon's diagonal, as a fraction of its shell's diameter. Every icon
     /// is measured and fit to this, so a ring of motes reads as one size
     /// whatever the content.
-    pub icon_fill: f32,
+    pub icon_fill:     f32,
+    /// Seconds a face takes to flip from one glyph to the next. The wipe
+    /// across its columns is spread over this, so a longer flip is a slower
+    /// sweep rather than a longer pause.
+    pub flip_duration: f32,
 
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
@@ -165,8 +169,9 @@ impl Tuning {
         heat_speed:  14.0,
         heat_settle: 0.004,
 
-        icon_spin: 0.15,
-        icon_fill: 0.5,
+        icon_spin:     0.15,
+        icon_fill:     0.5,
+        flip_duration: 0.3,
 
         lean_dist:  0.022,
         lean_range: 0.35,

@@ -353,12 +353,14 @@ impl Panel {
         self.bodies.apply(
             doc,
             &Drawing {
-                views:   self.surface.views(),
-                specs:   &specs,
-                drawn:   self.surface.drawn(),
+                motes: &motes,
+                delta,
+                views: self.surface.views(),
+                specs: &specs,
+                drawn: self.surface.drawn(),
                 placard: self.surface.placard(),
                 palette: self.surface.palette(),
-                held:    self.held,
+                held: self.held,
             },
         )?;
         let mut events = Vec::new();

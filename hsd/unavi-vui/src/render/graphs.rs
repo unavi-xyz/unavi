@@ -40,6 +40,8 @@ use crate::wired::{
     },
 };
 
+pub mod matrix;
+
 /// Tint, with the body's alpha in its own alpha channel.
 pub const SHELL_TINT: u16 = 0;
 /// How brightly the shell burns from within, as a multiple of its own hue.
@@ -538,11 +540,14 @@ pub fn ring() -> ShaderGraph {
     // bright annulus reading as a cut-out.
     let centred = net.push(Node::Sub(binary(across, cf(0.5))));
     let centred = net.push(Node::Abs(centred));
-    let falloff = net.push(Node::Smoothstep(SmoothstepOp {
-        low:  cf(0.5),
-        high: cf(0.0),
+    // Rising edges only: a smoothstep with its edges the wrong way round is
+    // undefined, so the falloff is built rising and then inverted.
+    let rising = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  cf(0.0),
+        high: cf(0.5),
         x:    centred,
     }));
+    let falloff = net.push(Node::OneMinus(rising));
     let band = net.push(Node::Mul(binary(falloff, falloff)));
     let total = net.push(Node::Mul(binary(total, band)));
     let total = net.push(Node::Mul(binary(total, cf(2.2))));
@@ -703,6 +708,20 @@ mod tests {
         assert_well_formed(&ring(), "ring");
     }
 
+    #[test]
+    fn the_matrix_is_well_formed() {
+        assert_well_formed(&matrix::matrix(), "matrix");
+    }
+
+    /// Additive and double sided: the face adds light to the glass behind it,
+    /// and is seen from whichever side the viewer comes to.
+    #[test]
+    fn the_matrix_adds_light_and_draws_from_both_sides() {
+        let matrix = matrix::matrix();
+        assert!(matches!(matrix.surface.blend, BlendMode::Add));
+        assert!(matches!(matrix.surface.cull, CullMode::None));
+    }
+
     /// Arriving is a clip, not a fade: a shell that faded would have to
     /// blend, and a blended shell never reaches the phase its transmission
     /// is filled in.
@@ -726,7 +745,11 @@ mod tests {
     /// with.
     #[test]
     fn every_declared_input_is_read() {
-        for (graph, name) in [(shell(), "shell"), (ring(), "ring")] {
+        for (graph, name) in [
+            (shell(), "shell"),
+            (ring(), "ring"),
+            (matrix::matrix(), "matrix"),
+        ] {
             let networks = graph.surface.nodes.iter().chain(
                 graph
                     .displacement

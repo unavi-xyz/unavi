@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@bytecodealliance/jco": "^1.30.0",
-    "@bytecodealliance/preview2-shim": "^0.17.9"
+    "@bytecodealliance/jco": "^1.37.0",
+    "@bytecodealliance/preview2-shim": "^0.28.0"
   },
   "devDependencies": {
-    "esbuild": "^0.27.2"
+    "esbuild": "^0.28.2"
   }
 }

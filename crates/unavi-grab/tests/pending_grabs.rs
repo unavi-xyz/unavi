@@ -217,6 +217,27 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
     assert!(is_grabbed(&app, target));
 }
 
+/// A body a peer holds as a kinematic replica is still something to take
+/// over: the grab must start, so the hold claim can make it dynamic.
+#[test]
+fn a_kinematic_replica_is_grabbed_when_marked_grabbable() {
+    let mut app = app();
+    let pointer = spawn_pointer(&mut app);
+    let target = spawn_target(&mut app);
+    app.world_mut()
+        .entity_mut(target)
+        .insert((RigidBody::Kinematic, unavi_input::crosshair::Grabbable));
+    step(&mut app, 1);
+
+    squeeze_down(&mut app, Some(target), pointer);
+    step(&mut app, 1);
+
+    assert!(
+        is_grabbed(&app, target),
+        "a grabbable replica was refused a grab"
+    );
+}
+
 #[test]
 fn a_trigger_press_takes_hold_of_nothing() {
     let mut app = app();

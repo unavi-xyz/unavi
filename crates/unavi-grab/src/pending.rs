@@ -55,8 +55,12 @@ pub fn on_press(
 ) {
     for press in presses.read() {
         let target = press.hit.map(|hit| hit.entity);
-        let grabbable = target
-            .filter(|entity| matches!(targets.rigid_bodies.get(*entity), Ok(RigidBody::Dynamic)));
+        // A replica a peer holds is grabbable too: the grab takes its hold
+        // over, which makes it dynamic here.
+        let grabbable = target.filter(|entity| {
+            matches!(targets.rigid_bodies.get(*entity), Ok(RigidBody::Dynamic))
+                || targets.grabbable.contains(*entity)
+        });
 
         let Some(entity) = grabbable else {
             pending.grabs.push(PendingGrab {
@@ -103,7 +107,13 @@ pub fn note_promoted_bodies(
             pending.promoted.push((entity, now));
             commands.entity(entity).insert(Grabbable);
         } else {
-            commands.entity(entity).remove::<Grabbable>();
+            // A kinematic body is a replica a peer drives, still worth
+            // taking over, so it keeps its ring. Only a body that left the
+            // simulation altogether stops being grabbable. Losing `Dynamic`
+            // still ends a grab: the peer that took the hold drives it now.
+            if matches!(body, RigidBody::Static) {
+                commands.entity(entity).remove::<Grabbable>();
+            }
             commands.entity(entity).remove::<Held>();
         }
     }
@@ -166,7 +176,8 @@ fn target_for(
     promoted: &[(Entity, Duration)],
 ) -> Option<Entity> {
     if let Some(entity) = grab.entity
-        && matches!(targets.rigid_bodies.get(entity), Ok(RigidBody::Dynamic))
+        && (matches!(targets.rigid_bodies.get(entity), Ok(RigidBody::Dynamic))
+            || targets.grabbable.contains(entity))
     {
         return Some(entity);
     }

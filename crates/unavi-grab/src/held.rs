@@ -15,6 +15,7 @@ use unavi_input::{
         Action,
         ActionState,
     },
+    crosshair::Grabbable,
     pointer::GripReleased,
 };
 
@@ -57,6 +58,10 @@ pub struct Held {
 pub struct GrabTargets<'w, 's> {
     pub transforms:   Query<'w, 's, &'static GlobalTransform>,
     pub rigid_bodies: Query<'w, 's, &'static RigidBody>,
+    /// Bodies a remote peer drives as kinematic replicas. A grab takes their
+    /// hold over, so they are grabbable even though local physics does not
+    /// move them yet.
+    pub grabbable:    Query<'w, 's, (), With<Grabbable>>,
     gravity:          Query<'w, 's, &'static GravityScale>,
     held:             Query<'w, 's, &'static Held>,
 }

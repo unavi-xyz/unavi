@@ -29,6 +29,7 @@ use bevy_hsd::{
     },
     stack::RUNTIME,
 };
+use unavi_input::crosshair::Grabbable;
 use web_time::Instant;
 
 use crate::{
@@ -271,9 +272,11 @@ pub fn advance_object_interp(
     }
 }
 
-/// A prim parked [`RigidBody::Kinematic`] because a remote peer holds
-/// over its document, so a fresh replica never free-falls before its first
-/// update.
+/// A prim parked [`RigidBody::Kinematic`] because a remote peer holds over
+/// its document.
+///
+/// It never free-falls before its first update, and it is still worth
+/// grabbing: a grab takes the hold over, which makes it dynamic here.
 #[derive(Component)]
 pub struct ReplicaObject;
 
@@ -283,7 +286,17 @@ pub struct ReplicaObject;
 pub fn reconcile_object_holds(
     roots: Query<&HsdDocId>,
     docs: Query<&Hsd>,
-    prims: Query<(Entity, &Prim, &PrimOf, &RigidBody, Has<ReplicaObject>), With<Prim>>,
+    prims: Query<
+        (
+            Entity,
+            &Prim,
+            &PrimOf,
+            &RigidBody,
+            Has<ReplicaObject>,
+            Has<Grabbable>,
+        ),
+        With<Prim>,
+    >,
     view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
@@ -291,7 +304,7 @@ pub fn reconcile_object_holds(
         return;
     };
     let mut remote = HashMap::new();
-    for (entity, prim, child_of, body, is_replica) in &prims {
+    for (entity, prim, child_of, body, is_replica, grabbable) in &prims {
         // A local-only prim is this peer's own; a remote holder has no copy
         // of it to drive, so it keeps simulating here.
         let replicated = docs
@@ -317,6 +330,11 @@ pub fn reconcile_object_holds(
                 commands
                     .entity(entity)
                     .insert((ReplicaObject, RigidBody::Kinematic));
+                // A replica a remote peer drives is still something to
+                // point at and take over, so it carries the hover ring.
+                if !grabbable {
+                    commands.entity(entity).insert(Grabbable);
+                }
             }
             (false, true) => {
                 commands

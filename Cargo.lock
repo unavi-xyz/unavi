@@ -11572,6 +11572,7 @@ dependencies = [
  "unavi-avatar",
  "unavi-grab",
  "unavi-identity",
+ "unavi-input",
  "unavi-local",
  "unavi-policy",
  "unavi-portal",

@@ -10,7 +10,7 @@ pub enum State {
     /// Held to the end. The action fires exactly once, on the frame this is
     /// first reported.
     Committed,
-    /// Attention left the site before it filled.
+    /// The grasp let go of the site before it filled.
     Aborted,
 }
 
@@ -31,7 +31,7 @@ impl State {
 }
 
 /// The hold-to-confirm FSM for a consequential action: somewhere to draw, a
-/// duration to fill, and an abort by pulling away.
+/// duration to fill, and an abort by letting go.
 ///
 /// Not for anything reversible — a cast on a cheap action is a nuisance, and
 /// its overuse destroys the signal.
@@ -57,8 +57,8 @@ impl Cast {
         Self::new(tuning.cast_duration)
     }
 
-    /// Advances the fill. `held` is whether attention is still on the site;
-    /// losing it aborts immediately, with no grace period to learn.
+    /// Advances the fill. `held` is whether the grasp is still down on the
+    /// mote; letting go aborts immediately, with no grace period to learn.
     ///
     /// Settled casts stay settled, so a caller may keep polling until it
     /// takes the cast away.

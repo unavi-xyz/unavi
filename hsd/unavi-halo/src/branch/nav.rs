@@ -59,6 +59,16 @@ const LIST_LIMIT: u32 = 256;
 /// kept at zero scale so the template itself never shows.
 const TEMPLATE_PRIM_NAME: &str = "beacon_template";
 
+/// What letting go of a mote did, as far as Nav is concerned.
+pub enum Planting {
+    /// The mote is not one of Nav's beacons.
+    NotOurs,
+    /// A beacon is down.
+    Planted,
+    /// It was Nav's beacon, but none could be put down; the mote says so.
+    Failed,
+}
+
 /// A space the registries say has people in it.
 struct Space {
     /// For travelling, and the beacon's own colour seed.
@@ -140,6 +150,7 @@ impl Nav {
         };
         if let Err(err) = travel(space.ns) {
             eprintln!("halo: travel failed: {err:?}");
+            space.travel.notify("Couldn't travel there.");
         }
         true
     }
@@ -149,15 +160,21 @@ impl Nav {
     /// A beacon is a document of its own rather than an instance under one of
     /// our prims: beacons sync per document, and an instance has no document
     /// to sync.
-    pub fn plant(&mut self, mote: &Mote, landing: Landing) -> bool {
+    pub fn plant(&mut self, mote: &Mote, landing: Landing) -> Planting {
         let Some(space) = self.spaces.iter().find(|space| space.beacon.is(mote)) else {
-            return false;
+            return Planting::NotOurs;
         };
         match mint(&space.hex, landing.at) {
-            Ok(beacon) => self.beacons.push(beacon),
-            Err(err) => eprintln!("halo: could not put down a beacon: {err:?}"),
+            Ok(beacon) => {
+                self.beacons.push(beacon);
+                Planting::Planted
+            }
+            Err(err) => {
+                eprintln!("halo: could not put down a beacon: {err:?}");
+                space.beacon.notify("Couldn't put the beacon down.");
+                Planting::Failed
+            }
         }
-        true
     }
 }
 

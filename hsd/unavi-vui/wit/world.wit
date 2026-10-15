@@ -61,6 +61,18 @@ interface api {
     /// At most 1024 bytes.
     set-description: func(value: string) -> result<_, error>;
 
+    /// Tells the viewer something about this mote: a short card on its body,
+    /// shown for a few seconds whether or not the mote is attended, in place
+    /// of its usual placard. Meant for what went wrong, so it is styled as a
+    /// warning.
+    ///
+    /// Seen only while the mote is drawn: a notice for a mote that is not up
+    /// runs out unseen. Only one notice shows at a time; if several motes
+    /// have one, the first drawn wins. A notice posted before any surface
+    /// exists is timed from the first `update`. At most 1024 bytes; anything
+    /// past that is cut.
+    notify: func(message: string);
+
     /// A number identifying this mote, stable for as long as some handle
     /// keeps it alive. Key a map by this instead of comparing every entry
     /// with `is`.
@@ -185,8 +197,8 @@ interface api {
     /// A leaf fired. An item is not one: what it does is land, so it
     /// reports `planted` whichever button delivered it.
     activated(mote),
-    /// A cast site opened. Nothing has fired: holding attention on it fills
-    /// it, and looking away aborts.
+    /// A cast site opened. Nothing has fired: it fills while the grasp is
+    /// held on the mote, and releasing early aborts.
     casting(mote),
     /// A cast was held to the end.
     cast(mote),

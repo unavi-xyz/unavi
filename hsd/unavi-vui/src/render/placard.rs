@@ -165,7 +165,7 @@ impl PlacardPrims {
                         outline:       None,
                         outline_width: None,
                         emissive:      Some(match line.emphasis {
-                            Emphasis::Title => 0.4,
+                            Emphasis::Title | Emphasis::Warning => 0.4,
                             Emphasis::Body => 0.12,
                             Emphasis::Dim => 0.0,
                         }),
@@ -184,6 +184,7 @@ impl PlacardPrims {
 const fn tint(palette: &Palette, emphasis: Emphasis) -> wired_guest::math::Color {
     match emphasis {
         Emphasis::Title => palette.accent,
+        Emphasis::Warning => palette.warning,
         Emphasis::Body => palette.base,
         Emphasis::Dim => palette.dim,
     }

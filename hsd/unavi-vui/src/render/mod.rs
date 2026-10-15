@@ -78,6 +78,8 @@ pub struct Vui {
     palette: Palette,
     slots:   Vec<Option<Slot>>,
     free:    Vec<usize>,
+    /// Seconds of updates so far, which notices are timed against.
+    now:     f64,
 }
 
 impl Vui {
@@ -88,7 +90,14 @@ impl Vui {
             palette: Palette::DEFAULT,
             slots:   Vec::new(),
             free:    Vec::new(),
+            now:     0.0,
         })
+    }
+
+    /// Seconds of updates so far.
+    #[must_use]
+    pub const fn now(&self) -> f64 {
+        self.now
     }
 
     /// Puts up an orbit over `root`, drawing `capacity` motes at once and
@@ -235,6 +244,7 @@ impl Vui {
     /// Steps and draws every panel. Call from the script's `update`, where
     /// animation belongs — pinning it to the fixed rate makes motion step.
     pub fn update(&mut self, delta: f32) -> anyhow::Result<()> {
+        self.now += f64::from(delta);
         let Some(eye) = crate::camera_pose() else {
             return Ok(());
         };
@@ -252,7 +262,9 @@ impl Vui {
             let Some(slot) = &mut self.slots[index] else {
                 continue;
             };
-            let events = slot.panel.update(&self.doc, &gaze, anchor, delta)?;
+            let events = slot
+                .panel
+                .update(&self.doc, &gaze, anchor, delta, self.now)?;
             self.report(index, events);
         }
         Ok(())
@@ -371,11 +383,11 @@ pub fn drive_cast(
 
     let held = surface.seized_slot() == Some(active.slot);
     let state = active.cast.update(held, delta);
-    let at = surface
-        .views()
-        .get(active.slot)
-        .map_or(Vec3::ZERO, |view| view.position);
-    site.apply(doc, at, state)?;
+    let (at, radius) = surface.views().get(active.slot).map_or_else(
+        || (Vec3::ZERO, surface.tuning().mote_radius),
+        |view| (view.position, view.radius),
+    );
+    site.apply(doc, at, radius, state)?;
 
     if !state.is_settled() {
         return Ok(());

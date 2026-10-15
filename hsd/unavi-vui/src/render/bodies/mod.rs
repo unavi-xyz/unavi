@@ -152,11 +152,67 @@ struct PipShape {
 /// film and frost are per-mote choices.
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Shell {
-    style: Style,
-    icon:  bool,
-    film:  f32,
-    frost: f32,
-    bloom: f32,
+    style:  Style,
+    icon:   bool,
+    /// A toggle's mark is lit or receded by this, which the style alone does
+    /// not say once the mote wears its own hue.
+    active: bool,
+    film:   f32,
+    frost:  f32,
+    bloom:  f32,
+}
+
+/// A mark a role wears in a slot's own prims, its mesh written the first time
+/// the slot needs it and the prim hidden whenever it is not wanted.
+struct Mark {
+    prim:   (u64, u64),
+    carved: Cell<bool>,
+    pose:   Shadow<Option<Transform>>,
+}
+
+impl Mark {
+    const fn new(prim: (u64, u64)) -> Self {
+        Self {
+            prim,
+            carved: Cell::new(false),
+            pose: Shadow::new(),
+        }
+    }
+
+    fn apply<'a>(
+        &self,
+        mut batch: crate::Batch<'a>,
+        build: fn() -> mesh::MeshData,
+        wanted: Option<Transform>,
+    ) -> crate::Batch<'a> {
+        if wanted.is_some() && !self.carved.replace(true) {
+            batch = draw::mesh(&build())
+                .into_iter()
+                .fold(batch, |batch, property| batch.set(self.prim, property));
+        }
+        match self.pose.diff(wanted) {
+            Some(pose) => batch.set(
+                self.prim,
+                Property::Transform(pose.unwrap_or_else(draw::hidden)),
+            ),
+            None => batch,
+        }
+    }
+}
+
+/// What kind of mote a body is, marked on it: a toggle's bar, a cast's ring,
+/// an item's grip dots. A group wears its pips and the way back its chevron
+/// instead.
+struct Marks {
+    bar:  Mark,
+    ring: Mark,
+    grip: Mark,
+}
+
+/// A toggle's bar is lit when it is on and receded when it is off, in the two
+/// levels of the neutral family the rest of the surface already uses.
+const fn bar_color(palette: &Palette, active: bool) -> Color {
+    if active { palette.base } else { palette.dim }
 }
 
 struct SlotPrims {
@@ -175,8 +231,11 @@ struct SlotPrims {
     back:        (u64, u64),
     /// Whether `back` has had its mesh written yet.
     carved:      Cell<bool>,
+    /// Last chevron transform written, so a settled mark is not rewritten.
+    back_pose:   Shadow<Option<Transform>>,
     /// The mote's name, drawn always rather than on attention.
     label:       (u64, u64),
+    marks:       Marks,
     label_xform: Shadow<Option<Vec3>>,
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
@@ -188,6 +247,21 @@ struct SlotPrims {
     /// Last `(label, attention)` written; a `set_text` write costs a sync
     /// whether or not the string changed.
     written:     Shadow<(SmolStr, Attention)>,
+}
+
+/// Everything a frame's worth of drawing reads, borrowed from the surface.
+///
+/// `drawn` maps each view back to its spec, which pagination makes a real
+/// translation rather than an identity. `held` is the slot the engine is
+/// carrying, whose transform belongs to the solver rather than to us.
+#[derive(Clone, Copy)]
+pub struct Drawing<'a> {
+    pub views:   &'a [SlotView],
+    pub specs:   &'a [MoteSpec],
+    pub drawn:   &'a [usize],
+    pub placard: Option<&'a PlacardView>,
+    pub palette: &'a Palette,
+    pub held:    Option<usize>,
 }
 
 /// The prims one surface draws with: a hit surface, a pool of slot bodies
@@ -301,6 +375,14 @@ impl Bodies {
             // A label rides the slot, not the body, which scales with
             // attention.
             let label = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let bar = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let ring = doc.create_prim(Layer::Local, Some(slot_root))?;
+            let grip = doc.create_prim(Layer::Local, Some(slot_root))?;
+            doc.local()
+                .set(bar, Property::Transform(draw::hidden()))
+                .set(ring, Property::Transform(draw::hidden()))
+                .set(grip, Property::Transform(draw::hidden()))
+                .flush()?;
             doc.local()
                 .set(nested, Property::Transform(draw::hidden()))
                 .set(plain, Property::Transform(draw::hidden()))
@@ -320,7 +402,13 @@ impl Bodies {
                 marked: Cell::new(false),
                 back,
                 carved: Cell::new(false),
+                back_pose: Shadow::new(),
                 label,
+                marks: Marks {
+                    bar:  Mark::new(bar),
+                    ring: Mark::new(ring),
+                    grip: Mark::new(grip),
+                },
                 label_xform: Shadow::new(),
                 icon: RefCell::new(None),
                 shell: Shadow::new(),
@@ -435,20 +523,15 @@ impl Bodies {
             .map_or(Vec3::ZERO, |velocity| velocity.linear)
     }
 
-    /// `drawn` maps each view back to its spec, which pagination makes a real
-    /// translation rather than an identity. `held` is the slot the engine is
-    /// carrying, whose transform belongs to the solver rather than to us.
-    #[expect(clippy::too_many_arguments)]
-    pub fn apply(
-        &self,
-        doc: &Document,
-        views: &[SlotView],
-        specs: &[MoteSpec],
-        drawn: &[usize],
-        placard: Option<&PlacardView>,
-        palette: &Palette,
-        held: Option<usize>,
-    ) -> anyhow::Result<()> {
+    pub fn apply(&self, doc: &Document, drawing: &Drawing<'_>) -> anyhow::Result<()> {
+        let Drawing {
+            views,
+            specs,
+            drawn,
+            placard,
+            palette,
+            held,
+        } = *drawing;
         match placard {
             Some(view) => self.placard.apply(doc, view, palette)?,
             None => self.placard.hide(doc)?,
@@ -478,11 +561,12 @@ impl Bodies {
             batch = Self::apply_label(batch, slot, view, spec, palette);
 
             let shell = Shell {
-                style: view.style,
-                icon:  slot.icon.borrow().is_some(),
-                film:  spec.map_or(0.0, |spec| spec.film),
-                frost: spec.map_or(0.0, |spec| spec.frost),
-                bloom: view.bloom,
+                style:  view.style,
+                icon:   slot.icon.borrow().is_some(),
+                active: spec.is_some_and(|spec| spec.active),
+                film:   spec.map_or(0.0, |spec| spec.film),
+                frost:  spec.map_or(0.0, |spec| spec.frost),
+                bloom:  view.bloom,
             };
             // Not `Option::map_or`: the closure would need to move `batch`
             // out of this scope, and a `Batch` is not `Clone`.
@@ -496,6 +580,7 @@ impl Bodies {
                         Property::Material(draw::pip(view.style, false)),
                     )
                     .set(slot.back, Property::Material(draw::pip(view.style, false)));
+                batch = Self::mark_materials(batch, slot, view, shell.active, palette);
                 Some((index, shell))
             } else {
                 None
@@ -503,6 +588,7 @@ impl Bodies {
 
             batch = Self::apply_pips(batch, slot, view);
             batch = Self::apply_back(batch, slot, view);
+            batch = Self::apply_marks(batch, slot, view);
             batch.flush()?;
 
             if let Some((index, shell)) = overrides {
@@ -614,6 +700,55 @@ impl Bodies {
         )
     }
 
+    /// Colours the marks: the bar by whether its toggle is on, the rest in
+    /// the receded level so a kind is legible without competing with the
+    /// state.
+    fn mark_materials<'a>(
+        batch: crate::Batch<'a>,
+        slot: &SlotPrims,
+        view: &SlotView,
+        active: bool,
+        palette: &Palette,
+    ) -> crate::Batch<'a> {
+        let styled = |color| {
+            Property::Material(draw::pip(
+                Style {
+                    color,
+                    alpha: 1.0,
+                    emissive: view.style.emissive,
+                },
+                false,
+            ))
+        };
+        batch
+            .set(slot.marks.bar.prim, styled(bar_color(palette, active)))
+            .set(slot.marks.ring.prim, styled(palette.dim))
+            .set(slot.marks.grip.prim, styled(palette.dim))
+    }
+
+    /// Marks the kind of mote the body is, scaled with the body.
+    fn apply_marks<'a>(
+        batch: crate::Batch<'a>,
+        slot: &SlotPrims,
+        view: &SlotView,
+    ) -> crate::Batch<'a> {
+        let on = |wanted: bool| wanted.then(|| draw::placed(Vec3::ZERO, view.radius));
+        let marks = &slot.marks;
+        let batch = marks.bar.apply(
+            batch,
+            mesh::toggle_bar,
+            on(matches!(view.role, Role::Toggle)),
+        );
+        let batch = marks
+            .ring
+            .apply(batch, mesh::cast_ring, on(matches!(view.role, Role::Cast)));
+        marks.grip.apply(
+            batch,
+            mesh::grip_dots,
+            on(matches!(view.role, Role::Item { .. })),
+        )
+    }
+
     /// The way back and the page tabs wear a chevron of their own, so a
     /// glance tells them from the motes of the level. The way back points up;
     /// a tab points the way it turns.
@@ -629,10 +764,13 @@ impl Bodies {
                 .into_iter()
                 .fold(batch, |batch, property| batch.set(slot.back, property));
         }
-        batch.set(
-            slot.back,
-            Property::Transform(mark.unwrap_or_else(draw::hidden)),
-        )
+        match slot.back_pose.diff(mark) {
+            Some(pose) => batch.set(
+                slot.back,
+                Property::Transform(pose.unwrap_or_else(draw::hidden)),
+            ),
+            None => batch,
+        }
     }
 
     /// Drawn unconditionally: how much a container holds is structural.
@@ -658,26 +796,16 @@ impl Bodies {
         };
 
         if slot.shape.diff(shape).is_some() {
-            batch = apply_run(
-                batch,
-                slot.nested,
-                0,
-                groups,
+            let run = |start, len| Run {
+                start,
+                len,
                 total,
                 arrange,
                 spread,
                 radius,
-            );
-            batch = apply_run(
-                batch,
-                slot.plain,
-                groups,
-                total - groups,
-                total,
-                arrange,
-                spread,
-                radius,
-            );
+            };
+            batch = apply_run(batch, slot.nested, run(0, groups));
+            batch = apply_run(batch, slot.plain, run(groups, total - groups));
         }
 
         if view.pips.overflow && !slot.marked.get() {
@@ -742,17 +870,26 @@ fn phase(slot: usize) -> f32 {
     slot as f32 * 2.399_963
 }
 
-#[expect(clippy::too_many_arguments)]
-fn apply_run(
-    batch: crate::Batch<'_>,
-    prim: (u64, u64),
-    start: usize,
-    len: usize,
-    total: usize,
+/// `len` pips from `start` of `total`, laid out in `arrange` at `spread`.
+#[derive(Clone, Copy)]
+struct Run {
+    start:   usize,
+    len:     usize,
+    total:   usize,
     arrange: Arrange,
-    spread: f32,
-    radius: f32,
-) -> crate::Batch<'_> {
+    spread:  f32,
+    radius:  f32,
+}
+
+fn apply_run(batch: crate::Batch<'_>, prim: (u64, u64), run: Run) -> crate::Batch<'_> {
+    let Run {
+        start,
+        len,
+        total,
+        arrange,
+        spread,
+        radius,
+    } = run;
     if len == 0 {
         return batch;
     }
@@ -764,6 +901,13 @@ fn apply_run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_toggle_s_bar_is_lit_when_on_and_receded_when_off() {
+        let palette = Palette::DEFAULT;
+        assert_eq!(bar_color(&palette, true), palette.base);
+        assert_eq!(bar_color(&palette, false), palette.dim);
+    }
 
     #[test]
     fn a_slot_with_no_name_hides_the_label_it_inherited() {

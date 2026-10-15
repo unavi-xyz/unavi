@@ -1,5 +1,6 @@
-//! Mesh generators for the shapes a surface draws: bodies, pips and the
-//! overflow and way-back markers.
+//! Mesh generators for the shapes a surface draws: bodies, pips, the
+//! overflow and way-back markers, and the marks that say what kind of mote a
+//! body is.
 
 use std::f32::consts::{
     PI,
@@ -143,6 +144,51 @@ pub fn chevron() -> MeshData {
         &[[1, 2, 3], [1, 3, 4], [0, 1, 4], [0, 4, 5]],
         HALF_DEPTH,
     )
+}
+
+/// A toggle's mark: a short horizontal bar just below the face centre, in the
+/// same unit space as the body.
+#[must_use]
+pub fn toggle_bar() -> MeshData {
+    const HALF_WIDTH: f32 = 0.36;
+    const HALF_HEIGHT: f32 = 0.07;
+    const CENTRE: f32 = -0.3;
+    const HALF_DEPTH: f32 = 0.06;
+
+    let (low, high) = (CENTRE - HALF_HEIGHT, CENTRE + HALF_HEIGHT);
+    let outline = [
+        [-HALF_WIDTH, low],
+        [HALF_WIDTH, low],
+        [HALF_WIDTH, high],
+        [-HALF_WIDTH, high],
+    ];
+    prism(&outline, &[[0, 1, 2], [0, 2, 3]], HALF_DEPTH)
+}
+
+/// Where a cast's resting ring stands, as fractions of its body's radius: just
+/// outside the shell, and inside the ring a cast site draws once it fills.
+pub const CAST_RING_INNER: f32 = 1.04;
+pub const CAST_RING_OUTER: f32 = 1.1;
+
+/// A cast's mark: a thin ring hugging the body's silhouette, in unit space.
+#[must_use]
+pub fn cast_ring() -> MeshData {
+    annulus(CAST_RING_INNER, CAST_RING_OUTER, 48)
+}
+
+/// An item's mark: three small dots on the rim at 3 o'clock, like grip
+/// points to take hold of, in unit space.
+#[must_use]
+pub fn grip_dots() -> MeshData {
+    const SPREAD: f32 = 0.3;
+    const DOT: f32 = 0.09;
+
+    let mut mesh = MeshData::default();
+    for step in [-1.0_f32, 0.0, 1.0] {
+        let (sin, cos) = (step * SPREAD).sin_cos();
+        push_sphere(&mut mesh, [cos, sin, 0.0], DOT, 6, 8);
+    }
+    mesh
 }
 
 /// Extrudes a counter-clockwise `outline` along Z into a solid, `triangles`
@@ -664,6 +710,70 @@ mod tests {
                     .any(|normal| normal[axis] < -0.5)
             );
         }
+    }
+
+    fn radius_of(point: &[f32]) -> f32 {
+        point[0].hypot(point[1]).hypot(point[2])
+    }
+
+    fn assert_unit_normals(mesh: &MeshData) {
+        for normal in mesh.normals.as_chunks::<3>().0 {
+            assert!(
+                (radius_of(normal) - 1.0).abs() < 1.0e-4,
+                "a normal is a direction: {normal:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_toggle_bar_is_a_short_bar_below_the_centre_inside_the_body() {
+        let mesh = toggle_bar();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+
+        let points = mesh.positions.as_chunks::<3>().0;
+        assert!(
+            points.iter().all(|point| point[1] < 0.0),
+            "below the centre"
+        );
+        assert!(
+            points.iter().all(|point| radius_of(point) < 0.8),
+            "inside the body"
+        );
+        let width = points.iter().map(|p| p[0].abs()).fold(0.0_f32, f32::max);
+        let height = points.iter().map(|p| p[1]).fold(f32::MIN, f32::max)
+            - points.iter().map(|p| p[1]).fold(f32::MAX, f32::min);
+        assert!(width * 2.0 > height * 3.0, "a bar, not a block");
+    }
+
+    #[test]
+    fn a_cast_ring_hugs_the_outside_of_the_body() {
+        let mesh = cast_ring();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+        for point in mesh.positions.as_chunks::<3>().0 {
+            let radius = radius_of(point);
+            assert!(
+                (CAST_RING_INNER - 1.0e-4..=CAST_RING_OUTER + 1.0e-4).contains(&radius),
+                "{radius}: outside the shell and inside the cast site's ring"
+            );
+        }
+    }
+
+    #[test]
+    fn grip_dots_are_three_small_dots_on_the_right_rim() {
+        let mesh = grip_dots();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+        assert_eq!(vertex_count(&mesh), 3 * 63);
+
+        for point in mesh.positions.as_chunks::<3>().0 {
+            assert!(point[0] > 0.7, "at 3 o'clock");
+            assert!(radius_of(point) < 1.12, "on the rim, not out in the room");
+        }
+        let centres = centres(&mesh, 3);
+        assert!(centres[0][1] < centres[1][1] && centres[1][1] < centres[2][1]);
+        assert!(centres.iter().all(|c| (radius_of(c) - 1.0).abs() < 1.0e-3));
     }
 
     #[test]

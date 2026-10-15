@@ -414,6 +414,7 @@ impl Surface {
                     tint:        None,
                     film:        palette::FILM,
                     frost:       0.0,
+                    notice:      None,
                 };
                 (spec, layout.tab(forward, &self.tuning))
             })
@@ -481,8 +482,38 @@ impl Surface {
             .extend((self.page.skipped..specs.len()).take(self.per_page));
     }
 
-    /// The attended mote's placard, mounted on wherever its body currently is.
+    /// What to show beside the motes: a notice if any drawn mote has one,
+    /// else the attended mote's placard.
     fn build_placard(&self, specs: &[MoteSpec]) -> Option<PlacardView> {
+        self.build_notice(specs)
+            .or_else(|| self.build_description(specs))
+    }
+
+    /// A drawn mote's notice, on its body whether or not it is attended. It
+    /// is shown at full strength at once: it is news, not something earned
+    /// by dwelling. Only one shows at a time, the first drawn slot's, and
+    /// like the hover placard it gives way to a mote in hand.
+    fn build_notice(&self, specs: &[MoteSpec]) -> Option<PlacardView> {
+        if !self.reveal.is_open() || self.grasp.is_seized() {
+            return None;
+        }
+        self.drawn
+            .iter()
+            .zip(&self.views)
+            .find_map(|(index, view)| {
+                let message = specs.get(*index)?.notice.clone()?;
+                Some(placard::view(
+                    &Placard::notice(message),
+                    view.position,
+                    view.radius,
+                    1.0,
+                    &self.tuning,
+                ))
+            })
+    }
+
+    /// The attended mote's placard, mounted on wherever its body currently is.
+    fn build_description(&self, specs: &[MoteSpec]) -> Option<PlacardView> {
         if self.grasp.is_seized() {
             return None;
         }
@@ -618,6 +649,7 @@ mod tests {
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
         }
     }
 
@@ -631,6 +663,7 @@ mod tests {
             tint:        None,
             film:        crate::palette::FILM,
             frost:       0.0,
+            notice:      None,
         }
     }
 
@@ -1652,6 +1685,78 @@ mod tests {
         surface.turn_by(1);
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
         assert!(surface.views().iter().all(|view| view.heat == 0.0));
+    }
+
+    fn noticed(label: &str, message: &str) -> MoteSpec {
+        MoteSpec {
+            notice: Some(SmolStr::new(message)),
+            ..named(label)
+        }
+    }
+
+    #[test]
+    fn a_notice_shows_on_its_mote_without_attention() {
+        let mut surface = surface();
+        let specs = [named("a"), noticed("b", "No home.")];
+        for _ in 0..30 {
+            ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        }
+        assert_eq!(surface.attended(), None);
+
+        let notice = surface.placard().expect("a notice needs no attention");
+        assert_eq!(notice.lines[0].text, "No home.");
+        assert_eq!(notice.lines[0].emphasis, crate::placard::Emphasis::Warning);
+        assert!((notice.opacity - 1.0).abs() < 1.0e-6);
+        assert!(
+            (notice.position.x - surface.views()[1].position.x).abs() < 1.0e-5,
+            "on the body of the mote that posted it"
+        );
+    }
+
+    #[test]
+    fn a_notice_takes_precedence_over_the_hover_placard() {
+        let mut surface = surface();
+        let specs = [named("a"), noticed("b", "Nope.")];
+        dwell(&mut surface, &specs, aim_at(Vec2::new(0.0, R)));
+
+        assert_eq!(surface.attended(), Some(0));
+        let shown = surface.placard().expect("placard");
+        assert_eq!(shown.lines[0].text, "Nope.");
+    }
+
+    #[test]
+    fn a_surface_on_its_way_out_shows_no_notice() {
+        let mut surface = surface();
+        let specs = [named("a"), noticed("b", "No home.")];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert!(surface.placard().is_some());
+
+        surface.set_open(false);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert!(surface.placard().is_none());
+    }
+
+    #[test]
+    fn a_notice_gives_way_to_a_mote_in_hand() {
+        let mut surface = surface();
+        let specs = [named("a"), noticed("b", "No home.")];
+        let aim = aim_at(Vec2::new(0.0, R));
+        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
+        assert!(surface.placard().is_some());
+
+        surface.press(aim.world, true);
+        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
+        assert!(surface.is_seized());
+        assert!(surface.placard().is_none());
+    }
+
+    #[test]
+    fn a_mote_that_is_not_drawn_shows_no_notice() {
+        let mut surface = Surface::new(2, Tuning::DEFAULT, Palette::DEFAULT);
+        let specs = [named("a"), named("b"), noticed("c", "Unseen.")];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(surface.drawn(), vec![0, 1]);
+        assert!(surface.placard().is_none());
     }
 
     #[test]

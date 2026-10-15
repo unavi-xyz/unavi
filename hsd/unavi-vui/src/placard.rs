@@ -21,17 +21,29 @@ pub const MAX_LINES: usize = 8;
 /// Mounted text: what this mote is and how to use it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Placard {
-    pub title: SmolStr,
+    pub title:   SmolStr,
     /// Prose, without line breaks; [`view`] wraps it.
-    pub body:  ArrayVec<SmolStr, MAX_LINES>,
+    pub body:    ArrayVec<SmolStr, MAX_LINES>,
+    /// Whether this is a notice, which sets its title as a warning.
+    pub warning: bool,
 }
 
 impl Placard {
     #[must_use]
     pub fn new(title: impl Into<SmolStr>) -> Self {
         Self {
-            title: title.into(),
-            body:  ArrayVec::new(),
+            title:   title.into(),
+            body:    ArrayVec::new(),
+            warning: false,
+        }
+    }
+
+    /// A notice: `message` set as a warning title, with nothing under it.
+    #[must_use]
+    pub fn notice(message: impl Into<SmolStr>) -> Self {
+        Self {
+            warning: true,
+            ..Self::new(message)
         }
     }
 
@@ -76,6 +88,8 @@ const fn kind(role: Role) -> &'static str {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Emphasis {
     Title,
+    /// A notice's message, which wears a colour of its own.
+    Warning,
     Body,
     /// The operating hint.
     Dim,
@@ -209,7 +223,11 @@ pub fn view(
                 text,
                 offset: Vec2::new(-inner / 2.0, y),
                 size: tuning.placard_title,
-                emphasis: Emphasis::Title,
+                emphasis: if placard.warning {
+                    Emphasis::Warning
+                } else {
+                    Emphasis::Title
+                },
             });
         }
     }
@@ -266,6 +284,7 @@ mod tests {
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
         }
     }
 
@@ -321,6 +340,17 @@ mod tests {
         assert!(
             view.position.z < tuning.mote_radius,
             "a placard further out than the mote is wide stops reading as its"
+        );
+    }
+
+    #[test]
+    fn a_notice_is_its_message_set_as_a_warning_with_nothing_under_it() {
+        let view = view_of(&Placard::notice("No home."));
+        assert_eq!(texts(&view), vec!["No home."]);
+        assert_eq!(view.lines[0].emphasis, Emphasis::Warning);
+        assert_ne!(
+            view_of(&Placard::new("Citrus")).lines[0].emphasis,
+            Emphasis::Warning
         );
     }
 

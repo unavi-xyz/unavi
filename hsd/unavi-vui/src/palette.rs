@@ -21,6 +21,10 @@ pub struct Palette {
     pub accent:       Color,
     /// Receded: inactive motes and the way back.
     pub dim:          Color,
+    /// A notice's title. Amber rather than the accent: the accent means a
+    /// mote is held, so a warning wearing it would read as selection, and a
+    /// warning has to be distinct from every state a mote can be in.
+    pub warning:      Color,
     /// Backing surfaces — grids, tables, cast circles, placards.
     pub surface:      Color,
     /// Warmth mixed into an item that is a source of its thing, so a mote you
@@ -54,6 +58,7 @@ impl Palette {
         base:         shade(0.92),
         accent:       rgb(0.60, 0.84, 1.00),
         dim:          shade(0.42),
+        warning:      rgb(1.00, 0.72, 0.28),
         surface:      rgb(0.12, 0.13, 0.16),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,

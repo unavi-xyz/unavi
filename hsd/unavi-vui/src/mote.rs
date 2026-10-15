@@ -91,6 +91,9 @@ pub struct MoteSpec {
     pub film:        f32,
     /// How much the shell's rim is frosted, `0` for clear glass.
     pub frost:       f32,
+    /// What the mote is telling the viewer right now, if its notice has not
+    /// run out. Drawn on its body in place of the placard.
+    pub notice:      Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -252,6 +255,7 @@ mod tests {
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
         }
     }
 

@@ -26,6 +26,7 @@ use crate::{
     render::{
         bodies::{
             Bodies,
+            Drawing,
             Hit,
             Signal,
         },
@@ -43,6 +44,7 @@ use crate::{
     },
     surface::Surface,
     tree::{
+        self,
         Kind,
         Mote,
         Navigation,
@@ -320,6 +322,7 @@ impl Panel {
         gaze: &Gaze,
         anchor: Transform,
         delta: f32,
+        now: f64,
     ) -> anyhow::Result<Vec<Event>> {
         let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
         let frame = Frame {
@@ -329,7 +332,13 @@ impl Panel {
             delta,
         };
 
-        let (motes, specs) = self.content.motes_and_specs();
+        let (motes, mut specs) = self.content.motes_and_specs();
+        tree::noticed(
+            &motes,
+            &mut specs,
+            now,
+            self.surface.tuning().notice_duration,
+        );
         let (layout, pinned) = self.content.layout(self.capacity, self.surface.tuning());
         self.surface.update(&specs, layout, pinned, &frame);
 
@@ -343,12 +352,14 @@ impl Panel {
         )?;
         self.bodies.apply(
             doc,
-            self.surface.views(),
-            &specs,
-            self.surface.drawn(),
-            self.surface.placard(),
-            self.surface.palette(),
-            self.held,
+            &Drawing {
+                views:   self.surface.views(),
+                specs:   &specs,
+                drawn:   self.surface.drawn(),
+                placard: self.surface.placard(),
+                palette: self.surface.palette(),
+                held:    self.held,
+            },
         )?;
         let mut events = Vec::new();
         self.report_page(&mut events);

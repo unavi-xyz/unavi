@@ -48,6 +48,9 @@ pub struct Tuning {
     /// Average glyph width, in ems, that placard wrapping assumes.
     pub advance_estimate: f32,
 
+    /// Seconds a notice stays on its mote.
+    pub notice_duration: f32,
+
     /// Em height of the name drawn under every mote.
     pub label_size: f32,
     /// Clearance between a mote's surface and its label.
@@ -143,6 +146,8 @@ impl Tuning {
         placard_pad:      0.013,
         placard_width:    0.24,
         advance_estimate: 0.62,
+
+        notice_duration: 3.0,
 
         label_size: 0.011,
         label_gap:  0.007,

@@ -64,6 +64,12 @@ impl Kind {
     }
 }
 
+/// Something a mote told the viewer, and the surface-clock time it was said at.
+struct Notice {
+    message: SmolStr,
+    posted:  f64,
+}
+
 /// A mote, and whatever it holds.
 ///
 /// Shared rather than owned: a handle kept after the mote is mounted still
@@ -101,6 +107,8 @@ struct Data {
     frost:       f32,
     /// Whether the mote is on: a toggle, not a pulse.
     active:      bool,
+    /// What the mote last told the viewer, and when.
+    notice:      Option<Notice>,
     parent:      Weak<RefCell<Self>>,
     children:    Vec<Mote>,
 }
@@ -119,6 +127,7 @@ impl Mote {
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
             active: false,
             parent: Weak::new(),
             children: Vec::new(),
@@ -289,6 +298,27 @@ impl Mote {
         self.0.borrow_mut().active = active;
     }
 
+    /// Tells the viewer `message`, at `now` on the surface clock. A later
+    /// notice replaces an earlier one.
+    pub fn notify(&self, message: &str, now: f64) {
+        self.0.borrow_mut().notice = Some(Notice {
+            message: SmolStr::new(message),
+            posted:  now,
+        });
+    }
+
+    /// The notice still showing at `now`, if it was posted less than
+    /// `duration` seconds ago.
+    #[must_use]
+    pub fn notice(&self, now: f64, duration: f32) -> Option<SmolStr> {
+        let data = self.0.borrow();
+        let notice = data.notice.as_ref()?;
+        let age = now - notice.posted;
+        (0.0..f64::from(duration))
+            .contains(&age)
+            .then(|| notice.message.clone())
+    }
+
     #[must_use]
     pub fn spec(&self) -> MoteSpec {
         let data = self.0.borrow();
@@ -317,6 +347,9 @@ impl Mote {
             tint:        data.tint,
             film:        data.film,
             frost:       data.frost,
+            // A notice has a clock, which only a surface keeps: it fills this
+            // in when it draws.
+            notice:      None,
         }
     }
 
@@ -332,6 +365,19 @@ impl Mote {
                 .children
                 .iter()
                 .any(|child| child.holds(other))
+    }
+}
+
+/// Fills in the notice each of `specs` is showing at `now`, for `motes` drawn
+/// slot for slot.
+///
+/// The way back is a surface's own mote standing in for the level it leaves,
+/// so a notice posted to that level is not shown on it.
+pub fn noticed(motes: &[Mote], specs: &mut [MoteSpec], now: f64, duration: f32) {
+    for (spec, mote) in specs.iter_mut().zip(motes) {
+        if !matches!(spec.role, Role::Parent { .. }) {
+            spec.notice = mote.notice(now, duration);
+        }
     }
 }
 
@@ -441,6 +487,7 @@ impl Tree {
             tint:        None,
             film:        crate::palette::FILM,
             frost:       0.0,
+            notice:      None,
         }
     }
 
@@ -637,6 +684,48 @@ mod tests {
                 arrange:  Arrange::Orbit,
             }
         );
+    }
+
+    #[test]
+    fn a_notice_shows_for_its_duration_and_then_goes() {
+        let node = mote(Kind::Cast, "Home");
+        assert_eq!(node.notice(0.0, 3.0), None, "nothing said yet");
+
+        node.notify("No home space set.", 10.0);
+        assert_eq!(
+            node.notice(10.0, 3.0).as_deref(),
+            Some("No home space set.")
+        );
+        assert_eq!(
+            node.notice(12.9, 3.0).as_deref(),
+            Some("No home space set.")
+        );
+        assert_eq!(node.notice(13.0, 3.0), None, "run out");
+    }
+
+    #[test]
+    fn a_later_notice_replaces_an_earlier_one_and_restarts_the_clock() {
+        let node = mote(Kind::Cast, "Home");
+        node.notify("first", 0.0);
+        node.notify("second", 2.0);
+        assert_eq!(node.notice(4.0, 3.0).as_deref(), Some("second"));
+    }
+
+    #[test]
+    fn the_way_back_does_not_wear_the_level_s_notice() {
+        let inner = mote(Kind::Action, "inner");
+        let outer = holding("outer", vec![inner.clone()]);
+        outer.notify("posted to the level", 0.0);
+        inner.notify("posted to the leaf", 0.0);
+
+        let mut tree = Tree::new(holding("root", vec![outer]));
+        tree.select(0);
+        let (motes, mut specs) = tree.level_with_motes();
+        noticed(&motes, &mut specs, 1.0, 3.0);
+
+        assert_eq!(specs[0].role, Role::Parent { depth: 1 });
+        assert_eq!(specs[0].notice, None);
+        assert_eq!(specs[1].notice.as_deref(), Some("posted to the leaf"));
     }
 
     #[test]

@@ -17,7 +17,10 @@ use crate::{
     branch::{
         hand::Toolbelt,
         home::Home,
-        nav::Nav,
+        nav::{
+            Nav,
+            Planting,
+        },
     },
     root::Root,
     summon::{
@@ -86,7 +89,10 @@ impl Script {
             Event::Planted(planted) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
-                if self.nav.plant(&planted.mote, planted.landing) {
+                if matches!(
+                    self.nav.plant(&planted.mote, planted.landing),
+                    Planting::Planted
+                ) {
                     let dismiss = self.summon.taken();
                     self.apply(dismiss)?;
                 }
@@ -109,7 +115,7 @@ impl Script {
 
     fn cast(&mut self, mote: &Mote) {
         if mote.is(&self.root.home) {
-            self.home.request();
+            self.home.request(&self.root.home);
         } else {
             self.nav.cast(mote);
         }
@@ -176,7 +182,7 @@ impl ScriptBehavior for Script {
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
-        self.home.fixed_update();
+        self.home.fixed_update(&self.root.home);
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
 

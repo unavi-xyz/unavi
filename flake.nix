@@ -180,6 +180,8 @@
                     # patched against Nix's glibc, so it ignores the
                     # LD_LIBRARY_PATH exported below that breaks host git.
                     git
+
+                    cargo-nextest
                     just
                     nushell
                   ]);
@@ -205,7 +207,6 @@
                         cargo-deny
                         cargo-edit
                         cargo-machete
-                        cargo-nextest
                         cargo-release
                         cargo-watch
                         cargo-workspaces

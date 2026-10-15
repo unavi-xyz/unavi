@@ -11,6 +11,7 @@ mod attention;
 mod cast;
 mod fit;
 mod flip;
+mod font;
 mod glyph;
 mod grasp;
 mod layout;

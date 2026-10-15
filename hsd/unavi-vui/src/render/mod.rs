@@ -157,6 +157,13 @@ impl Vui {
         Ok(())
     }
 
+    /// Sets the readout an orbit shows at its centre, or takes it down.
+    pub fn set_readout(&mut self, surface: SurfaceId, text: Option<&str>) {
+        if let Some(slot) = self.slot_mut(surface) {
+            slot.panel.set_readout(text);
+        }
+    }
+
     /// Takes a panel down, keeping its prims.
     pub fn dismiss(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
         let Some(Some(slot)) = self.slots.get_mut(surface.0) else {

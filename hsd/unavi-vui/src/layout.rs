@@ -309,8 +309,12 @@ impl Layout {
     ) -> Option<usize> {
         let radius = self.radius()?;
         let distance = local.length();
-        if self.has_centre() && distance <= radius * tuning.centre_frac {
-            return Some(0);
+        // The middle of an open orbit is a dead zone rather than the nearest
+        // direction: a pointer resting there has not deflected toward any
+        // mote, and the readout drawn there is something to look at, not a
+        // way to pick whichever slot happens to be closest in angle.
+        if distance <= radius * tuning.centre_frac {
+            return self.has_centre().then_some(0);
         }
         if distance > radius * tuning.reach_frac {
             return None;
@@ -428,10 +432,34 @@ mod tests {
     }
 
     #[test]
-    fn a_star_has_no_centre_target() {
+    fn a_star_selects_nothing_at_its_centre() {
         let layout = Layout::star(5, R);
         let resolved = layout.resolve(Vec2::new(0.0, 0.0), None, &tuning());
-        assert_ne!(resolved, None, "a null deflection still picks a direction");
+        assert_eq!(resolved, None, "a null deflection picks no direction");
+        let edge = R * tuning().centre_frac * 1.1;
+        assert_eq!(
+            layout.resolve(Vec2::new(0.0, edge), None, &tuning()),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn an_open_orbit_has_a_slot_for_each_mote_and_none_for_its_centre() {
+        // A readout stands in the middle of an open orbit, and the layout
+        // knows nothing of it: whatever the pointer is over, only a mote's
+        // own slot can come back.
+        let (layout, pinned) = Layout::orbit(4, Centre::Open, 4, R);
+        assert_eq!((layout.len(), pinned), (4, 0));
+        for x in -10..=10 {
+            for y in -10..=10 {
+                let point = Vec2::new(x as f32, y as f32) * (R / 5.0);
+                let slot = layout.resolve(point, None, &tuning());
+                assert!(
+                    slot.is_none_or(|slot| slot < 4),
+                    "{point:?} resolved {slot:?}"
+                );
+            }
+        }
     }
 
     #[test]

@@ -6,6 +6,7 @@ use crate::{
         convert,
         dismiss,
         drain,
+        drive,
         mote::MoteRes,
         put_up,
         remove,
@@ -29,6 +30,8 @@ use crate::{
 const MAX_ORBIT_CAPACITY: u32 = 64;
 /// `grid.new`: `columns * rows` is at most 256.
 const MAX_GRID_CELLS: u32 = 256;
+/// `orbit.set-readout`: at most 64 bytes.
+const MAX_READOUT_BYTES: usize = 64;
 
 pub struct Orbit(SurfaceId);
 
@@ -46,6 +49,21 @@ impl GuestOrbit for Orbit {
 
     fn events(&self) -> Vec<Event> {
         drain(self.0)
+    }
+
+    fn set_readout(&self, text: Option<String>) -> Result<(), Error> {
+        if let Some(text) = &text
+            && text.len() > MAX_READOUT_BYTES
+        {
+            return Err(Error::InvalidArgument(format!(
+                "readout is {} bytes, over the limit of {MAX_READOUT_BYTES}",
+                text.len()
+            )));
+        }
+        drive(|vui| {
+            vui.set_readout(self.0, text.as_deref());
+            Ok(())
+        })
     }
 
     fn summon(&self) -> Result<(), Error> {

@@ -2,6 +2,8 @@
 //! input and its cast site. An orbit and a grid are the same panel with a
 //! different [`Content`].
 
+use std::rc::Rc;
+
 use wired_guest::math::{
     Transform,
     Vec2,
@@ -9,6 +11,8 @@ use wired_guest::math::{
 };
 
 use crate::{
+    font,
+    glyph::Glyph,
     grasp::Outcome,
     layout::{
         Centre,
@@ -63,6 +67,13 @@ const fn held_dimensions(tuning: &Tuning) -> (usize, usize) {
         Layout::odd(tuning.grid_columns),
         Layout::odd(tuning.grid_rows),
     )
+}
+
+/// Whether a level's centre is open to a readout: the root level of an
+/// orbit, where nothing sits in the middle. A nested level holds the centre
+/// with the way back, and a grid has no centre at all.
+const fn centre_is_open(nested: bool, arrange: Arrange) -> bool {
+    !nested && matches!(arrange, Arrange::Orbit)
 }
 
 /// What a panel draws. An orbit navigates a level of a tree; a grid is a
@@ -136,6 +147,14 @@ impl Content {
         }
     }
 
+    /// Whether the centre is open to a readout. Only a level has one.
+    fn centre_open(&mut self) -> bool {
+        match self {
+            Self::Level(tree) => centre_is_open(tree.is_nested(), tree.arrange()),
+            Self::Shelf { .. } => false,
+        }
+    }
+
     /// Navigates to `index`, only a level's business.
     fn select(&mut self, index: usize) -> Option<Event> {
         let Self::Level(tree) = self else {
@@ -197,6 +216,9 @@ pub struct Panel {
     /// Last page reported, so a turn is announced once rather than every
     /// frame.
     paged:    Option<usize>,
+    /// The text an orbit was asked to show at its centre, set in dots. Kept
+    /// while a nested level hides it, so it is there again on the way back.
+    readout:  Option<Rc<Glyph>>,
 }
 
 impl Panel {
@@ -229,6 +251,7 @@ impl Panel {
             depth: None,
             held: None,
             paged: None,
+            readout: None,
         })
     }
 
@@ -259,7 +282,14 @@ impl Panel {
             depth: None,
             held: None,
             paged: None,
+            readout: None,
         })
+    }
+
+    /// Sets what the centre reads, or takes it down on none. Setting the text
+    /// it already shows changes nothing: a flip only runs for a new face.
+    pub fn set_readout(&mut self, text: Option<&str>) {
+        self.readout = text.map(|text| Rc::new(font::readout(text)));
     }
 
     pub const fn mount(&self) -> Mount {
@@ -339,6 +369,11 @@ impl Panel {
             now,
             self.surface.tuning().notice_duration,
         );
+        let readout = if self.content.centre_open() {
+            self.readout.as_ref()
+        } else {
+            None
+        };
         let (layout, pinned) = self.content.layout(self.capacity, self.surface.tuning());
         self.surface.update(&specs, layout, pinned, &frame);
 
@@ -354,6 +389,8 @@ impl Panel {
             doc,
             &Drawing {
                 motes: &motes,
+                readout,
+                readout_bloom: self.surface.centre_bloom(),
                 delta,
                 views: self.surface.views(),
                 specs: &specs,
@@ -571,5 +608,24 @@ impl Panel {
             mote:    self.content.at(index)?,
             landing: Landing { at, velocity },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_the_root_of_an_orbit_leaves_its_centre_open() {
+        assert!(centre_is_open(false, Arrange::Orbit));
+        assert!(
+            !centre_is_open(true, Arrange::Orbit),
+            "a nested level holds the centre with the way back"
+        );
+        assert!(
+            !centre_is_open(false, Arrange::Grid),
+            "a grid has no centre"
+        );
+        assert!(!centre_is_open(true, Arrange::Grid));
     }
 }

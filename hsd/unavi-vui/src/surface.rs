@@ -124,6 +124,11 @@ impl Surface {
     }
 
     #[must_use]
+    /// How far the centre has arrived, which a readout there comes in by.
+    pub const fn centre_bloom(&self) -> f32 {
+        self.reveal.centre()
+    }
+
     pub fn views(&self) -> &[SlotView] {
         &self.views
     }

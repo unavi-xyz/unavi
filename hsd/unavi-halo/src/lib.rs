@@ -22,6 +22,7 @@ use crate::{
             Planting,
         },
     },
+    clock::Clock,
     root::Root,
     summon::{
         Command,
@@ -44,6 +45,7 @@ use crate::{
 
 mod artifact;
 mod branch;
+mod clock;
 mod glyph;
 mod palette;
 mod root;
@@ -57,6 +59,8 @@ struct Script {
     home:     Home,
     nav:      Nav,
     summon:   Summon,
+    /// The time on the root's face.
+    clock:    Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
     artifact: Artifact,
     /// The menu button, which is the one thing halo takes globally. Grabs
@@ -66,6 +70,17 @@ struct Script {
 }
 
 impl Script {
+    /// Turns the root's face over when the minute does. Written while the
+    /// halo is down too, so it is already right the moment it is summoned.
+    fn show_time(&mut self) {
+        let Some(text) = self.clock.tick() else {
+            return;
+        };
+        if let Err(err) = self.root.orbit.set_readout(Some(&text)) {
+            eprintln!("halo: readout: {err:?}");
+        }
+    }
+
     fn apply(&self, command: Option<Command>) -> anyhow::Result<()> {
         match command {
             // Whatever is in hand stays in hand: a tool is put away by
@@ -175,6 +190,7 @@ impl ScriptBehavior for Script {
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
+            clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
         })
@@ -185,6 +201,7 @@ impl ScriptBehavior for Script {
         self.home.fixed_update(&self.root.home);
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
+        self.show_time();
 
         let Some(eye) = camera_pose() else {
             return Ok(());

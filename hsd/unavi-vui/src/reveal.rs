@@ -100,6 +100,16 @@ impl Reveal {
         self.t
     }
 
+    /// How far the centre of the surface has arrived, for what stands there
+    /// that is no mote.
+    ///
+    /// It comes in with the form on a summon and again with the motes when a
+    /// level is restaged, so it arrives with the ring rather than ahead of it.
+    #[must_use]
+    pub const fn centre(self) -> f32 {
+        self.t.min(self.staged)
+    }
+
     /// How far the mote in `slot` of `count` has arrived.
     ///
     /// Later slots start later, so the level fills in order, and each lands
@@ -262,6 +272,49 @@ mod tests {
             past > 1.0,
             "an ease that only approaches its target reads as stopping dead"
         );
+    }
+
+    #[test]
+    fn the_centre_arrives_with_the_form_and_again_with_a_restaged_level() {
+        let tuning = Tuning::DEFAULT;
+        let mut reveal = Reveal::ARRIVING;
+        assert!(
+            reveal.centre().abs() < f32::EPSILON,
+            "nothing yet on summon"
+        );
+
+        reveal.update(0.05, &tuning);
+        assert!(reveal.centre() > 0.0 && reveal.centre() < 1.0);
+
+        reveal.update(5.0, &tuning);
+        assert!((reveal.centre() - 1.0).abs() < f32::EPSILON);
+
+        reveal.restage();
+        assert!(
+            reveal.centre().abs() < f32::EPSILON,
+            "gone for the new level"
+        );
+        assert!(
+            (reveal.form() - 1.0).abs() < f32::EPSILON,
+            "while the form stays"
+        );
+        reveal.update(0.05, &tuning);
+        assert!(
+            reveal.centre() > 0.0 && reveal.centre() < 1.0,
+            "and comes back"
+        );
+    }
+
+    #[test]
+    fn the_centre_leaves_with_the_form() {
+        let tuning = Tuning::DEFAULT;
+        let mut reveal = Reveal::ARRIVING;
+        reveal.update(5.0, &tuning);
+        reveal.set_open(false);
+        reveal.update(0.05, &tuning);
+        assert!(reveal.centre() < 1.0);
+        reveal.update(5.0, &tuning);
+        assert!(reveal.centre().abs() < f32::EPSILON);
     }
 
     #[test]

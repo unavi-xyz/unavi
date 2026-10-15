@@ -11,6 +11,7 @@ use std::{
         RefCell,
     },
     f32::consts::FRAC_PI_4,
+    rc::Rc,
 };
 
 use smol_str::SmolStr;
@@ -24,6 +25,7 @@ use wired_guest::math::{
 
 use crate::{
     attention::Attention,
+    glyph::Glyph,
     mesh,
     mote::{
         Arrange,
@@ -81,6 +83,7 @@ mod hitbox;
 
 use face::{
     Face,
+    Look,
     Wear,
 };
 
@@ -292,15 +295,20 @@ struct SlotPrims {
 /// lines up with `specs`, and says whose face each slot is wearing.
 #[derive(Clone, Copy)]
 pub struct Drawing<'a> {
-    pub motes:   &'a [Mote],
+    pub motes:         &'a [Mote],
     /// Seconds since the last frame, which a flip runs on.
-    pub delta:   f32,
-    pub views:   &'a [SlotView],
-    pub specs:   &'a [MoteSpec],
-    pub drawn:   &'a [usize],
-    pub placard: Option<&'a PlacardView>,
-    pub palette: &'a Palette,
-    pub held:    Option<usize>,
+    pub delta:         f32,
+    /// The text drawn at the centre, when the level has an open one. Not a
+    /// slot: it has no view, no spec and nothing to attend.
+    pub readout:       Option<&'a Rc<Glyph>>,
+    /// How far the centre has arrived, which the readout comes in by.
+    pub readout_bloom: f32,
+    pub views:         &'a [SlotView],
+    pub specs:         &'a [MoteSpec],
+    pub drawn:         &'a [usize],
+    pub placard:       Option<&'a PlacardView>,
+    pub palette:       &'a Palette,
+    pub held:          Option<usize>,
 }
 
 /// The prims one surface draws with: a hit surface, a pool of slot bodies
@@ -319,6 +327,8 @@ pub struct Bodies {
     /// rather than unparented: `wired:scene` has no detached prim, and a
     /// removed child would reappear at the document root.
     park:     (u64, u64),
+    /// A readout's face at the surface's centre, drawn apart from the slots.
+    readout:  Face,
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
     slots:    RefCell<Vec<SlotPrims>>,
@@ -368,12 +378,18 @@ impl Bodies {
             .set(park, Property::Transform(draw::hidden()))
             .flush()?;
 
+        let readout = doc.create_prim(Layer::Local, Some(root))?;
+        doc.local()
+            .set(readout, Property::Transform(draw::hidden()))
+            .flush()?;
+
         Ok(Self {
             root,
             field,
             surface,
             input,
             park,
+            readout: Face::new(readout),
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
@@ -569,6 +585,8 @@ impl Bodies {
         let Drawing {
             motes,
             delta,
+            readout,
+            readout_bloom,
             views,
             specs,
             drawn,
@@ -646,7 +664,8 @@ impl Bodies {
             }
 
             let owner = drawn.get(index).and_then(|index| motes.get(*index));
-            self.apply_face(doc, slot, view, Wear { owner, glyph }, delta)?;
+            let look = Look::of_slot(view, self.tuning.icon_fill);
+            self.apply_face(doc, &slot.face, look, Wear { owner, glyph }, delta)?;
         }
 
         let mut batch = doc.local();
@@ -663,6 +682,35 @@ impl Bodies {
             }
         }
         batch.flush()?;
+        self.apply_readout(doc, readout, palette, readout_bloom, delta)
+    }
+
+    /// Draws the centre's text, or hides it. Gone the moment the surface is
+    /// sent away, since a dismissed surface is not stepped once it has left
+    /// and would otherwise leave it hanging in the room.
+    fn apply_readout(
+        &self,
+        doc: &Document,
+        text: Option<&Rc<Glyph>>,
+        palette: &Palette,
+        bloom: f32,
+        delta: f32,
+    ) -> anyhow::Result<()> {
+        let up = self.shown.get();
+        let look = Look {
+            pose: draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
+            color: palette.base,
+            heat: 0.0,
+            bloom,
+        };
+        let wear = Wear {
+            owner: None,
+            glyph: text.filter(|_| up),
+        };
+        self.apply_face(doc, &self.readout, look, wear, delta)?;
+        if !up {
+            self.readout.unseen();
+        }
         Ok(())
     }
 

@@ -256,6 +256,26 @@ interface api {
     /// Everything this orbit did since the last call.
     events: func() -> list<event>;
 
+    /// Shows `text` as a small dot-matrix display at the orbit's centre, or
+    /// takes it down on none. Meant for a readout such as a clock.
+    ///
+    /// It is a face, not a mote: it is never selected, takes no attention and
+    /// no press, and a pointer resting on the centre still selects nothing
+    /// because of it. It shows only while the orbit's root level is open;
+    /// while a nested level holds the centre with its way back, it is hidden,
+    /// and comes back with the root. A text set in the meantime is kept.
+    ///
+    /// Up to two lines, split at a newline, set in a 3 by 5 dot font on a grid
+    /// of 13 dots a side. The font has the digits, `:`, `-`, space and the
+    /// letters A to Z, lower case reading as upper; any other character is
+    /// drawn blank. With two lines each holds up to two characters, and a
+    /// single line up to three; characters past that, and lines past the
+    /// second, are dropped. Each line is centred. Changing the text flips the
+    /// dots over from the left, the way a glyph does.
+    ///
+    /// `invalid-argument` for more than 64 bytes of text.
+    set-readout: func(text: option<string>) -> result<_, error>;
+
     /// Puts it up where the viewer is standing now. A surface measures its
     /// place once and keeps it, so this is how one comes to be somewhere
     /// else. Everything it draws is kept, so summoning again is cheap.

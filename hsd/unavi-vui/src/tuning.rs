@@ -96,6 +96,13 @@ pub struct Tuning {
     /// sweep rather than a longer pause.
     pub flip_duration: f32,
 
+    /// Radius of the readout drawn at an open orbit's centre. A good deal
+    /// larger than a mote, so a display of thirteen dots to a side reads as a
+    /// face to be looked at rather than as one more thing to point at: its
+    /// dots come out about twice the size a glyph's do inside a shell, which
+    /// is what lets two lines of text be read across an arm's length.
+    pub readout_radius: f32,
+
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
     /// Distance at which lean has fallen off to nothing.
@@ -173,6 +180,8 @@ impl Tuning {
         icon_fill:     0.5,
         flip_duration: 0.3,
 
+        readout_radius: 0.0512,
+
         lean_dist:  0.022,
         lean_range: 0.35,
         lean_speed: 12.0,
@@ -213,6 +222,20 @@ mod tests {
              pointed at is the one that hides the reticle",
             tuning.field_lift
         );
+    }
+
+    #[test]
+    fn the_readout_fills_the_centre_without_reaching_the_motes() {
+        let tuning = Tuning::DEFAULT;
+        assert!(
+            tuning.readout_radius > tuning.mote_radius * 1.5,
+            "larger than a mote, so it reads as a face"
+        );
+        let nearest = tuning.mote_radius.mul_add(
+            -(tuning.group_scale * tuning.seize_scale),
+            tuning.orbit_radius,
+        );
+        assert!(tuning.readout_radius < nearest, "clear of the ring");
     }
 
     #[test]

@@ -9,14 +9,12 @@ use std::{
 };
 
 use wired_guest::math::{
+    Color,
     Transform,
     Vec3,
 };
 
-use super::{
-    Bodies,
-    SlotPrims,
-};
+use super::Bodies;
 use crate::{
     flip::Flip,
     glyph::Glyph,
@@ -120,9 +118,32 @@ pub(super) struct Wear<'a> {
     pub glyph: Option<&'a Rc<Glyph>>,
 }
 
+/// How a face is drawn this frame: where it stands and what lights it.
+#[derive(Clone, Copy)]
+pub(super) struct Look {
+    /// Where the face stands while it wears a glyph.
+    pub pose:  Transform,
+    /// The lit dots' colour.
+    pub color: Color,
+    pub heat:  f32,
+    pub bloom: f32,
+}
+
+impl Look {
+    /// A slot's face, on the shell of the mote it belongs to.
+    pub(super) fn of_slot(view: &SlotView, fill: f32) -> Self {
+        Self {
+            pose:  face_pose(view, fill),
+            color: view.style.color,
+            heat:  view.heat,
+            bloom: view.bloom,
+        }
+    }
+}
+
 impl Bodies {
-    /// Brings `slot`'s face up to date with what its mote wants worn, a
-    /// frame's `delta` later.
+    /// Brings `face` up to date with what it is asked to wear, a frame's
+    /// `delta` later.
     ///
     /// Writes only what changed: the dots are shaded entirely from the
     /// overrides, so a settled face costs nothing per frame, and a flip
@@ -130,12 +151,11 @@ impl Bodies {
     pub(super) fn apply_face(
         &self,
         doc: &Document,
-        slot: &SlotPrims,
-        view: &SlotView,
+        face: &Face,
+        look: Look,
         wear: Wear<'_>,
         delta: f32,
     ) -> anyhow::Result<()> {
-        let face = &slot.face;
         let owner = face.owner_token(wear.owner);
         {
             let mut flip = face.flip.borrow_mut();
@@ -151,7 +171,7 @@ impl Bodies {
         let flip = face.flip.borrow();
         let shown = flip.shown();
 
-        let pose = shown.map(|_| face_pose(view, self.tuning.icon_fill));
+        let pose = shown.map(|_| look.pose);
         let mut batch = doc.local();
         let carve = pose.is_some() && !face.ready.get();
         if carve {
@@ -180,11 +200,11 @@ impl Bodies {
             return Ok(());
         };
         let inputs = Inputs {
-            lit:      view.style.color,
+            lit:      look.color,
             size:     shown.size(),
             flip:     flip.progress(),
-            heat:     view.heat,
-            bloom:    view.bloom,
+            heat:     look.heat,
+            bloom:    look.bloom,
             current:  *shown.lanes(),
             previous: *flip.leaving().unwrap_or(shown).lanes(),
         };

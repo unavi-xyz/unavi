@@ -15,8 +15,7 @@ use wired_guest::{
 };
 
 use crate::{
-    icon,
-    palette,
+    glyph,
     unavi::{
         host::node_storage::{
             self,
@@ -226,12 +225,11 @@ fn build(listing: &Listing) -> Option<Space> {
     let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
     group.set_description(&describe(listing)).ok()?;
     group.set_tint(Some(color));
-    // The space wears its beacon's form: in the grid it reads as the marker
+    // The space wears its beacon's mark: in the grid it reads as the marker
     // it is, and opening it still shows the travel and beacon motes beneath.
-    if let Ok(doc) = script_document()
-        && let Ok(glyph) = icon::beacon(palette::GLYPH)
-    {
-        group.set_icon(&doc, Some(glyph));
+    // A refused glyph is not a reason to lose the whole space.
+    if let Err(err) = group.set_glyph(Some(&glyph::from_rows(&glyph::BEACON))) {
+        eprintln!("halo: space glyph: {err:?}");
     }
 
     let travel = Mote::new(Kind::Cast, "Travel").ok()?;
@@ -241,13 +239,8 @@ fn build(listing: &Listing) -> Option<Space> {
     let beacon = Mote::new(Kind::Item, "Beacon").ok()?;
     beacon.set_description("A marker you can drop here.").ok()?;
     beacon.set_tint(Some(color));
-    // The beacon itself is a cube of corners around a pulsing core, so its
-    // glyph is the same form. A missing glyph is not a reason to lose the
-    // whole space.
-    if let Ok(doc) = script_document()
-        && let Ok(glyph) = icon::beacon(palette::GLYPH)
-    {
-        beacon.set_icon(&doc, Some(glyph));
+    if let Err(err) = beacon.set_glyph(Some(&glyph::from_rows(&glyph::BEACON))) {
+        eprintln!("halo: beacon glyph: {err:?}");
     }
 
     group.add_child(&travel);

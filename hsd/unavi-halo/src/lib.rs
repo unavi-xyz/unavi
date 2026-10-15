@@ -44,7 +44,7 @@ use crate::{
 
 mod artifact;
 mod branch;
-mod icon;
+mod glyph;
 mod palette;
 mod root;
 mod summon;

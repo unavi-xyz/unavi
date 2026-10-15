@@ -21,6 +21,7 @@ use crate::{
     },
 };
 
+mod glyph;
 mod hold;
 mod laser;
 mod outline;
@@ -53,7 +54,11 @@ impl Script {
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
-            tool:    Tool::new("Physgun", "Grabs a prop at a distance and drags it around.")?,
+            tool:    Tool::new(
+                "Physgun",
+                "Grabs a prop at a distance and drags it around.",
+                Some(&glyph::mark()),
+            )?,
             laser:   Laser::new()?,
             active:  Cell::new(false),
             color:   Cell::new(palette::DEFAULT),

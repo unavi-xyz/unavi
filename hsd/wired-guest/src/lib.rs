@@ -14,6 +14,7 @@
 
 pub mod beacon;
 pub mod color;
+pub mod glyph;
 pub mod math;
 pub mod xform;
 

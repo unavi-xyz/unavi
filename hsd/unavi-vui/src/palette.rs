@@ -32,6 +32,9 @@ pub struct Palette {
     pub source:       Color,
     /// How much of [`Palette::source`] a source carries.
     pub source_shift: f32,
+    /// How much of its brightness an ancestor bead loses for each step it
+    /// stands up the row; the nearest bead is one step.
+    pub trail_fade:   f32,
 
     /// How strongly a container's glass wears its hue.
     pub glass_alpha:          f32,
@@ -62,6 +65,7 @@ impl Palette {
         surface:      rgb(0.12, 0.13, 0.16),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
+        trail_fade:   0.30,
 
         glass_alpha:          0.25,
         glass_alpha_attended: 0.35,
@@ -141,6 +145,23 @@ impl Palette {
             self.emissive_active
         } else {
             resting
+        }
+    }
+
+    /// `color` seen `levels` steps up the row of ancestor beads: its
+    /// brightness scaled by what is left after each step, so the further up a
+    /// level is the dimmer it reads. A pure scale of the channels keeps the
+    /// hue exactly, and being a product it is strictly dimmer at every step
+    /// for any colour that is not black. Nothing is blended in, so a dark tint
+    /// cannot come out brighter.
+    #[must_use]
+    pub fn receded(&self, color: Color, levels: usize) -> Color {
+        let kept = (1.0 - self.trail_fade).powi(i32::try_from(levels).unwrap_or(i32::MAX));
+        Color {
+            r: color.r * kept,
+            g: color.g * kept,
+            b: color.b * kept,
+            a: color.a,
         }
     }
 
@@ -339,6 +360,30 @@ mod tests {
                 palette.accent,
                 "a grasped mote says it is grasped, not what it stocks"
             );
+        }
+    }
+
+    #[test]
+    fn the_further_up_a_level_is_the_dimmer_its_bead() {
+        let palette = Palette::DEFAULT;
+        for color in [
+            palette.base,
+            palette.tint(Attention::Attended),
+            rgb(0.55, 0.15, 0.2),
+            rgb(0.02, 0.03, 0.05),
+        ] {
+            assert_eq!(
+                palette.receded(color, 0),
+                color,
+                "the open level is untouched"
+            );
+            let mut last = lightness(color);
+            for levels in 1..=6 {
+                let sunk = palette.receded(color, levels);
+                assert!(lightness(sunk) < last, "{levels} levels up must be dimmer");
+                last = lightness(sunk);
+                assert!(same_hue(color, sunk), "dimming keeps the hue");
+            }
         }
     }
 

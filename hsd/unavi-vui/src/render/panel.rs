@@ -17,6 +17,7 @@ use crate::{
     layout::{
         Centre,
         Layout,
+        TRAIL_SLOTS,
     },
     mote::{
         Arrange,
@@ -29,6 +30,7 @@ use crate::{
     },
     render::{
         bodies::{
+            Beads,
             Bodies,
             Drawing,
             Hit,
@@ -155,6 +157,27 @@ impl Content {
         }
     }
 
+    /// The ancestor beads a level draws and the motes they stand for, which
+    /// only a level nested two deep or more has.
+    fn trail(&mut self) -> (Vec<Mote>, Vec<MoteSpec>) {
+        match self {
+            Self::Level(tree) => tree.trail(TRAIL_SLOTS),
+            Self::Shelf { .. } => (Vec::new(), Vec::new()),
+        }
+    }
+
+    /// Climbs straight out to `level`, only a level's business. Reported as
+    /// the one way back it is, to the level now open.
+    fn ascend(&mut self, level: usize) -> Option<Event> {
+        let Self::Level(tree) = self else {
+            return None;
+        };
+        match tree.ascend(level) {
+            Navigation::Collapsed(mote) => Some(Event::Closed(mote)),
+            _ => None,
+        }
+    }
+
     /// Navigates to `index`, only a level's business.
     fn select(&mut self, index: usize) -> Option<Event> {
         let Self::Level(tree) = self else {
@@ -234,9 +257,12 @@ impl Panel {
         let (columns, rows) = held_dimensions(tuning);
         let budget = capacity.max(columns * rows);
         let surface = Surface::new(budget, *tuning, palette);
+        // Round, so it needs the farthest anything it draws can stand: the
+        // tabs and beads of the orbit, and of a grid level opened inside it.
+        let pitch = Vec2::splat(tuning.grid_pitch);
         let reach = Layout::centred(0, tuning.orbit_radius)
-            .hit_extents(tuning)
-            .x;
+            .hit_radius(tuning)
+            .max(Layout::held_grid(columns, rows, pitch).hit_radius(tuning));
         let bodies = Bodies::new(doc, surface.slots(), tuning, Hit::Disc { radius: reach })?;
         let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
@@ -375,6 +401,8 @@ impl Panel {
             None
         };
         let (layout, pinned) = self.content.layout(self.capacity, self.surface.tuning());
+        let (beads, trail) = self.content.trail();
+        self.surface.set_trail(trail);
         self.surface.update(&specs, layout, pinned, &frame);
 
         self.bodies.icons(
@@ -389,6 +417,11 @@ impl Panel {
             doc,
             &Drawing {
                 motes: &motes,
+                beads: Beads {
+                    motes: &beads,
+                    specs: self.surface.trail(),
+                    first: self.surface.trail_at(),
+                },
                 readout,
                 readout_bloom: self.surface.centre_bloom(),
                 delta,
@@ -500,6 +533,13 @@ impl Panel {
                 // A page tab turns the page, which reports itself once the
                 // next frame draws it; it is no mote to activate or open.
                 if self.surface.turn_tab(slot) {
+                    return Ok(());
+                }
+                // A bead climbs straight to its level, as the one way back
+                // that it is, and starts the surface over for it.
+                if let Some(level) = self.surface.ancestor(slot) {
+                    let event = self.content.ascend(level);
+                    done.events.extend(self.releveled(event));
                     return Ok(());
                 }
                 if let Some(released) = self.delivered(doc, slot) {

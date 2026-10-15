@@ -287,6 +287,24 @@ struct SlotPrims {
     written:     Shadow<(SmolStr, Attention)>,
 }
 
+/// The ancestor beads a frame draws, and whose they are. Their draw slots
+/// follow the level's and the page tabs', from `first` on.
+#[derive(Clone, Copy)]
+pub struct Beads<'a> {
+    pub motes: &'a [Mote],
+    pub specs: &'a [MoteSpec],
+    pub first: usize,
+}
+
+impl<'a> Beads<'a> {
+    /// The mote and spec of the bead drawn in `slot`, or none for any slot
+    /// that is not one.
+    fn at(self, slot: usize) -> Option<(&'a Mote, &'a MoteSpec)> {
+        let index = slot.checked_sub(self.first)?;
+        Some((self.motes.get(index)?, self.specs.get(index)?))
+    }
+}
+
 /// Everything a frame's worth of drawing reads, borrowed from the surface.
 ///
 /// `drawn` maps each view back to its spec, which pagination makes a real
@@ -296,6 +314,7 @@ struct SlotPrims {
 #[derive(Clone, Copy)]
 pub struct Drawing<'a> {
     pub motes:         &'a [Mote],
+    pub beads:         Beads<'a>,
     /// Seconds since the last frame, which a flip runs on.
     pub delta:         f32,
     /// The text drawn at the centre, when the level has an open one. Not a
@@ -584,6 +603,7 @@ impl Bodies {
     pub fn apply(&self, doc: &Document, drawing: &Drawing<'_>) -> anyhow::Result<()> {
         let Drawing {
             motes,
+            beads,
             delta,
             readout,
             readout_bloom,
@@ -619,16 +639,20 @@ impl Bodies {
                 batch = batch.set(slot.body, Property::Transform(xform));
             }
 
+            // A bead is drawn like a mote but is never one: it has no name
+            // under it, and only its face and glass come from its level.
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
+            let bead = beads.at(index);
             batch = Self::apply_label(batch, slot, view, spec, palette);
 
-            let glyph = spec.and_then(|spec| spec.glyph.as_ref());
+            let worn = spec.or_else(|| bead.map(|(_, spec)| spec));
+            let glyph = worn.and_then(|spec| spec.glyph.as_ref());
             let shell = Shell {
                 style:  view.style,
                 icon:   slot.icon.borrow().is_some() || glyph.is_some(),
                 active: spec.is_some_and(|spec| spec.active),
-                film:   spec.map_or(0.0, |spec| spec.film),
-                frost:  spec.map_or(0.0, |spec| spec.frost),
+                film:   worn.map_or(0.0, |spec| spec.film),
+                frost:  worn.map_or(0.0, |spec| spec.frost),
                 bloom:  view.bloom,
             };
             // Not `Option::map_or`: the closure would need to move `batch`
@@ -663,7 +687,10 @@ impl Bodies {
                 Self::apply_shell(doc, slot, view, index, shell, palette)?;
             }
 
-            let owner = drawn.get(index).and_then(|index| motes.get(*index));
+            let owner = drawn
+                .get(index)
+                .and_then(|index| motes.get(*index))
+                .or_else(|| bead.map(|(mote, _)| mote));
             let look = Look::of_slot(view, self.tuning.icon_fill);
             self.apply_face(doc, &slot.face, look, Wear { owner, glyph }, delta)?;
         }
@@ -1011,12 +1038,35 @@ fn apply_run(batch: crate::Batch<'_>, prim: (u64, u64), run: Run) -> crate::Batc
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tree::Kind;
 
     #[test]
     fn a_toggle_s_bar_is_lit_when_on_and_receded_when_off() {
         let palette = Palette::DEFAULT;
         assert_eq!(bar_color(&palette, true), palette.base);
         assert_eq!(bar_color(&palette, false), palette.dim);
+    }
+
+    #[test]
+    fn a_bead_is_found_only_in_the_slots_after_the_level_and_its_tabs() {
+        let level = Mote::new(Kind::Group, "Places");
+        let motes = [level.clone()];
+        let specs = [level.spec()];
+        let beads = Beads {
+            motes: &motes,
+            specs: &specs,
+            first: 4,
+        };
+
+        for slot in 0..4 {
+            assert!(
+                beads.at(slot).is_none(),
+                "slot {slot} is the level or a tab"
+            );
+        }
+        let (mote, _) = beads.at(4).expect("the first bead");
+        assert!(mote.is(&level));
+        assert!(beads.at(5).is_none(), "and no further than the trail");
     }
 
     #[test]

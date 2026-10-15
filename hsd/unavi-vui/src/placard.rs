@@ -76,6 +76,7 @@ const fn kind(role: Role) -> &'static str {
         Role::Group { .. } => "group",
         Role::Parent { .. } => "back",
         Role::Page { .. } => "page",
+        Role::Ancestor { .. } => "level",
         Role::Cast => "cast",
         Role::Item { unique: true } => "item",
         Role::Item { unique: false } => "source",

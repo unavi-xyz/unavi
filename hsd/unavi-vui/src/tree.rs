@@ -393,6 +393,21 @@ pub fn noticed(motes: &[Mote], specs: &mut [MoteSpec], now: f64, duration: f32) 
     }
 }
 
+/// The mark the top of the tree wears when it has no glyph of its own: a
+/// diamond round a single dot, like a place on a map. The root is not a mote
+/// anyone draws, so it has no face to borrow, and a bead with none would read
+/// as a hole in the row.
+///
+/// ```text
+/// ..#..
+/// .#.#.
+/// #.#.#
+/// .#.#.
+/// ..#..
+/// ```
+const TOP_MARK: [u8; 4] = [0x44, 0x55, 0x45, 0x00];
+const TOP_MARK_SIZE: u8 = 5;
+
 /// What a selection did, for a surface to report.
 pub enum Navigation {
     /// The way back was taken; the mote is the level now open.
@@ -418,15 +433,63 @@ pub enum Navigation {
 pub struct Tree {
     root: Mote,
     path: Vec<Mote>,
+    /// The mark the top wears, built once rather than every frame.
+    top:  Option<Rc<Glyph>>,
+    /// For each level, the name it was last phrased from and the phrase, so
+    /// a trail drawn every frame formats a name only when it changes.
+    ups:  Vec<(SmolStr, SmolStr)>,
 }
 
 impl Tree {
     #[must_use]
-    pub const fn new(root: Mote) -> Self {
+    pub fn new(root: Mote) -> Self {
         Self {
             root,
             path: Vec::new(),
+            top: Glyph::new(TOP_MARK_SIZE, &TOP_MARK).ok().map(Rc::new),
+            ups: Vec::new(),
         }
+    }
+
+    /// What the bead for the level `level` deep, which is `mote`'s, draws as.
+    ///
+    /// It keeps the level's hue and glyph and nothing else of it: not its
+    /// icon prim, so a bead can never hold on to a prim that belongs to the
+    /// level, and not its name, which the placard says instead as the way up.
+    fn bead(&mut self, level: usize, mote: &Mote) -> MoteSpec {
+        let spec = mote.spec();
+        let glyph = spec
+            .glyph
+            .or_else(|| if level == 0 { self.top.clone() } else { None });
+        MoteSpec {
+            role: Role::Ancestor { level },
+            label: self.phrase(level, spec.label),
+            description: None,
+            active: false,
+            icon: glyph.is_some(),
+            glyph,
+            tint: spec.tint,
+            film: spec.film,
+            frost: spec.frost,
+            notice: None,
+        }
+    }
+
+    /// The way up to the level `level` deep, named `label`.
+    fn phrase(&mut self, level: usize, label: SmolStr) -> SmolStr {
+        if level == 0 {
+            return SmolStr::new_static("Up to the top");
+        }
+        if self.ups.len() <= level {
+            self.ups
+                .resize(level + 1, (SmolStr::default(), SmolStr::default()));
+        }
+        let entry = &mut self.ups[level];
+        if entry.1.is_empty() || entry.0 != label {
+            entry.1 = SmolStr::new(format!("Up to {label}"));
+            entry.0 = label;
+        }
+        entry.1.clone()
     }
 
     /// Climbs out of every level that no longer hangs where it was opened
@@ -502,6 +565,41 @@ impl Tree {
             frost:       0.0,
             notice:      None,
         }
+    }
+
+    /// The ancestor beads to draw: one for every level strictly above the one
+    /// the way back returns to, root first, since that level is already one
+    /// press away. At most `limit` of them, the nearest levels when there are
+    /// more, each still naming the level it really is.
+    pub fn trail(&mut self, limit: usize) -> (Vec<Mote>, Vec<MoteSpec>) {
+        let beads = self.depth().saturating_sub(1);
+        (beads.saturating_sub(limit)..beads)
+            .map(|level| {
+                let mote = self.level_mote(level);
+                let spec = self.bead(level, &mote);
+                (mote, spec)
+            })
+            .unzip()
+    }
+
+    /// The mote whose level is `level` deep, counting the root as 0.
+    fn level_mote(&self, level: usize) -> Mote {
+        level
+            .checked_sub(1)
+            .and_then(|index| self.path.get(index))
+            .unwrap_or(&self.root)
+            .clone()
+    }
+
+    /// Climbs straight out to `level`, root 0, in one step. Only a level
+    /// that has a bead is climbed to: the one the way back returns to, and
+    /// the open one, are the way back's business.
+    pub fn ascend(&mut self, level: usize) -> Navigation {
+        if level.saturating_add(1) >= self.depth() {
+            return Navigation::None;
+        }
+        self.path.truncate(level);
+        Navigation::Collapsed(self.open())
     }
 
     /// The level the way back returns to, which is the one above the open one.
@@ -755,6 +853,157 @@ mod tests {
         assert_eq!(specs[0].role, Role::Parent { depth: 1 });
         assert_eq!(specs[0].notice, None);
         assert_eq!(specs[1].notice.as_deref(), Some("posted to the leaf"));
+    }
+
+    /// A tree `levels` deep, each level holding the next and a leaf, opened to
+    /// the bottom. Level `n` is labelled `L<n>`, the root `L0`.
+    fn descended(levels: usize) -> Tree {
+        let mut node = mote(Kind::Action, "leaf");
+        for level in (0..levels).rev() {
+            let leaf = mote(Kind::Action, &format!("leaf{level}"));
+            node = holding(&format!("L{level}"), vec![leaf, node]);
+        }
+        let mut tree = Tree::new(node);
+        for _ in 1..levels {
+            let slot = usize::from(tree.is_nested()) + 1;
+            assert!(matches!(tree.select(slot), Navigation::Bloomed(_)));
+        }
+        tree
+    }
+
+    fn trail_labels(tree: &mut Tree, limit: usize) -> Vec<String> {
+        tree.trail(limit)
+            .1
+            .iter()
+            .map(|spec| spec.label.to_string())
+            .collect()
+    }
+
+    #[test]
+    fn beads_stand_for_every_level_above_the_one_the_way_back_returns_to() {
+        for (levels, beads) in [(1, 0), (2, 0), (3, 1), (4, 2), (5, 3)] {
+            let mut tree = descended(levels);
+            assert_eq!(tree.depth(), levels - 1);
+            let (motes, specs) = tree.trail(8);
+            assert_eq!(specs.len(), beads, "depth {}", levels - 1);
+            assert_eq!(motes.len(), beads);
+        }
+    }
+
+    #[test]
+    fn the_trail_runs_from_the_root_down_and_names_where_each_goes() {
+        let mut tree = descended(5);
+        assert_eq!(
+            trail_labels(&mut tree, 8),
+            vec!["Up to the top", "Up to L1", "Up to L2"]
+        );
+        let (motes, specs) = tree.trail(8);
+        let levels = specs.iter().map(|spec| spec.role).collect::<Vec<_>>();
+        assert_eq!(
+            levels,
+            vec![
+                Role::Ancestor { level: 0 },
+                Role::Ancestor { level: 1 },
+                Role::Ancestor { level: 2 }
+            ]
+        );
+        assert_eq!(motes[1].label(), "L1");
+        assert_eq!(
+            tree.level_with_motes().1[0].description.as_deref(),
+            Some("Back to L3."),
+            "and the way back covers the level just above"
+        );
+    }
+
+    #[test]
+    fn a_deep_trail_keeps_the_nearest_levels_under_their_real_numbers() {
+        let mut tree = descended(8);
+        let (_, specs) = tree.trail(2);
+        let levels = specs.iter().map(|spec| spec.role).collect::<Vec<_>>();
+        assert_eq!(
+            levels,
+            vec![Role::Ancestor { level: 4 }, Role::Ancestor { level: 5 }]
+        );
+    }
+
+    #[test]
+    fn a_bead_wears_its_level_s_glyph_and_hue_but_not_its_icon() {
+        let mut tree = descended(4);
+        let level = tree.level_mote(1);
+        level.set_icon(Some((1, 2)));
+        level.set_tint(Some(Color {
+            r: 0.2,
+            g: 0.4,
+            b: 0.9,
+            a: 1.0,
+        }));
+        let bare = tree.trail(8).1;
+        assert!(
+            bare[1].glyph.is_none() && !bare[1].icon,
+            "no icon prim worn"
+        );
+        assert!(bare[1].tint.is_some());
+
+        level.set_glyph(Some(Glyph::new(3, &[0b0001_0000, 0]).expect("a grid")));
+        let worn = tree.trail(8).1;
+        assert!(worn[1].icon && worn[1].glyph.is_some());
+        assert_eq!(worn[1].description, None);
+        assert_eq!(worn[1].notice, None);
+    }
+
+    #[test]
+    fn a_renamed_level_is_phrased_afresh_and_an_unchanged_one_is_not() {
+        let mut tree = descended(4);
+        assert_eq!(trail_labels(&mut tree, 8)[1], "Up to L1");
+        tree.level_mote(1).set_label("Plaza");
+        assert_eq!(trail_labels(&mut tree, 8)[1], "Up to Plaza");
+        assert_eq!(trail_labels(&mut tree, 8)[1], "Up to Plaza");
+    }
+
+    #[test]
+    fn the_root_wears_a_mark_of_its_own_unless_it_has_a_glyph() {
+        let mut tree = descended(4);
+        let marked = tree.trail(8).1[0].glyph.clone().expect("a fixed mark");
+        assert_eq!(marked.size(), 5);
+
+        tree.level_mote(0)
+            .set_glyph(Some(Glyph::new(3, &[0b0001_0000, 0]).expect("a grid")));
+        let own = tree.trail(8).1[0].glyph.clone().expect("its own");
+        assert_eq!(own.size(), 3);
+    }
+
+    #[test]
+    fn ascending_pops_straight_to_the_level_in_one_step() {
+        let mut tree = descended(5);
+        assert_eq!(tree.depth(), 4);
+
+        let Navigation::Collapsed(reached) = tree.ascend(1) else {
+            panic!("a bead collapses");
+        };
+        assert_eq!(reached.label(), "L1", "the level now open");
+        assert_eq!(tree.depth(), 1);
+        assert!(tree.open().is(&reached));
+        assert!(
+            tree.trail(8).0.is_empty(),
+            "and the trail is as short as the climb"
+        );
+    }
+
+    #[test]
+    fn ascending_to_the_root_leaves_the_tree() {
+        let mut tree = descended(4);
+        assert!(matches!(tree.ascend(0), Navigation::Collapsed(top) if top.label() == "L0"));
+        assert_eq!(tree.depth(), 0);
+    }
+
+    #[test]
+    fn only_a_level_with_a_bead_can_be_ascended_to() {
+        let mut tree = descended(4);
+        assert_eq!(tree.depth(), 3);
+        for level in [2, 3, 99] {
+            assert!(matches!(tree.ascend(level), Navigation::None), "{level}");
+        }
+        assert_eq!(tree.depth(), 3, "nothing moved");
     }
 
     #[test]

@@ -26,6 +26,12 @@ pub struct Tuning {
     pub tab_gap:      f32,
     /// How near the pointer must come to a page tab to attend it.
     pub tab_hit:      f32,
+    /// How far below a layout's bottom extent the row of ancestor beads stands,
+    /// measured to the beads' centres. Clears the biggest body the bottom slot
+    /// can grow to, its lean, and its name.
+    pub trail_gap:    f32,
+    /// Centre-to-centre spacing of the ancestor beads.
+    pub trail_pitch:  f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
@@ -144,6 +150,8 @@ impl Tuning {
         grid_rows:    3,
         tab_gap:      0.12,
         tab_hit:      0.035,
+        trail_gap:    0.135,
+        trail_pitch:  0.07,
 
         attend_scale:     1.18,
         seize_scale:      1.30,

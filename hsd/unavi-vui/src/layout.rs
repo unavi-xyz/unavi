@@ -7,6 +7,11 @@ use wired_guest::math::Vec2;
 
 use crate::tuning::Tuning;
 
+/// Most ancestor beads a surface draws. Deeper than this the nearest levels
+/// keep their beads and the farthest go, which the way back still climbs
+/// through one level at a time.
+pub const TRAIL_SLOTS: usize = 4;
+
 /// What, if anything, holds the middle of an orbit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Centre {
@@ -157,7 +162,9 @@ impl Layout {
     }
 
     /// Half-extents a hit surface must cover: the region the slots answer
-    /// for, widened to take in the page tabs standing outside it.
+    /// for, widened to take in the page tabs standing outside it. A shelf is
+    /// this and no more, since it is never nested and so has no ancestor
+    /// beads; reaching past it would be a wall nobody can see.
     #[must_use]
     pub fn hit_extents(&self, tuning: &Tuning) -> Vec2 {
         let slots = self.extents(tuning);
@@ -165,6 +172,40 @@ impl Layout {
             slots.x.max(self.tab(true, tuning).x + tuning.tab_hit),
             slots.y,
         )
+    }
+
+    /// Radius of the disc a level is pointed at: everything
+    /// [`Layout::hit_extents`] covers but the corners, and the row of ancestor
+    /// beads below the layout too, which a level opened in a tree can have.
+    #[must_use]
+    pub fn hit_radius(&self, tuning: &Tuning) -> f32 {
+        let row = self.bead(TRAIL_SLOTS - 1, TRAIL_SLOTS, tuning);
+        let tab = self.tab(true, tuning);
+        let extents = self.extents(tuning);
+        let slots = match *self {
+            Self::Star { .. } | Self::Centred { .. } => extents.x,
+            Self::Grid { .. } => extents.length(),
+        };
+        slots
+            .max(tab.length() + tuning.tab_hit)
+            .max(row.length() + tuning.tab_hit)
+    }
+
+    /// Where ancestor bead `index` of `count` sits: in a row centred below the
+    /// layout's bottom extent, the first on the left.
+    #[must_use]
+    pub fn bead(&self, index: usize, count: usize, tuning: &Tuning) -> Vec2 {
+        let across =
+            (count.saturating_sub(1) as f32).mul_add(-0.5, index as f32) * tuning.trail_pitch;
+        Vec2::new(across, -(self.bottom() + tuning.trail_gap))
+    }
+
+    /// How far the lowest slot centre can stand below the middle.
+    fn bottom(&self) -> f32 {
+        match *self {
+            Self::Star { radius, .. } | Self::Centred { radius, .. } => radius,
+            Self::Grid { rows, pitch, .. } => rows.saturating_sub(1) as f32 * 0.5 * pitch.y,
+        }
     }
 
     /// Where a page tab sits: on the horizontal axis, just past the outermost
@@ -755,6 +796,112 @@ mod tests {
                 gap >= slot_reach + tab_body + margin,
                 "{layout:?}: {gap} between centres"
             );
+        }
+    }
+
+    #[test]
+    fn the_beads_stand_in_a_centred_row_below_the_layout_root_first() {
+        let tuning = tuning();
+        for layout in [
+            Layout::centred(8, R),
+            Layout::star(5, R),
+            Layout::held_grid(3, 3, PITCH),
+            Layout::grid(3, 2, PITCH),
+        ] {
+            for count in 1..=TRAIL_SLOTS {
+                let row = (0..count)
+                    .map(|index| layout.bead(index, count, &tuning))
+                    .collect::<Vec<_>>();
+                assert!(
+                    row.windows(2).all(|pair| pair[0].x < pair[1].x),
+                    "{layout:?}: the root is on the left"
+                );
+                assert!(close(row[0].x, -row[count - 1].x), "centred on the anchor");
+                let lowest = (0..layout.len())
+                    .filter_map(|slot| layout.slot(slot))
+                    .map(|at| at.y)
+                    .fold(f32::MAX, f32::min);
+                assert!(row.iter().all(|bead| bead.y < lowest));
+                assert!(row.iter().all(|bead| close(bead.y, row[0].y)));
+            }
+        }
+    }
+
+    /// The worst case below the layout: the biggest slot body, attended and
+    /// leaned down and with its name hanging off it, against a bead body at
+    /// its own largest, and the beads against the tabs beside them.
+    #[test]
+    fn a_bead_clears_the_largest_slot_body_above_it_and_the_tabs() {
+        let tuning = tuning();
+        let slot_reach = tuning
+            .mote_radius
+            .mul_add(tuning.group_scale * tuning.seize_scale, tuning.lean_dist)
+            + tuning.label_gap
+            + tuning.label_size;
+        let bead_body = tuning.mote_radius * tuning.tab_scale * tuning.seize_scale;
+        let margin = 0.015;
+
+        for layout in [
+            Layout::centred(8, tuning.orbit_radius),
+            Layout::held_grid(3, 3, Vec2::splat(tuning.grid_pitch)),
+            Layout::grid(
+                tuning.grid_columns,
+                tuning.grid_rows,
+                Vec2::splat(tuning.grid_pitch),
+            ),
+        ] {
+            let lowest = (0..layout.len())
+                .filter_map(|slot| layout.slot(slot))
+                .map(|at| at.y)
+                .fold(f32::MAX, f32::min);
+            let bead = layout.bead(0, 1, &tuning);
+            let gap = lowest - bead.y;
+            assert!(
+                gap >= slot_reach + bead_body + margin,
+                "{layout:?}: {gap} between the bottom row and the beads"
+            );
+
+            for index in 0..TRAIL_SLOTS {
+                let at = layout.bead(index, TRAIL_SLOTS, &tuning);
+                for forward in [false, true] {
+                    let apart = (layout.tab(forward, &tuning) - at).length();
+                    assert!(
+                        apart >= 2.0_f32.mul_add(bead_body, margin),
+                        "{layout:?}: bead {index} is {apart} from a tab"
+                    );
+                }
+                if index > 0 {
+                    let next = layout.bead(index - 1, TRAIL_SLOTS, &tuning);
+                    assert!((at - next).length() >= 2.0_f32.mul_add(bead_body, margin));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_hit_disc_covers_every_bead_but_a_shelf_reaches_for_none() {
+        let tuning = tuning();
+        for layout in [
+            Layout::centred(8, R),
+            Layout::held_grid(3, 3, PITCH),
+            Layout::grid(3, 3, PITCH),
+        ] {
+            let extents = layout.hit_extents(&tuning);
+            let radius = layout.hit_radius(&tuning);
+            assert!(
+                close(extents.y, layout.extents(&tuning).y),
+                "{layout:?}: no taller than its slots"
+            );
+            for index in 0..TRAIL_SLOTS {
+                for count in index + 1..=TRAIL_SLOTS {
+                    let at = layout.bead(index, count, &tuning);
+                    assert!(
+                        at.length() + tuning.tab_hit <= radius + 1.0e-6,
+                        "{layout:?}: disc misses bead {index} of {count}"
+                    );
+                }
+            }
+            assert!(radius >= layout.tab(true, &tuning).x + tuning.tab_hit - 1.0e-6);
         }
     }
 

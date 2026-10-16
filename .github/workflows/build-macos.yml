@@ -44,6 +44,7 @@ jobs:
     # architecture would be ambiguous.
     runs-on: macos-14
     strategy:
+      fail-fast: false
       matrix:
         package: [unavi-app, unavi-launcher]
     name: ${{ matrix.package }}-aarch64-macos

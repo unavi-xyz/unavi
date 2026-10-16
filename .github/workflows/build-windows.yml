@@ -47,6 +47,7 @@ jobs:
     needs: build-hsd
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         package: [unavi-app, unavi-launcher]
     name: ${{ matrix.package }}-x86_64-windows

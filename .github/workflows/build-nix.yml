@@ -47,6 +47,9 @@ jobs:
   build:
     needs: set-matrix
     strategy:
+      # Run every package to completion so a single failure does not hide
+      # the status of the rest of the matrix.
+      fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}

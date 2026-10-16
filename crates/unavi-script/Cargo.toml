@@ -43,7 +43,7 @@ wasmtime-wasi.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 anyhow.workspace       = true
-jiff = { features = ["js"], workspace = true }
+jiff                   = { features = ["js"], workspace = true }
 js-sys                 = "0.3.94"
 serde                  = { features = ["derive"], workspace = true }
 serde-wasm-bindgen     = "0.6.5"

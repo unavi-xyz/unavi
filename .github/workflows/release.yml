@@ -31,6 +31,8 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions
       - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
       - run: |
           nix profile add nixpkgs#rustup
           rustup default nightly

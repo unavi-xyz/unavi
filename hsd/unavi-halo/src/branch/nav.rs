@@ -295,11 +295,13 @@ fn build(listing: &Listing) -> Option<Space> {
     }
 
     let travel = Mote::new(Kind::Cast, "Travel").ok()?;
-    travel.set_description("Go to this space.").ok()?;
+    travel.set_description("Travel to this space.").ok()?;
     travel.set_tint(Some(color));
 
     let beacon = Mote::new(Kind::Item, "Beacon").ok()?;
-    beacon.set_description("A marker you can drop here.").ok()?;
+    beacon
+        .set_description("Drop a beacon to find your way back.")
+        .ok()?;
     beacon.set_tint(Some(color));
     if let Err(err) = beacon.set_glyph(Some(&glyph::from_rows(&glyph::BEACON))) {
         eprintln!("halo: beacon glyph: {err:?}");

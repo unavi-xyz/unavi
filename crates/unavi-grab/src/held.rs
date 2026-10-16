@@ -123,16 +123,28 @@ pub fn begin_grab(
 /// Runs before the removal — and, on a despawn, before any of the entity's
 /// other components go with it — so `Held`'s own value is still readable
 /// here no matter which path ended the grab.
-pub fn on_held_removed(trigger: On<Remove, Held>, held: Query<&Held>, mut commands: Commands) {
+pub fn on_held_removed(
+    trigger: On<Remove, Held>,
+    held: Query<&Held>,
+    gravity: Query<&GravityScale>,
+    mut commands: Commands,
+) {
     let Ok(held) = held.get(trigger.entity) else {
         return;
     };
     let pointer = held.pointer;
 
-    if let Some(gravity) = held.prior_gravity {
-        commands.entity(trigger.entity).insert(gravity);
-    } else {
-        commands.entity(trigger.entity).remove::<GravityScale>();
+    // Give back only what this grab took. If the scale is no longer the zero
+    // the grab applied, something else took the body's gravity over while it
+    // was held — a hovering beacon switching its own gravity back on as the
+    // grip closes — and restoring the value captured at the grab would
+    // strand the body weightless.
+    if gravity.get(trigger.entity).ok().copied() == Some(GravityScale(0.0)) {
+        if let Some(gravity) = held.prior_gravity {
+            commands.entity(trigger.entity).insert(gravity);
+        } else {
+            commands.entity(trigger.entity).remove::<GravityScale>();
+        }
     }
     commands
         .entity(trigger.entity)

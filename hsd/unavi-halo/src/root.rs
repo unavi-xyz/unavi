@@ -68,18 +68,18 @@ impl Root {
         let level = Mote::new(Kind::Group, "Halo")?;
 
         let home = Mote::new(Kind::Cast, "Home")?;
-        home.set_description("Travel to your home space.")?;
+        home.set_description("Go to your home space.")?;
         home.set_tint(Some(palette::HOME));
         wear(&home, "Home", &glyph::HOME);
 
         let nav = Mote::new(Kind::Group, "Nav")?;
-        nav.set_description("Spaces with people in them.")?;
+        nav.set_description("Discover spaces to visit.")?;
         nav.set_arrange(Arrange::Grid);
         nav.set_tint(Some(palette::NAV));
         wear(&nav, "Nav", &glyph::NAV);
 
         let tools = Mote::new(Kind::Group, "Tools")?;
-        tools.set_description("Things you can use.")?;
+        tools.set_description("Tools you can pick up.")?;
         tools.set_tint(Some(palette::TOOLS));
         wear(&tools, "Tools", &glyph::TOOLS);
 

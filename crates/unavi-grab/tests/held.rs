@@ -213,6 +213,37 @@ fn a_prior_gravity_scale_is_restored_on_release() {
 }
 
 #[test]
+fn a_gravity_scale_taken_over_while_held_is_left_alone() {
+    let mut app = app();
+    let pointer = spawn_pointer(&mut app);
+    let target = spawn_target(&mut app);
+    app.world_mut().entity_mut(target).insert(GravityScale(0.0));
+    settle(&mut app);
+
+    squeeze_down(&mut app, target, pointer);
+    step(&mut app, 1);
+    assert_eq!(
+        app.world().entity(target).get::<GravityScale>().copied(),
+        Some(GravityScale(0.0)),
+        "setup: the grab did not take gravity over"
+    );
+
+    // Something else owns the body's gravity now: a hovering beacon whose
+    // hover has ended switches its gravity back on with the grip still shut.
+    app.world_mut().entity_mut(target).insert(GravityScale(1.0));
+
+    squeeze_up(&mut app, target, pointer);
+    step(&mut app, 1);
+
+    assert_eq!(
+        app.world().entity(target).get::<GravityScale>().copied(),
+        Some(GravityScale(1.0)),
+        "release restored the stale gravity captured at the grab and left \
+         the body without any"
+    );
+}
+
+#[test]
 fn a_second_grab_on_an_already_held_body_is_refused() {
     let mut app = app();
     let (first, second) = (spawn_pointer(&mut app), spawn_pointer(&mut app));

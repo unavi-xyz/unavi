@@ -139,8 +139,11 @@ jobs:
           & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 target\release\*.exe
       - name: Build wix
         if: ${{ matrix.package == 'unavi-launcher' }}
+        # cargo-wix takes the package manifest as its positional INPUT; it
+        # has no --manifest-path option. CARGO_TARGET_DIR still points the
+        # target directory at the shared target/ the build step populated.
         run: |
-          cargo wix --manifest-path launcher/Cargo.toml -p ${{ matrix.package }} --nocapture --no-build
+          cargo wix launcher/Cargo.toml -p ${{ matrix.package }} --nocapture --no-build
       - name: Package release
         if: ${{ matrix.package != 'unavi-launcher' }}
         shell: bash

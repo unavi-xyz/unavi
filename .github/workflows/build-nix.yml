@@ -64,7 +64,12 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: DeterminateSystems/determinate-nix-action@v3
         with:
-          extra-conf: extra-experimental-features = pipe-operators
+          # Building bevy in release (codegen-units = 1, LTO) is memory
+          # hungry: under the default parallelism rustc for bevy_render was
+          # SIGKILLed on the 16 GiB runner. Serialise cargo jobs.
+          extra-conf: |
+            extra-experimental-features = pipe-operators
+            cores = 1
       - run: nix profile add nixpkgs#xz
       - name: Build AppImage
         if: ${{ matrix.format == 'appimage' }}

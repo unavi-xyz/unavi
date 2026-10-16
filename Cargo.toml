@@ -118,6 +118,13 @@ lto           = true
 panic         = "abort"
 strip         = true
 
+# Dependencies are fat-LTO'd into the final binary, so their per-crate
+# codegen units barely affect the shipped result; compiling them at the
+# default 16 keeps a single bevy crate (bevy_pbr, bevy_render) from needing
+# more memory than the CI runner has.
+[profile.release.package."*"]
+codegen-units = 16
+
 [profile.dev]
 codegen-backend = "cranelift"
 debug           = "line-tables-only"

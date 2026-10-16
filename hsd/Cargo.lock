@@ -137,7 +137,7 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "example-session"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "postcard",
@@ -147,7 +147,7 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-shapes"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-vui"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-agent"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -174,7 +174,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-event"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -183,7 +183,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-input"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-beacon"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -535,7 +535,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-default-home"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-gate"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-halo"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -565,7 +565,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-physgun"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -574,7 +574,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-shapes"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "wired-guest",
  "wit-bindgen",
@@ -582,7 +582,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-spawner"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-guest",
@@ -591,7 +591,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-tool"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "postcard",
  "serde",
@@ -601,7 +601,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-vui"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -658,7 +658,7 @@ dependencies = [
 
 [[package]]
 name = "wired-guest"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "wired-state-macro"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "prettyplease 0.3.0",

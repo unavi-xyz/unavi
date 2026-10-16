@@ -59,7 +59,7 @@
 
       npmDeps = pkgs.fetchNpmDeps {
         src = npmSrc;
-        hash = "sha256-0Otjim245LzzRJFMf0mmK+1iZsuoJs8LsG4Y4FNevh0=";
+        hash = "sha256-B0+9gqmxqZNCblIq7pVdO5rbI0D2o5ieFFtjIg5ySI0=";
       };
 
       cargoArgs = rec {

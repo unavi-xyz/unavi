@@ -17,8 +17,12 @@ use crate::{
     branch::{
         hand::Toolbelt,
         home::Home,
-        nav::Nav,
+        nav::{
+            Nav,
+            Planting,
+        },
     },
+    clock::Clock,
     root::Root,
     summon::{
         Command,
@@ -41,7 +45,8 @@ use crate::{
 
 mod artifact;
 mod branch;
-mod icon;
+mod clock;
+mod glyph;
 mod palette;
 mod root;
 mod summon;
@@ -54,6 +59,8 @@ struct Script {
     home:     Home,
     nav:      Nav,
     summon:   Summon,
+    /// The time on the root's face.
+    clock:    Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
     artifact: Artifact,
     /// The menu button, which is the one thing halo takes globally. Grabs
@@ -63,6 +70,17 @@ struct Script {
 }
 
 impl Script {
+    /// Turns the root's face over when the minute does. Written while the
+    /// halo is down too, so it is already right the moment it is summoned.
+    fn show_time(&mut self) {
+        let Some(text) = self.clock.tick() else {
+            return;
+        };
+        if let Err(err) = self.root.orbit.set_readout(Some(&text)) {
+            eprintln!("halo: readout: {err:?}");
+        }
+    }
+
     fn apply(&self, command: Option<Command>) -> anyhow::Result<()> {
         match command {
             // Whatever is in hand stays in hand: a tool is put away by
@@ -86,7 +104,10 @@ impl Script {
             Event::Planted(planted) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
-                if self.nav.plant(&planted.mote, planted.landing) {
+                if matches!(
+                    self.nav.plant(&planted.mote, planted.landing),
+                    Planting::Planted
+                ) {
                     let dismiss = self.summon.taken();
                     self.apply(dismiss)?;
                 }
@@ -109,7 +130,7 @@ impl Script {
 
     fn cast(&mut self, mote: &Mote) {
         if mote.is(&self.root.home) {
-            self.home.request();
+            self.home.request(&self.root.home);
         } else {
             self.nav.cast(mote);
         }
@@ -127,12 +148,18 @@ impl Script {
     }
 
     /// The menu button, and the primary action while the halo is down.
-    fn read_input(&mut self, eye: &Transform) -> anyhow::Result<()> {
+    ///
+    /// A failed summon is reported rather than returned: the events drained
+    /// with it are gone from the queue, and dropping the menu's release would
+    /// latch the button down and ignore every press after it.
+    fn read_input(&mut self, eye: &Transform) {
         for event in self.input.drain(8) {
             match event.action {
                 Action::Pressed(Button::Menu) => {
                     let command = self.summon.press(eye);
-                    self.apply(command)?;
+                    if let Err(err) = self.apply(command) {
+                        eprintln!("halo: menu: {err:?}");
+                    }
                 }
                 Action::Released(Button::Menu) => self.summon.release(),
                 // Forwarded only while the halo is down. With it up, a press
@@ -151,7 +178,6 @@ impl Script {
                 | Action::Left => {}
             }
         }
-        Ok(())
     }
 
     fn forward(&self, to_hand: impl FnOnce(&Toolbelt)) {
@@ -169,6 +195,7 @@ impl ScriptBehavior for Script {
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
+            clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
         })
@@ -176,14 +203,15 @@ impl ScriptBehavior for Script {
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
-        self.home.fixed_update();
+        self.home.fixed_update(&self.root.home);
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
+        self.show_time();
 
         let Some(eye) = camera_pose() else {
             return Ok(());
         };
-        self.read_input(&eye)?;
+        self.read_input(&eye);
 
         let walked_away = self.summon.step(&eye);
         self.apply(walked_away)

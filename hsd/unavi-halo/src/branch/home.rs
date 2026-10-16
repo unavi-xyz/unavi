@@ -4,12 +4,20 @@
 //! a confirmation — the fill ring is the confirmation.
 
 use crate::{
-    unavi::host::node_storage::{
-        self,
-        PendingValue,
+    unavi::{
+        host::node_storage::{
+            self,
+            PendingValue,
+        },
+        vui::api::Mote,
     },
     wired::portal::portals::travel,
 };
+
+/// What the viewer is told when home is unset, and when it cannot be reached
+/// for any other reason. The log keeps the detail.
+const NO_HOME: &str = "No home space set.";
+const UNREACHABLE: &str = "Couldn't reach your home space.";
 
 /// Reads the local player's home space ref from their root document, then
 /// travels to its namespace.
@@ -19,25 +27,34 @@ pub struct Home {
 }
 
 impl Home {
-    pub fn request(&mut self) {
+    /// Starts reading home. `mote` is the Home mote, which tells the viewer
+    /// if it cannot even be asked.
+    pub fn request(&mut self, mote: &Mote) {
         let root = match node_storage::root_document() {
             Ok(Some(root)) => root,
             Ok(None) => {
                 eprintln!("halo: no root document yet, cannot travel home");
+                mote.notify(UNREACHABLE);
                 return;
             }
             Err(err) => {
                 eprintln!("halo: root_document: {err:?}");
+                mote.notify(UNREACHABLE);
                 return;
             }
         };
         match node_storage::get(root, "home") {
             Ok(pending) => self.pending = Some(pending),
-            Err(err) => eprintln!("halo: get home: {err:?}"),
+            Err(err) => {
+                eprintln!("halo: get home: {err:?}");
+                mote.notify(UNREACHABLE);
+            }
         }
     }
 
-    pub fn fixed_update(&mut self) {
+    /// Finishes a read started by [`Home::request`], telling the viewer on
+    /// `mote` why if it did not end in a journey.
+    pub fn fixed_update(&mut self, mote: &Mote) {
         let Some(pending) = &self.pending else {
             return;
         };
@@ -47,16 +64,25 @@ impl Home {
         self.pending = None;
 
         match result {
-            Ok(Some(bytes)) => match namespace(&bytes) {
-                Some(ns) => {
+            Ok(Some(bytes)) => {
+                if let Some(ns) = namespace(&bytes) {
                     if let Err(err) = travel(ns) {
                         eprintln!("halo: travel home failed: {err:?}");
+                        mote.notify(UNREACHABLE);
                     }
+                } else {
+                    eprintln!("halo: malformed home space ref");
+                    mote.notify(UNREACHABLE);
                 }
-                None => eprintln!("halo: malformed home space ref"),
-            },
-            Ok(None) => eprintln!("halo: no home space set"),
-            Err(err) => eprintln!("halo: home read error: {err:?}"),
+            }
+            Ok(None) => {
+                eprintln!("halo: no home space set");
+                mote.notify(NO_HOME);
+            }
+            Err(err) => {
+                eprintln!("halo: home read error: {err:?}");
+                mote.notify(UNREACHABLE);
+            }
         }
     }
 }

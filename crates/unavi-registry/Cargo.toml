@@ -18,13 +18,13 @@ anyhow.workspace    = true
 iroh.workspace      = true
 irpc.workspace      = true
 irpc-iroh           = { optional = true, workspace = true }
+jiff.workspace      = true
 n0-future.workspace = true
 parking_lot         = { optional = true, workspace = true }
 postcard.workspace  = true
 serde.workspace     = true
 smol_str.workspace  = true
 thiserror.workspace = true
-time.workspace      = true
 tokio               = { features = ["sync"], optional = true, workspace = true }
 tracing.workspace   = true
 unavi-identity.path = "../unavi-identity"
@@ -33,8 +33,8 @@ xdid.workspace      = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-docs.workspace = true
-# Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
-time = { features = ["wasm-bindgen"], workspace = true }
+# Without `js`, `Timestamp::now` reads the unimplemented wasm clock.
+jiff = { features = ["js"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-docs = { features = ["fs-store", "rpc"], workspace = true }

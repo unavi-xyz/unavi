@@ -7,12 +7,13 @@ use std::collections::{
 };
 
 use iroh_docs::NamespaceId;
+use jiff::Timestamp;
 use parking_lot::RwLock;
 use serde::{
     Deserialize,
     Serialize,
 };
-use time::OffsetDateTime;
+use smol_str::SmolStr;
 use unavi_identity::{
     authorship::Authorship,
     signed::Signed,
@@ -135,10 +136,11 @@ impl Index {
         Ok(())
     }
 
-    fn is_live_space(&self, ns: NamespaceId, now: i64) -> bool {
+    fn live_space_title(&self, ns: NamespaceId, now: i64) -> Option<SmolStr> {
         self.entries
             .get(&ns)
-            .is_some_and(|s| s.kind == Kind::Space && s.expires > now)
+            .filter(|s| s.kind == Kind::Space && s.expires > now)
+            .map(|s| s.title.clone())
     }
 }
 
@@ -249,10 +251,11 @@ impl Catalog {
             .collect()
     }
 
-    /// Whether `ns` has an unexpired listing of [`Kind::Space`].
+    /// The title of `ns`'s unexpired listing of [`Kind::Space`], or `None` when
+    /// it has no such listing.
     #[must_use]
-    pub fn is_live_space(&self, ns: NamespaceId) -> bool {
-        self.index.read().is_live_space(ns, now())
+    pub fn live_space_title(&self, ns: NamespaceId) -> Option<SmolStr> {
+        self.index.read().live_space_title(ns, now())
     }
 
     /// Deletes expired listings from the document and the index.
@@ -284,7 +287,7 @@ impl Catalog {
 }
 
 fn now() -> i64 {
-    OffsetDateTime::now_utc().unix_timestamp()
+    Timestamp::now().as_second()
 }
 
 #[cfg(test)]
@@ -473,10 +476,10 @@ mod tests {
         index.insert(listing(&web, 2, Kind::Avatar, NOW + 60));
         index.insert(listing(&web, 3, Kind::Space, NOW - 1));
 
-        let is_live = |ns: u8| index.is_live_space(NamespaceId::from(&[ns; 32]), NOW);
-        assert!(is_live(1));
-        assert!(!is_live(2), "an avatar is not a space");
-        assert!(!is_live(3), "an expired listing is not live");
-        assert!(!is_live(4), "an unlisted namespace is not listed");
+        let title = |ns: u8| index.live_space_title(NamespaceId::from(&[ns; 32]), NOW);
+        assert_eq!(title(1).as_deref(), Some("t"), "a live space names itself");
+        assert_eq!(title(2), None, "an avatar is not a space");
+        assert_eq!(title(3), None, "an expired listing is not live");
+        assert_eq!(title(4), None, "an unlisted namespace is not listed");
     }
 }

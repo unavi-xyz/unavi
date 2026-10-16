@@ -2,16 +2,22 @@
 
 use wired_guest::math::Color;
 
+use super::VUI;
 use crate::{
     exports::unavi::vui::api::{
         Arrange,
+        Glyph as GlyphRecord,
         GuestMote,
         Kind,
         Mote as Handle,
         MoteBorrow,
     },
+    glyph::Glyph,
     mote,
-    render::draw,
+    render::{
+        Vui,
+        draw,
+    },
     tree,
     wired::{
         core::error::Error,
@@ -60,6 +66,14 @@ impl GuestMote for MoteRes {
         Ok(())
     }
 
+    /// Timed on the surfaces' own clock, which starts at 0 with the first
+    /// surface: a notice posted before any exists is timed from there. Only
+    /// one notice shows at a time, the first drawn slot's.
+    fn notify(&self, message: String) {
+        let now = VUI.with_borrow(|vui| vui.as_ref().map_or(0.0, Vui::now));
+        self.0.notify(capped(&message, MAX_DESCRIPTION_BYTES), now);
+    }
+
     fn id(&self) -> u64 {
         self.0.id()
     }
@@ -82,6 +96,15 @@ impl GuestMote for MoteRes {
             );
         }
         self.0.set_icon(value);
+    }
+
+    fn set_glyph(&self, value: Option<GlyphRecord>) -> Result<(), Error> {
+        let glyph = value
+            .map(|record| Glyph::new(record.size, &record.bits))
+            .transpose()
+            .map_err(|refused| Error::InvalidArgument(refused.to_string()))?;
+        self.0.set_glyph(glyph);
+        Ok(())
     }
 
     fn unique(&self) -> bool {
@@ -163,6 +186,18 @@ const fn held(kind: Kind) -> tree::Kind {
     }
 }
 
+/// `value` cut to at most `max` bytes, backing up to a character boundary.
+fn capped(value: &str, max: usize) -> &str {
+    if value.len() <= max {
+        return value;
+    }
+    let end = (0..=max)
+        .rev()
+        .find(|at| value.is_char_boundary(*at))
+        .unwrap_or(0);
+    &value[..end]
+}
+
 /// Refuses `value` once it is over `max` bytes, naming `what` for the caller.
 fn bounded(value: &str, max: usize, what: &str) -> Result<(), Error> {
     if value.len() > max {
@@ -172,4 +207,27 @@ fn bounded(value: &str, max: usize, what: &str) -> Result<(), Error> {
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_short_message_is_kept_whole() {
+        assert_eq!(capped("hello", 16), "hello");
+        assert_eq!(capped("hello", 5), "hello");
+    }
+
+    #[test]
+    fn a_long_message_is_cut_at_the_cap() {
+        assert_eq!(capped("hello world", 5), "hello");
+    }
+
+    #[test]
+    fn a_cut_never_splits_a_character() {
+        let text = "aé";
+        assert_eq!(capped(text, 2), "a", "the accent straddles the cap");
+        assert!(capped(&"é".repeat(2000), MAX_DESCRIPTION_BYTES).len() <= MAX_DESCRIPTION_BYTES);
+    }
 }

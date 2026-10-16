@@ -167,3 +167,11 @@ interface error {
     internal(string),
   }
 }
+
+interface time {
+  /// Minutes east of UTC on this peer's clock right now, such as `60` for
+  /// UTC+1 and `-300` for UTC-5, with daylight saving applied as of the
+  /// call. A script has the wall clock but no timezone data, so this is
+  /// what turns it into local time. It can change between calls.
+  utc-offset: func() -> s32;
+}

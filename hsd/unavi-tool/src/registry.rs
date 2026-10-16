@@ -5,6 +5,7 @@ use std::cell::Cell;
 
 use crate::{
     exports::unavi::tool::api::{
+        Glyph,
         GuestToolRegistry,
         RegisteredTool,
         ToolState,
@@ -82,10 +83,18 @@ impl GuestToolRegistry for ToolRegistry {
                 let mut p = postcard::from_bytes::<RegisterPayload>(&message.payload).ok()?;
                 protocol::truncate(&mut p.name, MAX_NAME_BYTES);
                 protocol::truncate(&mut p.description, MAX_DESCRIPTION_BYTES);
+                // A glyph that breaks the rules is dropped rather than the
+                // tool: it is still a tool, just one drawn with the generic
+                // mark.
+                let glyph = p.glyph.and_then(protocol::accept_glyph).map(|glyph| Glyph {
+                    size: glyph.size,
+                    bits: glyph.bits,
+                });
                 Some(RegisteredTool {
                     document,
                     name: p.name,
                     description: p.description,
+                    glyph,
                 })
             })
             .collect()

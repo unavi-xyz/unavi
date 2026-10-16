@@ -15,7 +15,7 @@
 use wired_guest::math::Vec2;
 
 use crate::{
-    icon,
+    glyph,
     palette,
     unavi::vui::api::{
         Arrange,
@@ -25,7 +25,6 @@ use crate::{
         Mount,
         Orbit,
     },
-    wired::scene::document::script_document,
 };
 
 /// Metres along the line of sight the halo appears.
@@ -41,8 +40,10 @@ const MOUNT: Mount = Mount {
     bearing:  Bearing::Sight,
 };
 
-/// Every slot is drawn at once: a root that paged would not be a root.
-const CAPACITY: u32 = 3;
+/// The most motes an orbit level draws on one page: the way back and eight
+/// more, matching the cells of a grid level. The root has three slots, so it
+/// is still drawn whole and a root that paged would not be a root.
+const CAPACITY: u32 = 9;
 
 pub struct Root {
     /// Return, the fixed point.
@@ -54,26 +55,33 @@ pub struct Root {
     pub orbit: Orbit,
 }
 
+/// Puts a glyph on a root slot. A refused glyph leaves the slot bare rather
+/// than stopping the halo from existing.
+fn wear(mote: &Mote, name: &str, rows: &glyph::Rows) {
+    if let Err(err) = mote.set_glyph(Some(&glyph::from_rows(rows))) {
+        eprintln!("halo: {name} glyph: {err:?}");
+    }
+}
+
 impl Root {
     pub fn new() -> anyhow::Result<Self> {
-        let doc = script_document()?;
         let level = Mote::new(Kind::Group, "Halo")?;
 
         let home = Mote::new(Kind::Cast, "Home")?;
-        home.set_description("Travel to your home space.")?;
+        home.set_description("Go to your home space.")?;
         home.set_tint(Some(palette::HOME));
-        home.set_icon(&doc, Some(icon::home(palette::GLYPH)?));
+        wear(&home, "Home", &glyph::HOME);
 
         let nav = Mote::new(Kind::Group, "Nav")?;
-        nav.set_description("Spaces with people in them.")?;
+        nav.set_description("Discover spaces to visit.")?;
         nav.set_arrange(Arrange::Grid);
         nav.set_tint(Some(palette::NAV));
-        nav.set_icon(&doc, Some(icon::cube(palette::GLYPH)?));
+        wear(&nav, "Nav", &glyph::NAV);
 
         let tools = Mote::new(Kind::Group, "Tools")?;
-        tools.set_description("Things you can use.")?;
+        tools.set_description("Tools you can pick up.")?;
         tools.set_tint(Some(palette::TOOLS));
-        tools.set_icon(&doc, Some(icon::tools(palette::GLYPH)?));
+        wear(&tools, "Tools", &glyph::TOOLS);
 
         for slot in [&home, &nav, &tools] {
             level.add_child(slot);

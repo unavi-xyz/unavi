@@ -25,8 +25,8 @@ pub enum Event {
     Closed(Mote),
     /// A leaf fired.
     Activated(Mote),
-    /// A cast site opened. Nothing has fired: holding attention on it fills
-    /// it, and looking away aborts.
+    /// A cast site opened. Nothing has fired: it fills while the grasp is
+    /// held on the mote, and releasing early aborts.
     Casting(Mote),
     /// A cast was held to the end.
     Cast(Mote),

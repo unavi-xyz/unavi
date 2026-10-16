@@ -23,6 +23,7 @@ hsd.path                = "../hsd"
 iroh.workspace          = true
 iroh-docs.workspace     = true
 iroh-gossip             = { features = ["net"], workspace = true }
+jiff.workspace          = true
 n0-future.workspace     = true
 parking_lot.workspace   = true
 postcard.workspace      = true
@@ -30,7 +31,6 @@ rand.workspace          = true
 serde.workspace         = true
 serde_vrm               = "0.4.0"
 thiserror.workspace     = true
-time.workspace          = true
 tokio.workspace         = true
 tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
@@ -46,6 +46,6 @@ unavi-store.path        = "../unavi-store"
 web-time.workspace      = true
 xdid.workspace          = true
 
-# Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
+# Without `js`, `Timestamp::now` reads the unimplemented wasm clock.
 [target.'cfg(target_family = "wasm")'.dependencies]
-time = { features = ["wasm-bindgen"], workspace = true }
+jiff = { features = ["js"], workspace = true }

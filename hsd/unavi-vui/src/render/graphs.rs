@@ -40,6 +40,8 @@ use crate::wired::{
     },
 };
 
+pub mod matrix;
+
 /// Tint, with the body's alpha in its own alpha channel.
 pub const SHELL_TINT: u16 = 0;
 /// How brightly the shell burns from within, as a multiple of its own hue.
@@ -64,6 +66,22 @@ pub const SHELL_BLOOM: u16 = 6;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
+
+/// The frost laid over what a pane shows: cool, and light enough that dark
+/// type reads on it over any room.
+const FROST: Color = Color {
+    r: 0.93,
+    g: 0.96,
+    b: 1.0,
+    a: 1.0,
+};
+/// How far the blurred room is lifted toward [`FROST`].
+const FROST_LIFT: f32 = 0.5;
+/// How far the blur's taps stray from the centre, in screen coordinates. The
+/// diagonals sit at three quarters of it so the nine taps cover a disc.
+const PANE_SPREAD: f32 = 0.006;
+/// Where a pane's edge line starts and ends fading, in metres from its border.
+const EDGE: (f32, f32) = (0.0007, 0.0015);
 
 /// Appends nodes and hands back a port naming each, so a graph is written as
 /// what it computes rather than as a list of indices to keep in step.
@@ -538,11 +556,14 @@ pub fn ring() -> ShaderGraph {
     // bright annulus reading as a cut-out.
     let centred = net.push(Node::Sub(binary(across, cf(0.5))));
     let centred = net.push(Node::Abs(centred));
-    let falloff = net.push(Node::Smoothstep(SmoothstepOp {
-        low:  cf(0.5),
-        high: cf(0.0),
+    // Rising edges only: a smoothstep with its edges the wrong way round is
+    // undefined, so the falloff is built rising and then inverted.
+    let rising = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  cf(0.0),
+        high: cf(0.5),
         x:    centred,
     }));
+    let falloff = net.push(Node::OneMinus(rising));
     let band = net.push(Node::Mul(binary(falloff, falloff)));
     let total = net.push(Node::Mul(binary(total, band)));
     let total = net.push(Node::Mul(binary(total, cf(2.2))));
@@ -578,6 +599,92 @@ pub fn ring() -> ShaderGraph {
     }
 }
 
+/// A pane of frosted glass: the room behind it, blurred and lifted toward a
+/// cool white, with a thin bright line on its border. Flat and square-cornered,
+/// the surface type is set on.
+///
+/// Like the shell it is opaque so it reaches the phase `SceneColor` is filled
+/// in, unlit so the lit transmissive path cannot occlude it, and arrives by
+/// scale. It is double sided so a placard reads from whichever side the
+/// viewer stands.
+pub fn pane() -> ShaderGraph {
+    let mut net = Net::default();
+    let screen = net.push(Node::ScreenUv);
+
+    let mut sum = net.push(Node::SceneColor(screen));
+    let diagonal = PANE_SPREAD * 0.75;
+    let taps = [
+        (PANE_SPREAD, 0.0),
+        (-PANE_SPREAD, 0.0),
+        (0.0, PANE_SPREAD),
+        (0.0, -PANE_SPREAD),
+        (diagonal, diagonal),
+        (-diagonal, diagonal),
+        (diagonal, -diagonal),
+        (-diagonal, -diagonal),
+    ];
+    for (dx, dy) in taps {
+        let at = net.push(Node::Add(binary(
+            screen,
+            Port::Const(GraphValue::Vec2(Vec2::new(dx, dy))),
+        )));
+        let tap = net.push(Node::SceneColor(at));
+        sum = net.push(Node::Add(binary(sum, tap)));
+    }
+    let blurred = net.push(Node::Mul(binary(sum, cf(1.0 / 9.0))));
+    let frosted = net.push(Node::Lerp(LerpOp {
+        a: blurred,
+        b: Port::Const(GraphValue::Color(FROST)),
+        t: cf(FROST_LIFT),
+    }));
+
+    // Distance to the nearest border in metres, so the line is as thick on a
+    // tall pane as on a wide one: the quad is stretched, its uv is not.
+    let uv = net.push(Node::Uv);
+    let scale = net.push(Node::ObjectScale);
+    let axis = |net: &mut Net, channel: u8| {
+        let across = net.push(Node::Extract(ExtractOp { v: uv, channel }));
+        let back = net.push(Node::OneMinus(across));
+        let to_border = net.push(Node::Min(binary(across, back)));
+        let size = net.push(Node::Extract(ExtractOp { v: scale, channel }));
+        net.push(Node::Mul(binary(to_border, size)))
+    };
+    let wide = axis(&mut net, 0);
+    let tall = axis(&mut net, 1);
+    let nearest = net.push(Node::Min(binary(wide, tall)));
+    let inside = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  cf(EDGE.0),
+        high: cf(EDGE.1),
+        x:    nearest,
+    }));
+    let edge = net.push(Node::OneMinus(inside));
+    let line = net.push(Node::Lerp(LerpOp {
+        a: frosted,
+        b: Port::Const(GraphValue::Color(Color {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        })),
+        t: edge,
+    }));
+
+    ShaderGraph {
+        public_inputs: vec![],
+        surface:       SurfaceGraph {
+            nodes:        net.nodes,
+            output:       SurfaceOutput::Unlit(UnlitOutput {
+                color:                line,
+                alpha_clip_threshold: None,
+            }),
+            blend:        BlendMode::Opaque,
+            cull:         CullMode::None,
+            cast_shadows: false,
+        },
+        displacement:  None,
+    }
+}
+
 /// Submits [`shell`] to `prim`. Cheap and repeatable: the host shares one
 /// compiled program across every prim submitting the same graph, so this is
 /// paid once per slot rather than built into a hidden template.
@@ -588,6 +695,11 @@ pub fn set_shell(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
 
 pub fn set_ring(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     set_graph(doc, prim, Layer::Local, Some(&ring()))?;
+    Ok(())
+}
+
+pub fn set_pane(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
+    set_graph(doc, prim, Layer::Local, Some(&pane()))?;
     Ok(())
 }
 
@@ -703,6 +815,41 @@ mod tests {
         assert_well_formed(&ring(), "ring");
     }
 
+    #[test]
+    fn the_pane_is_well_formed() {
+        assert_well_formed(&pane(), "pane");
+    }
+
+    /// Frost is the room behind the pane, so it has to be sampled in the phase
+    /// that fills it, and several times or it is not blurred at all.
+    #[test]
+    fn the_pane_blurs_the_room_in_the_transmissive_phase() {
+        let pane = pane();
+        assert!(matches!(pane.surface.blend, BlendMode::Opaque));
+        assert!(matches!(pane.surface.output, SurfaceOutput::Unlit(_)));
+        let taps = pane
+            .surface
+            .nodes
+            .iter()
+            .filter(|node| matches!(node, Node::SceneColor(_)))
+            .count();
+        assert!((5..=9).contains(&taps), "{taps} taps");
+    }
+
+    #[test]
+    fn the_matrix_is_well_formed() {
+        assert_well_formed(&matrix::matrix(), "matrix");
+    }
+
+    /// Additive and double sided: the face adds light to the glass behind it,
+    /// and is seen from whichever side the viewer comes to.
+    #[test]
+    fn the_matrix_adds_light_and_draws_from_both_sides() {
+        let matrix = matrix::matrix();
+        assert!(matches!(matrix.surface.blend, BlendMode::Add));
+        assert!(matches!(matrix.surface.cull, CullMode::None));
+    }
+
     /// Arriving is a clip, not a fade: a shell that faded would have to
     /// blend, and a blended shell never reaches the phase its transmission
     /// is filled in.
@@ -726,7 +873,12 @@ mod tests {
     /// with.
     #[test]
     fn every_declared_input_is_read() {
-        for (graph, name) in [(shell(), "shell"), (ring(), "ring")] {
+        for (graph, name) in [
+            (shell(), "shell"),
+            (ring(), "ring"),
+            (pane(), "pane"),
+            (matrix::matrix(), "matrix"),
+        ] {
             let networks = graph.surface.nodes.iter().chain(
                 graph
                     .displacement

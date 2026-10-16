@@ -18,7 +18,7 @@ use bevy_iroh::{
     store::DataStore,
 };
 use iroh::PublicKey;
-use time::OffsetDateTime;
+use jiff::Timestamp;
 use unavi_identity::authorship::Authorship;
 use unavi_registry::claim::{
     Kind,
@@ -47,6 +47,12 @@ const LISTING_TTL: Duration = Duration::from_hours(24);
 
 /// How long to wait before re-asserting a listing, well under its TTL.
 const LISTING_REFRESH: Duration = Duration::from_hours(12);
+
+/// Unix seconds at which a claim published now with `ttl` lapses.
+fn expiry(ttl: Duration) -> i64 {
+    let secs = i64::try_from(ttl.as_secs()).unwrap_or(i64::MAX);
+    Timestamp::now().as_second().saturating_add(secs)
+}
 
 /// Publishes every loaded space whose meta declares it public and whose
 /// write key this node holds.
@@ -97,7 +103,7 @@ pub fn publish_spaces(
             title: meta.name.clone().unwrap_or_else(|| "space".into()),
             description: meta.description.clone(),
             tags: Vec::new(),
-            expires: (OffsetDateTime::now_utc() + LISTING_TTL).unix_timestamp(),
+            expires: expiry(LISTING_TTL),
         };
         let store = store.0.clone();
         let identity = Arc::clone(&local.identity);
@@ -170,7 +176,7 @@ pub fn announce_presence(
         did:      local.identity.did().clone(),
         endpoint: endpoint.0.id(),
         ns:       space.namespace(),
-        expires:  (OffsetDateTime::now_utc() + PRESENCE_TTL).unix_timestamp(),
+        expires:  expiry(PRESENCE_TTL),
     };
 
     for registry in registries {

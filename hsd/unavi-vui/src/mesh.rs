@@ -1,5 +1,6 @@
-//! Mesh generators for the shapes a surface draws: bodies, pips and the
-//! overflow and way-back markers.
+//! Mesh generators for the shapes a surface draws: bodies, pips, the
+//! overflow and way-back markers, and the marks that say what kind of mote a
+//! body is.
 
 use std::f32::consts::{
     PI,
@@ -120,29 +121,34 @@ pub fn overflow_at(arrange: Arrange, total: usize, spread: f32) -> [f32; 3] {
     }
 }
 
-/// The way back's mark: a chevron pointing up, in the same unit space a
-/// mote's pips are drawn in.
+/// A toggle's mark: a short horizontal bar just below the face centre, in the
+/// same unit space as the body.
 #[must_use]
-pub fn chevron() -> MeshData {
-    const HALF_WIDTH: f32 = 0.42;
-    const APEX: f32 = 0.29;
-    const BAR: f32 = 0.16;
+pub fn toggle_bar() -> MeshData {
+    const HALF_WIDTH: f32 = 0.36;
+    const HALF_HEIGHT: f32 = 0.07;
+    const CENTRE: f32 = -0.3;
     const HALF_DEPTH: f32 = 0.06;
 
-    let arms = APEX - HALF_WIDTH;
+    let (low, high) = (CENTRE - HALF_HEIGHT, CENTRE + HALF_HEIGHT);
     let outline = [
-        [-HALF_WIDTH, arms - BAR],
-        [0.0, APEX - BAR],
-        [HALF_WIDTH, arms - BAR],
-        [HALF_WIDTH, arms],
-        [0.0, APEX],
-        [-HALF_WIDTH, arms],
+        [-HALF_WIDTH, low],
+        [HALF_WIDTH, low],
+        [HALF_WIDTH, high],
+        [-HALF_WIDTH, high],
     ];
-    prism(
-        &outline,
-        &[[1, 2, 3], [1, 3, 4], [0, 1, 4], [0, 4, 5]],
-        HALF_DEPTH,
-    )
+    prism(&outline, &[[0, 1, 2], [0, 2, 3]], HALF_DEPTH)
+}
+
+/// Where a cast's resting ring stands, as fractions of its body's radius: just
+/// outside the shell, and inside the ring a cast site draws once it fills.
+pub const CAST_RING_INNER: f32 = 1.04;
+pub const CAST_RING_OUTER: f32 = 1.1;
+
+/// A cast's mark: a thin ring hugging the body's silhouette, in unit space.
+#[must_use]
+pub fn cast_ring() -> MeshData {
+    annulus(CAST_RING_INNER, CAST_RING_OUTER, 48)
 }
 
 /// Extrudes a counter-clockwise `outline` along Z into a solid, `triangles`
@@ -223,6 +229,32 @@ pub fn panel() -> MeshData {
             1.0, 1.0, //
             0.0, 0.0, //
             1.0, 0.0,
+        ],
+        indices:   vec![0, 2, 1, 1, 2, 3],
+    }
+}
+
+/// A unit square facing +Z, centred on the origin: the surface a glyph's dots
+/// are shaded across.
+///
+/// u runs left to right and v top to bottom, the order a glyph's cells are
+/// numbered in, so the shader can turn a coordinate straight into a row and
+/// column.
+#[must_use]
+pub fn face() -> MeshData {
+    MeshData {
+        positions: vec![
+            -0.5, 0.5, 0.0, //
+            0.5, 0.5, 0.0, //
+            -0.5, -0.5, 0.0, //
+            0.5, -0.5, 0.0,
+        ],
+        normals:   [0.0, 0.0, 1.0].repeat(4),
+        uvs:       vec![
+            0.0, 0.0, //
+            1.0, 0.0, //
+            0.0, 1.0, //
+            1.0, 1.0,
         ],
         indices:   vec![0, 2, 1, 1, 2, 3],
     }
@@ -384,6 +416,17 @@ mod tests {
     #[test]
     fn a_panel_is_well_formed() {
         assert_well_formed(&panel());
+    }
+
+    #[test]
+    fn a_face_is_a_centred_square_numbered_from_its_top_left() {
+        let face = face();
+        assert_well_formed(&face);
+        assert_unit_normals(&face);
+        // The top left vertex is the origin of the glyph's rows and columns.
+        assert_eq!(face.positions[..3], [-0.5, 0.5, 0.0]);
+        assert_eq!(face.uvs[..2], [0.0, 0.0]);
+        assert_eq!(face.uvs[6..], [1.0, 1.0]);
     }
 
     #[test]
@@ -615,53 +658,50 @@ mod tests {
         );
     }
 
-    #[test]
-    fn a_chevron_is_well_formed() {
-        assert_well_formed(&chevron());
+    fn radius_of(point: &[f32]) -> f32 {
+        point[0].hypot(point[1]).hypot(point[2])
     }
 
-    #[test]
-    fn a_chevron_points_up_and_fits_the_body_it_sits_in() {
-        let mesh = chevron();
-        let apex = mesh
-            .positions
-            .as_chunks::<3>()
-            .0
-            .iter()
-            .max_by(|a, b| a[1].total_cmp(&b[1]))
-            .expect("vertices");
-        assert!(
-            apex[0].abs() < 1.0e-6,
-            "the point of the mark is on its centre line, or it reads as a lean"
-        );
-        assert!(
-            mesh.positions
-                .as_chunks::<3>()
-                .0
-                .iter()
-                .all(|point| point[0].hypot(point[1]).hypot(point[2]) < 1.0),
-            "a glyph is drawn in the same unit space as the body around it"
-        );
-    }
-
-    #[test]
-    fn a_chevron_is_solid_from_both_sides() {
-        let mesh = chevron();
-        for axis in 0..3 {
+    fn assert_unit_normals(mesh: &MeshData) {
+        for normal in mesh.normals.as_chunks::<3>().0 {
             assert!(
-                mesh.normals
-                    .as_chunks::<3>()
-                    .0
-                    .iter()
-                    .any(|normal| normal[axis] > 0.5),
-                "a mark seen from behind the level it leaves is still a mark"
+                (radius_of(normal) - 1.0).abs() < 1.0e-4,
+                "a normal is a direction: {normal:?}"
             );
+        }
+    }
+
+    #[test]
+    fn a_toggle_bar_is_a_short_bar_below_the_centre_inside_the_body() {
+        let mesh = toggle_bar();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+
+        let points = mesh.positions.as_chunks::<3>().0;
+        assert!(
+            points.iter().all(|point| point[1] < 0.0),
+            "below the centre"
+        );
+        assert!(
+            points.iter().all(|point| radius_of(point) < 0.8),
+            "inside the body"
+        );
+        let width = points.iter().map(|p| p[0].abs()).fold(0.0_f32, f32::max);
+        let height = points.iter().map(|p| p[1]).fold(f32::MIN, f32::max)
+            - points.iter().map(|p| p[1]).fold(f32::MAX, f32::min);
+        assert!(width * 2.0 > height * 3.0, "a bar, not a block");
+    }
+
+    #[test]
+    fn a_cast_ring_hugs_the_outside_of_the_body() {
+        let mesh = cast_ring();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+        for point in mesh.positions.as_chunks::<3>().0 {
+            let radius = radius_of(point);
             assert!(
-                mesh.normals
-                    .as_chunks::<3>()
-                    .0
-                    .iter()
-                    .any(|normal| normal[axis] < -0.5)
+                (CAST_RING_INNER - 1.0e-4..=CAST_RING_OUTER + 1.0e-4).contains(&radius),
+                "{radius}: outside the shell and inside the cast site's ring"
             );
         }
     }

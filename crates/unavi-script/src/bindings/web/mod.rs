@@ -41,6 +41,7 @@ mod portal;
 mod scene;
 mod shading;
 mod storage;
+mod time;
 
 /// Lifecycle imports from `runtime.ts`. Declared `catch` so a rejected
 /// promise reaches Rust as `Err`, never an uncaught JS exception, which

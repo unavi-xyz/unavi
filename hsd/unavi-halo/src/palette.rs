@@ -1,20 +1,20 @@
-//! Colours for the glyphs halo draws inside its motes.
+//! Tints for halo's motes.
 //!
 //! VUI reserves colour for state and carries identity in the label, which is
-//! right for the shell it draws. An icon is the consumer's own prim, so this
-//! is where a slot gets to look like itself. Per-slot colour is most of what
-//! makes a ring readable at a glance.
+//! right for the shell it draws. A tint is the one thing a consumer may add,
+//! so this is where a slot gets to look like itself. Per-slot colour is most
+//! of what makes a ring readable at a glance. The glyph inside takes its
+//! colour from the tint, so nothing here colours the dots themselves.
+//!
+//! Each sits as bright as the colour a beacon is given (value 0.7 and up).
+//! The glass lets only a fraction of its tint through, and a darker hue reads
+//! as a dim, flat shell beside a lighter one.
 
 use wired_guest::math::Color;
 
-pub const HOME: Color = rgb(0.86, 0.10, 0.08);
-pub const NAV: Color = rgb(0.06, 0.50, 0.22);
-pub const TOOLS: Color = rgb(0.04, 0.30, 0.75);
-
-/// What every glyph wears. A cool off-white reads as a glyph against the bold
-/// shell and against the bright room alike, the way a light accent sits on a
-/// coloured wall — bold surface, light mark.
-pub const GLYPH: Color = rgb(0.88, 0.90, 0.94);
+pub const HOME: Color = rgb(0.95, 0.11, 0.09);
+pub const NAV: Color = rgb(0.10, 0.80, 0.35);
+pub const TOOLS: Color = rgb(0.05, 0.38, 0.94);
 
 /// A colour per tool, so two tools are told apart before either is read.
 ///

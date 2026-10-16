@@ -2,6 +2,8 @@
 //! input and its cast site. An orbit and a grid are the same panel with a
 //! different [`Content`].
 
+use std::rc::Rc;
+
 use wired_guest::math::{
     Transform,
     Vec2,
@@ -9,6 +11,8 @@ use wired_guest::math::{
 };
 
 use crate::{
+    font,
+    glyph::Glyph,
     grasp::Outcome,
     layout::{
         Centre,
@@ -26,6 +30,7 @@ use crate::{
     render::{
         bodies::{
             Bodies,
+            Drawing,
             Hit,
             Signal,
         },
@@ -43,6 +48,7 @@ use crate::{
     },
     surface::Surface,
     tree::{
+        self,
         Kind,
         Mote,
         Navigation,
@@ -52,6 +58,23 @@ use crate::{
     view::Frame,
     wired::scene::document::Document,
 };
+
+/// The columns and rows a nested grid level takes: the tuned size, made odd
+/// so the way back has a cell on the anchor. A level never has more cells
+/// than this, nested or not, so it is also the grid's slot budget.
+const fn held_dimensions(tuning: &Tuning) -> (usize, usize) {
+    (
+        Layout::odd(tuning.grid_columns),
+        Layout::odd(tuning.grid_rows),
+    )
+}
+
+/// Whether a level's centre is open to a readout: the root level of an
+/// orbit, where nothing sits in the middle. A nested level holds the centre
+/// with the way back, and a grid has no centre at all.
+const fn centre_is_open(nested: bool, arrange: Arrange) -> bool {
+    !nested && matches!(arrange, Arrange::Orbit)
+}
 
 /// What a panel draws. An orbit navigates a level of a tree; a grid is a
 /// fixed destination over one mote's children.
@@ -86,6 +109,9 @@ impl Content {
     }
 
     /// The layout this content takes, and how many leading slots are pinned.
+    ///
+    /// `capacity` limits how many motes an orbit draws on a page. A grid
+    /// always draws every cell it has.
     fn layout(&mut self, capacity: usize, tuning: &Tuning) -> (Layout, usize) {
         match self {
             Self::Level(tree) => match tree.arrange() {
@@ -102,16 +128,30 @@ impl Content {
                         tuning.orbit_radius,
                     )
                 }
-                Arrange::Grid => (
-                    Layout::grid(
-                        tuning.grid_columns,
-                        tuning.grid_rows,
-                        Vec2::splat(tuning.grid_pitch),
-                    ),
-                    usize::from(tree.is_nested()),
-                ),
+                Arrange::Grid => {
+                    let pitch = Vec2::splat(tuning.grid_pitch);
+                    if tree.is_nested() {
+                        // The way back keeps the anchor, as it does in an
+                        // orbit, which takes a cell exactly in the middle.
+                        let (columns, rows) = held_dimensions(tuning);
+                        (Layout::held_grid(columns, rows, pitch), 1)
+                    } else {
+                        (
+                            Layout::grid(tuning.grid_columns, tuning.grid_rows, pitch),
+                            0,
+                        )
+                    }
+                }
             },
             Self::Shelf { layout, .. } => (*layout, 0),
+        }
+    }
+
+    /// Whether the centre is open to a readout. Only a level has one.
+    fn centre_open(&mut self) -> bool {
+        match self {
+            Self::Level(tree) => centre_is_open(tree.is_nested(), tree.arrange()),
+            Self::Shelf { .. } => false,
         }
     }
 
@@ -158,21 +198,27 @@ impl Content {
 /// A panel drawing one surface's worth of motes: an orbit navigable into a
 /// tree, or a grid that files what is dropped on it.
 pub struct Panel {
-    content: Content,
-    surface: Surface,
-    bodies:  Bodies,
-    site:    Site,
-    casting: Option<Casting>,
-    mount:   Mount,
+    content:  Content,
+    surface:  Surface,
+    bodies:   Bodies,
+    site:     Site,
+    casting:  Option<Casting>,
+    mount:    Mount,
+    /// Most motes an orbit level draws on one page. Not the slot budget of
+    /// the surface, which a grid level needs more of.
+    capacity: usize,
     /// The pressed mote's depth along the view ray, standing in for a tracked
     /// hand on desktop.
-    depth:   Option<f32>,
+    depth:    Option<f32>,
     /// The slot the engine's grab is carrying. Its transform belongs to the
     /// solver until it comes back.
-    held:    Option<usize>,
+    held:     Option<usize>,
     /// Last page reported, so a turn is announced once rather than every
     /// frame.
-    paged:   Option<usize>,
+    paged:    Option<usize>,
+    /// The text an orbit was asked to show at its centre, set in dots. Kept
+    /// while a nested level hides it, so it is there again on the way back.
+    readout:  Option<Rc<Glyph>>,
 }
 
 impl Panel {
@@ -185,9 +231,16 @@ impl Panel {
         tuning: &Tuning,
         palette: Palette,
     ) -> anyhow::Result<Self> {
-        let surface = Surface::new(capacity, *tuning, palette);
-        let reach = tuning.orbit_radius * tuning.reach_frac;
-        let bodies = Bodies::new(doc, capacity, tuning, Hit::Disc { radius: reach })?;
+        let (columns, rows) = held_dimensions(tuning);
+        let budget = capacity.max(columns * rows);
+        let surface = Surface::new(budget, *tuning, palette);
+        // Round, so it needs the farthest anything it draws can stand: the
+        // tabs of the orbit, and of a grid level opened inside it.
+        let pitch = Vec2::splat(tuning.grid_pitch);
+        let reach = Layout::centred(0, tuning.orbit_radius)
+            .hit_radius(tuning)
+            .max(Layout::held_grid(columns, rows, pitch).hit_radius(tuning));
+        let bodies = Bodies::new(doc, surface.slots(), tuning, Hit::Disc { radius: reach })?;
         let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
         Ok(Self {
@@ -197,9 +250,11 @@ impl Panel {
             site,
             casting: None,
             mount,
+            capacity,
             depth: None,
             held: None,
             paged: None,
+            readout: None,
         })
     }
 
@@ -215,8 +270,8 @@ impl Panel {
     ) -> anyhow::Result<Self> {
         let capacity = layout.len();
         let surface = Surface::new(capacity, *tuning, palette);
-        let extents = layout.extents(tuning);
-        let bodies = Bodies::new(doc, capacity, tuning, Hit::Slab { extents })?;
+        let extents = layout.hit_extents(tuning);
+        let bodies = Bodies::new(doc, surface.slots(), tuning, Hit::Slab { extents })?;
         let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
         Ok(Self {
@@ -226,10 +281,18 @@ impl Panel {
             site,
             casting: None,
             mount,
+            capacity,
             depth: None,
             held: None,
             paged: None,
+            readout: None,
         })
+    }
+
+    /// Sets what the centre reads, or takes it down on none. Setting the text
+    /// it already shows changes nothing: a flip only runs for a new face.
+    pub fn set_readout(&mut self, text: Option<&str>) {
+        self.readout = text.map(|text| Rc::new(font::readout(text)));
     }
 
     pub const fn mount(&self) -> Mount {
@@ -280,7 +343,8 @@ impl Panel {
     /// A level let go in the room opens the same way a tapped one does, so
     /// the way back and everything else about it reads identically.
     pub fn open(&mut self, mote: &Mote) -> Option<Event> {
-        self.content.open(mote)
+        let event = self.content.open(mote);
+        self.releveled(event)
     }
 
     /// Steps and draws. Call from the script's `update`, where animation
@@ -291,8 +355,12 @@ impl Panel {
         gaze: &Gaze,
         anchor: Transform,
         delta: f32,
+        now: f64,
     ) -> anyhow::Result<Vec<Event>> {
         let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
+        // The surface's own space, which its slot positions are in.
+        let eye =
+            anchor.rotation.inverse() * (gaze.eye.translation - anchor.translation) / anchor.scale;
         let frame = Frame {
             anchor,
             aim: pointer::aim(&gaze.ray, &anchor, self.surface.tuning().field_lift),
@@ -300,10 +368,19 @@ impl Panel {
             delta,
         };
 
-        let (motes, specs) = self.content.motes_and_specs();
-        let (layout, pinned) = self
-            .content
-            .layout(self.surface.capacity(), self.surface.tuning());
+        let (motes, mut specs) = self.content.motes_and_specs();
+        tree::noticed(
+            &motes,
+            &mut specs,
+            now,
+            self.surface.tuning().notice_duration,
+        );
+        let readout = if self.content.centre_open() {
+            self.readout.as_ref()
+        } else {
+            None
+        };
+        let (layout, pinned) = self.content.layout(self.capacity, self.surface.tuning());
         self.surface.update(&specs, layout, pinned, &frame);
 
         self.bodies.icons(
@@ -316,12 +393,19 @@ impl Panel {
         )?;
         self.bodies.apply(
             doc,
-            self.surface.views(),
-            &specs,
-            self.surface.drawn(),
-            self.surface.placard(),
-            self.surface.palette(),
-            self.held,
+            &Drawing {
+                motes: &motes,
+                readout,
+                readout_bloom: self.surface.centre_bloom(),
+                delta,
+                views: self.surface.views(),
+                specs: &specs,
+                drawn: self.surface.drawn(),
+                placard: self.surface.placard(),
+                palette: self.surface.palette(),
+                held: self.held,
+                eye,
+            },
         )?;
         let mut events = Vec::new();
         self.report_page(&mut events);
@@ -420,6 +504,11 @@ impl Panel {
 
         match outcome {
             Some(Outcome::Tap(slot)) => {
+                // A page tab turns the page, which reports itself once the
+                // next frame draws it; it is no mote to activate or open.
+                if self.surface.turn_tab(slot) {
+                    return Ok(());
+                }
                 if let Some(released) = self.delivered(doc, slot) {
                     done.released = Some(released);
                 } else if let Some(event) = self.select(slot) {
@@ -468,7 +557,19 @@ impl Panel {
     /// fired or been abandoned.
     fn select(&mut self, slot: usize) -> Option<Event> {
         let index = self.surface.spec_index(slot)?;
-        self.content.select(index)
+        let event = self.content.select(index);
+        self.releveled(event)
+    }
+
+    /// Starts the surface over when `event` changed which level it draws, so
+    /// nothing of the old level's attention or page is left standing under
+    /// the new one's motes.
+    fn releveled(&mut self, event: Option<Event>) -> Option<Event> {
+        if matches!(event, Some(Event::Opened(_) | Event::Closed(_))) {
+            self.surface.relevel();
+            self.paged = None;
+        }
+        event
     }
 
     /// Says how much is off the page, because a panel that quietly holds
@@ -514,5 +615,24 @@ impl Panel {
             mote:    self.content.at(index)?,
             landing: Landing { at, velocity },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_the_root_of_an_orbit_leaves_its_centre_open() {
+        assert!(centre_is_open(false, Arrange::Orbit));
+        assert!(
+            !centre_is_open(true, Arrange::Orbit),
+            "a nested level holds the centre with the way back"
+        );
+        assert!(
+            !centre_is_open(false, Arrange::Grid),
+            "a grid has no centre"
+        );
+        assert!(!centre_is_open(true, Arrange::Grid));
     }
 }

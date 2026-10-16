@@ -8,11 +8,13 @@ use std::{
 
 use crate::{
     exports::unavi::tool::api::{
+        Glyph,
         GuestTool,
         ToolEvent,
         ToolState,
     },
     protocol::{
+        self,
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
@@ -20,6 +22,7 @@ use crate::{
         CH_SCROLL,
         CH_SET_STATE,
         CH_TRIGGER,
+        GlyphPayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
         RegisterPayload,
@@ -44,13 +47,14 @@ const DRAIN_MAX: u32 = 16;
 pub struct Tool {
     name:        String,
     description: String,
+    glyph:       Option<GlyphPayload>,
     discover_rx: MessageSubscription,
     control_rx:  MessageSubscription,
     pending:     RefCell<VecDeque<ToolEvent>>,
 }
 
 impl GuestTool for Tool {
-    fn new(name: String, description: String) -> Result<Self, Error> {
+    fn new(name: String, description: String, glyph: Option<Glyph>) -> Result<Self, Error> {
         if name.len() > MAX_NAME_BYTES {
             return Err(Error::InvalidArgument(format!(
                 "name must be at most {MAX_NAME_BYTES} bytes"
@@ -60,6 +64,9 @@ impl GuestTool for Tool {
             return Err(Error::InvalidArgument(format!(
                 "description must be at most {MAX_DESCRIPTION_BYTES} bytes"
             )));
+        }
+        if let Some(glyph) = &glyph {
+            protocol::check_glyph(glyph.size, &glyph.bits).map_err(Error::InvalidArgument)?;
         }
 
         let discover_rx = messaging::listen(&[CH_DISCOVER.to_owned()], None, Scope::Global)?;
@@ -78,6 +85,10 @@ impl GuestTool for Tool {
         Ok(Self {
             name,
             description,
+            glyph: glyph.map(|glyph| GlyphPayload {
+                size: glyph.size,
+                bits: glyph.bits,
+            }),
             discover_rx,
             control_rx,
             pending: RefCell::new(VecDeque::new()),
@@ -92,6 +103,10 @@ impl GuestTool for Tool {
             let payload = match postcard::to_allocvec(&RegisterPayload {
                 name:        self.name.clone(),
                 description: self.description.clone(),
+                glyph:       self.glyph.as_ref().map(|glyph| GlyphPayload {
+                    size: glyph.size,
+                    bits: glyph.bits.clone(),
+                }),
             }) {
                 Ok(payload) => payload,
                 Err(err) => {

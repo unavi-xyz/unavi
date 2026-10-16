@@ -21,6 +21,7 @@ blake3.workspace        = true
 hsd.path                = "../hsd"
 iroh.workspace          = true
 iroh-docs.workspace     = true
+jiff.workspace          = true
 n0-future.workspace     = true
 parking_lot.workspace   = true
 smol_str.workspace      = true
@@ -42,6 +43,7 @@ wasmtime-wasi.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 anyhow.workspace       = true
+jiff                   = { features = ["js"], workspace = true }
 js-sys                 = "0.3.94"
 serde                  = { features = ["derive"], workspace = true }
 serde-wasm-bindgen     = "0.6.5"

@@ -23,6 +23,7 @@ use crate::{
         self,
         Fit,
     },
+    glyph::Glyph,
     mote::{
         Arrange,
         MoteSpec,
@@ -64,6 +65,12 @@ impl Kind {
     }
 }
 
+/// Something a mote told the viewer, and the surface-clock time it was said at.
+struct Notice {
+    message: SmolStr,
+    posted:  f64,
+}
+
 /// A mote, and whatever it holds.
 ///
 /// Shared rather than owned: a handle kept after the mote is mounted still
@@ -85,6 +92,9 @@ struct Data {
     /// reads every piece's stream back over the interface, which is cheap
     /// once and not something to repeat every frame.
     fit:         Cell<Option<Fit>>,
+    /// The dot grid drawn on its face in place of the icon. Shared so that a
+    /// frame's spec copies a pointer rather than the grid.
+    glyph:       Option<Rc<Glyph>>,
     /// Whether this mote stands for the one of its thing rather than for a
     /// source of them. Meaningless on anything but an item.
     unique:      bool,
@@ -101,6 +111,8 @@ struct Data {
     frost:       f32,
     /// Whether the mote is on: a toggle, not a pulse.
     active:      bool,
+    /// What the mote last told the viewer, and when.
+    notice:      Option<Notice>,
     parent:      Weak<RefCell<Self>>,
     children:    Vec<Mote>,
 }
@@ -114,11 +126,13 @@ impl Mote {
             description: None,
             icon: None,
             fit: Cell::new(None),
+            glyph: None,
             unique: false,
             arrange: Arrange::Orbit,
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
             active: false,
             parent: Weak::new(),
             children: Vec::new(),
@@ -181,6 +195,12 @@ impl Mote {
         let computed = fit::fit(min, max, fraction);
         self.0.borrow().fit.set(Some(computed));
         Ok(computed)
+    }
+
+    /// Draws `glyph` on the face instead of the icon, or the icon again on
+    /// none.
+    pub fn set_glyph(&self, glyph: Option<Glyph>) {
+        self.0.borrow_mut().glyph = glyph.map(Rc::new);
     }
 
     pub fn set_unique(&self, unique: bool) {
@@ -289,6 +309,27 @@ impl Mote {
         self.0.borrow_mut().active = active;
     }
 
+    /// Tells the viewer `message`, at `now` on the surface clock. A later
+    /// notice replaces an earlier one.
+    pub fn notify(&self, message: &str, now: f64) {
+        self.0.borrow_mut().notice = Some(Notice {
+            message: SmolStr::new(message),
+            posted:  now,
+        });
+    }
+
+    /// The notice still showing at `now`, if it was posted less than
+    /// `duration` seconds ago.
+    #[must_use]
+    pub fn notice(&self, now: f64, duration: f32) -> Option<SmolStr> {
+        let data = self.0.borrow();
+        let notice = data.notice.as_ref()?;
+        let age = now - notice.posted;
+        (0.0..f64::from(duration))
+            .contains(&age)
+            .then(|| notice.message.clone())
+    }
+
     #[must_use]
     pub fn spec(&self) -> MoteSpec {
         let data = self.0.borrow();
@@ -313,10 +354,14 @@ impl Mote {
             label:       data.label.clone(),
             description: data.description.clone(),
             active:      data.active,
-            icon:        data.icon.is_some(),
+            icon:        data.icon.is_some() || data.glyph.is_some(),
+            glyph:       data.glyph.clone(),
             tint:        data.tint,
             film:        data.film,
             frost:       data.frost,
+            // A notice has a clock, which only a surface keeps: it fills this
+            // in when it draws.
+            notice:      None,
         }
     }
 
@@ -332,6 +377,19 @@ impl Mote {
                 .children
                 .iter()
                 .any(|child| child.holds(other))
+    }
+}
+
+/// Fills in the notice each of `specs` is showing at `now`, for `motes` drawn
+/// slot for slot.
+///
+/// The way back is a surface's own mote standing in for the level it leaves,
+/// so a notice posted to that level is not shown on it.
+pub fn noticed(motes: &[Mote], specs: &mut [MoteSpec], now: f64, duration: f32) {
+    for (spec, mote) in specs.iter_mut().zip(motes) {
+        if !matches!(spec.role, Role::Parent { .. }) {
+            spec.notice = mote.notice(now, duration);
+        }
     }
 }
 
@@ -438,9 +496,11 @@ impl Tree {
             description: Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
             active:      false,
             icon:        false,
+            glyph:       None,
             tint:        None,
             film:        crate::palette::FILM,
             frost:       0.0,
+            notice:      None,
         }
     }
 
@@ -535,7 +595,7 @@ mod tests {
     }
 
     #[test]
-    fn the_root_level_has_no_parent_bead() {
+    fn the_root_level_has_no_way_back() {
         let mut tree = tree();
         assert_eq!(tree.depth(), 0);
         assert_eq!(labels(&mut tree), vec!["Home", "Places", "Lens"]);
@@ -636,6 +696,90 @@ mod tests {
                 groups:   2,
                 arrange:  Arrange::Orbit,
             }
+        );
+    }
+
+    #[test]
+    fn a_glyph_is_a_face_of_its_own_and_clearing_it_gives_the_face_back() {
+        let node = mote(Kind::Group, "Tools");
+        assert!(!node.spec().icon);
+
+        let glyph = Glyph::new(3, &[0b0001_0000, 0]).expect("a three grid");
+        node.set_glyph(Some(glyph));
+        let spec = node.spec();
+        assert!(spec.icon, "a group wearing a glyph previews no contents");
+        assert!(spec.glyph.is_some());
+
+        node.set_glyph(None);
+        assert!(node.spec().glyph.is_none());
+        assert!(!node.spec().icon);
+    }
+
+    #[test]
+    fn a_notice_shows_for_its_duration_and_then_goes() {
+        let node = mote(Kind::Cast, "Home");
+        assert_eq!(node.notice(0.0, 3.0), None, "nothing said yet");
+
+        node.notify("No home space set.", 10.0);
+        assert_eq!(
+            node.notice(10.0, 3.0).as_deref(),
+            Some("No home space set.")
+        );
+        assert_eq!(
+            node.notice(12.9, 3.0).as_deref(),
+            Some("No home space set.")
+        );
+        assert_eq!(node.notice(13.0, 3.0), None, "run out");
+    }
+
+    #[test]
+    fn a_later_notice_replaces_an_earlier_one_and_restarts_the_clock() {
+        let node = mote(Kind::Cast, "Home");
+        node.notify("first", 0.0);
+        node.notify("second", 2.0);
+        assert_eq!(node.notice(4.0, 3.0).as_deref(), Some("second"));
+    }
+
+    #[test]
+    fn the_way_back_does_not_wear_the_level_s_notice() {
+        let inner = mote(Kind::Action, "inner");
+        let outer = holding("outer", vec![inner.clone()]);
+        outer.notify("posted to the level", 0.0);
+        inner.notify("posted to the leaf", 0.0);
+
+        let mut tree = Tree::new(holding("root", vec![outer]));
+        tree.select(0);
+        let (motes, mut specs) = tree.level_with_motes();
+        noticed(&motes, &mut specs, 1.0, 3.0);
+
+        assert_eq!(specs[0].role, Role::Parent { depth: 1 });
+        assert_eq!(specs[0].notice, None);
+        assert_eq!(specs[1].notice.as_deref(), Some("posted to the leaf"));
+    }
+
+    /// A tree `levels` deep, each level holding the next and a leaf, opened to
+    /// the bottom. Level `n` is labelled `L<n>`, the root `L0`.
+    fn descended(levels: usize) -> Tree {
+        let mut node = mote(Kind::Action, "leaf");
+        for level in (0..levels).rev() {
+            let leaf = mote(Kind::Action, &format!("leaf{level}"));
+            node = holding(&format!("L{level}"), vec![leaf, node]);
+        }
+        let mut tree = Tree::new(node);
+        for _ in 1..levels {
+            let slot = usize::from(tree.is_nested()) + 1;
+            assert!(matches!(tree.select(slot), Navigation::Bloomed(_)));
+        }
+        tree
+    }
+
+    #[test]
+    fn the_way_back_names_the_level_just_above_however_deep_the_tree_is() {
+        let mut tree = descended(5);
+        assert_eq!(tree.depth(), 4);
+        assert_eq!(
+            tree.level_with_motes().1[0].description.as_deref(),
+            Some("Back to L3.")
         );
     }
 

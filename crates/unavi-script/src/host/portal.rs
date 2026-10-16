@@ -133,6 +133,12 @@ pub async fn travel(host: &ScriptHost, target: DocId) -> Result<(), ScriptError>
     .await
 }
 
+/// The space the local user is in, `None` between spaces.
+pub fn current_space(host: &ScriptHost) -> Result<Option<DocId>, ScriptError> {
+    host.require(HostApi::Portal)?;
+    Ok(host.shared.current_space.get().map(SpaceId::doc))
+}
+
 /// The same on every peer that opens `prim` into `target`, since each runs the
 /// opening script and a per-call id would leave the halves disagreeing.
 fn derive_link(doc: DocId, prim: PrimId, target: DocId) -> LinkId {

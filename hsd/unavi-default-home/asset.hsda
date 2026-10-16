@@ -1,6 +1,6 @@
 (
     meta: (
-        name: "Home",
+        name: "Default Home",
         public: true,
     ),
     prims: [

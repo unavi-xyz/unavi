@@ -1,6 +1,8 @@
 //! What a mote is, independent of where it sits in a tree: its role, its
 //! pips, and how both are drawn at a given heat.
 
+use std::rc::Rc;
+
 use smol_str::SmolStr;
 use wired_guest::math::Color;
 
@@ -9,6 +11,7 @@ use crate::{
         self,
         Attention,
     },
+    glyph::Glyph,
     tuning::Tuning,
 };
 
@@ -49,6 +52,9 @@ pub enum Role {
     Cast,
     /// The way back; always slot 0, carrying the current depth.
     Parent { depth: usize },
+    /// Turns the page. Never a mote of the level: the surface draws it beside
+    /// the layout when there are `remaining` pages that way, `forward` or back.
+    Page { forward: bool, remaining: usize },
 }
 
 impl Role {
@@ -77,9 +83,11 @@ pub struct MoteSpec {
     /// Whether the mote is on: a toggle, held until something clears it,
     /// rather than the pulse an activation is.
     pub active:      bool,
-    /// Whether the mote wears a body of its own, which is drawn where a
-    /// group's contents would otherwise be previewed.
+    /// Whether the mote wears a body of its own, an icon or a glyph, which is
+    /// drawn where a group's contents would otherwise be previewed.
     pub icon:        bool,
+    /// The dot grid drawn on its face instead of an icon.
+    pub glyph:       Option<Rc<Glyph>>,
     /// The hue its glass carries, or none for the neutral one. Identity,
     /// where every other colour here is state.
     pub tint:        Option<Color>,
@@ -88,6 +96,9 @@ pub struct MoteSpec {
     pub film:        f32,
     /// How much the shell's rim is frosted, `0` for clear glass.
     pub frost:       f32,
+    /// What the mote is telling the viewer right now, if its notice has not
+    /// run out. Drawn on its body in place of the placard.
+    pub notice:      Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -167,9 +178,9 @@ fn contents(children: usize, groups: usize, arrange: Arrange, tuning: &Tuning) -
     }
 }
 
-/// Depth is a count rather than a shape, so it circles the body whatever the
-/// level below opens into.
-fn depth_marks(depth: usize, tuning: &Tuning) -> Pips {
+/// Depth, or pages left, is a count rather than a shape, so it circles the
+/// body whatever the level below opens into.
+fn counted_marks(depth: usize, tuning: &Tuning) -> Pips {
     let cap = tuning.pip_cap.min(MAX_PIPS);
     Pips {
         kinds:     [PipKind::Item; MAX_PIPS],
@@ -206,6 +217,7 @@ pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
         Role::Group { .. } => tuning.group_scale,
         Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => tuning.action_scale,
         Role::Parent { .. } => tuning.parent_scale,
+        Role::Page { .. } => tuning.tab_scale,
     };
 
     Presentation {
@@ -221,7 +233,10 @@ pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
                 groups,
                 arrange,
             } => contents(children, groups, arrange, tuning),
-            Role::Parent { depth } => depth_marks(depth, tuning),
+            Role::Parent { depth: count }
+            | Role::Page {
+                remaining: count, ..
+            } => counted_marks(count, tuning),
             Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => Pips::NONE,
         },
     }
@@ -242,9 +257,11 @@ mod tests {
             description: None,
             active: false,
             icon: false,
+            glyph: None,
             tint: None,
             film: crate::palette::FILM,
             frost: 0.0,
+            notice: None,
         }
     }
 
@@ -299,6 +316,45 @@ mod tests {
             pips.placement,
             PipPlacement::Around,
             "inside means descending, around means ascending"
+        );
+    }
+
+    #[test]
+    fn a_page_tab_counts_the_pages_left_that_way_around_itself() {
+        let pips = present_at(
+            Role::Page {
+                forward:   true,
+                remaining: 3,
+            },
+            Attention::Idle,
+        )
+        .pips;
+        assert_eq!(pips.count, 3);
+        assert_eq!(pips.placement, PipPlacement::Around);
+
+        let capped = present_at(
+            Role::Page {
+                forward:   false,
+                remaining: tuning().pip_cap + 4,
+            },
+            Attention::Idle,
+        )
+        .pips;
+        assert_eq!(capped.count, tuning().pip_cap);
+        assert!(capped.overflow);
+    }
+
+    #[test]
+    fn a_page_tab_is_a_pressable_control_not_something_to_carry() {
+        let tab = Role::Page {
+            forward:   true,
+            remaining: 1,
+        };
+        assert!(!tab.is_takeable());
+        assert!(!tab.is_source());
+        assert!(
+            present_at(tab, Attention::Idle).radius
+                < present_at(Role::Action, Attention::Idle).radius
         );
     }
 

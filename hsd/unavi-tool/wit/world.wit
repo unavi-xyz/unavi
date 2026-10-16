@@ -26,10 +26,26 @@ interface api {
     scroll(f32),
   }
 
+  /// A square grid of dots a shell may draw as the tool's mark. It has the
+  /// shape of `unavi:vui`'s glyph, declared again here because this package
+  /// does not import that one: a tool has no business depending on the shell's
+  /// drawing library just to say what it looks like.
+  record glyph {
+    /// Cells along each side, from 1 to 13.
+    size: u8,
+    /// Row-major from the top-left, cell `i` being bit `i % 8` (least
+    /// significant first) of byte `i / 8`. At least `ceil(size * size / 8)`
+    /// bytes; bytes past that are ignored.
+    bits: list<u8>,
+  }
+
   resource tool {
     /// `name` and `description` are shown by the shell. `name` is at most 48
     /// bytes, `description` at most 256; over either is `invalid-argument`.
-    constructor(name: string, description: string) -> result<tool, error>;
+    /// So is a `glyph` whose `size` is outside 1 to 13 or whose `bits` are
+    /// shorter than its grid needs. A tool with no glyph is drawn with a
+    /// generic one.
+    constructor(name: string, description: string, glyph: option<glyph>) -> result<tool, error>;
     poll: func() -> option<tool-event>;
   }
 
@@ -37,6 +53,8 @@ interface api {
     document:    document-id,
     name:        string,
     description: string,
+    /// The tool's own mark, when it announced a valid one.
+    glyph:       option<glyph>,
   }
 
   /// Registry the shell pushes tools into, polled every frame.

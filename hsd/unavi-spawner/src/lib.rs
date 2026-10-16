@@ -15,6 +15,7 @@ use crate::{
     },
 };
 
+mod glyph;
 mod palette;
 mod preview;
 mod spawn;
@@ -35,8 +36,12 @@ struct Script {
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
-            tool:    Tool::new("Spawner", "Puts a cube down on whatever you point at.")?,
-            preview: Preview::new(ARTIFACT_OFFSET, 0.0)?,
+            tool:    Tool::new(
+                "Spawner",
+                "Puts a cube down on whatever you point at.",
+                Some(&glyph::mark()),
+            )?,
+            preview: Preview::new(ARTIFACT_OFFSET)?,
             active:  Cell::new(false),
             color:   Cell::new(palette::DEFAULT),
             pressed: Cell::new(false),

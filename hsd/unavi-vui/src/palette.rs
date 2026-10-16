@@ -21,23 +21,29 @@ pub struct Palette {
     pub accent:       Color,
     /// Receded: inactive motes and the way back.
     pub dim:          Color,
-    /// Backing surfaces — grids, tables, cast circles, placards.
-    pub surface:      Color,
+    /// How far an inactive toggle's tint is drawn toward [`Palette::dim`].
+    pub mute:         f32,
+    /// A notice's title, and the one saturated colour on a placard. A red
+    /// orange rather than the accent: the accent means a mote is held, so a
+    /// warning wearing it would read as selection, and a warning has to be
+    /// distinct from every state a mote can be in.
+    pub warning:      Color,
+    /// Type set on a placard's frosted panel: near-black, since the panel
+    /// is light.
+    pub ink:          Color,
     /// Warmth mixed into an item that is a source of its thing, so a mote you
     /// can take another of reads apart from the one of it.
     pub source:       Color,
     /// How much of [`Palette::source`] a source carries.
     pub source_shift: f32,
 
-    /// How strongly a container's glass wears its hue.
+    /// How strongly a mote's glass wears its hue. One value for every role,
+    /// so that two motes differ by their tint and their state and never by
+    /// what kind of thing they are.
     pub glass_alpha:          f32,
     pub glass_alpha_attended: f32,
-    /// How strongly a leaf's glass wears its hue.
-    pub solid_alpha:          f32,
-    /// A toggle that is off reads as a clear outline: the glass barely wears
-    /// its hue, so only the rim carries the silhouette.
-    pub toggle_idle_alpha:    f32,
-    /// A toggle that is on fills with its hue.
+    /// A toggle that is on fills with its hue; one that is off is glass like
+    /// any other mote, wearing its hue muted.
     pub toggle_active_alpha:  f32,
     pub emissive_base:        f32,
     pub emissive_near:        f32,
@@ -54,14 +60,14 @@ impl Palette {
         base:         shade(0.92),
         accent:       rgb(0.60, 0.84, 1.00),
         dim:          shade(0.42),
-        surface:      rgb(0.12, 0.13, 0.16),
+        mute:         0.55,
+        warning:      rgb(0.90, 0.22, 0.04),
+        ink:          rgb(0.04, 0.05, 0.07),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
 
         glass_alpha:          0.25,
         glass_alpha_attended: 0.35,
-        solid_alpha:          0.70,
-        toggle_idle_alpha:    0.03,
         toggle_active_alpha:  0.70,
 
         emissive_base:     0.08,
@@ -123,6 +129,14 @@ impl Palette {
             Attention::Near => glow(tint, 0.18),
             Attention::Idle => tint,
         }
+    }
+
+    /// A mote's own hue seen receded: drawn part of the way to the dim
+    /// level, so it is still that hue but quieter and lower in both
+    /// saturation and brightness than the same tint lit.
+    #[must_use]
+    pub const fn muted(&self, tint: Color) -> Color {
+        blend(tint, self.dim, self.mute)
     }
 
     /// How brightly a mote burns, raised to a floor while it is on.
@@ -299,7 +313,7 @@ mod tests {
     #[test]
     fn the_field_is_desaturated_so_the_accent_can_carry_meaning() {
         let palette = Palette::DEFAULT;
-        for quiet in [palette.base, palette.dim, palette.surface] {
+        for quiet in [palette.base, palette.dim, palette.ink] {
             assert!(
                 spread(quiet) < spread(palette.accent),
                 "a resting colour must not compete with the accent"
@@ -335,6 +349,24 @@ mod tests {
                 "a grasped mote says it is grasped, not what it stocks"
             );
         }
+    }
+
+    #[test]
+    fn a_muted_hue_is_quieter_than_the_hue_but_not_grey() {
+        let palette = Palette::DEFAULT;
+        let hue = rgb(0.9, 0.2, 0.3);
+        let muted = palette.muted(hue);
+        assert!(lightness(muted) < lightness(hue));
+        assert!(spread(muted) < spread(hue), "less saturated");
+        assert!(spread(muted) > spread(palette.dim), "yet not the neutral");
+        assert!(muted.r > muted.g && muted.r > muted.b, "the same hue");
+    }
+
+    #[test]
+    fn the_placard_ink_is_dark_enough_to_read_on_frost_and_the_warning_is_not_ink() {
+        let palette = Palette::DEFAULT;
+        assert!(lightness(palette.ink) < 0.1);
+        assert!(spread(palette.warning) > 0.5, "the one saturated colour");
     }
 
     #[test]

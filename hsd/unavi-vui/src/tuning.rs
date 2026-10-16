@@ -22,14 +22,15 @@ pub struct Tuning {
     /// A grid level: columns by rows cells on one page.
     pub grid_columns: usize,
     pub grid_rows:    usize,
+    /// How far a page tab stands past the outermost slot of its layout.
+    pub tab_gap:      f32,
+    /// How near the pointer must come to a page tab to attend it.
+    pub tab_hit:      f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
     /// Seconds of unbroken attention before a placard appears.
     pub placard_delay:    f32,
-    /// Seconds the placard takes to reach full opacity once the delay has
-    /// passed.
-    pub placard_fade:     f32,
     /// Clearance between the attended mote's surface and the placard's lower
     /// edge.
     pub placard_gap:      f32,
@@ -43,6 +44,9 @@ pub struct Tuning {
     pub placard_width:    f32,
     /// Average glyph width, in ems, that placard wrapping assumes.
     pub advance_estimate: f32,
+
+    /// Seconds a notice stays on its mote.
+    pub notice_duration: f32,
 
     /// Em height of the name drawn under every mote.
     pub label_size: f32,
@@ -79,11 +83,22 @@ pub struct Tuning {
 
     /// Radians per second an icon turns inside its shell. Gentle by default;
     /// zero holds every icon still.
-    pub icon_spin: f32,
+    pub icon_spin:     f32,
     /// An icon's diagonal, as a fraction of its shell's diameter. Every icon
     /// is measured and fit to this, so a ring of motes reads as one size
     /// whatever the content.
-    pub icon_fill: f32,
+    pub icon_fill:     f32,
+    /// Seconds a face takes to flip from one glyph to the next. The wipe
+    /// across its columns is spread over this, so a longer flip is a slower
+    /// sweep rather than a longer pause.
+    pub flip_duration: f32,
+
+    /// Radius of the readout drawn at an open orbit's centre. A good deal
+    /// larger than a mote, so a display of thirteen dots to a side reads as a
+    /// face to be looked at rather than as one more thing to point at: its
+    /// dots come out about twice the size a glyph's do inside a shell, which
+    /// is what lets two lines of text be read across an arm's length.
+    pub readout_radius: f32,
 
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
@@ -105,6 +120,9 @@ pub struct Tuning {
     pub group_scale:  f32,
     pub action_scale: f32,
     pub parent_scale: f32,
+    /// A page tab's body, smaller than a mote so it reads as a control for the
+    /// level rather than as part of it.
+    pub tab_scale:    f32,
     /// Most interior bodies a group draws; beyond this it reports overflow.
     pub pip_cap:      usize,
 }
@@ -119,21 +137,24 @@ impl Tuning {
         stick:        0.18,
         grid_stick:   0.18,
         grid_pitch:   0.11,
-        grid_columns: 4,
+        grid_columns: 3,
         grid_rows:    3,
+        tab_gap:      0.12,
+        tab_hit:      0.035,
 
         attend_scale:     1.18,
         seize_scale:      1.30,
         placard_delay:    0.25,
-        placard_fade:     0.12,
         placard_gap:      0.018,
         placard_lift:     0.012,
         placard_title:    0.016,
-        placard_row:      0.011,
+        placard_row:      0.0125,
         placard_line:     1.5,
         placard_pad:      0.013,
         placard_width:    0.24,
         advance_estimate: 0.62,
+
+        notice_duration: 3.0,
 
         label_size: 0.011,
         label_gap:  0.007,
@@ -151,8 +172,11 @@ impl Tuning {
         heat_speed:  14.0,
         heat_settle: 0.004,
 
-        icon_spin: 0.15,
-        icon_fill: 0.5,
+        icon_spin:     0.15,
+        icon_fill:     0.62,
+        flip_duration: 0.3,
+
+        readout_radius: 0.0512,
 
         lean_dist:  0.022,
         lean_range: 0.35,
@@ -166,6 +190,7 @@ impl Tuning {
         group_scale:  1.25,
         action_scale: 1.0,
         parent_scale: 0.8,
+        tab_scale:    0.6,
         pip_cap:      9,
     };
 }
@@ -193,6 +218,20 @@ mod tests {
              pointed at is the one that hides the reticle",
             tuning.field_lift
         );
+    }
+
+    #[test]
+    fn the_readout_fills_the_centre_without_reaching_the_motes() {
+        let tuning = Tuning::DEFAULT;
+        assert!(
+            tuning.readout_radius > tuning.mote_radius * 1.5,
+            "larger than a mote, so it reads as a face"
+        );
+        let nearest = tuning.mote_radius.mul_add(
+            -(tuning.group_scale * tuning.seize_scale),
+            tuning.orbit_radius,
+        );
+        assert!(tuning.readout_radius < nearest, "clear of the ring");
     }
 
     #[test]

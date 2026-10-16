@@ -1,6 +1,7 @@
 package wired:prelude;
 
 world imports {
+  import wired:core/time;
   import wired:script/host;
   import wired:scene/properties;
   import wired:scene/document;

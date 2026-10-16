@@ -10,11 +10,11 @@ use iroh::{
 };
 use iroh_docs::NamespaceId;
 use irpc::Client;
+use jiff::Timestamp;
 use n0_future::{
     BufferedStreamExt,
     StreamExt,
 };
-use time::OffsetDateTime;
 use unavi_identity::{
     authorship::Authorship,
     identity::Identity,
@@ -137,7 +137,7 @@ impl RegistryClient {
             .await?
             .map_err(|e| anyhow::anyhow!("occupants failed: {e}"))?;
 
-        let now = OffsetDateTime::now_utc().unix_timestamp();
+        let now = Timestamp::now().as_second();
         let claimed = signed.into_iter().filter_map(|entry| {
             let presence = entry.payload().ok()?;
             (presence.ns == ns && presence.expires > now).then_some((entry, presence))

@@ -99,10 +99,18 @@ dev-build:
 node: dev-build
     {{dev_env}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-node --port {{port}}
 
-app n: dev-build
+# Run the app with its persistent identity and store, syncing to a local node.
+app: dev-build
+    {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-app {{ if debug != "" { "--debug-log" } else { "" } }}
+
+# `n` only tells the copies apart, since just runs a dependency with the same
+# arguments once.
+#
+# Run a throwaway app: fresh identity, empty store, so several can run at once.
+app-memory n="1": dev-build
     sleep 2
     {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-app --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}
 
-# Run a node plus two apps.
+# Run a node plus two throwaway apps.
 [parallel]
-multi-app: node (app "1") (app "2")
+multi-app: node app (app-memory "2")

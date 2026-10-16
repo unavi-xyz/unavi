@@ -7,7 +7,7 @@
 use wired_guest::math::Color;
 
 use crate::{
-    icon,
+    glyph,
     palette,
     unavi::{
         tool::api::{
@@ -19,7 +19,6 @@ use crate::{
             Mote,
         },
     },
-    wired::scene::document::script_document,
 };
 
 const RESTING: Color = Color {
@@ -37,13 +36,9 @@ const HELD: Color = Color {
 };
 
 struct Tool {
-    doc:    (u64, u64, u64, u64),
-    name:   String,
-    mote:   Mote,
-    /// Whether an icon has already been minted and bound; an icon is built
-    /// once per tool rather than every time any tool announces itself, so a
-    /// long-lived halo does not leak icon prims.
-    iconed: bool,
+    doc:  (u64, u64, u64, u64),
+    name: String,
+    mote: Mote,
 }
 
 pub struct Toolbelt {
@@ -97,12 +92,19 @@ impl Toolbelt {
             if let Err(err) = mote.set_description(&tool.description) {
                 eprintln!("halo: tool description for '{}': {err:?}", tool.name);
             }
+            // The mark is the tool's own, else the generic one. A refused mark
+            // leaves the mote undrawn rather than losing the tool.
+            let mark = tool
+                .glyph
+                .map_or_else(|| glyph::from_rows(&glyph::TOOL), glyph::from_tool);
+            if let Err(err) = mote.set_glyph(Some(&mark)) {
+                eprintln!("halo: tool glyph for '{}': {err:?}", tool.name);
+            }
 
             self.tools.push(Tool {
                 doc: tool.document,
                 name: tool.name,
                 mote,
-                iconed: false,
             });
             found = true;
         }
@@ -114,20 +116,8 @@ impl Toolbelt {
             .sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.doc.cmp(&b.doc)));
         // Re-coloured after every sort rather than at construction: a tool's
         // colour is its place in the set, and the set is what just changed.
-        let Ok(doc) = script_document() else {
-            return;
-        };
-        for (index, tool) in self.tools.iter_mut().enumerate() {
+        for (index, tool) in self.tools.iter().enumerate() {
             tool.mote.set_tint(Some(palette::tool(index)));
-            if !tool.iconed {
-                match icon::tool(palette::GLYPH) {
-                    Ok(glyph) => {
-                        tool.mote.set_icon(&doc, Some(glyph));
-                        tool.iconed = true;
-                    }
-                    Err(err) => eprintln!("halo: no glyph for '{}': {err:?}", tool.name),
-                }
-            }
             parent.add_child(&tool.mote);
         }
     }

@@ -36,10 +36,22 @@ use crate::{
 };
 
 const SEGMENTS: usize = 40;
-const INNER: f32 = 0.026;
-const OUTER: f32 = 0.034;
+/// The ring's radii as fractions of the body it rings, so it stands just
+/// outside the shell at whatever size the body has grown to.
+const INNER: f32 = 1.15;
+const OUTER: f32 = 1.4;
 /// Stands clear of the mote it rings without reaching the hit surface.
 const LIFT: f32 = 0.006;
+
+/// Where the ring stands for a body at `at` of `radius`: the mesh is drawn in
+/// body units, so the body's radius is its scale.
+fn ring_pose(at: Vec3, radius: f32) -> Transform {
+    Transform {
+        translation: Vec3::new(at.x, at.y, at.z + LIFT),
+        rotation:    Quat::IDENTITY,
+        scale:       Vec3::splat(radius),
+    }
+}
 
 /// A ring filled by a sweep around it.
 ///
@@ -89,8 +101,9 @@ impl Site {
         Ok(())
     }
 
-    /// `at` is the mote being cast on, in the surface's own coordinates.
-    pub fn apply(&self, doc: &Document, at: Vec3, state: State) -> anyhow::Result<()> {
+    /// `at` is the mote being cast on, in the surface's own coordinates, and
+    /// `radius` is its body's.
+    pub fn apply(&self, doc: &Document, at: Vec3, radius: f32, state: State) -> anyhow::Result<()> {
         match state {
             // The ring stays where it stood and unwinds from there, so what
             // draws is the fill running backwards.
@@ -106,14 +119,7 @@ impl Site {
         }
 
         doc.local()
-            .set(
-                self.prim,
-                Property::Transform(Transform {
-                    translation: Vec3::new(at.x, at.y, at.z + LIFT),
-                    rotation:    Quat::IDENTITY,
-                    scale:       Vec3::ONE,
-                }),
-            )
+            .set(self.prim, Property::Transform(ring_pose(at, radius)))
             .flush()?;
         self.draw(doc, state.progress())
     }
@@ -149,5 +155,39 @@ impl Site {
             ],
         )?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The radii the ring is actually drawn at: its mesh through its pose.
+    fn drawn_radii(radius: f32) -> (f32, f32) {
+        let pose = ring_pose(Vec3::ZERO, radius);
+        let mesh = mesh::annulus(INNER, OUTER, SEGMENTS);
+        mesh.positions
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .map(|point| point[0].hypot(point[1]) * pose.scale.x)
+            .fold((f32::MAX, f32::MIN), |(low, high), r| {
+                (low.min(r), high.max(r))
+            })
+    }
+
+    #[test]
+    fn the_ring_stands_just_outside_whatever_size_the_body_is() {
+        for radius in [0.02, 0.032, 0.05] {
+            let (inner, outer) = drawn_radii(radius);
+            assert!((inner / radius - 1.15).abs() < 1.0e-4);
+            assert!((outer / radius - 1.4).abs() < 1.0e-4);
+            assert!(inner > radius, "clear of the shell");
+        }
+    }
+
+    #[test]
+    fn the_ring_stands_clear_of_the_surface_it_rings() {
+        assert!(ring_pose(Vec3::new(0.1, 0.2, 0.0), 0.04).translation.z > 0.0);
     }
 }

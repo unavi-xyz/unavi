@@ -2,6 +2,7 @@
 //! listeners, link intents and this frame's poses.
 
 pub mod agents;
+pub mod current_space;
 pub mod event_bus;
 pub mod input_listeners;
 pub mod link_intents;

@@ -7,13 +7,13 @@ use std::collections::{
 };
 
 use iroh_docs::NamespaceId;
+use jiff::Timestamp;
 use parking_lot::RwLock;
 use serde::{
     Deserialize,
     Serialize,
 };
 use smol_str::SmolStr;
-use time::OffsetDateTime;
 use unavi_identity::{
     authorship::Authorship,
     signed::Signed,
@@ -287,7 +287,7 @@ impl Catalog {
 }
 
 fn now() -> i64 {
-    OffsetDateTime::now_utc().unix_timestamp()
+    Timestamp::now().as_second()
 }
 
 #[cfg(test)]

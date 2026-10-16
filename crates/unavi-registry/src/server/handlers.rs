@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use iroh::EndpointId;
 use irpc::WithChannels;
-use time::OffsetDateTime;
+use jiff::Timestamp;
 use xdid::core::did::Did;
 
 use crate::{
@@ -54,7 +54,7 @@ pub async fn handle_message(
 }
 
 fn now() -> i64 {
-    OffsetDateTime::now_utc().unix_timestamp()
+    Timestamp::now().as_second()
 }
 
 async fn submit(
@@ -83,7 +83,8 @@ async fn submit(
         return Err(RegistryError::NotPermitted);
     }
 
-    let ceiling = (OffsetDateTime::now_utc() + shared.config.max_retention).unix_timestamp();
+    let retention = i64::try_from(shared.config.max_retention.as_secs()).unwrap_or(i64::MAX);
+    let ceiling = now().saturating_add(retention);
     if submission.expires > ceiling {
         return Err(RegistryError::RetentionTooLong);
     }

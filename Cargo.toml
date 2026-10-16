@@ -49,7 +49,6 @@ bevy_vrm             = "0.4.0"
 bevy_xr_utils        = "0.6.0"
 blake3               = { features = ["serde"], version = "1.8.7" }
 bytes                = "1.12.1"
-chrono               = { default-features = false, features = ["clock"], version = "0.4.45" }
 clap                 = { features = ["derive"], version = "4.6.6" }
 const_format         = "0.2.36"
 directories          = "6.0.0"
@@ -62,6 +61,7 @@ iroh-docs            = { default-features = false, version = "0.101.0" }
 iroh-gossip          = { default-features = false, version = "0.101.0" }
 irpc                 = { default-features = false, version = "0.17.0" }
 irpc-iroh            = "0.17.0"
+jiff                 = "0.2.35"
 n0-future            = "0.3.2"
 naga                 = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }
 notosans             = "0.1.0"
@@ -81,7 +81,6 @@ smol_str             = { features = ["serde"], version = "0.3.6" }
 syn                  = "3.0.4"
 tempfile             = "3.27.0"
 thiserror            = "2.0.20"
-time                 = "0.3.55"
 tokio                = "1.53.1"
 toml                 = "1.1.4"
 tracing              = "0.1.44"

@@ -8,9 +8,9 @@ use std::{
 
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
+use jiff::Timestamp;
 use parking_lot::Mutex;
 use smol_str::SmolStr;
-use time::OffsetDateTime;
 use unavi_identity::signed::Signed;
 use xdid::core::did::Did;
 
@@ -246,7 +246,7 @@ impl Inner {
 }
 
 fn now() -> i64 {
-    OffsetDateTime::now_utc().unix_timestamp()
+    Timestamp::now().as_second()
 }
 
 #[cfg(test)]

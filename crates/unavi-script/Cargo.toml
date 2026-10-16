@@ -37,6 +37,7 @@ unavi-store.path        = "../unavi-store"
 xdid.workspace          = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+chrono.workspace        = true
 wasmtime.workspace      = true
 wasmtime-wasi.workspace = true
 

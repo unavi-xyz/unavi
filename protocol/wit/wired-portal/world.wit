@@ -32,6 +32,10 @@ interface portals {
   /// Moves the local user into `target-space`, loading it if needed.
   travel: func(target-space: document-id) -> result<_, error>;
 
+  /// The space the local user is in now, `none` while they are between
+  /// spaces, such as mid-travel.
+  current-space: func() -> result<option<document-id>, error>;
+
   /// Hears intents addressed to the script's space, each once.
   intents: func() -> result<intent-subscription, error>;
 

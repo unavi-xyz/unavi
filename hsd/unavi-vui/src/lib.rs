@@ -15,6 +15,7 @@ mod font;
 mod glyph;
 mod grasp;
 mod layout;
+mod marks;
 mod mesh;
 mod mote;
 mod palette;

@@ -65,6 +65,10 @@ impl Host for HostCtx {
         portal::travel(&self.host, convert::doc_id(target_space)).await
     }
 
+    fn current_space(&mut self) -> Result<Option<DocumentId>, ScriptError> {
+        Ok(portal::current_space(&self.host)?.map(convert::wit_doc_id))
+    }
+
     fn intents(&mut self) -> Result<Resource<IntentSubscription>, ScriptError> {
         portal::intents(&mut self.host).map(Resource::new_own)
     }

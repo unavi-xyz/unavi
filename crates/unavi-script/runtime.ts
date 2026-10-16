@@ -252,6 +252,9 @@ function buildImports(wasi: WASIShim, rt: any) {
   const classes = resourceClasses();
   return {
     ...wasi.getImportObject(),
+    "wired:core/time": {
+      utcOffset: rt.utcOffset.bind(rt),
+    },
     "wired:script/host": {
       granted: rt.granted.bind(rt),
     },
@@ -306,6 +309,7 @@ function buildImports(wasi: WASIShim, rt: any) {
       open: rt.open.bind(rt),
       pair: rt.pair.bind(rt),
       travel: rt.travel.bind(rt),
+      currentSpace: rt.currentSpace.bind(rt),
       intents: rt.intents.bind(rt),
     },
     "wired:shading/graph": {

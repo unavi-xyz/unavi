@@ -412,6 +412,10 @@ interface document {
     ///
     /// A created document is held out of the scene until it is placed, so it
     /// can be built in full and then appear at once.
+    ///
+    /// Fails with `invalid-argument` for an offset that is not finite or
+    /// whose scale is zero on any axis; to hide a placed document, scale its
+    /// prims instead.
     place: func(anchor: anchor, offset: transform) -> result<_, error>;
   }
 

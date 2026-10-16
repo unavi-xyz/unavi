@@ -40,6 +40,7 @@ use crate::{
         scene::DocumentRes,
         shared_state::{
             agents::LocalAgentNodes,
+            current_space::CurrentSpace,
             event_bus::EventBus,
             input_listeners::InputListeners,
             link_intents::LinkIntents,
@@ -66,11 +67,13 @@ pub mod scene;
 pub mod shading;
 pub mod shared_state;
 pub mod storage;
+pub mod time;
 
 /// The cross-script state every [`ScriptHost`] holds a clone of.
 #[derive(Clone)]
 pub struct SharedState {
     pub agents:          LocalAgentNodes,
+    pub current_space:   CurrentSpace,
     pub pointers:        Pointers,
     pub transforms:      TransformSnapshots,
     pub event_bus:       EventBus,
@@ -82,6 +85,7 @@ pub struct SharedState {
 #[derive(SystemParam)]
 pub struct SharedResources<'w> {
     agents:          Res<'w, LocalAgentNodes>,
+    current_space:   Res<'w, CurrentSpace>,
     pointers:        Res<'w, Pointers>,
     transforms:      Res<'w, TransformSnapshots>,
     event_bus:       Res<'w, EventBus>,
@@ -94,6 +98,7 @@ impl SharedResources<'_> {
     pub fn get(&self) -> SharedState {
         SharedState {
             agents:          self.agents.clone(),
+            current_space:   self.current_space.clone(),
             pointers:        self.pointers.clone(),
             transforms:      self.transforms.clone(),
             event_bus:       self.event_bus.clone(),
@@ -285,6 +290,7 @@ impl Plugin for HostPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<input::bridge::Pressing>()
             .init_resource::<LocalAgentNodes>()
+            .init_resource::<CurrentSpace>()
             .init_resource::<EventBus>()
             .init_resource::<InputListeners>()
             .init_resource::<LinkIntents>()
@@ -302,6 +308,7 @@ impl Plugin for HostPlugin {
                 Update,
                 (
                     shared_state::agents::track_local_agent,
+                    shared_state::current_space::track_current_space,
                     shared_state::pointers::snapshot_pointers,
                     input::bridge::bridge_buttons,
                     input::bridge::bridge_device_scroll

@@ -43,13 +43,13 @@ pub struct Preview {
     cube:     (u64, u64),
     spin:     Cell<f32>,
     color:    Cell<Option<Color>>,
-    /// The `(offset, scale)` last sent to `attach`, so a pose that has not
-    /// moved does not pay for another host round trip every frame.
-    attached: Cell<Option<(Vec3, f32)>>,
+    /// The offset last sent to `attach`, so a pose that has not moved does
+    /// not pay for another host round trip every frame.
+    attached: Cell<Option<Vec3>>,
 }
 
 impl Preview {
-    pub fn new(offset: Vec3, scale: f32) -> anyhow::Result<Self> {
+    pub fn new(offset: Vec3) -> anyhow::Result<Self> {
         let doc = script_document()?;
         let cube = Cuboid::new(Vec3::splat(PREVIEW_SIZE)).mesh()?;
 
@@ -60,7 +60,7 @@ impl Preview {
             color: Cell::new(None),
             attached: Cell::new(None),
         };
-        preview.reattach(offset, scale);
+        preview.reattach(offset);
         Ok(preview)
     }
 
@@ -77,7 +77,7 @@ impl Preview {
             }
         }
 
-        self.reattach(offset, scale);
+        self.reattach(offset);
 
         let spin = delta.mul_add(SPIN, self.spin.get());
         self.spin.set(spin);
@@ -89,7 +89,7 @@ impl Preview {
                 Property::Transform(Transform {
                     translation: Vec3::new(0.0, ABOVE, 0.0),
                     rotation:    yaw(spin),
-                    scale:       Vec3::ONE,
+                    scale:       Vec3::splat(scale),
                 }),
             )
             .flush()
@@ -99,9 +99,11 @@ impl Preview {
     }
 
     /// Re-anchors the preview to the camera, an async round trip to the
-    /// host, skipped when `offset`/`scale` already match the last call.
-    fn reattach(&self, offset: Vec3, scale: f32) {
-        if self.attached.get() == Some((offset, scale)) {
+    /// host, skipped when `offset` already matches the last call. The
+    /// attachment keeps unit scale, since the host inverts its frame and a
+    /// scale of zero has no inverse; `update` shrinks the cube instead.
+    fn reattach(&self, offset: Vec3) {
+        if self.attached.get() == Some(offset) {
             return;
         }
         if let Err(err) = attach(
@@ -110,12 +112,12 @@ impl Preview {
             Transform {
                 translation: offset,
                 rotation:    Quat::IDENTITY,
-                scale:       Vec3::splat(scale),
+                scale:       Vec3::ONE,
             },
         ) {
             eprintln!("spawner: attach preview: {err:?}");
             return;
         }
-        self.attached.set(Some((offset, scale)));
+        self.attached.set(Some(offset));
     }
 }

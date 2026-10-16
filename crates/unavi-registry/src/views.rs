@@ -6,10 +6,12 @@ use serde::{
     Serialize,
 };
 
-/// Prefix of the active-spaces view. Each key is `active/{rank:08}/{ns}`, and
-/// each value a postcard `(occupants: u32, idle_secs: u64, title: String)`, the
-/// title being the space's listing title: the name in the space document's
-/// metadata, as submitted, which may be empty.
+/// Prefix of the active-spaces view.
+///
+/// Each key is `active/{rank:08}/{ns}`, and each value a postcard `(occupants:
+/// u32, idle_secs: u64, title: String)`, the title being the space's listing
+/// title: the name in the space document's metadata, as submitted, which may be
+/// empty.
 pub const ACTIVE_PREFIX: &str = "active/";
 
 /// Namespaces of the docs a registry publishes for clients to sync.

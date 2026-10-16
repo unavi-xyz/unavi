@@ -19,10 +19,7 @@ use crate::{
         Grasp,
         Outcome,
     },
-    layout::{
-        Layout,
-        TRAIL_SLOTS,
-    },
+    layout::Layout,
     mote::{
         self,
         MoteSpec,
@@ -56,12 +53,12 @@ pub const TAB_SLOTS: usize = 2;
 /// body currently belongs.
 ///
 /// Every public index is a **draw slot**, matching [`Surface::views`]: the
-/// level's own slots first, then any page tabs, then any ancestor beads.
+/// level's own slots first, then any page tabs.
 /// [`Surface::spec_index`] is the one translation back to the collection, and
-/// answers `None` for a tab or a bead, which stand for no mote.
+/// answers `None` for a tab, which stands for no mote.
 pub struct Surface {
     tuning:   Tuning,
-    /// Slots the level may fill, which is not counting the tabs and beads.
+    /// Slots the level may fill, which is not counting the tabs.
     capacity: usize,
     palette:  Palette,
     reveal:   Reveal,
@@ -76,12 +73,6 @@ pub struct Surface {
     drawn:    Vec<usize>,
     placard:  Option<PlacardView>,
     page:     PageView,
-    /// The ancestor beads to draw, root first, as set by the last
-    /// [`Surface::set_trail`].
-    trail:    Vec<MoteSpec>,
-    /// The draw slot of the first bead, which is where the level's slots and
-    /// the tabs end; settled by the last [`Surface::update`].
-    trail_at: usize,
     /// Leading slots held on every page, and how many slots remain for the
     /// window; both settled by the last [`Surface::update`].
     pinned:   usize,
@@ -91,7 +82,7 @@ pub struct Surface {
 impl Surface {
     #[must_use]
     pub fn new(capacity: usize, tuning: Tuning, palette: Palette) -> Self {
-        let slots = capacity + TAB_SLOTS + TRAIL_SLOTS;
+        let slots = capacity + TAB_SLOTS;
         Self {
             tuning,
             capacity,
@@ -105,8 +96,6 @@ impl Surface {
             drawn: Vec::with_capacity(capacity),
             placard: None,
             page: PageView::default(),
-            trail: Vec::new(),
-            trail_at: 0,
             pinned: 0,
             per_page: capacity,
         }
@@ -128,11 +117,10 @@ impl Surface {
         self.capacity
     }
 
-    /// Every slot it may ever draw: the level's, the page tabs' and the
-    /// ancestor beads'.
+    /// Every slot it may ever draw: the level's and the page tabs'.
     #[must_use]
     pub const fn slots(&self) -> usize {
-        self.capacity + TAB_SLOTS + TRAIL_SLOTS
+        self.capacity + TAB_SLOTS
     }
 
     /// How far the centre has arrived, which a readout there comes in by.
@@ -146,7 +134,7 @@ impl Surface {
     }
 
     /// The collection index each of the level's slots stands for. Parallel to
-    /// the leading [`Surface::views`]; the tabs and beads after them have none.
+    /// the leading [`Surface::views`]; the tabs after them have none.
     #[must_use]
     pub fn drawn(&self) -> &[usize] {
         &self.drawn
@@ -155,37 +143,6 @@ impl Surface {
     #[must_use]
     pub fn spec_index(&self, slot: usize) -> Option<usize> {
         self.drawn.get(slot).copied()
-    }
-
-    /// The ancestor beads drawn, root first, which are the last of the
-    /// [`Surface::views`] from [`Surface::trail_at`] on.
-    #[must_use]
-    pub fn trail(&self) -> &[MoteSpec] {
-        &self.trail
-    }
-
-    /// The draw slot of the first ancestor bead.
-    #[must_use]
-    pub const fn trail_at(&self) -> usize {
-        self.trail_at
-    }
-
-    /// Sets the ancestor beads to draw from the next [`Surface::update`]: one
-    /// [`Role::Ancestor`] spec for each level to climb to, root first. Empty
-    /// draws none. More than [`TRAIL_SLOTS`] keeps the nearest levels, the
-    /// ones at the end, since the surface has no more slots to draw them in.
-    pub fn set_trail(&mut self, mut trail: Vec<MoteSpec>) {
-        trail.drain(..trail.len().saturating_sub(TRAIL_SLOTS));
-        self.trail = trail;
-    }
-
-    /// The level `slot` collapses to if it is an ancestor bead.
-    #[must_use]
-    pub fn ancestor(&self, slot: usize) -> Option<usize> {
-        match self.views.get(slot)?.role {
-            Role::Ancestor { level } => Some(level),
-            _ => None,
-        }
     }
 
     #[must_use]
@@ -320,9 +277,7 @@ impl Surface {
         self.repage(specs.len(), layout, pinned);
         self.collect(specs);
         let level = self.drawn.len();
-        let mut extras = self.tabs(&layout);
-        self.place_trail(level + extras.len());
-        extras.extend(self.beads(&layout));
+        let extras = self.tabs(&layout);
 
         // A mote in hand holds attention; nothing else is a drop target.
         let dragging = self.grasp.seized().is_some_and(|held| held.takeable);
@@ -423,7 +378,7 @@ impl Surface {
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                style: self.slot_style(spec, heat, crowd),
+                style: self.style_at(spec.role, heat, spec.active, spec.tint, crowd),
                 role: spec.role,
                 attention,
                 heat,
@@ -472,44 +427,7 @@ impl Surface {
             .collect()
     }
 
-    /// Notes that the beads now start at draw slot `at`. A tab appearing or
-    /// going moves every bead one slot, and the heat, lean and attention a
-    /// slot holds belong to the bead that stood in it, not the neighbour that
-    /// now does.
-    fn place_trail(&mut self, at: usize) {
-        if at != self.trail_at && !self.trail.is_empty() {
-            self.forget_slots();
-        }
-        self.trail_at = at;
-    }
-
-    /// The ancestor beads to draw this frame, each with where it sits in the
-    /// row below the layout.
-    fn beads(&self, layout: &Layout) -> Vec<(MoteSpec, Vec2)> {
-        let count = self.trail.len();
-        self.trail
-            .iter()
-            .enumerate()
-            .map(|(index, spec)| (spec.clone(), layout.bead(index, count, &self.tuning)))
-            .collect()
-    }
-
-    /// How far up the row `level` stands, the nearest bead counting 1 so that
-    /// even it reads a little further off than a mote of the open level.
-    fn levels_above(&self, level: usize) -> usize {
-        let nearest = self
-            .trail
-            .iter()
-            .filter_map(|spec| match spec.role {
-                Role::Ancestor { level } => Some(level),
-                _ => None,
-            })
-            .max()
-            .unwrap_or(level);
-        nearest.saturating_sub(level) + 1
-    }
-
-    /// The slot under `local`: a tab or bead if the pointer is over one, else
+    /// The slot under `local`: a tab if the pointer is over one, else
     /// whichever of the level's `level` slots the layout resolves.
     fn aimed_slot(
         &self,
@@ -526,8 +444,7 @@ impl Surface {
         })
     }
 
-    /// The tab or bead, as a draw slot after the `level` ones, the pointer is
-    /// over. Beads are tab-sized and share the tab's reach.
+    /// The tab, as a draw slot after the `level` ones, the pointer is over.
     fn extra_at(&self, local: Vec2, extras: &[(MoteSpec, Vec2)], level: usize) -> Option<usize> {
         extras
             .iter()
@@ -596,7 +513,6 @@ impl Surface {
                     &Placard::notice(message),
                     view.position,
                     view.radius,
-                    1.0,
                     &self.tuning,
                 ))
             })
@@ -608,46 +524,16 @@ impl Surface {
             return None;
         }
         let slot = self.tracker.current()?;
-        let spec = self.spec_at(slot, specs)?;
+        let spec = specs.get(self.spec_index(slot)?)?;
         let view = self.views.get(slot)?;
-        let opacity = placard::opacity(self.tracker.dwell(), &self.tuning);
-        (opacity > 0.0).then(|| {
-            let placard = Placard::describing(spec);
-            placard::view(&placard, view.position, view.radius, opacity, &self.tuning)
-        })
-    }
-
-    /// What the drawn `slot` stands for: a mote of the level, or an ancestor
-    /// bead. A page tab stands for nothing.
-    fn spec_at<'a>(&'a self, slot: usize, specs: &'a [MoteSpec]) -> Option<&'a MoteSpec> {
-        let bead = || {
-            self.ancestor(slot)
-                .and_then(|_| self.trail.get(slot.checked_sub(self.trail_at)?))
-        };
-        self.spec_index(slot)
-            .map_or_else(bead, |index| specs.get(index))
-    }
-
-    /// How `spec` is drawn at `heat`. An ancestor sinks with its distance up
-    /// the row, the shell and the glyph on it sharing this colour so both go
-    /// dimmer together, and comes back to full brightness as attention
-    /// arrives, so the one being pointed at reads clearly.
-    fn slot_style(&self, spec: &MoteSpec, heat: f32, crowd: f32) -> Style {
-        let mut style = self.style_at(spec.role, heat, spec.active, spec.tint, crowd);
-        if let Role::Ancestor { level } = spec.role {
-            let sunk = self.palette.receded(style.color, self.levels_above(level));
-            let arrived = heat / Attention::Attended.heat();
-            // Landing on the endpoints exactly, as `style_at` does, so a
-            // settled bead is not rewritten every frame.
-            style.color = if arrived <= 0.0 {
-                sunk
-            } else if arrived >= 1.0 {
-                style.color
-            } else {
-                palette::blend(sunk, style.color, arrived)
-            };
+        // The way back and the page tabs are read by their chevrons alone.
+        if matches!(spec.role, Role::Parent { .. } | Role::Page { .. }) {
+            return None;
         }
-        style
+        placard::earned(self.tracker.dwell(), &self.tuning).then(|| {
+            let placard = Placard::describing(spec);
+            placard::view(&placard, view.position, view.radius, &self.tuning)
+        })
     }
 
     /// A role's style sampled at `heat`, by blending the two attention states
@@ -707,8 +593,11 @@ impl Surface {
         let color = match (role, attention, tint) {
             (_, Attention::Engaged, Some(tint)) => self.palette.tinted(tint, attention),
             (_, Attention::Engaged, _) => self.palette.tint(attention),
-            // An off toggle is a clear outline: it wears the neutral family,
-            // not its hue, so the fill is the one thing that says it is on.
+            // An off toggle keeps its hue but sits back from it, so the tools
+            // of a ring stay told apart while the fill says which are on.
+            (Role::Toggle, _, Some(tint)) if !active => {
+                self.palette.tinted(self.palette.muted(tint), attention)
+            }
             (Role::Toggle, ..) if !active => self.palette.dim,
             (_, _, Some(tint)) => self.palette.tinted(tint, attention),
             (Role::Parent { .. } | Role::Page { .. }, ..) if !attention.is_active() => {
@@ -720,17 +609,16 @@ impl Surface {
         Style {
             color,
             alpha: match role {
-                Role::Group { .. } => self.palette.glass(attention),
-                // A toggle's fill *is* the signal: off is a clear outline,
-                // on is the mote wearing its hue.
+                // A toggle's fill *is* the signal: on is the mote wearing its
+                // hue, off is the same glass as everything else.
                 Role::Toggle if active => self.palette.toggle_active_alpha,
-                Role::Toggle => self.palette.toggle_idle_alpha,
-                Role::Action
+                Role::Toggle
+                | Role::Group { .. }
+                | Role::Action
                 | Role::Item { .. }
                 | Role::Cast
                 | Role::Parent { .. }
-                | Role::Page { .. }
-                | Role::Ancestor { .. } => self.palette.solid_alpha,
+                | Role::Page { .. } => self.palette.glass(attention),
             },
             emissive: self.palette.emissive_lit(attention, active),
         }
@@ -855,7 +743,7 @@ mod tests {
     /// Holds attention past the placard delay.
     fn dwell(surface: &mut Surface, specs: &[MoteSpec], aim: Aim) {
         let frame = Frame {
-            delta: Tuning::DEFAULT.placard_delay + Tuning::DEFAULT.placard_fade,
+            delta: Tuning::DEFAULT.placard_delay + 0.05,
             ..frame(Some(aim))
         };
         ring_update(surface, specs, Centre::Open, &frame);
@@ -926,7 +814,7 @@ mod tests {
     }
 
     #[test]
-    fn a_branch_reads_bigger_and_more_transparent_than_a_leaf() {
+    fn a_branch_reads_bigger_than_a_leaf() {
         let mut surface = surface();
         ring_update(
             &mut surface,
@@ -936,7 +824,6 @@ mod tests {
         );
         let (branch, leaf) = (surface.views()[0], surface.views()[1]);
         assert!(branch.radius > leaf.radius, "containers read as containers");
-        assert!(branch.style.alpha < leaf.style.alpha);
     }
 
     #[test]
@@ -1159,12 +1046,11 @@ mod tests {
 
         dwell(&mut surface, &specs, aim);
         let placard = surface.placard().expect("attended long enough");
-        assert!(placard.opacity > 0.0);
         assert_eq!(placard.lines[0].text, "Citrus", "titled with its own name");
     }
 
     #[test]
-    fn a_mote_told_nothing_still_says_what_it_is() {
+    fn a_mote_told_nothing_is_just_its_name() {
         let mut surface = surface();
         let specs = [spec(Role::Action)];
         dwell(&mut surface, &specs, aim_at(Vec2::new(0.0, R)));
@@ -1175,7 +1061,7 @@ mod tests {
             .iter()
             .map(|line| line.text.as_str())
             .collect::<Vec<_>>();
-        assert_eq!(texts, vec!["Citrus", "action"]);
+        assert_eq!(texts, vec!["Citrus"]);
     }
 
     #[test]
@@ -1204,6 +1090,32 @@ mod tests {
 
         ring_update(&mut surface, &specs, Centre::Open, &frame(None));
         assert!(surface.placard().is_none());
+    }
+
+    #[test]
+    fn the_way_back_and_the_page_tabs_earn_no_placard() {
+        for role in [
+            Role::Parent { depth: 1 },
+            Role::Page {
+                forward:   true,
+                remaining: 2,
+            },
+        ] {
+            let mut surface = surface();
+            let described = MoteSpec {
+                description: Some(SmolStr::new_static("Back to Home.")),
+                ..spec(role)
+            };
+            let specs = [described, spec(Role::Action)];
+            let aim = aim_at(Vec2::new(0.0, R));
+            dwell(&mut surface, &specs, aim);
+
+            assert_eq!(surface.attended(), Some(0), "{role:?} is attended");
+            assert!(
+                surface.placard().is_none(),
+                "{role:?} is read by its chevron"
+            );
+        }
     }
 
     #[test]
@@ -1554,8 +1466,8 @@ mod tests {
         assert_eq!(settled.radius, still.radius);
     }
 
-    /// A toggle's fill is its signal: off is a clear, colorless outline, on is
-    /// the mote wearing its hue. Attention never trades the one for the other.
+    /// A toggle's fill is its signal: off is a clear outline, on is the mote
+    /// wearing its hue. Attention never trades the one for the other.
     #[test]
     fn a_toggle_s_fill_is_its_signal() {
         let surface = surface();
@@ -1570,12 +1482,70 @@ mod tests {
             off.alpha,
             on.alpha
         );
-        assert_eq!(off.color, palette.dim, "an off toggle is colorless");
         assert_eq!(
             on.color,
             palette.tinted(hue, Attention::Attended),
             "an on toggle wears its hue"
         );
+    }
+
+    #[test]
+    fn an_off_toggle_keeps_its_hue_but_sits_back_from_it() {
+        let surface = surface();
+        let palette = Palette::DEFAULT;
+        let hue = crate::palette::rgb(0.9, 0.2, 0.3);
+        for attention in [Attention::Idle, Attention::Attended] {
+            let off = surface
+                .style(Role::Toggle, attention, false, Some(hue))
+                .color;
+            let on = surface
+                .style(Role::Toggle, attention, true, Some(hue))
+                .color;
+
+            assert_ne!(off, palette.dim, "not flat grey");
+            assert!(off.r > off.g && off.r > off.b, "still that hue: {off:?}");
+            if attention == Attention::Idle {
+                assert!(lightness(off) < lightness(on), "quieter than lit");
+            }
+            assert!(
+                chroma(off) < chroma(on),
+                "{attention:?}: and less saturated than lit"
+            );
+        }
+    }
+
+    #[test]
+    fn an_off_toggle_with_no_hue_stays_neutral() {
+        let off = surface().style(Role::Toggle, Attention::Idle, false, None);
+        assert_eq!(off.color, Palette::DEFAULT.dim);
+    }
+
+    #[test]
+    fn every_role_is_the_same_glass() {
+        let surface = surface();
+        let group = Role::Group {
+            children: 2,
+            groups:   0,
+            arrange:  mote::Arrange::Orbit,
+        };
+        for attention in [Attention::Idle, Attention::Attended] {
+            let alpha = surface.style(group, attention, false, None).alpha;
+            for role in [
+                Role::Action,
+                Role::Cast,
+                Role::Item { unique: true },
+                Role::Parent { depth: 1 },
+                Role::Page {
+                    forward:   true,
+                    remaining: 1,
+                },
+            ] {
+                assert!(
+                    (surface.style(role, attention, false, None).alpha - alpha).abs() < 1.0e-6,
+                    "{role:?} at {attention:?} is not the glass a group is"
+                );
+            }
+        }
     }
 
     #[test]
@@ -1832,7 +1802,6 @@ mod tests {
         let notice = surface.placard().expect("a notice needs no attention");
         assert_eq!(notice.lines[0].text, "No home.");
         assert_eq!(notice.lines[0].emphasis, crate::placard::Emphasis::Warning);
-        assert!((notice.opacity - 1.0).abs() < 1.0e-6);
         assert!(
             (notice.position.x - surface.views()[1].position.x).abs() < 1.0e-5,
             "on the body of the mote that posted it"
@@ -1940,229 +1909,12 @@ mod tests {
         );
     }
 
-    fn beads(levels: usize) -> Vec<MoteSpec> {
-        (0..levels)
-            .map(|level| MoteSpec {
-                role: Role::Ancestor { level },
-                ..named(&format!("Up to L{level}"))
-            })
-            .collect()
-    }
-
     fn lightness(color: Color) -> f32 {
         (color.r + color.g + color.b) / 3.0
     }
 
-    /// A paged root of nine under a three-slot orbit with `levels` beads
-    /// below it, settled, and the layout that drew it.
-    fn trailed(levels: usize) -> (Surface, Vec<MoteSpec>, Layout) {
-        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
-        let specs = (0..9).map(|i| named(&format!("m{i}"))).collect::<Vec<_>>();
-        surface.set_trail(beads(levels));
-        for _ in 0..60 {
-            ring_update(&mut surface, &specs, Centre::Open, &frame(None));
-        }
-        let (layout, _) = Layout::orbit(9, Centre::Open, 3, R);
-        (surface, specs, layout)
-    }
-
-    #[test]
-    fn a_surface_with_no_trail_draws_no_beads() {
-        let (surface, ..) = trailed(0);
-        assert_eq!(surface.trail(), []);
-        assert_eq!(surface.views().len(), surface.trail_at());
-        assert!(
-            surface
-                .views()
-                .iter()
-                .all(|view| !matches!(view.role, Role::Ancestor { .. }))
-        );
-    }
-
-    #[test]
-    fn beads_stand_below_the_layout_root_first_after_the_level_and_its_tab() {
-        let (surface, _, layout) = trailed(3);
-        assert_eq!(surface.drawn().len(), 3);
-        assert_eq!(surface.trail_at(), 4, "three slots, then the forward tab");
-        assert_eq!(surface.views().len(), 7);
-
-        let beads = &surface.views()[surface.trail_at()..];
-        let levels = beads.iter().map(|view| view.role).collect::<Vec<_>>();
-        assert_eq!(
-            levels,
-            vec![
-                Role::Ancestor { level: 0 },
-                Role::Ancestor { level: 1 },
-                Role::Ancestor { level: 2 }
-            ]
-        );
-        for (index, bead) in beads.iter().enumerate() {
-            let at = layout.bead(index, 3, &Tuning::DEFAULT);
-            assert!((bead.position.truncate() - at).length() < 1.0e-5, "{index}");
-            assert!(
-                bead.radius < surface.views()[0].radius,
-                "tab-sized, smaller than a mote"
-            );
-        }
-        assert!(
-            beads
-                .windows(2)
-                .all(|pair| pair[0].position.x < pair[1].position.x)
-        );
-    }
-
-    #[test]
-    fn a_bead_stands_for_no_mote_of_the_level() {
-        let (surface, ..) = trailed(2);
-        let first = surface.trail_at();
-        for slot in first..first + 2 {
-            assert_eq!(surface.spec_index(slot), None, "never a consumer mote");
-            assert!(surface.ancestor(slot).is_some());
-            assert!(!surface.views()[slot].role.is_takeable());
-        }
-        assert_eq!(surface.ancestor(first), Some(0));
-        assert_eq!(surface.ancestor(first + 1), Some(1));
-        assert_eq!(
-            surface.ancestor(0),
-            None,
-            "a mote of the level is not a bead"
-        );
-        assert_eq!(surface.ancestor(3), None, "nor is a page tab");
-        assert_eq!(surface.ancestor(99), None);
-    }
-
-    #[test]
-    fn a_slot_a_mote_used_is_a_bead_once_the_level_shrinks() {
-        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
-        let many = [named("a"), named("b"), named("c")];
-        ring_update(&mut surface, &many, Centre::Open, &frame(None));
-        assert_eq!(surface.views().len(), 3);
-
-        surface.set_trail(beads(1));
-        ring_update(&mut surface, &[named("a")], Centre::Open, &frame(None));
-        assert_eq!(surface.trail_at(), 1);
-        assert_eq!(surface.ancestor(1), Some(0), "the slot c stood in");
-        assert_eq!(surface.spec_index(1), None);
-        assert_eq!(surface.drawn(), vec![0]);
-    }
-
-    #[test]
-    fn dwelling_on_a_bead_says_where_it_goes() {
-        let (mut surface, specs, layout) = trailed(2);
-        let aim = aim_at(layout.bead(1, 2, &Tuning::DEFAULT));
-        dwell(&mut surface, &specs, aim);
-
-        assert_eq!(surface.attended(), Some(surface.trail_at() + 1));
-        let placard = surface.placard().expect("a placard for the bead");
-        assert_eq!(placard.lines[0].text, "Up to L1");
-    }
-
-    #[test]
-    fn a_bead_taps_even_under_a_grip() {
-        let (mut surface, specs, layout) = trailed(3);
-        let aim = aim_at(layout.bead(0, 3, &Tuning::DEFAULT));
-        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        let slot = surface.attended().expect("the bead holds attention");
-        assert_eq!(surface.ancestor(slot), Some(0));
-
-        surface.press(aim.world, true);
-        ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        assert_eq!(surface.displaced(), None, "a bead cannot be taken");
-        assert_eq!(surface.release(), Some(Outcome::Tap(slot)));
-    }
-
-    #[test]
-    fn collapsing_through_a_bead_starts_the_new_level_clean() {
-        let (mut surface, specs, layout) = trailed(2);
-        surface.turn_by(1);
-        let aim = aim_at(layout.bead(1, 2, &Tuning::DEFAULT));
-        for _ in 0..30 {
-            ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        }
-        let slot = surface.attended().expect("attended");
-        assert_eq!(surface.ancestor(slot), Some(1));
-        assert!(surface.views()[slot].heat > 0.0);
-        assert_eq!(surface.page().index, 1);
-
-        surface.relevel();
-        surface.set_trail(Vec::new());
-        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
-        assert_eq!(surface.page().index, 0);
-        assert_eq!(surface.attended(), None);
-        assert!(surface.views().iter().all(|view| view.heat == 0.0));
-        assert!(
-            surface
-                .views()
-                .iter()
-                .all(|view| !matches!(view.role, Role::Ancestor { .. }))
-        );
-    }
-
-    #[test]
-    fn the_further_up_a_bead_the_dimmer_it_is() {
-        let (surface, ..) = trailed(4);
-        let colours = surface.views()[surface.trail_at()..]
-            .iter()
-            .map(|view| lightness(view.style.color))
-            .collect::<Vec<_>>();
-        assert_eq!(colours.len(), 4);
-        assert!(
-            colours.windows(2).all(|pair| pair[0] < pair[1]),
-            "root dimmest, nearest brightest: {colours:?}"
-        );
-        let mote = lightness(surface.views()[0].style.color);
-        assert!(
-            colours[3] < mote,
-            "even the nearest sits back from the level"
-        );
-    }
-
-    #[test]
-    fn a_trail_longer_than_the_slots_keeps_the_nearest_levels() {
-        let mut surface = Surface::new(3, Tuning::DEFAULT, Palette::DEFAULT);
-        surface.set_trail(beads(TRAIL_SLOTS + 3));
-        assert_eq!(surface.trail().len(), TRAIL_SLOTS);
-        assert_eq!(surface.trail()[0].role, Role::Ancestor { level: 3 });
-
-        let specs = [named("a")];
-        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
-        assert_eq!(surface.views().len(), 1 + TRAIL_SLOTS);
-        assert!(surface.views().len() <= surface.slots());
-    }
-
-    #[test]
-    fn beads_shifting_a_slot_leave_no_warmth_behind() {
-        let (mut surface, specs, layout) = trailed(2);
-        let aim = aim_at(layout.bead(1, 2, &Tuning::DEFAULT));
-        for _ in 0..30 {
-            ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        }
-        assert!(surface.views()[surface.trail_at() + 1].heat > 0.0);
-
-        // The level now fits one page, so its forward tab goes and every
-        // bead moves down a slot.
-        let fewer = &specs[..3];
-        ring_update(&mut surface, fewer, Centre::Open, &frame(None));
-        assert_eq!(surface.trail_at(), 3);
-        assert_eq!(surface.attended(), None);
-        assert!(surface.views().iter().all(|view| view.heat == 0.0));
-    }
-
-    #[test]
-    fn the_bead_being_pointed_at_is_not_dimmed() {
-        let (mut surface, specs, layout) = trailed(2);
-        let aim = aim_at(layout.bead(0, 2, &Tuning::DEFAULT));
-        dwell(&mut surface, &specs, aim);
-        for _ in 0..30 {
-            ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        }
-        let first = surface.trail_at();
-        assert_eq!(surface.attended(), Some(first));
-        let (root, near) = (surface.views()[first], surface.views()[first + 1]);
-        assert!(
-            lightness(root.style.color) > lightness(near.style.color),
-            "the attended root outshines the idle bead nearer the level"
-        );
+    fn chroma(color: Color) -> f32 {
+        color.r.max(color.g).max(color.b) - color.r.min(color.g).min(color.b)
     }
 
     #[test]

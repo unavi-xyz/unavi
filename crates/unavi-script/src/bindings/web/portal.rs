@@ -124,6 +124,13 @@ impl Runtime {
         })
     }
 
+    #[wasm_bindgen(js_name = "currentSpace")]
+    pub fn current_space(&self) -> Result<JsValue, JsValue> {
+        portal::current_space(&self.host.borrow())
+            .map(|id| id.map_or(JsValue::UNDEFINED, convert::wit_doc_id))
+            .map_err(convert::raise)
+    }
+
     pub fn intents(&self) -> Result<IntentSubscriptionHandle, JsValue> {
         let rep = portal::intents(&mut self.host.borrow_mut()).map_err(convert::raise)?;
         Ok(IntentSubscriptionHandle {

@@ -26,20 +26,11 @@ pub struct Tuning {
     pub tab_gap:      f32,
     /// How near the pointer must come to a page tab to attend it.
     pub tab_hit:      f32,
-    /// How far below a layout's bottom extent the row of ancestor beads stands,
-    /// measured to the beads' centres. Clears the biggest body the bottom slot
-    /// can grow to, its lean, and its name.
-    pub trail_gap:    f32,
-    /// Centre-to-centre spacing of the ancestor beads.
-    pub trail_pitch:  f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
     /// Seconds of unbroken attention before a placard appears.
     pub placard_delay:    f32,
-    /// Seconds the placard takes to reach full opacity once the delay has
-    /// passed.
-    pub placard_fade:     f32,
     /// Clearance between the attended mote's surface and the placard's lower
     /// edge.
     pub placard_gap:      f32,
@@ -150,17 +141,14 @@ impl Tuning {
         grid_rows:    3,
         tab_gap:      0.12,
         tab_hit:      0.035,
-        trail_gap:    0.135,
-        trail_pitch:  0.07,
 
         attend_scale:     1.18,
         seize_scale:      1.30,
         placard_delay:    0.25,
-        placard_fade:     0.12,
         placard_gap:      0.018,
         placard_lift:     0.012,
         placard_title:    0.016,
-        placard_row:      0.011,
+        placard_row:      0.0125,
         placard_line:     1.5,
         placard_pad:      0.013,
         placard_width:    0.24,
@@ -185,7 +173,7 @@ impl Tuning {
         heat_settle: 0.004,
 
         icon_spin:     0.15,
-        icon_fill:     0.5,
+        icon_fill:     0.62,
         flip_duration: 0.3,
 
         readout_radius: 0.0512,

@@ -7,6 +7,11 @@ use std::str::FromStr;
 
 use blake3::Hash;
 use wired_guest::{
+    beacon::{
+        PLANTED_KEY,
+        now_ms,
+        planted_bytes,
+    },
     color::generate_color,
     math::{
         Transform,
@@ -29,7 +34,10 @@ use crate::{
         },
     },
     wired::{
-        portal::portals::travel,
+        portal::portals::{
+            current_space,
+            travel,
+        },
         scene::{
             document::{
                 Anchor,
@@ -74,9 +82,44 @@ struct Space {
     ns:     (u64, u64, u64, u64),
     /// The same, as the registry wrote it, which is what a beacon is named.
     hex:    String,
+    /// Who is in it, as the description reads when you are not.
+    people: String,
+    /// Whether the user is in it now.
+    here:   bool,
     group:  Mote,
     travel: Mote,
     beacon: Mote,
+}
+
+impl Space {
+    /// Sets whether the user is in this space, rewriting what that changes.
+    ///
+    /// Travel leaves the level while you are here: a ring that fills to take
+    /// you where you already stand would only be a trap, and the one thing a
+    /// space you are in offers is its beacon. It comes back ahead of the
+    /// beacon so the slots keep their order.
+    fn set_here(&mut self, here: bool) {
+        if self.here == here {
+            return;
+        }
+        self.here = here;
+        let text = if here { HERE } else { &self.people };
+        if let Err(err) = self.group.set_description(text) {
+            eprintln!("halo: space description: {err:?}");
+        }
+        // The pin says it at a glance, before anyone reads a placard.
+        let mark = if here { &glyph::HERE } else { &glyph::BEACON };
+        if let Err(err) = self.group.set_glyph(Some(&glyph::from_rows(mark))) {
+            eprintln!("halo: space glyph: {err:?}");
+        }
+        if here {
+            self.group.remove_child(&self.travel);
+        } else {
+            self.group.remove_child(&self.beacon);
+            let _ = self.group.add_child(&self.travel);
+            let _ = self.group.add_child(&self.beacon);
+        }
+    }
 }
 
 /// Lists the spaces currently occupied per the registries this app follows.
@@ -85,6 +128,8 @@ pub struct Nav {
     lists:   Vec<PendingEntries>,
     spaces:  Vec<Space>,
     beacons: Vec<Document>,
+    /// The space the user was last seen in.
+    here:    Option<(u64, u64, u64, u64)>,
 }
 
 impl Nav {
@@ -114,6 +159,8 @@ impl Nav {
     /// is the same every frame however the listings interleave — slot order is
     /// position, and position is muscle memory.
     pub fn fixed_update(&mut self, parent: &Mote) {
+        self.follow_user();
+
         let mut found = Vec::new();
         for index in (0..self.lists.len()).rev() {
             let Some(result) = self.lists[index].poll() else {
@@ -134,11 +181,25 @@ impl Nav {
             if self.spaces.iter().any(|space| space.hex == listing.hex) {
                 continue;
             }
-            let Some(space) = build(&listing) else {
+            let Some(mut space) = build(&listing) else {
                 continue;
             };
+            space.set_here(self.here == Some(space.ns));
             parent.add_child(&space.group);
             self.spaces.push(space);
+        }
+    }
+
+    /// Marks the space the user is in. A user between spaces, or a host that
+    /// will not say, is in none.
+    fn follow_user(&mut self) {
+        let here = current_space().ok().flatten();
+        if here == self.here {
+            return;
+        }
+        self.here = here;
+        for space in &mut self.spaces {
+            space.set_here(here == Some(space.ns));
         }
     }
 
@@ -223,7 +284,8 @@ fn build(listing: &Listing) -> Option<Space> {
     let color = generate_color(Hash::from_str(&listing.hex).ok()?);
 
     let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
-    group.set_description(&describe(listing)).ok()?;
+    let people = people(listing);
+    group.set_description(&people).ok()?;
     group.set_tint(Some(color));
     // The space wears its beacon's mark: in the grid it reads as the marker
     // it is, and opening it still shows the travel and beacon motes beneath.
@@ -249,6 +311,8 @@ fn build(listing: &Listing) -> Option<Space> {
     Some(Space {
         ns: listing.ns,
         hex: listing.hex.clone(),
+        people,
+        here: false,
         group,
         travel,
         beacon,
@@ -273,23 +337,22 @@ fn label(listing: &Listing) -> Option<String> {
     Some(label)
 }
 
-/// Occupancy is a real fact about a real place, so a full space reads as full
-/// and the halo never offers to make another copy of one.
-///
-/// The full title leads, since the label may have shortened it.
-fn describe(listing: &Listing) -> String {
+/// What a space you are in says instead of its occupancy.
+const HERE: &str = "You are here";
+
+/// Who is in a space, and how long it has been quiet once that is worth
+/// saying. Only occupancy: the title is already the label, and anything about
+/// being "here" is for the one space you are in.
+fn people(listing: &Listing) -> String {
     let people = match listing.occupants {
-        1 => "1 person here".to_owned(),
-        count => format!("{count} people here"),
+        0 => "Empty".to_owned(),
+        1 => "1 person".to_owned(),
+        count => format!("{count} people"),
     };
-    let people = if listing.idle_secs < 60 {
+    if listing.idle_secs < 60 {
         people
     } else {
-        format!("{people}, quiet for {} min", listing.idle_secs / 60)
-    };
-    match listing.title.trim() {
-        "" => people,
-        title => format!("{title} — {people}"),
+        format!("{people}, quiet {} min", listing.idle_secs / 60)
     }
 }
 
@@ -321,6 +384,10 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
     beacon
         .local()
         .set(prim, Property::Name(hex.to_owned()))
+        .set(
+            prim,
+            Property::Custom((PLANTED_KEY.to_owned(), planted_bytes(now_ms()).to_vec())),
+        )
         .set(
             prim,
             Property::Transform(to_world * Transform::from_translation(at)),
@@ -400,12 +467,32 @@ mod tests {
     }
 
     #[test]
-    fn the_description_keeps_the_full_title_beside_occupancy() {
-        let title = "c".repeat(40);
+    fn a_description_is_occupancy_alone() {
+        assert_eq!(people(&listing("A long title")), "3 people");
         assert_eq!(
-            describe(&listing(&title)),
-            format!("{title} — 3 people here")
+            people(&Listing {
+                occupants: 1,
+                ..listing("")
+            }),
+            "1 person"
         );
-        assert_eq!(describe(&listing("")), "3 people here");
+        assert_eq!(
+            people(&Listing {
+                occupants: 0,
+                ..listing("")
+            }),
+            "Empty"
+        );
+    }
+
+    #[test]
+    fn quiet_is_said_only_once_it_is_a_minute_or_more() {
+        let at = |idle_secs| Listing {
+            idle_secs,
+            ..listing("")
+        };
+        assert_eq!(people(&at(59)), "3 people");
+        assert_eq!(people(&at(60)), "3 people, quiet 1 min");
+        assert_eq!(people(&at(310)), "3 people, quiet 5 min");
     }
 }

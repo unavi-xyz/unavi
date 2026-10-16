@@ -28,6 +28,7 @@ mod portal;
 mod scene;
 mod shading;
 mod storage;
+mod time;
 
 pub mod generated {
     wasmtime::component::bindgen!({

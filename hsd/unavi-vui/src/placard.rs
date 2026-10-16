@@ -8,17 +8,14 @@ use wired_guest::math::{
 };
 
 use crate::{
-    mote::{
-        MoteSpec,
-        Role,
-    },
+    mote::MoteSpec,
     tuning::Tuning,
 };
 
 /// Lines a placard may draw, title included.
 pub const MAX_LINES: usize = 8;
 
-/// Mounted text: what this mote is and how to use it.
+/// Mounted text: a title and what there is to say under it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Placard {
     pub title:   SmolStr,
@@ -54,34 +51,14 @@ impl Placard {
         self
     }
 
-    /// The standard placard for a mote: its name, its description, and what
-    /// kind of thing it is.
+    /// The standard placard for a mote: its name and its description.
     #[must_use]
     pub fn describing(spec: &MoteSpec) -> Self {
-        let mut placard = Self::new(spec.label.clone());
-        if let Some(description) = &spec.description {
-            placard = placard.line(description.clone());
+        let placard = Self::new(spec.label.clone());
+        match &spec.description {
+            Some(description) => placard.line(description.clone()),
+            None => placard,
         }
-        placard.line(kind(spec.role))
-    }
-}
-
-/// What a mote is, in one word. The gestures are the same everywhere and are
-/// learned once; what changes between motes is what they are, which is the
-/// thing a placard can say and a body cannot.
-const fn kind(role: Role) -> &'static str {
-    match role {
-        // How it opens is the group's own setting; a grid and an orbit are the
-        // same kind of thing and read as one.
-        Role::Group { .. } => "group",
-        Role::Parent { .. } => "back",
-        Role::Page { .. } => "page",
-        Role::Ancestor { .. } => "level",
-        Role::Cast => "cast",
-        Role::Item { unique: true } => "item",
-        Role::Item { unique: false } => "source",
-        Role::Action => "action",
-        Role::Toggle => "toggle",
     }
 }
 
@@ -92,8 +69,6 @@ pub enum Emphasis {
     /// A notice's message, which wears a colour of its own.
     Warning,
     Body,
-    /// The operating hint.
-    Dim,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,21 +85,16 @@ pub struct PlacardLine {
 pub struct PlacardView {
     /// Orbit-local, at the placard's top centre.
     pub position: Vec3,
-    /// 0 draws nothing.
-    pub opacity:  f32,
     /// Backing panel extents, sized to the laid-out lines.
     pub size:     Vec2,
     pub lines:    ArrayVec<PlacardLine, MAX_LINES>,
 }
 
-/// Zero until the dwell delay has passed, then ramps in over
-/// [`Tuning::placard_fade`].
+/// Whether attention has been held long enough to earn a placard. How it
+/// arrives is the renderer's: it eases in once this is true.
 #[must_use]
-pub fn opacity(dwell: f32, tuning: &Tuning) -> f32 {
-    if tuning.placard_fade <= f32::EPSILON {
-        return f32::from(u8::from(dwell >= tuning.placard_delay));
-    }
-    ((dwell - tuning.placard_delay) / tuning.placard_fade).clamp(0.0, 1.0)
+pub fn earned(dwell: f32, tuning: &Tuning) -> bool {
+    dwell >= tuning.placard_delay
 }
 
 /// Mounts a placard clear of the body at `mote`.
@@ -200,13 +170,7 @@ fn split_at_chars(text: &str, count: usize) -> (&str, &str) {
 /// Lays a placard out, top-centre origin, y descending. Wrapping happens
 /// here, not in the renderer.
 #[must_use]
-pub fn view(
-    placard: &Placard,
-    mote: Vec3,
-    radius: f32,
-    opacity: f32,
-    tuning: &Tuning,
-) -> PlacardView {
+pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> PlacardView {
     let mut lines = ArrayVec::new();
     let inner = tuning.placard_pad.mul_add(-2.0, tuning.placard_width);
     let mut y = -tuning.placard_pad;
@@ -234,8 +198,7 @@ pub fn view(
     }
 
     let step = tuning.placard_row * tuning.placard_line;
-    let last = placard.body.len().saturating_sub(1);
-    for (index, paragraph) in placard.body.iter().enumerate() {
+    for paragraph in &placard.body {
         let mut wrapped = ArrayVec::new();
         wrap(
             paragraph,
@@ -248,11 +211,7 @@ pub fn view(
                 text,
                 offset: Vec2::new(-inner / 2.0, y),
                 size: tuning.placard_row,
-                emphasis: if index == last {
-                    Emphasis::Dim
-                } else {
-                    Emphasis::Body
-                },
+                emphasis: Emphasis::Body,
             });
         }
     }
@@ -260,7 +219,6 @@ pub fn view(
     let size = Vec2::new(tuning.placard_width, -y + tuning.placard_pad);
     PlacardView {
         position: mount(mote, radius, size.y, tuning),
-        opacity,
         size,
         lines,
     }
@@ -269,7 +227,10 @@ pub fn view(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mote::Arrange;
+    use crate::mote::{
+        Arrange,
+        Role,
+    };
 
     fn tuning() -> Tuning {
         Tuning::DEFAULT
@@ -299,7 +260,7 @@ mod tests {
     }
 
     fn view_of(placard: &Placard) -> PlacardView {
-        view(placard, Vec3::ZERO, 0.03, 1.0, &tuning())
+        view(placard, Vec3::ZERO, 0.03, &tuning())
     }
 
     fn texts(view: &PlacardView) -> Vec<&str> {
@@ -313,14 +274,12 @@ mod tests {
     }
 
     #[test]
-    fn the_placard_waits_then_fades_rather_than_popping() {
+    fn the_placard_waits_out_the_delay() {
         let tuning = tuning();
-        assert!(opacity(0.0, &tuning).abs() < 1.0e-5);
-        assert!(opacity(tuning.placard_delay, &tuning).abs() < 1.0e-5);
-
-        let midway = opacity(tuning.placard_delay + tuning.placard_fade / 2.0, &tuning);
-        assert!(midway > 0.0 && midway < 1.0, "it arrives over time");
-        assert!((opacity(10.0, &tuning) - 1.0).abs() < 1.0e-5);
+        assert!(!earned(0.0, &tuning));
+        assert!(!earned(tuning.placard_delay - 0.01, &tuning));
+        assert!(earned(tuning.placard_delay, &tuning));
+        assert!(earned(10.0, &tuning));
     }
 
     #[test]
@@ -328,7 +287,7 @@ mod tests {
         let tuning = tuning();
         let radius = 0.03;
         let mote = Vec3::new(0.1, 0.2, 0.0);
-        let view = view(&Placard::describing(&group()), mote, radius, 1.0, &tuning);
+        let view = view(&Placard::describing(&group()), mote, radius, &tuning);
 
         assert!(
             (view.position.x - mote.x).abs() < 1.0e-5,
@@ -361,8 +320,7 @@ mod tests {
         let view = view_of(&Placard::describing(&group()));
         assert_eq!(view.lines[0].text, "Citrus");
         assert_eq!(view.lines[0].emphasis, Emphasis::Title);
-        assert!(texts(&view).contains(&"Sharp and bright"));
-        assert!(texts(&view).contains(&"group"));
+        assert_eq!(texts(&view), vec!["Citrus", "Sharp and bright"]);
     }
 
     #[test]
@@ -374,49 +332,12 @@ mod tests {
     }
 
     #[test]
-    fn the_last_line_names_what_the_mote_is_rather_than_a_gesture() {
-        assert_eq!(kind(Role::Action), "action");
-        assert_eq!(kind(Role::Item { unique: true }), "item");
-        assert_eq!(kind(Role::Item { unique: false }), "source");
-        assert_eq!(
-            kind(Role::Group {
-                children: 2,
-                groups:   0,
-                arrange:  Arrange::Grid,
-            }),
-            "group",
-            "a grid is a group that opens as one, not another kind of mote"
-        );
-        for role in [
-            Role::Action,
-            Role::Cast,
-            Role::Item { unique: true },
-            Role::Parent { depth: 1 },
-        ] {
-            let word = kind(role);
-            assert!(
-                !word.contains(' ') && word.chars().all(char::is_lowercase),
-                "{word:?} is an instruction, not a name"
-            );
-        }
-    }
-
-    #[test]
-    fn what_a_mote_is_reads_quieter_than_what_it_says() {
-        let view = view_of(&Placard::describing(&group()));
-        let last = view.lines.last().expect("lines");
-        assert_eq!(last.text, "group");
-        assert_eq!(last.emphasis, Emphasis::Dim);
-        assert_eq!(view.lines[1].emphasis, Emphasis::Body);
-    }
-
-    #[test]
-    fn a_mote_with_nothing_to_add_still_says_what_it_is() {
+    fn a_mote_with_nothing_to_add_is_just_its_name() {
         let view = view_of(&Placard::describing(&MoteSpec {
             description: None,
             ..spec(Role::Action)
         }));
-        assert!(texts(&view).contains(&"action"));
+        assert_eq!(texts(&view), vec!["Citrus"]);
     }
 
     #[test]

@@ -45,12 +45,22 @@ pub async fn place(
         .await?
 }
 
+/// The smallest scale an offset may have on any axis.
+///
+/// A placed document's frame is the inverse of where it stands, so a flat or
+/// vanishing scale would leave every conversion into that frame dividing by
+/// nothing. A script hiding what it placed scales its own prims instead.
+const MIN_SCALE: f32 = 1.0e-4;
+
 fn checked(offset: XformAttr) -> Result<Transform, ScriptError> {
     match (
         finite::vec3(offset.translation),
         finite::quat(offset.rotation),
         finite::vec3(offset.scale),
     ) {
+        (Some(_), Some(_), Some(scale)) if scale.abs().min_element() < MIN_SCALE => Err(
+            ScriptError::invalid("an offset's scale must not be zero on any axis"),
+        ),
         (Some(translation), Some(rotation), Some(scale)) => Ok(Transform {
             translation,
             rotation,
@@ -85,4 +95,28 @@ fn place_in(
     };
     anchor::place(&mut world.entity_mut(doc), DocAnchor { target, offset });
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn offset(scale: [f32; 3]) -> XformAttr {
+        XformAttr {
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale,
+            translation: [0.0; 3],
+        }
+    }
+
+    #[test]
+    fn an_offset_flat_on_any_axis_is_refused() {
+        assert!(checked(offset([1.0, 1.0, 1.0])).is_ok());
+        assert!(checked(offset([0.0, 0.0, 0.0])).is_err());
+        assert!(checked(offset([1.0, -0.0, 1.0])).is_err());
+        assert!(
+            checked(offset([-1.0, 1.0, 1.0])).is_ok(),
+            "a mirror is not flat"
+        );
+    }
 }

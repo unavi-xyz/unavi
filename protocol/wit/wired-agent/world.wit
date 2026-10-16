@@ -72,7 +72,8 @@ interface local {
   }
 
   /// The camera's transform this frame, in the calling script's own document
-  /// frame. Fails with `not-ready` until the user's body has loaded.
+  /// frame. Fails with `not-ready` until the user's agent has spawned; it
+  /// does not wait for the avatar to load.
   camera-transform: func() -> result<transform, error>;
 
   /// A bone's transform this frame, in the calling script's own document
@@ -82,6 +83,7 @@ interface local {
 
   /// Places a document the script may write at `offset` from the camera or a
   /// bone, so it moves with the user. Per peer, like
-  /// `wired:scene/document.place`, which detaches it again.
+  /// `wired:scene/document.place`, which detaches it again. `offset` is
+  /// checked as `place` checks it.
   attach: func(document: borrow<document>, to: attachment, offset: transform) -> result<_, error>;
 }

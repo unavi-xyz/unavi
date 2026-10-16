@@ -28,7 +28,14 @@ pub fn mark() -> Glyph {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::glyph::centred;
+
     use super::*;
+
+    #[test]
+    fn the_mark_is_centred_in_its_grid() {
+        assert!(centred(&MARK), "the mark slides to one side of its orb");
+    }
 
     #[test]
     fn the_mark_packs_to_its_exact_bytes() {

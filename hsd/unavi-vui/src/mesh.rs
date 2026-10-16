@@ -121,31 +121,6 @@ pub fn overflow_at(arrange: Arrange, total: usize, spread: f32) -> [f32; 3] {
     }
 }
 
-/// The way back's mark: a chevron pointing up, in the same unit space a
-/// mote's pips are drawn in.
-#[must_use]
-pub fn chevron() -> MeshData {
-    const HALF_WIDTH: f32 = 0.42;
-    const APEX: f32 = 0.29;
-    const BAR: f32 = 0.16;
-    const HALF_DEPTH: f32 = 0.06;
-
-    let arms = APEX - HALF_WIDTH;
-    let outline = [
-        [-HALF_WIDTH, arms - BAR],
-        [0.0, APEX - BAR],
-        [HALF_WIDTH, arms - BAR],
-        [HALF_WIDTH, arms],
-        [0.0, APEX],
-        [-HALF_WIDTH, arms],
-    ];
-    prism(
-        &outline,
-        &[[1, 2, 3], [1, 3, 4], [0, 1, 4], [0, 4, 5]],
-        HALF_DEPTH,
-    )
-}
-
 /// A toggle's mark: a short horizontal bar just below the face centre, in the
 /// same unit space as the body.
 #[must_use]
@@ -174,21 +149,6 @@ pub const CAST_RING_OUTER: f32 = 1.1;
 #[must_use]
 pub fn cast_ring() -> MeshData {
     annulus(CAST_RING_INNER, CAST_RING_OUTER, 48)
-}
-
-/// An item's mark: three small dots on the rim at 3 o'clock, like grip
-/// points to take hold of, in unit space.
-#[must_use]
-pub fn grip_dots() -> MeshData {
-    const SPREAD: f32 = 0.3;
-    const DOT: f32 = 0.09;
-
-    let mut mesh = MeshData::default();
-    for step in [-1.0_f32, 0.0, 1.0] {
-        let (sin, cos) = (step * SPREAD).sin_cos();
-        push_sphere(&mut mesh, [cos, sin, 0.0], DOT, 6, 8);
-    }
-    mesh
 }
 
 /// Extrudes a counter-clockwise `outline` along Z into a solid, `triangles`
@@ -698,57 +658,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn a_chevron_is_well_formed() {
-        assert_well_formed(&chevron());
-    }
-
-    #[test]
-    fn a_chevron_points_up_and_fits_the_body_it_sits_in() {
-        let mesh = chevron();
-        let apex = mesh
-            .positions
-            .as_chunks::<3>()
-            .0
-            .iter()
-            .max_by(|a, b| a[1].total_cmp(&b[1]))
-            .expect("vertices");
-        assert!(
-            apex[0].abs() < 1.0e-6,
-            "the point of the mark is on its centre line, or it reads as a lean"
-        );
-        assert!(
-            mesh.positions
-                .as_chunks::<3>()
-                .0
-                .iter()
-                .all(|point| point[0].hypot(point[1]).hypot(point[2]) < 1.0),
-            "a glyph is drawn in the same unit space as the body around it"
-        );
-    }
-
-    #[test]
-    fn a_chevron_is_solid_from_both_sides() {
-        let mesh = chevron();
-        for axis in 0..3 {
-            assert!(
-                mesh.normals
-                    .as_chunks::<3>()
-                    .0
-                    .iter()
-                    .any(|normal| normal[axis] > 0.5),
-                "a mark seen from behind the level it leaves is still a mark"
-            );
-            assert!(
-                mesh.normals
-                    .as_chunks::<3>()
-                    .0
-                    .iter()
-                    .any(|normal| normal[axis] < -0.5)
-            );
-        }
-    }
-
     fn radius_of(point: &[f32]) -> f32 {
         point[0].hypot(point[1]).hypot(point[2])
     }
@@ -795,22 +704,6 @@ mod tests {
                 "{radius}: outside the shell and inside the cast site's ring"
             );
         }
-    }
-
-    #[test]
-    fn grip_dots_are_three_small_dots_on_the_right_rim() {
-        let mesh = grip_dots();
-        assert_well_formed(&mesh);
-        assert_unit_normals(&mesh);
-        assert_eq!(vertex_count(&mesh), 3 * 63);
-
-        for point in mesh.positions.as_chunks::<3>().0 {
-            assert!(point[0] > 0.7, "at 3 o'clock");
-            assert!(radius_of(point) < 1.12, "on the rim, not out in the room");
-        }
-        let centres = centres(&mesh, 3);
-        assert!(centres[0][1] < centres[1][1] && centres[1][1] < centres[2][1]);
-        assert!(centres.iter().all(|c| (radius_of(c) - 1.0).abs() < 1.0e-3));
     }
 
     #[test]

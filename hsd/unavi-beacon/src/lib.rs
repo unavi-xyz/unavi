@@ -11,6 +11,11 @@ use std::{
 
 use blake3::Hash;
 use wired_guest::{
+    beacon::{
+        PLANTED_KEY,
+        age_secs,
+        now_ms,
+    },
     color::generate_color,
     math::{
         Color,
@@ -20,6 +25,7 @@ use wired_guest::{
 };
 
 use crate::{
+    float::Float,
     unavi::shapes::api::Cuboid,
     wired::{
         event::messaging::{
@@ -35,6 +41,7 @@ use crate::{
             },
         },
         peer::authority::is_author,
+        physics::simulation::set_velocity,
         scene::{
             document::{
                 Document,
@@ -49,6 +56,8 @@ use crate::{
         },
     },
 };
+
+mod float;
 
 wired_guest::generate_script!(Script);
 
@@ -103,14 +112,20 @@ fn prim_name(doc: &Document, prim: (u64, u64)) -> Option<String> {
 /// Makes the space-named prim the beacon's body. Every peer's copy of the
 /// script does the same to the same committed prim, so the holder's pose
 /// stream drives one body everywhere.
-fn make_body(doc: &Document, body: (u64, u64)) -> anyhow::Result<()> {
-    doc.local()
-        .set(
-            body,
-            Property::Collider(Cuboid::new(Vec3::splat(SIZE)).collider()),
-        )
-        .set(body, Property::RigidBody(RigidBody::dynamic()))
-        .flush()?;
+///
+/// A hovering body is dynamic with no gravity rather than kinematic, because
+/// the grab only takes hold of a dynamic body. `hover` holds it in the air
+/// and [`Beacon::release`] gives gravity back.
+fn make_body(doc: &Document, body: (u64, u64), floating: bool) -> anyhow::Result<()> {
+    let mut batch = doc.local().set(
+        body,
+        Property::Collider(Cuboid::new(Vec3::splat(SIZE)).collider()),
+    );
+    batch = batch.set(body, Property::RigidBody(RigidBody::dynamic()));
+    if floating {
+        batch = batch.set(body, Property::GravityScale(0.0));
+    }
+    batch.flush()?;
     Ok(())
 }
 
@@ -178,6 +193,9 @@ struct Beacon {
     body:         (u64, u64),
     id:           Hash,
     input:        InputSubscription,
+    float:        Float,
+    /// The body's pose when it was let go, which the hover moves from.
+    rest:         Option<Transform>,
     emit_elapsed: f32,
     published:    bool,
     pulse_step:   u32,
@@ -221,7 +239,20 @@ impl Beacon {
             return Ok(None);
         };
 
-        make_body(&doc, prim)?;
+        let rest = match doc.get(prim, &PropertyKey::Transform) {
+            Some(Property::Transform(transform)) => Some(transform),
+            _ => None,
+        };
+        // The age comes from a stamp every peer reads, so a late joiner
+        // finds the hover where it is, and a beacon that has fallen does not
+        // float again. A beacon with no stamp has nothing to hover from.
+        let float = match doc.get(prim, &PropertyKey::Custom(PLANTED_KEY.to_owned())) {
+            Some(Property::Custom((_, stamp))) => {
+                age_secs(&stamp, now_ms()).map_or_else(Float::over, Float::at_age)
+            }
+            _ => Float::over(),
+        };
+        make_body(&doc, prim, float.is_floating())?;
         let existing_group = doc.children(prim).into_iter().next();
         let (_, core) = if let Some(group) = existing_group {
             let core = doc
@@ -243,6 +274,8 @@ impl Beacon {
             body: prim,
             id,
             input,
+            float,
+            rest,
             emit_elapsed: 0.0,
             published: false,
             pulse_step: u32::MAX,
@@ -250,8 +283,41 @@ impl Beacon {
         }))
     }
 
+    /// Holds the body on its hover path. Every peer does the same, since
+    /// every peer's simulation steps the body; the holder's motion is the
+    /// one that wins, and it is this same path.
+    fn hover(&self) {
+        let Some(rest) = self.rest else {
+            return;
+        };
+        let Ok(now) = self.doc.world_transform(self.body) else {
+            return;
+        };
+        let drive = self.float.drive(rest, now);
+        // Fails until the body is in the simulation, which is the next tick.
+        let _ = set_velocity(
+            &self.doc,
+            self.body,
+            Some(drive.linear),
+            Some(drive.angular),
+        );
+    }
+
+    /// Ends the hover: gravity comes back and the body falls from where it
+    /// is.
+    fn release(&self) -> anyhow::Result<()> {
+        self.doc
+            .local()
+            .set(self.body, Property::GravityScale(1.0))
+            .flush()?;
+        Ok(())
+    }
+
     fn fixed_update(&mut self, dt: f32) -> anyhow::Result<()> {
+        let mut grabbed = false;
         for event in self.input.drain(8) {
+            // Only the grip takes hold of a body; the trigger is the tools'.
+            grabbed |= matches!(event.action, Action::Pressed(Button::Grip));
             if !self.published
                 && matches!(
                     event.action,
@@ -263,6 +329,12 @@ impl Beacon {
                 self.published = true;
                 println!("Beacon published: space={}", self.id);
             }
+        }
+
+        if self.float.step(dt, grabbed) {
+            self.release()?;
+        } else if self.float.is_floating() {
+            self.hover();
         }
 
         if !is_author(&self.doc)? {

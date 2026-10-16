@@ -55,10 +55,6 @@ pub enum Role {
     /// Turns the page. Never a mote of the level: the surface draws it beside
     /// the layout when there are `remaining` pages that way, `forward` or back.
     Page { forward: bool, remaining: usize },
-    /// A level above the one the way back returns to. Never a mote of the
-    /// level either: the surface draws it in a row below the layout, and
-    /// pressing it collapses straight to `level`, counted from the root as 0.
-    Ancestor { level: usize },
 }
 
 impl Role {
@@ -221,7 +217,7 @@ pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
         Role::Group { .. } => tuning.group_scale,
         Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => tuning.action_scale,
         Role::Parent { .. } => tuning.parent_scale,
-        Role::Page { .. } | Role::Ancestor { .. } => tuning.tab_scale,
+        Role::Page { .. } => tuning.tab_scale,
     };
 
     Presentation {
@@ -241,11 +237,7 @@ pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
             | Role::Page {
                 remaining: count, ..
             } => counted_marks(count, tuning),
-            Role::Action
-            | Role::Toggle
-            | Role::Item { .. }
-            | Role::Cast
-            | Role::Ancestor { .. } => Pips::NONE,
+            Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => Pips::NONE,
         },
     }
 }

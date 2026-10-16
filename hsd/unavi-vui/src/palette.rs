@@ -21,30 +21,29 @@ pub struct Palette {
     pub accent:       Color,
     /// Receded: inactive motes and the way back.
     pub dim:          Color,
-    /// A notice's title. Amber rather than the accent: the accent means a
-    /// mote is held, so a warning wearing it would read as selection, and a
-    /// warning has to be distinct from every state a mote can be in.
+    /// How far an inactive toggle's tint is drawn toward [`Palette::dim`].
+    pub mute:         f32,
+    /// A notice's title, and the one saturated colour on a placard. A red
+    /// orange rather than the accent: the accent means a mote is held, so a
+    /// warning wearing it would read as selection, and a warning has to be
+    /// distinct from every state a mote can be in.
     pub warning:      Color,
-    /// Backing surfaces — grids, tables, cast circles, placards.
-    pub surface:      Color,
+    /// Type set on a placard's frosted panel: near-black, since the panel
+    /// is light.
+    pub ink:          Color,
     /// Warmth mixed into an item that is a source of its thing, so a mote you
     /// can take another of reads apart from the one of it.
     pub source:       Color,
     /// How much of [`Palette::source`] a source carries.
     pub source_shift: f32,
-    /// How much of its brightness an ancestor bead loses for each step it
-    /// stands up the row; the nearest bead is one step.
-    pub trail_fade:   f32,
 
-    /// How strongly a container's glass wears its hue.
+    /// How strongly a mote's glass wears its hue. One value for every role,
+    /// so that two motes differ by their tint and their state and never by
+    /// what kind of thing they are.
     pub glass_alpha:          f32,
     pub glass_alpha_attended: f32,
-    /// How strongly a leaf's glass wears its hue.
-    pub solid_alpha:          f32,
-    /// A toggle that is off reads as a clear outline: the glass barely wears
-    /// its hue, so only the rim carries the silhouette.
-    pub toggle_idle_alpha:    f32,
-    /// A toggle that is on fills with its hue.
+    /// A toggle that is on fills with its hue; one that is off is glass like
+    /// any other mote, wearing its hue muted.
     pub toggle_active_alpha:  f32,
     pub emissive_base:        f32,
     pub emissive_near:        f32,
@@ -61,16 +60,14 @@ impl Palette {
         base:         shade(0.92),
         accent:       rgb(0.60, 0.84, 1.00),
         dim:          shade(0.42),
-        warning:      rgb(1.00, 0.72, 0.28),
-        surface:      rgb(0.12, 0.13, 0.16),
+        mute:         0.55,
+        warning:      rgb(0.90, 0.22, 0.04),
+        ink:          rgb(0.04, 0.05, 0.07),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
-        trail_fade:   0.30,
 
         glass_alpha:          0.25,
         glass_alpha_attended: 0.35,
-        solid_alpha:          0.70,
-        toggle_idle_alpha:    0.03,
         toggle_active_alpha:  0.70,
 
         emissive_base:     0.08,
@@ -134,6 +131,14 @@ impl Palette {
         }
     }
 
+    /// A mote's own hue seen receded: drawn part of the way to the dim
+    /// level, so it is still that hue but quieter and lower in both
+    /// saturation and brightness than the same tint lit.
+    #[must_use]
+    pub const fn muted(&self, tint: Color) -> Color {
+        blend(tint, self.dim, self.mute)
+    }
+
     /// How brightly a mote burns, raised to a floor while it is on.
     ///
     /// Brightness rather than a hue: the accent means what is in hand and
@@ -145,23 +150,6 @@ impl Palette {
             self.emissive_active
         } else {
             resting
-        }
-    }
-
-    /// `color` seen `levels` steps up the row of ancestor beads: its
-    /// brightness scaled by what is left after each step, so the further up a
-    /// level is the dimmer it reads. A pure scale of the channels keeps the
-    /// hue exactly, and being a product it is strictly dimmer at every step
-    /// for any colour that is not black. Nothing is blended in, so a dark tint
-    /// cannot come out brighter.
-    #[must_use]
-    pub fn receded(&self, color: Color, levels: usize) -> Color {
-        let kept = (1.0 - self.trail_fade).powi(i32::try_from(levels).unwrap_or(i32::MAX));
-        Color {
-            r: color.r * kept,
-            g: color.g * kept,
-            b: color.b * kept,
-            a: color.a,
         }
     }
 
@@ -325,7 +313,7 @@ mod tests {
     #[test]
     fn the_field_is_desaturated_so_the_accent_can_carry_meaning() {
         let palette = Palette::DEFAULT;
-        for quiet in [palette.base, palette.dim, palette.surface] {
+        for quiet in [palette.base, palette.dim, palette.ink] {
             assert!(
                 spread(quiet) < spread(palette.accent),
                 "a resting colour must not compete with the accent"
@@ -364,27 +352,21 @@ mod tests {
     }
 
     #[test]
-    fn the_further_up_a_level_is_the_dimmer_its_bead() {
+    fn a_muted_hue_is_quieter_than_the_hue_but_not_grey() {
         let palette = Palette::DEFAULT;
-        for color in [
-            palette.base,
-            palette.tint(Attention::Attended),
-            rgb(0.55, 0.15, 0.2),
-            rgb(0.02, 0.03, 0.05),
-        ] {
-            assert_eq!(
-                palette.receded(color, 0),
-                color,
-                "the open level is untouched"
-            );
-            let mut last = lightness(color);
-            for levels in 1..=6 {
-                let sunk = palette.receded(color, levels);
-                assert!(lightness(sunk) < last, "{levels} levels up must be dimmer");
-                last = lightness(sunk);
-                assert!(same_hue(color, sunk), "dimming keeps the hue");
-            }
-        }
+        let hue = rgb(0.9, 0.2, 0.3);
+        let muted = palette.muted(hue);
+        assert!(lightness(muted) < lightness(hue));
+        assert!(spread(muted) < spread(hue), "less saturated");
+        assert!(spread(muted) > spread(palette.dim), "yet not the neutral");
+        assert!(muted.r > muted.g && muted.r > muted.b, "the same hue");
+    }
+
+    #[test]
+    fn the_placard_ink_is_dark_enough_to_read_on_frost_and_the_warning_is_not_ink() {
+        let palette = Palette::DEFAULT;
+        assert!(lightness(palette.ink) < 0.1);
+        assert!(spread(palette.warning) > 0.5, "the one saturated colour");
     }
 
     #[test]

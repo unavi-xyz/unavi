@@ -148,12 +148,18 @@ impl Script {
     }
 
     /// The menu button, and the primary action while the halo is down.
-    fn read_input(&mut self, eye: &Transform) -> anyhow::Result<()> {
+    ///
+    /// A failed summon is reported rather than returned: the events drained
+    /// with it are gone from the queue, and dropping the menu's release would
+    /// latch the button down and ignore every press after it.
+    fn read_input(&mut self, eye: &Transform) {
         for event in self.input.drain(8) {
             match event.action {
                 Action::Pressed(Button::Menu) => {
                     let command = self.summon.press(eye);
-                    self.apply(command)?;
+                    if let Err(err) = self.apply(command) {
+                        eprintln!("halo: menu: {err:?}");
+                    }
                 }
                 Action::Released(Button::Menu) => self.summon.release(),
                 // Forwarded only while the halo is down. With it up, a press
@@ -172,7 +178,6 @@ impl Script {
                 | Action::Left => {}
             }
         }
-        Ok(())
     }
 
     fn forward(&self, to_hand: impl FnOnce(&Toolbelt)) {
@@ -206,7 +211,7 @@ impl ScriptBehavior for Script {
         let Some(eye) = camera_pose() else {
             return Ok(());
         };
-        self.read_input(&eye)?;
+        self.read_input(&eye);
 
         let walked_away = self.summon.step(&eye);
         self.apply(walked_away)

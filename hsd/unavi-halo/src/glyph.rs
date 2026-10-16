@@ -17,11 +17,11 @@ use crate::unavi::{
 pub type Rows = [&'static str; 9];
 
 pub const HOME: Rows = [
+    ".........",
     "....#....",
     "...###...",
     "..#####..",
     ".#######.",
-    "..#####..",
     "..##.##..",
     "..##.##..",
     "..##.##..",
@@ -42,13 +42,26 @@ pub const NAV: Rows = [
 
 pub const TOOLS: Rows = [
     ".........",
-    "..######.",
-    "..######.",
-    "....##...",
-    "....##...",
-    "....##...",
-    "....##...",
-    "....##...",
+    ".#######.",
+    ".#######.",
+    "....#....",
+    "....#....",
+    "....#....",
+    "....#....",
+    "....#....",
+    ".........",
+];
+
+/// The space you are standing in: a map pin, worn in place of its beacon.
+pub const HERE: Rows = [
+    ".........",
+    "...###...",
+    "..#####..",
+    "..##.##..",
+    "..#####..",
+    "...###...",
+    "....#....",
+    "....#....",
     ".........",
 ];
 
@@ -98,6 +111,8 @@ pub fn from_tool(glyph: tool::Glyph) -> Glyph {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::glyph::centred;
+
     use super::*;
 
     /// Pins the bit order and row stride for every bitmap at once: they all go
@@ -107,14 +122,28 @@ mod tests {
         assert_eq!(
             from_rows(&HOME).bits,
             [
-                0x10, 0x70, 0xF0, 0xF1, 0xC7, 0x87, 0x0D, 0x1B, 0x36, 0x00, 0x00
+                0x00, 0x20, 0xE0, 0xE0, 0xE3, 0x8F, 0x0D, 0x1B, 0x36, 0x00, 0x00
             ]
         );
     }
 
     #[test]
+    fn every_bitmap_is_centred_in_its_grid() {
+        for (name, rows) in [
+            ("HOME", HOME),
+            ("NAV", NAV),
+            ("TOOLS", TOOLS),
+            ("BEACON", BEACON),
+            ("HERE", HERE),
+            ("TOOL", TOOL),
+        ] {
+            assert!(centred(&rows), "{name} slides to one side of its orb");
+        }
+    }
+
+    #[test]
     fn every_bitmap_is_nine_square() {
-        for rows in [HOME, NAV, TOOLS, BEACON, TOOL] {
+        for rows in [HOME, NAV, TOOLS, BEACON, HERE, TOOL] {
             assert!(rows.iter().all(|row| row.len() == 9));
             let glyph = from_rows(&rows);
             assert_eq!((glyph.size, glyph.bits.len()), (9, 11));

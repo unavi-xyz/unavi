@@ -11508,6 +11508,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
+ "chrono",
  "directories",
  "hsd",
  "iroh",

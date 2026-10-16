@@ -10,7 +10,6 @@ use std::{
         Cell,
         RefCell,
     },
-    f32::consts::FRAC_PI_4,
     rc::Rc,
 };
 
@@ -26,6 +25,7 @@ use wired_guest::math::{
 use crate::{
     attention::Attention,
     glyph::Glyph,
+    marks::Chevrons,
     mesh,
     mote::{
         Arrange,
@@ -158,12 +158,10 @@ struct PipShape {
 }
 
 /// Everything the shell graph is handed. Not derivable from the style alone:
-/// an item wears glass only when there is something inside it to see, and the
-/// film and frost are per-mote choices.
+/// the film and frost are per-mote choices.
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Shell {
     style:  Style,
-    icon:   bool,
     /// A toggle's mark is lit or receded by this, which the style alone does
     /// not say once the mote wears its own hue.
     active: bool,
@@ -216,13 +214,11 @@ impl Mark {
     }
 }
 
-/// What kind of mote a body is, marked on it: a toggle's bar, a cast's ring,
-/// an item's grip dots. A group wears its pips and the way back its chevron
-/// instead.
+/// What kind of mote a body is, marked on it: a toggle's bar and a cast's ring.
+/// A group wears its pips instead.
 struct Marks {
     bar:  Mark,
     ring: Mark,
-    grip: Mark,
 }
 
 /// A toggle's bar is lit when it is on and receded when it is off, in the two
@@ -238,15 +234,12 @@ impl SlotPrims {
         self.root_xform.clear();
         self.body_xform.clear();
         self.marked.set(false);
-        self.carved.set(false);
-        self.back_pose.clear();
         self.label_xform.clear();
         self.shell.clear();
         self.shape.clear();
         self.written.clear();
         self.marks.bar.forget();
         self.marks.ring.forget();
-        self.marks.grip.forget();
         self.face.forget();
     }
 }
@@ -263,12 +256,6 @@ struct SlotPrims {
     overflow:    (u64, u64),
     /// Whether `overflow` has had its mesh written yet.
     marked:      Cell<bool>,
-    /// The way back's own mark, which no other role wears.
-    back:        (u64, u64),
-    /// Whether `back` has had its mesh written yet.
-    carved:      Cell<bool>,
-    /// Last chevron transform written, so a settled mark is not rewritten.
-    back_pose:   Shadow<Option<Transform>>,
     /// The mote's name, drawn always rather than on attention.
     label:       (u64, u64),
     marks:       Marks,
@@ -287,24 +274,6 @@ struct SlotPrims {
     written:     Shadow<(SmolStr, Attention)>,
 }
 
-/// The ancestor beads a frame draws, and whose they are. Their draw slots
-/// follow the level's and the page tabs', from `first` on.
-#[derive(Clone, Copy)]
-pub struct Beads<'a> {
-    pub motes: &'a [Mote],
-    pub specs: &'a [MoteSpec],
-    pub first: usize,
-}
-
-impl<'a> Beads<'a> {
-    /// The mote and spec of the bead drawn in `slot`, or none for any slot
-    /// that is not one.
-    fn at(self, slot: usize) -> Option<(&'a Mote, &'a MoteSpec)> {
-        let index = slot.checked_sub(self.first)?;
-        Some((self.motes.get(index)?, self.specs.get(index)?))
-    }
-}
-
 /// Everything a frame's worth of drawing reads, borrowed from the surface.
 ///
 /// `drawn` maps each view back to its spec, which pagination makes a real
@@ -314,7 +283,6 @@ impl<'a> Beads<'a> {
 #[derive(Clone, Copy)]
 pub struct Drawing<'a> {
     pub motes:         &'a [Mote],
-    pub beads:         Beads<'a>,
     /// Seconds since the last frame, which a flip runs on.
     pub delta:         f32,
     /// The text drawn at the centre, when the level has an open one. Not a
@@ -328,6 +296,8 @@ pub struct Drawing<'a> {
     pub placard:       Option<&'a PlacardView>,
     pub palette:       &'a Palette,
     pub held:          Option<usize>,
+    /// The viewer's eye in the surface's own space, which a face turns toward.
+    pub eye:           Vec3,
 }
 
 /// The prims one surface draws with: a hit surface, a pool of slot bodies
@@ -348,6 +318,8 @@ pub struct Bodies {
     park:     (u64, u64),
     /// A readout's face at the surface's centre, drawn apart from the slots.
     readout:  Face,
+    /// What the way back and the page tabs wear.
+    chevrons: Chevrons,
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
     slots:    RefCell<Vec<SlotPrims>>,
@@ -409,6 +381,7 @@ impl Bodies {
             input,
             park,
             readout: Face::new(readout),
+            chevrons: Chevrons::new().map_err(|err| anyhow::anyhow!("{err}"))?,
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
@@ -444,26 +417,21 @@ impl Bodies {
             // An overflow marker is the exception rather than the rule, so it
             // waits for a slot that has one.
             let overflow = doc.create_prim(Layer::Local, Some(slot_root))?;
-            // Likewise the way back, which at most one slot of a level is.
-            let back = doc.create_prim(Layer::Local, Some(slot_root))?;
             // A label rides the slot, not the body, which scales with
             // attention.
             let label = doc.create_prim(Layer::Local, Some(slot_root))?;
             let bar = doc.create_prim(Layer::Local, Some(slot_root))?;
             let ring = doc.create_prim(Layer::Local, Some(slot_root))?;
-            let grip = doc.create_prim(Layer::Local, Some(slot_root))?;
             let face = doc.create_prim(Layer::Local, Some(slot_root))?;
             doc.local()
                 .set(face, Property::Transform(draw::hidden()))
                 .set(bar, Property::Transform(draw::hidden()))
                 .set(ring, Property::Transform(draw::hidden()))
-                .set(grip, Property::Transform(draw::hidden()))
                 .flush()?;
             doc.local()
                 .set(nested, Property::Transform(draw::hidden()))
                 .set(plain, Property::Transform(draw::hidden()))
                 .set(overflow, Property::Transform(draw::hidden()))
-                .set(back, Property::Transform(draw::hidden()))
                 .set(label, Property::Transform(draw::hidden()))
                 .flush()?;
 
@@ -476,14 +444,10 @@ impl Bodies {
                 plain,
                 overflow,
                 marked: Cell::new(false),
-                back,
-                carved: Cell::new(false),
-                back_pose: Shadow::new(),
                 label,
                 marks: Marks {
                     bar:  Mark::new(bar),
                     ring: Mark::new(ring),
-                    grip: Mark::new(grip),
                 },
                 face: Face::new(face),
                 label_xform: Shadow::new(),
@@ -603,7 +567,6 @@ impl Bodies {
     pub fn apply(&self, doc: &Document, drawing: &Drawing<'_>) -> anyhow::Result<()> {
         let Drawing {
             motes,
-            beads,
             delta,
             readout,
             readout_bloom,
@@ -613,11 +576,9 @@ impl Bodies {
             placard,
             palette,
             held,
+            eye,
         } = *drawing;
-        match placard {
-            Some(view) => self.placard.apply(doc, view, palette)?,
-            None => self.placard.hide(doc)?,
-        }
+        self.placard.update(doc, placard, palette, delta)?;
 
         self.ensure(doc, views.len())?;
         let slots = self.slots.borrow();
@@ -639,20 +600,19 @@ impl Bodies {
                 batch = batch.set(slot.body, Property::Transform(xform));
             }
 
-            // A bead is drawn like a mote but is never one: it has no name
-            // under it, and only its face and glass come from its level.
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
-            let bead = beads.at(index);
             batch = Self::apply_label(batch, slot, view, spec, palette);
 
-            let worn = spec.or_else(|| bead.map(|(_, spec)| spec));
-            let glyph = worn.and_then(|spec| spec.glyph.as_ref());
+            // A page tab has no spec, so the chevrons go by role.
+            let glyph = spec
+                .and_then(|spec| spec.glyph.as_ref())
+                .or_else(|| self.chevrons.of(view.role));
+            let icon = slot.icon.borrow().is_some() || glyph.is_some();
             let shell = Shell {
                 style:  view.style,
-                icon:   slot.icon.borrow().is_some() || glyph.is_some(),
                 active: spec.is_some_and(|spec| spec.active),
-                film:   worn.map_or(0.0, |spec| spec.film),
-                frost:  worn.map_or(0.0, |spec| spec.frost),
+                film:   spec.map_or(0.0, |spec| spec.film),
+                frost:  spec.map_or(0.0, |spec| spec.frost),
                 bloom:  view.bloom,
             };
             // Not `Option::map_or`: the closure would need to move `batch`
@@ -665,8 +625,7 @@ impl Bodies {
                     .set(
                         slot.overflow,
                         Property::Material(draw::pip(view.style, false)),
-                    )
-                    .set(slot.back, Property::Material(draw::pip(view.style, false)));
+                    );
                 batch = Self::mark_materials(batch, slot, view, shell.active, palette);
                 Some((index, shell))
             } else {
@@ -674,8 +633,7 @@ impl Bodies {
             };
 
             batch = Self::apply_pips(batch, slot, view);
-            batch = Self::apply_back(batch, slot, view);
-            batch = Self::apply_marks(batch, slot, view);
+            batch = Self::apply_marks(batch, slot, view, icon);
             // Every shadow above was committed as it was diffed, so a flush
             // that fails must take them back or its edits are never retried.
             if let Err(err) = batch.flush() {
@@ -684,14 +642,19 @@ impl Bodies {
             }
 
             if let Some((index, shell)) = overrides {
-                Self::apply_shell(doc, slot, view, index, shell, palette)?;
+                Self::apply_shell(doc, slot, view, index, shell)?;
             }
 
-            let owner = drawn
-                .get(index)
-                .and_then(|index| motes.get(*index))
-                .or_else(|| bead.map(|(mote, _)| mote));
-            let look = Look::of_slot(view, self.tuning.icon_fill);
+            let owner = drawn.get(index).and_then(|index| motes.get(*index));
+            // A held slot stands wherever the solver put it, which `view`
+            // does not know, so its face keeps to the pole rather than aiming
+            // from a position the slot has left.
+            let seen_from = if held == Some(index) {
+                view.position + Vec3::Z
+            } else {
+                eye
+            };
+            let look = Look::of_slot(view, self.tuning.icon_fill, seen_from);
             self.apply_face(doc, &slot.face, look, Wear { owner, glyph }, delta)?;
         }
 
@@ -754,17 +717,7 @@ impl Bodies {
         view: &SlotView,
         index: usize,
         shell: Shell,
-        palette: &Palette,
     ) -> anyhow::Result<()> {
-        // An item wears glass exactly when there is something inside it to
-        // see, which is the one thing about a mote's alpha that depends on
-        // what it ended up holding rather than on what it is.
-        let alpha = if shell.icon && matches!(view.role, Role::Item { .. }) {
-            palette.glass(view.attention)
-        } else {
-            shell.style.alpha
-        };
-
         set_overrides(
             doc,
             slot.body,
@@ -772,7 +725,7 @@ impl Bodies {
             &[
                 (
                     graphs::SHELL_TINT,
-                    GraphValue::Color(draw::with_alpha(shell.style.color, alpha)),
+                    GraphValue::Color(draw::with_alpha(shell.style.color, shell.style.alpha)),
                 ),
                 (
                     graphs::SHELL_EMISSIVE,
@@ -860,54 +813,29 @@ impl Bodies {
         batch
             .set(slot.marks.bar.prim, styled(bar_color(palette, active)))
             .set(slot.marks.ring.prim, styled(palette.dim))
-            .set(slot.marks.grip.prim, styled(palette.dim))
     }
 
     /// Marks the kind of mote the body is, scaled with the body.
+    ///
+    /// A toggle's bar is drawn only when the slot shows no face or icon: with
+    /// one it would cut across the picture, and the colour already says
+    /// whether the toggle is on. `icon` is whether the slot shows one.
     fn apply_marks<'a>(
         batch: crate::Batch<'a>,
         slot: &SlotPrims,
         view: &SlotView,
+        icon: bool,
     ) -> crate::Batch<'a> {
         let on = |wanted: bool| wanted.then(|| draw::placed(Vec3::ZERO, view.radius));
         let marks = &slot.marks;
         let batch = marks.bar.apply(
             batch,
             mesh::toggle_bar,
-            on(matches!(view.role, Role::Toggle)),
+            on(matches!(view.role, Role::Toggle) && !icon),
         );
-        let batch = marks
+        marks
             .ring
-            .apply(batch, mesh::cast_ring, on(matches!(view.role, Role::Cast)));
-        marks.grip.apply(
-            batch,
-            mesh::grip_dots,
-            on(matches!(view.role, Role::Item { .. })),
-        )
-    }
-
-    /// The way back and the page tabs wear a chevron of their own, so a
-    /// glance tells them from the motes of the level. The way back points up;
-    /// a tab points the way it turns.
-    fn apply_back<'a>(
-        mut batch: crate::Batch<'a>,
-        slot: &SlotPrims,
-        view: &SlotView,
-    ) -> crate::Batch<'a> {
-        let mark = chevron_transform(view);
-        if mark.is_some() && !slot.carved.get() {
-            slot.carved.set(true);
-            batch = draw::mesh(&mesh::chevron())
-                .into_iter()
-                .fold(batch, |batch, property| batch.set(slot.back, property));
-        }
-        match slot.back_pose.diff(mark) {
-            Some(pose) => batch.set(
-                slot.back,
-                Property::Transform(pose.unwrap_or_else(draw::hidden)),
-            ),
-            None => batch,
-        }
+            .apply(batch, mesh::cast_ring, on(matches!(view.role, Role::Cast)))
     }
 
     /// Drawn unconditionally: how much a container holds is structural.
@@ -981,26 +909,6 @@ fn label_pose(offset: Option<Vec3>) -> Transform {
     offset.map_or_else(draw::hidden, |offset| draw::placed(offset, 1.0))
 }
 
-/// Where a slot's chevron stands, for the roles that wear one.
-///
-/// The mesh points up, so a tab turns a quarter to face along the horizontal
-/// axis its page lies on.
-fn chevron_transform(view: &SlotView) -> Option<Transform> {
-    let rotation = match view.role {
-        Role::Parent { .. } => Quat::IDENTITY,
-        Role::Page { forward, .. } => {
-            let half = if forward { -FRAC_PI_4 } else { FRAC_PI_4 };
-            Quat::new(0.0, 0.0, half.sin(), half.cos())
-        }
-        _ => return None,
-    };
-    Some(Transform {
-        translation: Vec3::ZERO,
-        rotation,
-        scale: Vec3::splat(view.radius),
-    })
-}
-
 /// A slot's offset into the idle breath. The golden angle, so neighbours never
 /// land near each other and a form reads as several bodies rather than one.
 fn phase(slot: usize) -> f32 {
@@ -1038,35 +946,12 @@ fn apply_run(batch: crate::Batch<'_>, prim: (u64, u64), run: Run) -> crate::Batc
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tree::Kind;
 
     #[test]
     fn a_toggle_s_bar_is_lit_when_on_and_receded_when_off() {
         let palette = Palette::DEFAULT;
         assert_eq!(bar_color(&palette, true), palette.base);
         assert_eq!(bar_color(&palette, false), palette.dim);
-    }
-
-    #[test]
-    fn a_bead_is_found_only_in_the_slots_after_the_level_and_its_tabs() {
-        let level = Mote::new(Kind::Group, "Places");
-        let motes = [level.clone()];
-        let specs = [level.spec()];
-        let beads = Beads {
-            motes: &motes,
-            specs: &specs,
-            first: 4,
-        };
-
-        for slot in 0..4 {
-            assert!(
-                beads.at(slot).is_none(),
-                "slot {slot} is the level or a tab"
-            );
-        }
-        let (mote, _) = beads.at(4).expect("the first bead");
-        assert!(mote.is(&level));
-        assert!(beads.at(5).is_none(), "and no further than the trail");
     }
 
     #[test]

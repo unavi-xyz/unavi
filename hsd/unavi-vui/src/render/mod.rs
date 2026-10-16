@@ -45,6 +45,7 @@ mod graphs;
 pub mod mount;
 mod panel;
 mod placard;
+mod pop;
 pub mod shadow;
 mod site;
 mod viewer;

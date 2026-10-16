@@ -11,8 +11,8 @@ use crate::unavi::tool::api::Glyph;
 const MARK: [&str; 9] = [
     ".........",
     ".........",
+    ".######..",
     ".#######.",
-    ".########",
     ".###.....",
     ".##......",
     ".##......",
@@ -28,6 +28,8 @@ pub fn mark() -> Glyph {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::glyph::centred;
+
     use super::*;
 
     #[test]
@@ -37,8 +39,13 @@ mod tests {
         assert_eq!(
             glyph.bits,
             [
-                0x00, 0x00, 0xF8, 0xF3, 0xEF, 0xC0, 0x80, 0x01, 0x00, 0x00, 0x00
+                0x00, 0x00, 0xF8, 0xF1, 0xE7, 0xC0, 0x80, 0x01, 0x00, 0x00, 0x00
             ]
         );
+    }
+
+    #[test]
+    fn the_mark_is_centred_in_its_grid() {
+        assert!(centred(&MARK), "the mark slides to one side of its orb");
     }
 }

@@ -69,10 +69,9 @@ pub const MATRIX_CURRENT: u16 = 5;
 /// The first of the vec3 inputs carrying the bits a flip leaves.
 pub const MATRIX_PREVIOUS: u16 = MATRIX_CURRENT + LANE_TRIPLES as u16;
 
-/// How bright an unlit dot is held, against a lit one. The unfilled arc of a
-/// cast ring sits at the same level, so the two read as the same kind of
-/// quiet.
-const UNLIT: f32 = 0.12;
+/// How bright an unlit dot is held, against a lit one. Low enough that the
+/// lit ones read as the picture and the unlit as the grid it is drawn on.
+const UNLIT: f32 = 0.06;
 /// Columns the wipe front takes to cross one column, so neighbours are
 /// mid-flip together rather than turning one at a time.
 const WIPE_WIDTH: f32 = 4.0;
@@ -81,11 +80,11 @@ const WIPE_WIDTH: f32 = 4.0;
 const SQUASH_FLOOR: f32 = 0.06;
 /// Where a dot is solid and where it has faded out, as a fraction of a cell
 /// from its centre.
-const DOT_SOLID: f32 = 0.30;
-const DOT_EDGE: f32 = 0.44;
+const DOT_SOLID: f32 = 0.36;
+const DOT_EDGE: f32 = 0.47;
 /// Brightness of a face at rest and fully attended.
-const GLOW_REST: f32 = 0.85;
-const GLOW_ATTENDED: f32 = 1.4;
+const GLOW_REST: f32 = 1.25;
+const GLOW_ATTENDED: f32 = 1.8;
 
 /// Where a fragment sits in the grid.
 #[derive(Clone, Copy)]
@@ -668,6 +667,24 @@ mod tests {
                     );
                 }
             }
+        }
+    }
+
+    #[test]
+    fn a_lit_dot_stands_well_clear_of_an_unlit_one_and_stays_in_its_cell() {
+        const {
+            assert!(
+                GLOW_REST / (UNLIT * GLOW_REST) >= 10.0,
+                "lit against unlit is the whole picture"
+            );
+            assert!(
+                DOT_SOLID >= 0.35,
+                "a dot with a small core reads as a speck at a distance"
+            );
+            assert!(
+                DOT_EDGE < 0.5,
+                "a dot that fades out past its cell runs into its neighbours"
+            );
         }
     }
 

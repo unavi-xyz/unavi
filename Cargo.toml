@@ -1,3 +1,5 @@
+cargo-features = ["codegen-backend"]
+
 [workspace]
 default-members = ["crates/*"]
 exclude         = ["hsd", "launcher"]

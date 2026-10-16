@@ -1,3 +1,5 @@
+cargo-features = ["codegen-backend"]
+
 [workspace]
 members = [
   "example-session",

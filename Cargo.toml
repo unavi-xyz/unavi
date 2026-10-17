@@ -112,18 +112,17 @@ wasmtime = { default-features = false, features = [
 [patch.crates-io]
 iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
 
+# Fat LTO's peak memory kills rustc on the CI runner.
 [profile.release]
 codegen-units = 1
-lto           = true
+lto           = "thin"
 panic         = "abort"
 strip         = true
 
-# Dependencies are fat-LTO'd into the final binary, so their per-crate
-# codegen units barely affect the shipped result; compiling them at the
-# default 16 keeps a single bevy crate (bevy_pbr, bevy_render) from needing
-# more memory than the CI runner has.
+# Dependencies are re-optimized at link time; keep their codegen light.
 [profile.release.package."*"]
 codegen-units = 16
+opt-level     = 1
 
 [profile.dev]
 codegen-backend = "cranelift"

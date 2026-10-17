@@ -71,6 +71,16 @@ jobs:
             extra-experimental-features = pipe-operators
             cores = 1
       - run: nix profile add nixpkgs#xz
+      - name: Add swap
+        # bevy release codegen exceeds the runner's RAM; swap beats an OOM kill.
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 16G /mnt/swapfile \
+            || sudo dd if=/dev/zero of=/mnt/swapfile bs=1M count=16384 status=progress
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
       - name: Build AppImage
         if: ${{ matrix.format == 'appimage' }}
         run: |

@@ -30,14 +30,14 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
-            .init_resource::<limbo::LimboArrival>()
-            .add_observer(limbo::enter_space)
+            .init_resource::<limbo::arrival::LimboArrival>()
+            .add_observer(limbo::arrival::enter_space)
             .add_observer(respawn::respawn)
             .add_observer(home::enter_home)
             .add_systems(
                 OnEnter(SceneState::Limbo),
                 (
-                    limbo::arm_limbo_arrival,
+                    limbo::arrival::arm_limbo_arrival,
                     limbo::spawn_limbo,
                     spawn_local_agent,
                     limbo::enter_limbo,
@@ -59,8 +59,9 @@ impl Plugin for ScenePlugin {
                 Update,
                 (
                     home::resolve_home,
-                    limbo::fall_back_to_limbo,
-                    limbo::drive_limbo_exit,
+                    limbo::arrival::fall_back_to_limbo,
+                    limbo::ground::probe_ground.run_if(in_state(SceneState::Limbo)),
+                    limbo::arrival::drive_limbo_exit,
                 )
                     .chain(),
             )

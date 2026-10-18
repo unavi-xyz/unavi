@@ -2,7 +2,10 @@ use avian3d::prelude::{
     AngularVelocity,
     LinearVelocity,
 };
-use bevy::prelude::*;
+use bevy::{
+    ecs::system::SystemParam,
+    prelude::*,
+};
 use bevy_hsd::attributes::spawn::SpawnPoint;
 use unavi_agent::{
     LocalAgent,
@@ -18,15 +21,50 @@ use unavi_space::{
 pub struct Respawn {
     /// Space to spawn into; `None` uses the active space.
     pub space: Option<Entity>,
+    /// World position to spawn at; `None` picks one in the space.
+    pub at:    Option<Vec3>,
+}
+
+/// Where a space puts an arriving agent.
+#[derive(SystemParam)]
+pub struct SpawnPlaces<'w, 's> {
+    spaces:       Query<'w, 's, &'static GlobalTransform, With<Space>>,
+    spawn_points: Query<
+        'w,
+        's,
+        (
+            &'static SpawnPoint,
+            &'static GlobalTransform,
+            &'static ChildOf,
+        ),
+    >,
+    parents:      Query<'w, 's, &'static ChildOf>,
+}
+
+impl SpawnPlaces<'_, '_> {
+    /// A random point among the space's spawn points, else the space's own
+    /// origin.
+    #[must_use]
+    pub fn pick(&self, space: Entity) -> Vec3 {
+        pick_spawn(space, &self.spawn_points, &self.parents)
+            .or_else(|| self.origin(space))
+            .unwrap_or_default()
+    }
+
+    #[must_use]
+    pub fn origin(&self, space: Entity) -> Option<Vec3> {
+        self.spaces
+            .get(space)
+            .ok()
+            .map(GlobalTransform::translation)
+    }
 }
 
 pub fn respawn(
     trigger: On<Respawn>,
     local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
     active: Res<ActiveSpace>,
-    spaces: Query<&GlobalTransform, With<Space>>,
-    spawn_points: Query<(&SpawnPoint, &GlobalTransform, &ChildOf)>,
-    parents: Query<&ChildOf>,
+    places: SpawnPlaces,
     mut body: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,
 ) {
     let Ok(ents) = local_agent.single() else {
@@ -40,15 +78,13 @@ pub fn respawn(
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 
-    tr.translation = trigger
-        .event()
-        .space
-        .or(active.0)
-        .map_or_else(Vec3::default, |space| {
-            pick_spawn(space, &spawn_points, &parents)
-                .or_else(|| spaces.get(space).ok().map(GlobalTransform::translation))
-                .unwrap_or_default()
-        });
+    let event = trigger.event();
+    tr.translation = event.at.unwrap_or_else(|| {
+        event
+            .space
+            .or(active.0)
+            .map_or_else(Vec3::default, |space| places.pick(space))
+    });
 
     info!("Respawning at {}", tr.translation);
 }

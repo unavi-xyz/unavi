@@ -7,7 +7,7 @@ use unavi_space::{
 
 use crate::scene::{
     SceneState,
-    limbo::LimboArrival,
+    limbo::arrival::LimboArrival,
 };
 
 /// Emergency travel: unloads the current space and re-enters limbo targeting

@@ -83,6 +83,10 @@ web *ARGS:
     mv dist-webgl dist/webgl
     mv dist-webgpu dist/webgpu
 
+# Build both release web bundles and save raw, gzip -6 and brotli -q 11 sizes.
+web-metrics: (web "--release")
+    nu nu/web-metrics.nu
+
 web_port := "8080"
 
 # Serve the built bundles in dist/ at localhost:8080. Run `just web` first.

@@ -1,0 +1,55 @@
+(
+    meta: (
+        name: "Performance Stress",
+    ),
+    prims: [
+        (
+            attributes: (
+                name: "perf-stress",
+                script: "./Cargo.toml",
+            ),
+            children: [
+                (
+                    attributes: (
+                        name: "portal-left",
+                        xform: (
+                            translation: [
+                                -2.0,
+                                1.2,
+                                -6.0,
+                            ],
+                        ),
+                    ),
+                    children: [],
+                ),
+                (
+                    attributes: (
+                        name: "portal-right",
+                        xform: (
+                            translation: [
+                                2.0,
+                                1.2,
+                                -6.0,
+                            ],
+                        ),
+                    ),
+                    children: [],
+                ),
+            ],
+        ),
+        (
+            attributes: (
+                name: "example-input",
+                script: "../example-wired-input/Cargo.toml",
+            ),
+            children: [],
+        ),
+        (
+            attributes: (
+                name: "example-event",
+                script: "../example-wired-event/Cargo.toml",
+            ),
+            children: [],
+        ),
+    ],
+)

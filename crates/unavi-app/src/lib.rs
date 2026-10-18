@@ -25,6 +25,8 @@ mod scene;
 
 #[cfg(feature = "devtools")] mod devtools;
 
+#[cfg(feature = "profiling")] mod profiling;
+
 #[cfg(not(target_family = "wasm"))] mod xr;
 
 pub struct UnaviPlugin {
@@ -101,6 +103,9 @@ impl Plugin for UnaviPlugin {
 
         #[cfg(feature = "devtools")]
         app.add_plugins(devtools::ClientDevToolsPlugin);
+
+        #[cfg(feature = "profiling")]
+        app.add_plugins(profiling::ProfilingPlugin);
 
         // Built once, shared with every plugin that persists opaque app
         // state: the identity keys and the trust table live here.

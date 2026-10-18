@@ -19,6 +19,7 @@ devtools = [
   "unavi-input/devtools",
   "unavi-input/egui-filter",
 ]
+profiling = []
 webgpu = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]

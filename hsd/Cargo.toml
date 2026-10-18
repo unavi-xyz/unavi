@@ -2,6 +2,7 @@ cargo-features = ["codegen-backend"]
 
 [workspace]
 members = [
+  "example-perf-stress",
   "example-session",
   "example-unavi-shapes",
   "example-unavi-vui",

@@ -1,0 +1,5 @@
+package unavi:perf-stress;
+
+world guest {
+  include wired:prelude/script;
+}

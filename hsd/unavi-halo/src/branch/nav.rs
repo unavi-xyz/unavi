@@ -14,9 +14,11 @@ use wired_guest::{
     },
     color::generate_color,
     math::{
+        Color,
         Transform,
         Vec3,
     },
+    xform::hidden,
 };
 
 use crate::{
@@ -27,6 +29,7 @@ use crate::{
             Entry,
             PendingEntries,
         },
+        shapes::api::Cuboid,
         vui::api::{
             Kind,
             Landing,
@@ -48,6 +51,7 @@ use crate::{
                 script_document,
             },
             properties::{
+                Material,
                 Property,
                 PropertyKey,
             },
@@ -87,17 +91,18 @@ struct Space {
     /// Whether the user is in it now.
     here:   bool,
     group:  Mote,
-    travel: Mote,
+    /// Travel while you are elsewhere, respawn while you are here.
+    cast:   Mote,
     beacon: Mote,
 }
 
 impl Space {
     /// Sets whether the user is in this space, rewriting what that changes.
     ///
-    /// Travel leaves the level while you are here: a ring that fills to take
-    /// you where you already stand would only be a trap, and the one thing a
-    /// space you are in offers is its beacon. It comes back ahead of the
-    /// beacon so the slots keep their order.
+    /// The cast stays in its slot either way: travelling to the space you
+    /// stand in drops and re-reads it, which is the only way back from a space
+    /// a script or a peer has left broken, so it flips to a respawn rather
+    /// than leaving. Relabelled in place, so the ring never moves.
     fn set_here(&mut self, here: bool) {
         if self.here == here {
             return;
@@ -112,15 +117,22 @@ impl Space {
         if let Err(err) = self.group.set_glyph(Some(&glyph::from_rows(mark))) {
             eprintln!("halo: space glyph: {err:?}");
         }
-        if here {
-            self.group.remove_child(&self.travel);
-        } else {
-            self.group.remove_child(&self.beacon);
-            let _ = self.group.add_child(&self.travel);
-            let _ = self.group.add_child(&self.beacon);
+        let (label, what) = if here { RESPAWN } else { TRAVEL };
+        if let Err(err) = self.cast.set_label(label) {
+            eprintln!("halo: space cast label: {err:?}");
+        }
+        if let Err(err) = self.cast.set_description(what) {
+            eprintln!("halo: space cast description: {err:?}");
         }
     }
 }
+
+/// The cast a space wears while you are somewhere else.
+const TRAVEL: (&str, &str) = ("Travel", "Travel to this space.");
+
+/// The same cast while you stand in the space: the one way to ask for it
+/// again, where you already are.
+const RESPAWN: (&str, &str) = ("Respawn", "Reload this space.");
 
 /// Lists the spaces currently occupied per the registries this app follows.
 #[derive(Default)]
@@ -130,6 +142,8 @@ pub struct Nav {
     beacons: Vec<Document>,
     /// The space the user was last seen in.
     here:    Option<(u64, u64, u64, u64)>,
+    /// The beacon body, built once and worn by every space's beacon mote.
+    icon:    Option<(u64, u64)>,
 }
 
 impl Nav {
@@ -160,6 +174,12 @@ impl Nav {
     /// position, and position is muscle memory.
     pub fn fixed_update(&mut self, parent: &Mote) {
         self.follow_user();
+        if self.icon.is_none() {
+            match beacon_icon() {
+                Ok(icon) => self.icon = Some(icon),
+                Err(err) => eprintln!("halo: beacon icon: {err:?}"),
+            }
+        }
 
         let mut found = Vec::new();
         for index in (0..self.lists.len()).rev() {
@@ -181,7 +201,7 @@ impl Nav {
             if self.spaces.iter().any(|space| space.hex == listing.hex) {
                 continue;
             }
-            let Some(mut space) = build(&listing) else {
+            let Some(mut space) = build(&listing, self.icon) else {
                 continue;
             };
             space.set_here(self.here == Some(space.ns));
@@ -205,12 +225,17 @@ impl Nav {
 
     /// Travels to whichever space's cast just filled.
     pub fn cast(&self, mote: &Mote) -> bool {
-        let Some(space) = self.spaces.iter().find(|space| space.travel.is(mote)) else {
+        let Some(space) = self.spaces.iter().find(|space| space.cast.is(mote)) else {
             return false;
         };
         if let Err(err) = travel(space.ns) {
             eprintln!("halo: travel failed: {err:?}");
-            space.travel.notify("Couldn't travel there.");
+            let what = if space.here {
+                "Couldn't reload this space."
+            } else {
+                "Couldn't travel there."
+            };
+            space.cast.notify(what);
         }
         true
     }
@@ -272,15 +297,15 @@ fn entry(entry: &Entry) -> Option<Listing> {
 
 /// A space, and the two things you can do with one.
 ///
-/// Two motes rather than one because the roles say different things: travel is
-/// consequential and gets a fill ring, and only an item leaves its slot to be
-/// thrown. A mote cannot be both.
+/// Two motes rather than one because the roles say different things: the cast
+/// is consequential and gets a fill ring, and only an item leaves its slot to
+/// be thrown. A mote cannot be both.
 ///
 /// Every space wears the colour its beacon will: the beacon's hue is derived
 /// from the space's own id, so the mote you pick out of the halo and the beacon
 /// you put down in the world are the same colour, and a grid of spaces
 /// separates at a glance rather than reading as one green sheet.
-fn build(listing: &Listing) -> Option<Space> {
+fn build(listing: &Listing, icon: Option<(u64, u64)>) -> Option<Space> {
     let color = generate_color(Hash::from_str(&listing.hex).ok()?);
 
     let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
@@ -288,26 +313,35 @@ fn build(listing: &Listing) -> Option<Space> {
     group.set_description(&people).ok()?;
     group.set_tint(Some(color));
     // The space wears its beacon's mark: in the grid it reads as the marker
-    // it is, and opening it still shows the travel and beacon motes beneath.
+    // it is, and opening it still shows the cast and beacon motes beneath.
     // A refused glyph is not a reason to lose the whole space.
     if let Err(err) = group.set_glyph(Some(&glyph::from_rows(&glyph::BEACON))) {
         eprintln!("halo: space glyph: {err:?}");
     }
 
-    let travel = Mote::new(Kind::Cast, "Travel").ok()?;
-    travel.set_description("Travel to this space.").ok()?;
-    travel.set_tint(Some(color));
+    let cast = Mote::new(Kind::Cast, TRAVEL.0).ok()?;
+    cast.set_description(TRAVEL.1).ok()?;
+    cast.set_tint(Some(color));
+    // One mark for travel and respawn alike: both are the same act, and the
+    // label says which. A refused glyph is not a reason to lose the space.
+    if let Err(err) = cast.set_glyph(Some(&glyph::from_rows(&glyph::TRAVEL))) {
+        eprintln!("halo: travel glyph: {err:?}");
+    }
 
     let beacon = Mote::new(Kind::Item, "Beacon").ok()?;
     beacon
         .set_description("Drop a beacon to find your way back.")
         .ok()?;
     beacon.set_tint(Some(color));
-    if let Err(err) = beacon.set_glyph(Some(&glyph::from_rows(&glyph::BEACON))) {
-        eprintln!("halo: beacon glyph: {err:?}");
+    // The beacon body rather than a glyph: a mote that is carried should read
+    // as the thing it is about to become.
+    if let Some(icon) = icon
+        && let Ok(doc) = script_document()
+    {
+        beacon.set_icon(&doc, Some(icon));
     }
 
-    group.add_child(&travel);
+    group.add_child(&cast);
     group.add_child(&beacon);
 
     Some(Space {
@@ -316,7 +350,7 @@ fn build(listing: &Listing) -> Option<Space> {
         people,
         here: false,
         group,
-        travel,
+        cast,
         beacon,
     })
 }
@@ -356,6 +390,84 @@ fn people(listing: &Listing) -> String {
     } else {
         format!("{people}, quiet {} min", listing.idle_secs / 60)
     }
+}
+
+/// The beacon body as an icon: the corner cubes and core the planted beacon
+/// is built from, so a carried beacon mote reads as the thing it will become.
+/// Neutral, because the shell carries the space's colour.
+///
+/// One icon is shared by every space's beacon mote. Only one space's level is
+/// open at a time, so only one beacon mote is ever drawn and the surface's
+/// icon dock never has two slots claiming the same prim.
+fn beacon_icon() -> anyhow::Result<(u64, u64)> {
+    const SIZE: f32 = 1.0;
+    const CORNER: f32 = SIZE * 0.44;
+    const CORNER_OFFSET: f32 = (SIZE - CORNER) * 0.5;
+    const CORE: f32 = SIZE * 0.84;
+
+    const SHELL: Color = Color {
+        r: 0.82,
+        g: 0.85,
+        b: 0.90,
+        a: 1.0,
+    };
+    const GLOW: Color = Color {
+        r: 0.95,
+        g: 0.97,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    let doc = script_document()?;
+    let root = doc.create_prim(Layer::Local, None)?;
+    // Hidden until a beacon mote wears it, so the icon never stands at the
+    // document's origin at its authored size.
+    let mut batch = doc.local().set(root, Property::Transform(hidden()));
+    let shell = Material {
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(SHELL),
+        double_sided: None,
+        emissive:     None,
+        metallic:     Some(0.3),
+        roughness:    Some(0.7),
+    };
+    let core = Material {
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(GLOW),
+        double_sided: None,
+        emissive:     Some(Color {
+            r: GLOW.r * 0.5,
+            g: GLOW.g * 0.5,
+            b: GLOW.b * 0.5,
+            a: 1.0,
+        }),
+        metallic:     Some(0.3),
+        roughness:    Some(0.7),
+    };
+    for x in [-1.0_f32, 1.0] {
+        for y in [-1.0_f32, 1.0] {
+            for z in [-1.0_f32, 1.0] {
+                let corner = Cuboid::new(Vec3::splat(CORNER)).mesh()?;
+                batch = batch
+                    .set(corner, Property::Parent(Some(root)))
+                    .set(
+                        corner,
+                        Property::Transform(Transform::from_translation(
+                            Vec3::new(x, y, z) * CORNER_OFFSET,
+                        )),
+                    )
+                    .set(corner, Property::Material(shell));
+            }
+        }
+    }
+    let middle = Cuboid::new(Vec3::splat(CORE)).mesh()?;
+    batch = batch
+        .set(middle, Property::Parent(Some(root)))
+        .set(middle, Property::Material(core));
+    batch.flush()?;
+    Ok(root)
 }
 
 fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {

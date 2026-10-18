@@ -78,6 +78,20 @@ pub const BEACON: Rows = [
     ".........",
 ];
 
+/// Going to a space, or asking for the one you are in again: one arrow,
+/// because both are the same act — leave and arrive.
+pub const TRAVEL: Rows = [
+    ".........",
+    "....#....",
+    "....##...",
+    "....###..",
+    ".#######.",
+    "....###..",
+    "....##...",
+    "....#....",
+    ".........",
+];
+
 /// What a tool wears when it announced no mark of its own.
 pub const TOOL: Rows = [
     "....#....",
@@ -135,6 +149,7 @@ mod tests {
             ("TOOLS", TOOLS),
             ("BEACON", BEACON),
             ("HERE", HERE),
+            ("TRAVEL", TRAVEL),
             ("TOOL", TOOL),
         ] {
             assert!(centred(&rows), "{name} slides to one side of its orb");
@@ -143,7 +158,7 @@ mod tests {
 
     #[test]
     fn every_bitmap_is_nine_square() {
-        for rows in [HOME, NAV, TOOLS, BEACON, HERE, TOOL] {
+        for rows in [HOME, NAV, TOOLS, BEACON, HERE, TRAVEL, TOOL] {
             assert!(rows.iter().all(|row| row.len() == 9));
             let glyph = from_rows(&rows);
             assert_eq!((glyph.size, glyph.bits.len()), (9, 11));

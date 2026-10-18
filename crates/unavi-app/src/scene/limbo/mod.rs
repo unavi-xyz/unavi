@@ -15,6 +15,7 @@ use bevy::{
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
+    config::AgentConfig,
 };
 use unavi_space::grid::{
     ActiveSpace,
@@ -84,10 +85,12 @@ pub fn spawn_limbo(
 
 /// Pins the agent body to the limbo floor for as long as limbo lasts.
 ///
-/// Held every tick rather than placed once on entry: a space becoming active
-/// shifts the floor out from under an agent parked at a fixed point.
+/// Held every tick rather than placed once on entry, since a space becoming
+/// active shifts the floor out from under an agent parked at a fixed point.
+/// The body's origin is its capsule's centre, so it is held at its float
+/// height above the floor rather than buried half in it.
 pub fn hold_agent_in_limbo(
-    agents: Query<&LocalAgentEntities, With<LocalAgent>>,
+    agents: Query<(&LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
     floor: Query<&Transform, With<Limbo>>,
     mut bodies: Query<
         (
@@ -99,15 +102,16 @@ pub fn hold_agent_in_limbo(
         Without<Limbo>,
     >,
 ) {
-    let (Ok(ents), Ok(floor)) = (agents.single(), floor.single()) else {
+    let (Ok((ents, config)), Ok(floor)) = (agents.single(), floor.single()) else {
         return;
     };
+    let held = floor.translation + Vec3::Y * config.float_height();
     let Ok((mut tr, mut pos, mut vel, mut ang_vel)) = bodies.get_mut(ents.body) else {
         return;
     };
 
-    tr.translation = floor.translation;
-    pos.0 = floor.translation;
+    tr.translation = held;
+    pos.0 = held;
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 }

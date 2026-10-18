@@ -10,6 +10,7 @@ use bevy_hsd::attributes::spawn::SpawnPoint;
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
+    config::AgentConfig,
 };
 use unavi_space::{
     grid::ActiveSpace,
@@ -62,12 +63,12 @@ impl SpawnPlaces<'_, '_> {
 
 pub fn respawn(
     trigger: On<Respawn>,
-    local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
+    local_agent: Query<(&LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
     active: Res<ActiveSpace>,
     places: SpawnPlaces,
     mut body: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,
 ) {
-    let Ok(ents) = local_agent.single() else {
+    let Ok((ents, config)) = local_agent.single() else {
         warn!("Can't respawn, local agent not found");
         return;
     };
@@ -78,13 +79,16 @@ pub fn respawn(
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 
+    // Spawn points name where the feet go, and the body's origin is its
+    // capsule's centre, so it is set at its float height above the point.
     let event = trigger.event();
-    tr.translation = event.at.unwrap_or_else(|| {
+    let ground = event.at.unwrap_or_else(|| {
         event
             .space
             .or(active.0)
             .map_or_else(Vec3::default, |space| places.pick(space))
     });
+    tr.translation = ground + Vec3::Y * config.float_height();
 
     info!("Respawning at {}", tr.translation);
 }

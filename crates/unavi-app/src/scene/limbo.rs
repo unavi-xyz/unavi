@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use avian3d::prelude::*;
 use bevy::{
-    color::palettes::tailwind,
     image::{
         ImageAddressMode,
         ImageLoaderSettings,
@@ -65,13 +64,9 @@ pub fn spawn_limbo(
         .load("image/dev-white.png");
 
     let material = StandardMaterial {
-        base_color: tailwind::SKY_100.into(),
         base_color_texture: Some(dev_white),
         clearcoat: 0.4,
         clearcoat_perceptual_roughness: 0.4,
-        emissive: tailwind::SKY_500.into(),
-        emissive_exposure_weight: 0.4,
-        metallic: 0.3,
         perceptual_roughness: 0.7,
         uv_transform: Affine2::from_scale(Vec2::splat(PLANE_SIZE / TEXTURE_SIZE)),
         ..Default::default()

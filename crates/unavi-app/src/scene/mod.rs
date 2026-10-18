@@ -76,7 +76,7 @@ impl Plugin for ScenePlugin {
 }
 
 #[derive(Default, Debug, States, Clone, Copy, PartialEq, Eq, Hash)]
-enum SceneState {
+pub enum SceneState {
     /// Empty "limbo" scene, if not in any spaces.
     /// Acts as a loading screen or fallback on error.
     #[default]

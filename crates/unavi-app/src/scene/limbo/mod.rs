@@ -24,6 +24,7 @@ use unavi_space::grid::{
 };
 
 pub mod arrival;
+pub mod diagnose;
 pub mod ground;
 
 #[cfg(test)] mod tests;

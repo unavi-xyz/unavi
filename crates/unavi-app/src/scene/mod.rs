@@ -82,6 +82,10 @@ impl Plugin for ScenePlugin {
                 startup::release_startup.run_if(resource_exists::<startup::StartupHold>),
             )
             .add_systems(
+                PostUpdate,
+                limbo::diagnose::trace_limbo_body.run_if(in_state(SceneState::Limbo)),
+            )
+            .add_systems(
                 FixedUpdate,
                 (
                     travel::drive_travel,

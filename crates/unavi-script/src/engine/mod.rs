@@ -4,10 +4,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::status::{
-    Lane,
-    ScriptStatus,
-};
+use crate::status::ScriptStatus;
 
 pub mod log;
 
@@ -152,13 +149,16 @@ pub fn next_tick(
     }
 }
 
-/// Which in-flight flag a call of `kind` holds.
+/// Which in-flight flag a call of `kind` holds. Native serializes calls on
+/// the store lock and uses this to skip only a call's own schedule; web holds
+/// the whole instance instead, so it has no use for the mapping.
+#[cfg(not(target_family = "wasm"))]
 #[must_use]
-pub const fn lane_for(kind: TickKind) -> Lane {
+pub const fn lane_for(kind: TickKind) -> crate::status::Lane {
     if matches!(kind, TickKind::Update) {
-        Lane::Update
+        crate::status::Lane::Update
     } else {
-        Lane::Fixed
+        crate::status::Lane::Fixed
     }
 }
 

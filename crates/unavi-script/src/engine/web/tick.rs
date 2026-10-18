@@ -1,6 +1,5 @@
-//! The lifecycle driver, sharing [`crate::engine::next_tick`] and
-//! [`crate::engine::lane_for`] with `engine::native` so both engines agree on
-//! when a script is called.
+//! The lifecycle driver, sharing [`crate::engine::next_tick`] with
+//! `engine::native` so both engines agree on when a script is called.
 
 use bevy::prelude::*;
 use bevy_async::task;
@@ -22,7 +21,6 @@ use crate::{
         Schedule,
         TickClocks,
         TickKind,
-        lane_for,
         next_tick,
     },
 };
@@ -57,8 +55,10 @@ pub fn drive<const SCHEDULE: u8>(
         let Some(kind) = next_tick(schedule, status, &clocks, now) else {
             continue;
         };
-        let lane = lane_for(kind);
-        if !status.begin(lane) {
+        // One call at a time into the instance: a `jco` guest keeps its task
+        // stack current while suspended on a host import, so `update` must not
+        // enter while `fixed-update` is still in flight.
+        if !status.enter() {
             continue;
         }
         let tick = clocks.next(kind, now);
@@ -115,7 +115,7 @@ pub fn drive<const SCHEDULE: u8>(
                 }
                 (_, Ok(()) | Err(_)) => {}
             }
-            status.end(lane);
+            status.leave();
         });
     }
 }

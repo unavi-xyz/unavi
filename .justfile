@@ -43,9 +43,7 @@ deny:
 npm-install:
     npm install --prefix crates/unavi-script
 
-# The release workflow bumps root, launcher/ and hsd/ together. This
-# catches a bump that only touched one of the three before it ships a
-# launcher that loops forever trying to update itself.
+# Fail if the root, launcher, and hsd versions have drifted apart.
 check-versions:
     nu -c 'let root = (open Cargo.toml | get workspace.package.version); \
         let launcher = (open launcher/Cargo.toml | get workspace.package.version); \
@@ -75,9 +73,7 @@ update-wit-deps:
 update-wit-deps-locked:
     nu nu/update-wit-deps.nu --locked
 
-# Build both web app variants (WebGL + WebGPU) into dist/. This is the
-# shipped build: devtools (egui inspector, bevy/debug) stay off here even
-# though the crate defaults them on for local native dev builds.
+# Build the shipped WebGL + WebGPU bundles into dist/.
 web *ARGS:
     trunk build --dist dist-webgl --public-url /webgl/ --no-default-features {{ARGS}}
     trunk build --dist dist-webgpu --public-url /webgpu/ --no-default-features --features webgpu {{ARGS}}
@@ -87,10 +83,15 @@ web *ARGS:
     mv dist-webgl dist/webgl
     mv dist-webgpu dist/webgpu
 
+web_port := "8080"
+
+# Serve the built bundles in dist/ at localhost:8080. Run `just web` first.
+web-serve:
+    esbuild --serve={{web_port}} --servedir=dist
+
 port := "5000"
 debug := ""
-# SECRETSPEC_PROFILE is read when unavi-config expands, at compile time, so it
-# has to reach the build; at runtime it does nothing.
+# SECRETSPEC_PROFILE is read at compile time, so it must reach the build.
 dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-app"
 
 dev-build:
@@ -103,10 +104,7 @@ node: dev-build
 app: dev-build
     {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-app {{ if debug != "" { "--debug-log" } else { "" } }}
 
-# `n` only tells the copies apart, since just runs a dependency with the same
-# arguments once.
-#
-# Run a throwaway app: fresh identity, empty store, so several can run at once.
+# Run a throwaway app: fresh identity and empty store.
 app-memory n="1": dev-build
     sleep 2
     {{dev_env}} UNAVI_SYNC_TARGETS=did:web:localhost%3A{{port}} ./target/debug/unavi-app --in-memory {{ if debug != "" { "--debug-log" } else { "" } }}

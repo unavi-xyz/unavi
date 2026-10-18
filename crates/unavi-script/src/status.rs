@@ -25,6 +25,10 @@ struct Flags {
     updating:    AtomicBool,
     /// Whether an `init` or `fixed-update` call is in flight.
     fixed:       AtomicBool,
+    /// Whether any lifecycle call is in flight. Web uses this to hold the
+    /// whole instance, since a suspended call keeps its `jco` task stack
+    /// current on the page's thread.
+    entered:     AtomicBool,
 }
 
 /// Which in-flight flag a call holds. `init` shares the fixed one, since it
@@ -67,6 +71,25 @@ impl ScriptStatus {
         self.lane(lane).store(false, Ordering::Release);
     }
 
+    /// Claims the whole instance for one lifecycle call, refusing while any
+    /// call is in flight.
+    ///
+    /// Web drives a `jco` guest on the page's own thread. A call suspended on
+    /// a host import leaves the instance's task stack current there, so a
+    /// second call entered before the first resumes corrupts it: the second
+    /// call's task takes over the global current-task slot, and the first's
+    /// next host import can find no subtask. Native serializes calls on the
+    /// store lock instead, and uses [`Lane`] to skip only a call's own
+    /// schedule.
+    #[must_use]
+    pub fn enter(&self) -> bool {
+        !self.0.entered.swap(true, Ordering::AcqRel)
+    }
+
+    pub fn leave(&self) {
+        self.0.entered.store(false, Ordering::Release);
+    }
+
     fn lane(&self, lane: Lane) -> &AtomicBool {
         match lane {
             Lane::Update => &self.0.updating,
@@ -95,5 +118,17 @@ mod tests {
         assert!(status.begin(Lane::Fixed), "the lanes are independent");
         status.end(Lane::Update);
         assert!(status.begin(Lane::Update));
+    }
+
+    #[test]
+    fn an_entered_instance_refuses_a_second_call() {
+        let status = ScriptStatus::default();
+        assert!(status.enter());
+        assert!(
+            !status.enter(),
+            "no second call may enter while one is in flight"
+        );
+        status.leave();
+        assert!(status.enter());
     }
 }

@@ -32,3 +32,6 @@ deps/
 # Other
 *.db
 docs/
+
+# Runtime artifacts
+server.pid

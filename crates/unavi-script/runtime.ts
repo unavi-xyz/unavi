@@ -134,9 +134,10 @@ export async function instantiateScript(
       args: [],
       enableNetwork: false,
     },
+    stdout: outputHandler(name, false, rt),
+    stderr: outputHandler(name, true, rt),
   });
   const imports = buildImports(wasi, rt);
-  batchOutput(imports, name, rt);
 
   return await compiled.instantiate(compiled.getCoreModule, imports);
 }
@@ -176,7 +177,7 @@ export async function scriptFixedUpdate(
 }
 
 /**
- * Replaces the shim's stdout and stderr, which write straight to the
+ * The shim's stdout and stderr handler. The defaults write straight to the
  * console, one call per write and outside the app's log filter.
  *
  * Gathering a run is this side's job because only this side knows when one
@@ -186,40 +187,30 @@ export async function scriptFixedUpdate(
  * behaviour this replaces. The run then goes to `scriptLog`, which is where
  * native output lands too.
  */
-function batchOutput(imports: Record<string, any>, name: string, rt: any) {
-  for (const [iface, getter, isError] of [
-    ["wasi:cli/stdout", "getStdout", false],
-    ["wasi:cli/stderr", "getStderr", true],
-  ] as const) {
-    const entry = imports[iface];
-    if (entry == undefined) continue;
+function outputHandler(name: string, isError: boolean, rt: any) {
+  const decoder = new TextDecoder();
+  let held = "";
+  let scheduled = false;
 
-    const decoder = new TextDecoder();
-    let held = "";
-    let scheduled = false;
+  const flush = () => {
+    scheduled = false;
+    const run = held;
+    held = "";
+    if (run !== "") rt.scriptLog(name, isError, run);
+  };
 
-    const flush = () => {
-      scheduled = false;
-      const run = held;
-      held = "";
-      if (run !== "") rt.scriptLog(name, isError, run);
-    };
-
-    const stream = new entry.OutputStream({
-      write(contents: Uint8Array) {
-        held += decoder.decode(contents, { stream: true });
-        if (scheduled) return;
-        scheduled = true;
-        queueMicrotask(flush);
-      },
-      blockingFlush() {},
-      [Symbol.dispose ?? Symbol.for("dispose")]() {
-        flush();
-      },
-    });
-
-    imports[iface] = { ...entry, [getter]: () => stream };
-  }
+  return {
+    write(contents: Uint8Array) {
+      held += decoder.decode(contents, { stream: true });
+      if (scheduled) return;
+      scheduled = true;
+      queueMicrotask(flush);
+    },
+    blockingFlush() {},
+    drop() {
+      flush();
+    },
+  };
 }
 
 /**

@@ -86,24 +86,31 @@ impl Plugin for AssetsPlugin {
 #[derive(Resource)]
 struct CjkRequested;
 
-/// Whether `c` needs [`CJK_FONT`]: Han, kana, hangul, CJK punctuation and the
-/// half- and full-width forms.
+/// Whether `c` needs [`CJK_FONT`]. Covers Han (with radicals, compatibility
+/// ideographs and the supplementary planes), kana, bopomofo, hangul, CJK
+/// punctuation, enclosed forms and the half- and full-width forms.
 const fn is_cjk(c: char) -> bool {
     matches!(
         c,
         '\u{1100}'..='\u{11FF}'
-            | '\u{3000}'..='\u{303F}'
-            | '\u{3040}'..='\u{309F}'
-            | '\u{30A0}'..='\u{30FF}'
+            | '\u{2E80}'..='\u{2FDF}'
+            | '\u{3000}'..='\u{33FF}'
             | '\u{3400}'..='\u{4DBF}'
             | '\u{4E00}'..='\u{9FFF}'
             | '\u{AC00}'..='\u{D7AF}'
+            | '\u{F900}'..='\u{FAFF}'
             | '\u{FF00}'..='\u{FFEF}'
+            | '\u{20000}'..='\u{3134F}'
     )
 }
 
-fn request_font(commands: &mut Commands, assets: &AssetServer, order: usize) {
-    let spec = &FONT_STACK[order];
+/// Requests `spec` at its position in [`FONT_STACK`], or warns if it is not
+/// part of the stack.
+fn request_font(commands: &mut Commands, assets: &AssetServer, spec: &AssetSpec) {
+    let Some(order) = FONT_STACK.iter().position(|face| face.rel_path == spec.rel_path) else {
+        warn!(path = spec.rel_path, "font is not in the fallback stack");
+        return;
+    };
     commands.spawn((
         Name::new(format!("font {}", spec.rel_path)),
         FontRequest::new(assets.load::<FontBytes>(path(spec)), order as u32),
@@ -113,7 +120,7 @@ fn request_font(commands: &mut Commands, assets: &AssetServer, order: usize) {
 /// Requests the primary face over iroh. No face is embedded, so text draws
 /// nothing until it arrives.
 fn load_primary_font(mut commands: Commands, assets: Res<AssetServer>) {
-    request_font(&mut commands, &assets, 0);
+    request_font(&mut commands, &assets, &DEFAULT_FONT);
 }
 
 /// Requests the CJK face the first time changed text contains a character
@@ -125,7 +132,7 @@ fn request_cjk_font(
     texts: Query<&MsdfText, Changed<MsdfText>>,
 ) {
     if texts.iter().any(|text| text.value.chars().any(is_cjk)) {
-        request_font(&mut commands, &assets, 1);
+        request_font(&mut commands, &assets, &CJK_FONT);
         commands.insert_resource(CjkRequested);
     }
 }

@@ -12,8 +12,14 @@ def main [] {
   )
 
   for file in $files {
-    ^brotli -q 11 -f -k -o $"($file).br" $file
-    ^gzip -9 -f -k -n $file
+    let brotli = (^brotli -q 11 -f -k -o $"($file).br" $file | complete)
+    if $brotli.exit_code != 0 {
+      error make { msg: $"brotli failed for ($file): ($brotli.stderr | str trim)" }
+    }
+    let gzip = (^gzip -9 -f -k -n $file | complete)
+    if $gzip.exit_code != 0 {
+      error make { msg: $"gzip failed for ($file): ($gzip.stderr | str trim)" }
+    }
   }
 
   print $"compressed ($files | length) files"

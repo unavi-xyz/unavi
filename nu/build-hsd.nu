@@ -61,10 +61,12 @@ def output_path [crate: string] {
   $"($hsd_out)/($crate | str replace -a '-' '_').hsdz"
 }
 
-# Every file a package build reads: the guest sources and their WIT, and the
-# format and packer the packages are written with. Build outputs are skipped.
+# Every file a package build reads: the guest sources and their WIT, the
+# format and packer the packages are written with, the app assets a package
+# may embed, and the workspace manifests. Build outputs are skipped.
 def newest_input [] {
-  glob "{hsd,protocol/wit,crates/hsd,crates/hsd-cli}/**/*" --no-dir --exclude ["**/target/**"]
+  let tree = glob "{hsd,protocol/wit,crates/hsd,crates/hsd-cli,crates/unavi-app/assets}/**/*" --no-dir --exclude ["**/target/**" "crates/unavi-app/assets/hsd/**"]
+  $tree | append ["Cargo.toml" "Cargo.lock"]
   | par-each {|file| ls -l $file | get 0.modified }
   | math max
 }

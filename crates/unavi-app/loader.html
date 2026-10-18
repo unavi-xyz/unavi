@@ -258,9 +258,30 @@
             { once: true },
           );
 
+          // A failure before Trunk can call onFailure, such as a missing
+          // module or an import error, would otherwise leave the bar spinning.
+          const failEarly = (event) => {
+            if (document.getElementById("overlay")) {
+              showError(event.reason ?? event.error ?? event.message);
+            }
+          };
+          window.addEventListener("error", failEarly, { once: true });
+          window.addEventListener("unhandledrejection", failEarly, {
+            once: true,
+          });
+          window.addEventListener(
+            "unavi-ready",
+            () => {
+              window.removeEventListener("error", failEarly);
+              window.removeEventListener("unhandledrejection", failEarly);
+            },
+            { once: true },
+          );
+
           // Inject and execute scripts (paths already correct).
           doc.querySelectorAll("script").forEach((el) => {
             const script = document.createElement("script");
+            script.onerror = () => showError(`failed to load ${el.src}`);
             if (el.src) script.src = el.src;
             else script.textContent = el.textContent;
             if (el.type) script.type = el.type;

@@ -16,6 +16,7 @@ use unavi_space::{
 use super::arrival::{
     GROUND_GRACE,
     LimboArrival,
+    MIN_LIMBO_STAY,
     SPACE_LOAD_TIMEOUT,
     arm_limbo_arrival,
     drive_limbo_exit,
@@ -110,6 +111,7 @@ fn cover_veil(app: &mut App) {
 /// Runs the frames in which a passed gate closes the veil, enters the space,
 /// and lands in `SceneState::Space`.
 fn pass_gate(app: &mut App) {
+    advance(app, MIN_LIMBO_STAY);
     app.update();
     cover_veil(app);
     app.update();
@@ -548,7 +550,11 @@ fn travel_from_limbo_retargets_the_arrival() {
 
     travel_to(&mut app, second);
     app.update();
-    assert_eq!(spaces_of(&mut app, second), 1, "an existing space is reused");
+    assert_eq!(
+        spaces_of(&mut app, second),
+        1,
+        "an existing space is reused"
+    );
     assert_eq!(state(&app), SceneState::Limbo);
 }
 
@@ -558,4 +564,30 @@ fn spaces_of(app: &mut App, ns: NamespaceId) -> usize {
         .iter(app.world())
         .filter(|space| space.0 == ns.into())
         .count()
+}
+
+#[test]
+fn a_space_ready_at_once_still_waits_out_the_minimum_stay() {
+    let mut app = setup();
+    set_ground(&mut app, true);
+    app.world_mut()
+        .spawn((Space(namespace(1).into()), HsdLoaded));
+
+    app.update();
+    advance(
+        &mut app,
+        MIN_LIMBO_STAY.saturating_sub(Duration::from_millis(1)),
+    );
+    app.update();
+    cover_veil(&mut app);
+    app.update();
+    app.update();
+    assert_eq!(
+        state(&app),
+        SceneState::Limbo,
+        "a ready space must not cut limbo short"
+    );
+
+    pass_gate(&mut app);
+    assert_eq!(state(&app), SceneState::Space);
 }

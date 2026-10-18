@@ -32,6 +32,9 @@ pub(super) const SPACE_LOAD_TIMEOUT: Duration = Duration::from_secs(30);
 /// How long a loaded, settled space may go without ground before the agent is
 /// let in anyway, since a space can legitimately have no floor.
 pub(super) const GROUND_GRACE: Duration = Duration::from_secs(3);
+/// The shortest time limbo lasts once entered, so a space that is ready at
+/// once does not flash limbo by in a few frames.
+pub(super) const MIN_LIMBO_STAY: Duration = Duration::from_secs(3);
 
 /// The space limbo is holding the local agent for.
 #[derive(Resource, Default)]
@@ -41,6 +44,8 @@ pub struct LimboArrival {
     pub target:          Option<SpaceId>,
     timeout:             Duration,
     timed_out:           bool,
+    /// When limbo was entered, for [`MIN_LIMBO_STAY`].
+    entered_at:          Duration,
     ready:               Option<Arrival>,
     /// Whether this gate has the veil closing on the way out, so only it
     /// lifts the veil again if the space stops holding.
@@ -96,6 +101,7 @@ impl LimboArrival {
 pub fn arm_limbo_arrival(time: Res<Time>, mut arrival: ResMut<LimboArrival>) {
     arrival.timeout = time.elapsed() + SPACE_LOAD_TIMEOUT;
     arrival.timed_out = false;
+    arrival.entered_at = time.elapsed();
     arrival.ready = None;
     arrival.entering = None;
     arrival.covering = false;
@@ -204,6 +210,9 @@ pub fn drive_limbo_exit(
     );
     if !passed {
         arrival.release(&mut veil);
+        return;
+    }
+    if now < arrival.entered_at + MIN_LIMBO_STAY {
         return;
     }
 

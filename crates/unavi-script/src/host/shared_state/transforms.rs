@@ -128,9 +128,8 @@ pub struct AbsoluteNodeId {
 
 #[derive(Clone, Default)]
 pub struct TransformSnapshot {
-    pub global: GlobalTransform,
-    pub local:  Transform,
-    pub world:  GlobalTransform,
+    pub local: Transform,
+    pub world: GlobalTransform,
 }
 
 #[derive(Component)]
@@ -159,32 +158,26 @@ pub fn register_nodes(
         }));
 }
 
+/// A node whose own transform and propagated global are both unchanged keeps
+/// its snapshot. Propagation marks a moved subtree's `GlobalTransform`, so the
+/// filter never misses one.
 pub fn snapshot_transforms(
-    transforms: Query<(
-        &RegisterTransforms,
-        &GlobalTransform,
-        &Transform,
-        Option<&PrimOf>,
-    )>,
-    docs: Query<&GlobalTransform>,
+    transforms: Query<
+        (&RegisterTransforms, &GlobalTransform, &Transform),
+        Or<(Changed<GlobalTransform>, Changed<Transform>)>,
+    >,
     registry: Res<TransformSnapshots>,
 ) {
     if transforms.is_empty() {
         return;
     }
 
-    registry.snapshot_nodes(transforms.iter().map(|(id, global, local, doc)| {
-        let doc_relative = doc
-            .and_then(|c| docs.get(c.0).ok())
-            .map_or(*global, |doc_global| {
-                GlobalTransform::from(doc_global.affine().inverse() * global.affine())
-            });
+    registry.snapshot_nodes(transforms.iter().map(|(id, global, local)| {
         (
             id.0,
             TransformSnapshot {
-                global: doc_relative,
-                local:  *local,
-                world:  *global,
+                local: *local,
+                world: *global,
             },
         )
     }));
@@ -201,7 +194,10 @@ pub fn deregister_transforms(
 }
 
 pub fn snapshot_doc_roots(
-    docs: Query<(&HsdDocId, &GlobalTransform), (With<Hsd>, Without<Unplaced>)>,
+    docs: Query<
+        (&HsdDocId, &GlobalTransform),
+        (With<Hsd>, Without<Unplaced>, Changed<GlobalTransform>),
+    >,
     registry: Res<TransformSnapshots>,
 ) {
     if docs.is_empty() {
@@ -217,5 +213,62 @@ pub fn deregister_doc_root(
 ) {
     if let Ok(record) = docs.get(trigger.entity) {
         registry.remove_doc_root(&record.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn app() -> App {
+        let mut app = App::new();
+        app.init_resource::<TransformSnapshots>()
+            .add_systems(Update, snapshot_transforms);
+        app
+    }
+
+    #[test]
+    fn an_unchanged_node_is_not_rewritten() {
+        let mut app = app();
+        let id = AbsoluteNodeId {
+            doc:  DocId([0; 32]),
+            node: PrimId::from_digest(&[0; 32]),
+        };
+        let prim = app
+            .world_mut()
+            .spawn((
+                RegisterTransforms(id),
+                Transform::default(),
+                GlobalTransform::default(),
+            ))
+            .id();
+
+        app.update();
+        let registry = app.world().resource::<TransformSnapshots>().clone();
+        let sentinel = Transform::from_translation(Vec3::new(1.0, 2.0, 3.0));
+        registry.set_local(&id, sentinel);
+
+        app.update();
+        assert_eq!(
+            registry
+                .node(&id)
+                .map(|snapshot| snapshot.local.translation),
+            Some(sentinel.translation),
+            "an unchanged node was rewritten"
+        );
+
+        app.world_mut()
+            .entity_mut(prim)
+            .get_mut::<Transform>()
+            .expect("transform")
+            .translation = Vec3::new(4.0, 5.0, 6.0);
+        app.update();
+        assert_eq!(
+            registry
+                .node(&id)
+                .map(|snapshot| snapshot.local.translation),
+            Some(Vec3::new(4.0, 5.0, 6.0)),
+            "a changed node was not rewritten"
+        );
     }
 }

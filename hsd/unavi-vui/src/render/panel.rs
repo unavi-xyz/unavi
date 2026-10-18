@@ -303,6 +303,21 @@ impl Panel {
         self.bodies.place(doc, anchor)
     }
 
+    /// Moves the panel where `by` takes its anchor, keeping everything it is
+    /// showing. Only the root transform is written, so the reveal, the level
+    /// and the page carry on as they were.
+    pub fn carry(
+        &mut self,
+        doc: &Document,
+        by: &Transform,
+        anchor: &Transform,
+    ) -> anyhow::Result<Transform> {
+        let carried = *by * *anchor;
+        self.bodies.place(doc, &carried)?;
+        self.surface.carry(by);
+        Ok(carried)
+    }
+
     pub const fn field_lift(&self) -> f32 {
         self.surface.tuning().field_lift
     }

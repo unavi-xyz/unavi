@@ -1,7 +1,10 @@
 //! Press, seize and release: whether a hold on a mote became a tap or a
 //! carry.
 
-use wired_guest::math::Vec3;
+use wired_guest::math::{
+    Transform,
+    Vec3,
+};
 
 use crate::tuning::Tuning;
 
@@ -63,6 +66,16 @@ impl Grasp {
         } else {
             Outcome::Tap(seized.slot)
         })
+    }
+
+    /// The viewer was moved by `by` in one step, and a hold in progress goes
+    /// with them: both ends are in the room, so left alone the hand would
+    /// seem to have travelled kilometres and drop the mote there.
+    pub fn carry(&mut self, by: &Transform) {
+        if let Some(held) = &mut self.seized {
+            held.origin = by.transform_point(held.origin);
+            held.at = by.transform_point(held.at);
+        }
     }
 
     #[must_use]

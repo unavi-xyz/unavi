@@ -10,7 +10,10 @@
 //! knowing about — the glyphs inside its motes, and the body of whatever tool
 //! is in hand.
 
-use wired_guest::math::Transform;
+use wired_guest::{
+    math::Transform,
+    teleport::Watch,
+};
 
 use crate::{
     artifact::Artifact,
@@ -59,6 +62,8 @@ struct Script {
     home:     Home,
     nav:      Nav,
     summon:   Summon,
+    /// Last tick's eye, so a respawn carries the open halo along.
+    jumps:    Watch,
     /// The time on the root's face.
     clock:    Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
@@ -195,7 +200,8 @@ impl ScriptBehavior for Script {
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
-            clock:    Clock::default(),
+            jumps:    Watch::default(),
+            clock:   Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
         })
@@ -211,6 +217,9 @@ impl ScriptBehavior for Script {
         let Some(eye) = camera_pose() else {
             return Ok(());
         };
+        if let Some(by) = self.jumps.step(&eye) {
+            self.summon.carry(&by);
+        }
         self.read_input(&eye);
 
         let walked_away = self.summon.step(&eye);

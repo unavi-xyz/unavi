@@ -76,6 +76,14 @@ impl Summon {
         Some(Command::Dismiss)
     }
 
+    /// The viewer was moved by `by` in one step, and the halo goes with them.
+    /// Nothing is closed, so walking away still measures from where it stands.
+    pub fn carry(&mut self, by: &Transform) {
+        if let Some(at) = &mut self.at {
+            *at = *by * *at;
+        }
+    }
+
     /// Planting something from the halo puts it away: attention has moved to
     /// the thing that was just placed.
     pub fn taken(&mut self) -> Option<Command> {
@@ -94,4 +102,41 @@ fn moved(at: &Transform, eye: &Transform) -> bool {
     let was = at.forward();
     let now = eye.forward();
     was.dot(now) < RESUMMON_TURN_COS
+}
+
+#[cfg(test)]
+mod tests {
+    use wired_guest::math::Vec3;
+
+    use super::*;
+
+    fn eye_at(x: f32) -> Transform {
+        Transform::from_translation(Vec3::new(x, 1.6, 0.0))
+    }
+
+    #[test]
+    fn an_open_halo_carried_with_the_viewer_is_not_walked_away_from() {
+        let mut summon = Summon::default();
+        summon.press(&eye_at(0.0));
+
+        let by = Transform::from_translation(Vec3::new(500.0, 0.0, 0.0));
+        summon.carry(&by);
+
+        assert_eq!(summon.step(&eye_at(500.0)), None);
+        assert!(summon.is_up());
+    }
+
+    #[test]
+    fn an_open_halo_left_behind_by_a_jump_closes() {
+        let mut summon = Summon::default();
+        summon.press(&eye_at(0.0));
+        assert_eq!(summon.step(&eye_at(500.0)), Some(Command::Dismiss));
+    }
+
+    #[test]
+    fn a_closed_halo_stays_closed_when_carried() {
+        let mut summon = Summon::default();
+        summon.carry(&Transform::from_translation(Vec3::new(500.0, 0.0, 0.0)));
+        assert!(!summon.is_up());
+    }
 }

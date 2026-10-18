@@ -218,6 +218,9 @@ impl Nav {
             return;
         }
         self.here = here;
+        // Beacons belong to the space they were planted in, and travel
+        // despawns it, so the handles would only pile up pointing at nothing.
+        self.beacons.clear();
         for space in &mut self.spaces {
             space.set_here(here == Some(space.ns));
         }
@@ -487,6 +490,8 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
     // A copy rather than a reference: the beacon's script looks for a prim
     // named for its space, and a referenced document realizes as a child, so
     // the script would be looking in the wrong document.
+    // Minting has no document to parent to while in limbo, and says so as an
+    // error that `plant` turns into a notice on the mote.
     let beacon = copy_document(&template)?;
     // The landing is in the halo's frame, but the beacon document sits at
     // the space root: convert before writing, or it plants where the halo's

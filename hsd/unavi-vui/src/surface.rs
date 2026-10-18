@@ -4,6 +4,7 @@
 use smol_str::SmolStr;
 use wired_guest::math::{
     Color,
+    Transform,
     Vec2,
     Vec3,
 };
@@ -158,6 +159,11 @@ impl Surface {
     #[must_use]
     pub const fn is_seized(&self) -> bool {
         self.grasp.is_seized()
+    }
+
+    /// Carries a hold in progress by the move the viewer made.
+    pub fn carry(&mut self, by: &Transform) {
+        self.grasp.carry(by);
     }
 
     /// The held slot once the hold is a take rather than a tap.

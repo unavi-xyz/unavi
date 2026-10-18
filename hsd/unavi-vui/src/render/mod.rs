@@ -5,10 +5,13 @@
 //! paging and drawing. A consumer supplies motes and reads back [`Event`]s; no
 //! prim and no pointer crosses that line.
 
-use wired_guest::math::{
-    Transform,
-    Vec2,
-    Vec3,
+use wired_guest::{
+    math::{
+        Transform,
+        Vec2,
+        Vec3,
+    },
+    teleport::Watch,
 };
 
 use crate::{
@@ -81,6 +84,8 @@ pub struct Vui {
     free:    Vec<usize>,
     /// Seconds of updates so far, which notices are timed against.
     now:     f64,
+    /// The previous fixed tick's eye, which a respawn is told apart by.
+    jumps:   Watch,
 }
 
 impl Vui {
@@ -92,6 +97,7 @@ impl Vui {
             slots:   Vec::new(),
             free:    Vec::new(),
             now:     0.0,
+            jumps:   Watch::default(),
         })
     }
 
@@ -226,6 +232,9 @@ impl Vui {
         let Some(eye) = crate::camera_pose() else {
             return Ok(());
         };
+        if let Some(by) = self.jumps.step(&eye) {
+            self.carry(&by)?;
+        }
         let gaze = Gaze::read(&eye);
 
         for index in 0..self.slots.len() {
@@ -274,6 +283,18 @@ impl Vui {
                 .panel
                 .update(&self.doc, &gaze, anchor, delta, self.now)?;
             self.report(index, events);
+        }
+        Ok(())
+    }
+
+    /// Moves every placed panel by the move the viewer just made, so a panel
+    /// stands where it did relative to them. Landed levels share the slot's
+    /// anchor, so they are carried by the same move.
+    fn carry(&mut self, by: &Transform) -> anyhow::Result<()> {
+        for slot in self.slots.iter_mut().flatten() {
+            if let Some(anchor) = slot.anchor {
+                slot.anchor = Some(slot.panel.carry(&self.doc, by, &anchor)?);
+            }
         }
         Ok(())
     }

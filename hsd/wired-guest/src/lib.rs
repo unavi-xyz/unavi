@@ -16,6 +16,7 @@ pub mod beacon;
 pub mod color;
 pub mod glyph;
 pub mod math;
+pub mod teleport;
 pub mod xform;
 
 pub use wired_state_macro::state;

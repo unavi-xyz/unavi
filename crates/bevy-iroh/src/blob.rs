@@ -57,9 +57,11 @@ pub struct BlobRequest(pub Hash);
 /// A fetch in flight for this entity's [`BlobRequest`].
 #[derive(Component)]
 pub struct BlobPending {
-    rx:      async_channel::Receiver<Result<Bytes, BlobError>>,
+    rx:        async_channel::Receiver<Result<Bytes, BlobError>>,
+    /// The providers the fetch started with.
+    providers: Vec<EndpointId>,
     /// Dropping it cancels the fetch task.
-    _cancel: oneshot::Sender<()>,
+    _cancel:   oneshot::Sender<()>,
 }
 
 /// How a [`BlobRequest`] ended.
@@ -129,6 +131,22 @@ fn retry_delay(attempt: u32) -> Duration {
     )
 }
 
+/// Sync targets first, so a configured node is still tried before the peers.
+fn provider_list(targets: &SyncTargets, peers: &BlobProviders) -> Vec<EndpointId> {
+    let mut providers = targets.0.iter().map(|addr| addr.id).collect::<Vec<_>>();
+    for id in &peers.0 {
+        if !providers.contains(id) {
+            providers.push(*id);
+        }
+    }
+    providers
+}
+
+/// Whether a provider exists that a fetch started with `snapshot` never asked.
+fn lacks_provider(snapshot: &[EndpointId], current: &[EndpointId]) -> bool {
+    current.iter().any(|id| !snapshot.contains(id))
+}
+
 pub(crate) fn on_blob_request_insert(
     trigger: On<Insert, BlobRequest>,
     requests: Query<&BlobRequest>,
@@ -146,18 +164,12 @@ pub(crate) fn on_blob_request_insert(
         return;
     };
 
-    // Appended rather than merged, so a configured node is still tried first.
-    let mut providers = targets.0.iter().map(|addr| addr.id).collect::<Vec<_>>();
-    for id in &peers.0 {
-        if !providers.contains(id) {
-            providers.push(*id);
-        }
-    }
-
+    let providers = provider_list(&targets, &peers);
     let (cancel_tx, cancel_rx) = oneshot::channel();
     let (tx, rx) = async_channel::bounded(1);
     let hash = request.0;
     let store = store.0.clone();
+    let snapshot = providers.clone();
     task::spawn(async move {
         fetch(hash, cancel_rx, tx, store, providers).await;
     });
@@ -168,12 +180,28 @@ pub(crate) fn on_blob_request_insert(
         .remove::<BlobResponse>()
         .insert(BlobPending {
             rx,
+            providers: snapshot,
             _cancel: cancel_tx,
         });
 }
 
 pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<BlobPending>();
+}
+
+/// Restarts fetches that began before a provider they could use was known.
+pub(crate) fn restart_stale_fetches(
+    targets: Res<SyncTargets>,
+    peers: Res<BlobProviders>,
+    pending: Query<(Entity, &BlobRequest, &BlobPending)>,
+    mut commands: Commands,
+) {
+    let current = provider_list(&targets, &peers);
+    for (entity, request, load) in &pending {
+        if lacks_provider(&load.providers, &current) {
+            commands.entity(entity).insert(BlobRequest(request.0));
+        }
+    }
 }
 
 pub(crate) fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity, &BlobPending)>) {
@@ -309,18 +337,100 @@ async fn read_bounded(hash: Hash, blobs: &Blobs) -> Result<Bytes, BlobError> {
 
 #[cfg(test)]
 mod tests {
+    use iroh::SecretKey;
+
     use super::*;
+
+    #[derive(Resource, Default)]
+    struct Restarts(u32);
+
+    fn endpoint_id() -> EndpointId {
+        SecretKey::generate().public()
+    }
+
+    fn spawn_pending_with(
+        world: &mut World,
+        rx: async_channel::Receiver<Result<Bytes, BlobError>>,
+        providers: Vec<EndpointId>,
+    ) -> Entity {
+        world
+            .spawn(BlobPending {
+                rx,
+                providers,
+                _cancel: oneshot::channel().0,
+            })
+            .id()
+    }
 
     fn spawn_pending(
         world: &mut World,
         rx: async_channel::Receiver<Result<Bytes, BlobError>>,
     ) -> Entity {
-        world
-            .spawn(BlobPending {
-                rx,
-                _cancel: oneshot::channel().0,
-            })
-            .id()
+        spawn_pending_with(world, rx, Vec::new())
+    }
+
+    fn restart_app(known: EndpointId) -> App {
+        let mut app = App::new();
+        app.init_resource::<SyncTargets>()
+            .init_resource::<Restarts>()
+            .insert_resource(BlobProviders(vec![known]))
+            .add_observer(
+                |_: On<Insert, BlobRequest>, mut restarts: ResMut<Restarts>| {
+                    restarts.0 += 1;
+                },
+            )
+            .add_systems(Update, restart_stale_fetches);
+        app
+    }
+
+    fn spawn_request(app: &mut App, snapshot: Vec<EndpointId>) {
+        let (_tx, rx) = async_channel::bounded(1);
+        let entity = spawn_pending_with(app.world_mut(), rx, snapshot);
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(BlobRequest(Hash::new(b"blob")));
+        app.world_mut().resource_mut::<Restarts>().0 = 0;
+    }
+
+    #[test]
+    fn provider_list_puts_targets_first_and_dedupes() {
+        let (a, b) = (endpoint_id(), endpoint_id());
+        let targets = SyncTargets(vec![iroh::EndpointAddr::new(a)]);
+        let peers = BlobProviders(vec![b, a]);
+
+        assert_eq!(provider_list(&targets, &peers), vec![a, b]);
+    }
+
+    #[test]
+    fn a_fetch_is_stale_only_when_a_provider_is_missing_from_its_snapshot() {
+        let (a, b) = (endpoint_id(), endpoint_id());
+
+        assert!(lacks_provider(&[], &[a]));
+        assert!(lacks_provider(&[a], &[a, b]));
+        assert!(!lacks_provider(&[a, b], &[a, b]));
+        assert!(!lacks_provider(&[a, b], &[a]));
+        assert!(!lacks_provider(&[], &[]));
+    }
+
+    #[test]
+    fn a_pending_fetch_with_no_providers_restarts_once_one_is_known() {
+        let mut app = restart_app(endpoint_id());
+        spawn_request(&mut app, Vec::new());
+
+        app.update();
+
+        assert_eq!(app.world().resource::<Restarts>().0, 1);
+    }
+
+    #[test]
+    fn a_pending_fetch_that_asked_every_provider_is_left_running() {
+        let known = endpoint_id();
+        let mut app = restart_app(known);
+        spawn_request(&mut app, vec![known]);
+
+        app.update();
+
+        assert_eq!(app.world().resource::<Restarts>().0, 0);
     }
 
     #[test]

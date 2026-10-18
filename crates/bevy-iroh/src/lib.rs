@@ -32,6 +32,10 @@ impl Plugin for IrohPlugin {
                     endpoint::receive_endpoint,
                     router::receive_router,
                     blob::recv_blob_responses,
+                    blob::restart_stale_fetches.run_if(
+                        resource_changed::<store::SyncTargets>
+                            .or_eager(resource_changed::<store::BlobProviders>),
+                    ),
                 )
                     .in_set(IrohSystems),
             );

@@ -180,11 +180,11 @@ mod tests {
         let FogFalloff::Linear { start, end } = Veil::revealed().falloff() else {
             panic!("not linear");
         };
-        assert!((start - FOG_START).abs() < 1e-3 && (end - FOG_END).abs() < 1e-3);
+        assert!((start - FOG_START).abs() < 1.0e-3 && (end - FOG_END).abs() < 1.0e-3);
 
         let FogFalloff::Linear { start, end } = Veil::covered().falloff() else {
             panic!("not linear");
         };
-        assert!((start - VEIL_START).abs() < 1e-3 && (end - VEIL_END).abs() < 1e-3);
+        assert!((start - VEIL_START).abs() < 1.0e-3 && (end - VEIL_END).abs() < 1.0e-3);
     }
 }

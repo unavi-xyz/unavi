@@ -34,6 +34,7 @@ pub struct Departing(Option<SpaceId>);
 pub fn drive_travel(
     mut pending: ResMut<PendingTravel>,
     mut departing: ResMut<Departing>,
+    time: Res<Time>,
     state: Res<State<SceneState>>,
     active: Res<ActiveSpace>,
     spaces: Query<(Entity, &Space)>,
@@ -52,7 +53,7 @@ pub fn drive_travel(
             let Some(target) = requested.or(unfinished) else {
                 return;
             };
-            arrival.retarget(target);
+            arrival.retarget(target, time.elapsed());
             if !spaces.iter().any(|(_, s)| s.0 == target) {
                 commands.spawn(Space(target));
             }
@@ -60,11 +61,13 @@ pub fn drive_travel(
         SceneState::Space => {
             if requested.is_some() {
                 departing.0 = requested;
-                veil.cover();
             }
             let Some(target) = departing.0 else {
                 return;
             };
+            // Held every tick, since anything revealing the veil meanwhile
+            // would otherwise stall the departure.
+            veil.cover();
             if !veil.is_covered() {
                 return;
             }
@@ -79,7 +82,7 @@ pub fn drive_travel(
             if reloading || !spaces.iter().any(|(_, s)| s.0 == target) {
                 commands.spawn(Space(target));
             }
-            arrival.retarget(target);
+            arrival.retarget(target, time.elapsed());
             next.set(SceneState::Limbo);
         }
     }

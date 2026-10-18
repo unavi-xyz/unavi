@@ -53,7 +53,7 @@ pub struct LimboArrival {
 
 /// A space that is loaded with every script settled, waiting on ground.
 struct Arrival {
-    space:    Entity,
+    space:  Entity,
     /// When the space first held that state.
     since:  Duration,
     /// The spawn point found standing on ground, relative to the space's
@@ -70,10 +70,13 @@ impl LimboArrival {
             .map(|ready| ready.space)
     }
 
-    /// Waits for `target` instead, dropping whatever was found for the last.
-    pub const fn retarget(&mut self, target: SpaceId) {
+    /// Waits for `target` instead, dropping whatever was found for the last
+    /// and restarting the load timeout.
+    pub fn retarget(&mut self, target: SpaceId, now: Duration) {
         self.target = Some(target);
         self.ready = None;
+        self.timeout = now + SPACE_LOAD_TIMEOUT;
+        self.timed_out = false;
     }
 
     const fn release(&mut self, veil: &mut Veil) {
@@ -168,9 +171,9 @@ pub fn drive_limbo_exit(
     // Past the timeout a script still loading no longer holds the agent back,
     // since one that never instantiates would otherwise hold it forever.
     let unsettled = !arrival.timed_out
-        && scripts.iter().any(|(script, status)| {
-            !status.is_settled() && descends_from(script, space, &parents)
-        });
+        && scripts
+            .iter()
+            .any(|(script, status)| !status.is_settled() && descends_from(script, space, &parents));
     if unsettled {
         arrival.ready = None;
         arrival.release(&mut veil);

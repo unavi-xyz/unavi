@@ -179,16 +179,18 @@ impl Drop for ReplicaGuard {
 /// placed.
 ///
 /// A creator with no space, standing where there is no active space, mints
-/// nothing: the document would belong nowhere and be orphaned.
+/// nothing, since the document would belong nowhere and be orphaned.
 ///
 /// The document's quota unit is leased before anything is written, so a
 /// script at its ceiling mints nothing, and a namespace whose document never
 /// spawns is removed again.
 async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptError> {
-    let space = child_space(
-        host.view.policy().registered_space(host.doc),
-        active_space(host).await,
-    )?;
+    let host_space = host.view.policy().registered_space(host.doc);
+    let active = match host_space {
+        Some(_) => None,
+        None => active_space(host).await,
+    };
+    let space = child_space(host_space, active)?;
     crate::quota::take(&host.quota, Flow::CreateDocument, 1)?;
     let lease = host.quota.lease(Stock::Documents, 1)?;
 

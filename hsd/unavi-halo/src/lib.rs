@@ -201,7 +201,7 @@ impl ScriptBehavior for Script {
             nav:      Nav::default(),
             summon:   Summon::default(),
             jumps:    Watch::default(),
-            clock:   Clock::default(),
+            clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
         })

@@ -290,13 +290,25 @@ impl Vui {
     /// Moves every placed panel by the move the viewer just made, so a panel
     /// stands where it did relative to them. Landed levels share the slot's
     /// anchor, so they are carried by the same move.
+    ///
+    /// Every slot is carried even if one fails, since the jump is seen only
+    /// once and a skipped panel would be left behind for good. The first
+    /// failure is returned.
     fn carry(&mut self, by: &Transform) -> anyhow::Result<()> {
+        let mut first_err = None;
         for slot in self.slots.iter_mut().flatten() {
-            if let Some(anchor) = slot.anchor {
-                slot.anchor = Some(slot.panel.carry(&self.doc, by, &anchor)?);
+            let Some(anchor) = slot.anchor else {
+                continue;
+            };
+            match slot.panel.carry(&self.doc, by, &anchor) {
+                Ok(carried) => slot.anchor = Some(carried),
+                Err(err) => {
+                    slot.anchor = Some(*by * anchor);
+                    first_err.get_or_insert(err);
+                }
             }
         }
-        Ok(())
+        first_err.map_or(Ok(()), Err)
     }
 
     /// Places a panel the first time it is drawn, and reports where it

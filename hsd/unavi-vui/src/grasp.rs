@@ -69,7 +69,7 @@ impl Grasp {
     }
 
     /// The viewer was moved by `by` in one step, and a hold in progress goes
-    /// with them: both ends are in the room, so left alone the hand would
+    /// with them. Both ends are in the room, so left alone the hand would
     /// seem to have travelled kilometres and drop the mote there.
     pub fn carry(&mut self, by: &Transform) {
         if let Some(held) = &mut self.seized {

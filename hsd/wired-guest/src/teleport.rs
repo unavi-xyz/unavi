@@ -20,8 +20,8 @@ pub fn is_teleport(from: &Transform, to: &Transform) -> bool {
 }
 
 /// The move that takes `from` to `to`, so that `relative(from, to) * x` keeps
-/// `x` where it was relative to the eye. Rigid: the eye's scale is not part of
-/// where it stands.
+/// `x` where it was relative to the eye. The move is rigid, since the eye's
+/// scale is not part of where it stands.
 #[must_use]
 pub fn relative(from: &Transform, to: &Transform) -> Transform {
     let back = from.rotation.inverse();
@@ -110,7 +110,11 @@ mod tests {
     #[test]
     fn the_relative_move_takes_the_old_eye_to_the_new_one() {
         let from = eye_at(3.0);
-        let to = Transform::new(Vec3::new(9.0, 2.0, 7.0), Quat::from_rotation_y(1.1), Vec3::ONE);
+        let to = Transform::new(
+            Vec3::new(9.0, 2.0, 7.0),
+            Quat::from_rotation_y(1.1),
+            Vec3::ONE,
+        );
         let moved = relative(&from, &to) * from;
         assert!((moved.translation - to.translation).length() < 1.0e-4);
     }

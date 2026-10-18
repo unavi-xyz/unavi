@@ -120,14 +120,6 @@ fn parse_args_wasm() -> Args {
         }
     }
 
-    if !argv.iter().any(|arg| arg == "--join")
-        && let Ok(pathname) = window.location().pathname()
-        && let Some(namespace) = space_from_path(&pathname)
-    {
-        argv.push("--join".to_string());
-        argv.push(namespace.to_string());
-    }
-
     web_sys::console::log_1(&format!("URL params: {:?}", &argv[1..]).into());
 
     match Args::try_parse_from(argv) {
@@ -136,38 +128,5 @@ fn parse_args_wasm() -> Args {
             web_sys::console::warn_1(&format!("Error parsing params: {err}").into());
             Args::parse_from(["app"])
         }
-    }
-}
-
-/// The namespace in a `/space/<namespace>` path, which is how a shared link
-/// names a space on the web.
-#[cfg(any(test, target_family = "wasm"))]
-fn space_from_path(pathname: &str) -> Option<&str> {
-    let rest = pathname.strip_prefix("/space/")?;
-    let namespace = rest.split('/').next()?;
-    (!namespace.is_empty()).then_some(namespace)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn space_path_yields_its_namespace() {
-        assert_eq!(space_from_path("/space/abc123"), Some("abc123"));
-    }
-
-    #[test]
-    fn space_path_ignores_trailing_segments() {
-        assert_eq!(space_from_path("/space/abc123/"), Some("abc123"));
-        assert_eq!(space_from_path("/space/abc123/extra"), Some("abc123"));
-    }
-
-    #[test]
-    fn non_space_paths_yield_nothing() {
-        assert_eq!(space_from_path("/"), None);
-        assert_eq!(space_from_path("/space/"), None);
-        assert_eq!(space_from_path("/space"), None);
-        assert_eq!(space_from_path("/spaces/abc"), None);
     }
 }

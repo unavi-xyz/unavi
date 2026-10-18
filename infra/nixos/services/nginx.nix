@@ -67,13 +67,6 @@ let
       "= /sizes.json" = {
         extraConfig = noCache;
       };
-
-      # Space links are served by the loader, which reads the namespace from
-      # the path. Static files under /space/ still win.
-      "^~ /space/" = {
-        tryFiles = "$uri /index.html";
-        extraConfig = noCache;
-      };
     };
   }) (lib.mapAttrs' (_: c: lib.nameValuePair c.domain c) staticServices);
 in

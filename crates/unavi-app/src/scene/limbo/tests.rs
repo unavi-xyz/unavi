@@ -22,10 +22,20 @@ use super::arrival::{
     enter_space,
     fall_back_to_limbo,
 };
-use crate::scene::{
-    SceneState,
-    respawn::Respawn,
-    travel::drive_travel,
+use crate::{
+    camera::veil::{
+        COVER,
+        Veil,
+        reveal_veil,
+    },
+    scene::{
+        SceneState,
+        respawn::Respawn,
+        travel::{
+            Departing,
+            drive_travel,
+        },
+    },
 };
 
 #[derive(Resource, Default)]
@@ -65,13 +75,16 @@ fn setup() -> App {
         .init_resource::<Time>()
         .init_resource::<LimboArrival>()
         .init_resource::<PendingTravel>()
+        .init_resource::<Departing>()
+        .insert_resource(Veil::revealed())
         .init_resource::<ActiveSpace>()
         .init_resource::<RespawnedInto>()
         .init_resource::<GroundPresent>()
         .init_state::<SceneState>()
         .add_observer(enter_space)
         .add_observer(record_respawn)
-        .add_systems(OnEnter(SceneState::Limbo), arm_limbo_arrival)
+        .add_systems(OnEnter(SceneState::Limbo), (arm_limbo_arrival, reveal_veil))
+        .add_systems(OnEnter(SceneState::Space), reveal_veil)
         .add_systems(
             Update,
             (
@@ -87,6 +100,29 @@ fn setup() -> App {
 
 fn advance(app: &mut App, by: Duration) {
     app.world_mut().resource_mut::<Time>().advance_by(by);
+}
+
+/// Lets the veil run its full cover, as the frames of a real run would.
+fn cover_veil(app: &mut App) {
+    app.world_mut().resource_mut::<Veil>().step(COVER);
+}
+
+/// Runs the frames in which a passed gate closes the veil, enters the space,
+/// and lands in `SceneState::Space`.
+fn pass_gate(app: &mut App) {
+    app.update();
+    cover_veil(app);
+    app.update();
+    app.update();
+}
+
+/// Runs the frames in which a travel request closes the veil, drops the
+/// space, and lands in limbo.
+fn depart(app: &mut App) {
+    app.update();
+    cover_veil(app);
+    app.update();
+    app.update();
 }
 
 fn state(app: &App) -> SceneState {
@@ -116,8 +152,7 @@ fn enter(app: &mut App, ns: NamespaceId) -> Entity {
     app.world_mut().resource_mut::<ActiveSpace>().0 = Some(space);
     app.update();
     advance(app, GROUND_GRACE);
-    app.update();
-    app.update();
+    pass_gate(app);
     assert_eq!(state(app), SceneState::Space, "failed to enter start space");
     space
 }
@@ -183,15 +218,12 @@ fn travels_to_an_already_loaded_space() {
         .id();
 
     travel_to(&mut app, target_ns);
-    app.update();
-    assert_eq!(state(&app), SceneState::Space);
-    app.update();
+    depart(&mut app);
     assert_eq!(state(&app), SceneState::Limbo);
     assert!(app.world().get_entity(start).is_err());
 
     advance(&mut app, GROUND_GRACE);
-    app.update();
-    app.update();
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
     assert_eq!(respawned_into(&app), Some(target));
 }
@@ -209,8 +241,7 @@ fn waits_for_the_travelled_to_space_not_another_loaded_one() {
     let target = app.world_mut().spawn(Space(target_ns.into())).id();
 
     travel_to(&mut app, target_ns);
-    app.update();
-    app.update();
+    depart(&mut app);
     assert_eq!(state(&app), SceneState::Limbo);
 
     advance(&mut app, GROUND_GRACE * 2);
@@ -224,8 +255,7 @@ fn waits_for_the_travelled_to_space_not_another_loaded_one() {
     app.world_mut().entity_mut(target).insert(HsdLoaded);
     app.update();
     advance(&mut app, GROUND_GRACE);
-    app.update();
-    app.update();
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
 
     assert_eq!(respawned_into(&app), Some(target));
@@ -239,8 +269,7 @@ fn travelling_to_the_current_space_reloads_it() {
     let start = enter(&mut app, ns);
 
     travel_to(&mut app, ns);
-    app.update();
-    app.update();
+    depart(&mut app);
     assert_eq!(state(&app), SceneState::Limbo);
     assert!(
         app.world().get_entity(start).is_err(),
@@ -257,8 +286,7 @@ fn travelling_to_the_current_space_reloads_it() {
     app.world_mut().entity_mut(reloaded).insert(HsdLoaded);
     app.update();
     advance(&mut app, GROUND_GRACE);
-    app.update();
-    app.update();
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
     assert_eq!(respawned_into(&app), Some(reloaded));
 }
@@ -275,8 +303,7 @@ fn a_space_dropped_mid_settle_does_not_end_the_wait() {
         .id();
 
     travel_to(&mut app, target_ns);
-    app.update();
-    app.update();
+    depart(&mut app);
     assert_eq!(state(&app), SceneState::Limbo);
 
     app.world_mut().entity_mut(target).despawn();
@@ -310,8 +337,7 @@ fn a_still_loading_space_is_not_stood_in() {
     app.world_mut().entity_mut(space).insert(HsdLoaded);
     app.update();
     advance(&mut app, GROUND_GRACE);
-    app.update();
-    app.update();
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
 }
 
@@ -336,9 +362,7 @@ fn an_unsettled_script_holds_the_agent_until_it_settles() {
     );
 
     script.set_initialized();
-    for _ in 0..3 {
-        app.update();
-    }
+    pass_gate(&mut app);
     assert_eq!(
         state(&app),
         SceneState::Space,
@@ -361,9 +385,7 @@ fn only_scripts_under_the_arrival_space_are_waited_on() {
     spawn_script(&mut app, other);
     app.world_mut().resource_mut::<LimboArrival>().target = Some(namespace(1).into());
 
-    for _ in 0..3 {
-        app.update();
-    }
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
     assert_eq!(respawned_into(&app), Some(space));
 }
@@ -379,9 +401,7 @@ fn a_trapped_script_counts_as_settled() {
     let script = spawn_script(&mut app, space);
     assert!(script.trap());
 
-    for _ in 0..3 {
-        app.update();
-    }
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
 }
 
@@ -411,8 +431,7 @@ fn a_space_without_ground_is_entered_after_the_grace_period() {
     );
 
     advance(&mut app, Duration::from_millis(1));
-    app.update();
-    app.update();
+    pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
     assert_eq!(respawned_into(&app), Some(space));
 }
@@ -424,8 +443,7 @@ fn keeps_waiting_with_its_target_when_the_space_never_loads() {
 
     let target_ns = namespace(2);
     travel_to(&mut app, target_ns);
-    app.update();
-    app.update();
+    depart(&mut app);
     assert_eq!(state(&app), SceneState::Limbo);
 
     advance(&mut app, SPACE_LOAD_TIMEOUT);
@@ -440,4 +458,104 @@ fn keeps_waiting_with_its_target_when_the_space_never_loads() {
         app.world().resource::<LimboArrival>().target == Some(target_ns.into()),
         "the target must survive the timeout"
     );
+}
+
+#[test]
+fn a_passed_gate_waits_for_the_veil_before_entering() {
+    let mut app = setup();
+    set_ground(&mut app, true);
+    app.world_mut()
+        .spawn((Space(namespace(1).into()), HsdLoaded));
+
+    app.update();
+    app.update();
+    assert_eq!(
+        state(&app),
+        SceneState::Limbo,
+        "the agent must not be let in while the world is still visible"
+    );
+
+    pass_gate(&mut app);
+    assert_eq!(state(&app), SceneState::Space);
+}
+
+#[test]
+fn a_space_dropped_mid_cover_lifts_the_veil_again() {
+    let mut app = setup();
+    set_ground(&mut app, true);
+    let space = app
+        .world_mut()
+        .spawn((Space(namespace(1).into()), HsdLoaded))
+        .id();
+
+    app.update();
+    app.update();
+    app.world_mut().resource_mut::<Veil>().step(COVER * 0.5);
+
+    app.world_mut().entity_mut(space).despawn();
+    app.update();
+    cover_veil(&mut app);
+    app.update();
+    app.update();
+    assert_eq!(state(&app), SceneState::Limbo);
+    assert!(
+        !app.world().resource::<Veil>().is_covered(),
+        "an abandoned arrival must not leave the veil closed"
+    );
+}
+
+#[test]
+fn travel_keeps_the_space_until_the_veil_is_covered() {
+    let mut app = setup();
+    let start = enter(&mut app, namespace(1));
+
+    travel_to(&mut app, namespace(2));
+    app.update();
+    assert!(app.world().get_entity(start).is_ok());
+    assert!(app.world().resource::<PendingTravel>().0.is_none());
+
+    app.world_mut().resource_mut::<Veil>().step(COVER * 0.5);
+    app.update();
+    app.update();
+    assert!(
+        app.world().get_entity(start).is_ok(),
+        "the space went before the veil hid it"
+    );
+    assert_eq!(state(&app), SceneState::Space);
+
+    cover_veil(&mut app);
+    app.update();
+    assert!(app.world().get_entity(start).is_err());
+}
+
+#[test]
+fn travel_from_limbo_retargets_the_arrival() {
+    let mut app = setup();
+    let first = namespace(1);
+    let second = namespace(2);
+    app.world_mut().resource_mut::<LimboArrival>().target = Some(first.into());
+    app.world_mut().spawn(Space(first.into()));
+
+    travel_to(&mut app, second);
+    app.update();
+
+    assert!(
+        app.world().resource::<LimboArrival>().target == Some(second.into()),
+        "travel from limbo must retarget the arrival"
+    );
+    assert!(app.world().resource::<PendingTravel>().0.is_none());
+    assert_eq!(spaces_of(&mut app, second), 1);
+
+    travel_to(&mut app, second);
+    app.update();
+    assert_eq!(spaces_of(&mut app, second), 1, "an existing space is reused");
+    assert_eq!(state(&app), SceneState::Limbo);
+}
+
+fn spaces_of(app: &mut App, ns: NamespaceId) -> usize {
+    app.world_mut()
+        .query::<&Space>()
+        .iter(app.world())
+        .filter(|space| space.0 == ns.into())
+        .count()
 }

@@ -18,7 +18,6 @@ use tracing::Level;
 
 mod camera;
 mod config;
-mod fade;
 mod icon;
 mod identity;
 mod scene;
@@ -138,7 +137,6 @@ impl Plugin for UnaviPlugin {
         ))
         .add_plugins((
             camera::CameraPlugin,
-            fade::FadePlugin,
             unavi_grab::GrabPlugin,
             scene::ScenePlugin,
         ))

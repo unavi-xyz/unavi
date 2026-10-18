@@ -14,6 +14,7 @@ use bevy::{
 use unavi_portal::view::camera::PortalViewCamera;
 
 mod sky;
+pub mod veil;
 
 const FOG_END: f32 = 1000.0;
 const FOG_START: f32 = FOG_END * 0.8;
@@ -25,10 +26,19 @@ impl Plugin for CameraPlugin {
         app.add_plugins(MaterialPlugin::<sky::SkyMaterial>::default())
             .init_resource::<sky::blend::SkyTarget>()
             .init_resource::<sky::blend::SkyBlend>()
+            .init_resource::<veil::Veil>()
+            .insert_resource(ClearColor(
+                sky::blend::SkyBlend::default().palette().fog().into(),
+            ))
             .add_systems(Startup, sky::spawn_sky)
             .add_systems(
                 Update,
-                (sky::blend::target_sky, sky::blend::blend_sky).chain(),
+                (
+                    sky::blend::target_sky,
+                    sky::blend::blend_sky,
+                    veil::apply_veil,
+                )
+                    .chain(),
             )
             .add_observer(apply_camera_effects);
     }
@@ -39,6 +49,7 @@ pub fn apply_camera_effects(
     portal_views: Query<(), With<PortalViewCamera>>,
     mut commands: Commands,
     sky: Res<sky::blend::SkyBlend>,
+    veil: Res<veil::Veil>,
 ) {
     let entity = trigger.entity;
     if portal_views.contains(entity) {
@@ -54,10 +65,7 @@ pub fn apply_camera_effects(
         TemporalAntiAliasing::default(),
         DistanceFog {
             color: sky.palette().fog().into(),
-            falloff: FogFalloff::Linear {
-                start: FOG_START,
-                end:   FOG_END,
-            },
+            falloff: veil.falloff(),
             ..default()
         },
     ));

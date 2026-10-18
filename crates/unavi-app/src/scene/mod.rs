@@ -19,9 +19,12 @@ use bevy_vrm::mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
 use unavi_space::grid::Spaceless;
 
+use crate::camera::veil::reveal_veil;
+
 pub mod home;
 mod limbo;
 mod respawn;
+mod startup;
 mod system_scripts;
 mod travel;
 
@@ -31,6 +34,8 @@ impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
             .init_resource::<limbo::arrival::LimboArrival>()
+            .init_resource::<travel::Departing>()
+            .insert_resource(startup::StartupHold)
             .add_observer(limbo::arrival::enter_space)
             .add_observer(respawn::respawn)
             .add_observer(home::enter_home)
@@ -43,6 +48,13 @@ impl Plugin for ScenePlugin {
                     limbo::enter_limbo,
                 ),
             )
+            // The first limbo entry is the launch itself, whose veil the
+            // startup hold lifts instead.
+            .add_systems(
+                OnEnter(SceneState::Limbo),
+                reveal_veil.run_if(not(resource_exists::<startup::StartupHold>)),
+            )
+            .add_systems(OnEnter(SceneState::Space), reveal_veil)
             .add_systems(
                 OnExit(SceneState::Limbo),
                 (limbo::despawn_limbo, build_iroh_router, limbo::leave_limbo),
@@ -64,6 +76,10 @@ impl Plugin for ScenePlugin {
                     limbo::arrival::drive_limbo_exit,
                 )
                     .chain(),
+            )
+            .add_systems(
+                Update,
+                startup::release_startup.run_if(resource_exists::<startup::StartupHold>),
             )
             .add_systems(
                 FixedUpdate,

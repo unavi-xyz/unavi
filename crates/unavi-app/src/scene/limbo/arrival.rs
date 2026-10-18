@@ -17,9 +17,12 @@ use unavi_space::{
     },
 };
 
-use crate::scene::{
-    SceneState,
-    respawn::Respawn,
+use crate::{
+    camera::veil::Veil,
+    scene::{
+        SceneState,
+        respawn::Respawn,
+    },
 };
 
 /// How long to wait before warning that a space is still not ready. Limbo
@@ -39,6 +42,9 @@ pub struct LimboArrival {
     timeout:             Duration,
     timed_out:           bool,
     ready:               Option<Arrival>,
+    /// Whether this gate has the veil closing on the way out, so only it
+    /// lifts the veil again if the space stops holding.
+    covering:            bool,
     /// The space just entered, pending promotion by `recenter_active_space`.
     /// `active.0` is not set until that runs in `PostUpdate`, so this covers
     /// the gap where the agent is in `SceneState::Space` with no active space.
@@ -64,6 +70,19 @@ impl LimboArrival {
             .map(|ready| ready.space)
     }
 
+    /// Waits for `target` instead, dropping whatever was found for the last.
+    pub const fn retarget(&mut self, target: SpaceId) {
+        self.target = Some(target);
+        self.ready = None;
+    }
+
+    const fn release(&mut self, veil: &mut Veil) {
+        if self.covering {
+            self.covering = false;
+            veil.reveal();
+        }
+    }
+
     pub(super) const fn mark_grounded(&mut self, offset: Vec3) {
         if let Some(ready) = &mut self.ready {
             ready.ground = Some(offset);
@@ -76,6 +95,7 @@ pub fn arm_limbo_arrival(time: Res<Time>, mut arrival: ResMut<LimboArrival>) {
     arrival.timed_out = false;
     arrival.ready = None;
     arrival.entering = None;
+    arrival.covering = false;
 }
 
 /// Drops back to limbo whenever the space underfoot is gone or still loading,
@@ -85,6 +105,7 @@ pub fn fall_back_to_limbo(
     active: Res<ActiveSpace>,
     loaded: Query<(), (With<Space>, With<HsdLoaded>)>,
     mut arrival: ResMut<LimboArrival>,
+    mut veil: ResMut<Veil>,
     mut next: ResMut<NextState<SceneState>>,
 ) {
     if !matches!(state.get(), SceneState::Space) {
@@ -101,6 +122,7 @@ pub fn fall_back_to_limbo(
         return;
     }
     info!("No loaded space, returning to limbo");
+    veil.snap_covered();
     next.set(SceneState::Limbo);
 }
 
@@ -119,6 +141,7 @@ pub fn drive_limbo_exit(
     scripts: Query<(Entity, &ScriptStatus)>,
     parents: Query<&ChildOf>,
     mut arrival: ResMut<LimboArrival>,
+    mut veil: ResMut<Veil>,
     mut commands: Commands,
 ) {
     if !matches!(state.get(), SceneState::Limbo) {
@@ -138,6 +161,7 @@ pub fn drive_limbo_exit(
         .find_map(|(entity, _, loaded)| loaded.then_some(entity));
     let Some(space) = candidate else {
         arrival.ready = None;
+        arrival.release(&mut veil);
         return;
     };
 
@@ -149,6 +173,7 @@ pub fn drive_limbo_exit(
         });
     if unsettled {
         arrival.ready = None;
+        arrival.release(&mut veil);
         return;
     }
 
@@ -164,20 +189,36 @@ pub fn drive_limbo_exit(
     let (ground, since) = (ready.ground, ready.since);
     arrival.ready = Some(ready);
 
-    if let Some(offset) = ground {
-        info!("Space loaded, exiting limbo");
-        commands.trigger(EnterSpace {
-            space: Some(space),
-            at:    origins
+    let (passed, at) = ground.map_or_else(
+        || (now >= since + GROUND_GRACE, None),
+        |offset| {
+            let at = origins
                 .get(space)
                 .ok()
-                .map(|origin| origin.translation() + offset),
-        });
-    } else if now >= since + GROUND_GRACE {
-        warn!("No ground found under any spawn point, exiting limbo anyway");
+                .map(|origin| origin.translation() + offset);
+            (true, at)
+        },
+    );
+    if !passed {
+        arrival.release(&mut veil);
+        return;
+    }
+
+    // The agent is let in only once the world is hidden, so the move into the
+    // space happens behind the fog.
+    if !arrival.covering {
+        arrival.covering = true;
+        if ground.is_some() {
+            info!("Space loaded, exiting limbo");
+        } else {
+            warn!("No ground found under any spawn point, exiting limbo anyway");
+        }
+    }
+    veil.cover();
+    if veil.is_covered() {
         commands.trigger(EnterSpace {
             space: Some(space),
-            at:    None,
+            at,
         });
     }
 }
@@ -199,6 +240,7 @@ pub fn enter_space(
 ) {
     arrival.target = None;
     arrival.ready = None;
+    arrival.covering = false;
     arrival.entering = trigger.event().space;
     next.set(SceneState::Space);
     commands.trigger(Respawn {

@@ -193,6 +193,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn limbo_fog_at_hue_zero_matches_the_loader_cover() {
+        let fog = Palette::new(SkyTarget::limbo(0.0).tone).fog();
+        // loader.html paints this colour until the app's first frames.
+        assert_eq!(Srgba::from(fog).to_hex().to_lowercase(), "#e4d2df");
+    }
+
+    #[test]
     fn hue_eases_the_short_way_across_zero() {
         let mut blend = SkyBlend {
             hue:       Spring::at(350.0),

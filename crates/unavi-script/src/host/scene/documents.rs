@@ -178,10 +178,17 @@ impl Drop for ReplicaGuard {
 /// Mints a namespace holding `entries` and spawns its document, held until
 /// placed.
 ///
+/// A creator with no space, standing where there is no active space, mints
+/// nothing: the document would belong nowhere and be orphaned.
+///
 /// The document's quota unit is leased before anything is written, so a
 /// script at its ceiling mints nothing, and a namespace whose document never
 /// spawns is removed again.
 async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptError> {
+    let space = child_space(
+        host.view.policy().registered_space(host.doc),
+        active_space(host).await,
+    )?;
     crate::quota::take(&host.quota, Flow::CreateDocument, 1)?;
     let lease = host.quota.lease(Stock::Documents, 1)?;
 
@@ -201,7 +208,7 @@ async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptE
 
     let id = DocId(*doc.id().as_bytes());
     let state = Arc::new(Mutex::new(state));
-    spawn_minted(host, id, Arc::clone(&state), doc, lease).await?;
+    spawn_minted(host, id, space, Arc::clone(&state), doc, lease).await?;
     guard.keep();
 
     host.minted.insert(id);
@@ -215,6 +222,7 @@ async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptE
 async fn spawn_minted(
     host: &ScriptHost,
     id: DocId,
+    space: DocId,
     state: Arc<Mutex<HsdState>>,
     doc: Document,
     lease: StockLease,
@@ -222,21 +230,14 @@ async fn spawn_minted(
     // Seeded before the spawn applies, so the document is never one with no
     // composer, which policy would have to attribute by guessing. The host is
     // what its author and permissions resolve through.
-    let space = child_space(
-        host.view.policy().registered_space(host.doc),
-        active_space(host).await,
-    );
     host.view.policy().update(id, |record| {
         record.host = Some(host.doc);
-        record.space = space;
+        record.space = Some(space);
     });
     host.view.policy().attribute_child_document(id, host.doc);
 
-    // Serving answers a peer fetching the pin; without it the document is
-    // local to this peer.
-    if space.is_some()
-        && let Err(err) = doc.serve().await
-    {
+    // Serving answers a peer fetching the pin.
+    if let Err(err) = doc.serve().await {
         warn!(?err, %id, "failed to serve a script-minted document");
     }
 
@@ -252,19 +253,17 @@ async fn spawn_minted(
     })
     .await?;
 
-    if let Some(space) = space
-        && let Err(err) = host.view.local().pin(SpaceId::of_doc(space), id).await
-    {
+    if let Err(err) = host.view.local().pin(SpaceId::of_doc(space), id).await {
         warn!(?err, %id, "failed to pin a script-minted document");
     }
     Ok(())
 }
 
 /// Which space a minted document belongs to: its creator's, else the one the
-/// local user stands in. The shell and its tools belong to no space, so what
-/// they mint would otherwise belong nowhere.
-fn child_space(host_space: Option<DocId>, active: Option<DocId>) -> Option<DocId> {
-    host_space.or(active)
+/// local user stands in. The shell and its tools belong to no space, and in
+/// limbo there is none to fall back on, so there it is not ready to mint.
+fn child_space(host_space: Option<DocId>, active: Option<DocId>) -> Result<DocId, ScriptError> {
+    host_space.or(active).ok_or(ScriptError::NotReady)
 }
 
 async fn active_space(host: &ScriptHost) -> Option<DocId> {
@@ -314,6 +313,7 @@ mod tests {
     use hsd::id::DocId;
 
     use super::child_space;
+    use crate::error::ScriptError;
 
     fn doc(seed: u8) -> DocId {
         DocId([seed; 32])
@@ -322,12 +322,17 @@ mod tests {
     #[test]
     fn a_spaceless_creator_falls_back_to_the_active_space() {
         let space = doc(1);
-        assert_eq!(child_space(None, Some(space)), Some(space));
+        assert_eq!(child_space(None, Some(space)), Ok(space));
     }
 
     #[test]
     fn a_creators_space_is_not_overridden() {
         let (host, active) = (doc(1), doc(2));
-        assert_eq!(child_space(Some(host), Some(active)), Some(host));
+        assert_eq!(child_space(Some(host), Some(active)), Ok(host));
+    }
+
+    #[test]
+    fn no_space_anywhere_is_not_ready() {
+        assert_eq!(child_space(None, None), Err(ScriptError::NotReady));
     }
 }

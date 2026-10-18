@@ -6,20 +6,13 @@ use std::{
 use anyhow::Context;
 use clap::Parser;
 use directories::ProjectDirs;
-use tracing::{
-    Level,
-    error,
-};
-use tracing_subscriber::{
-    EnvFilter,
-    fmt::writer::MakeWriterExt,
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-};
+use tracing::error;
 use unavi_node::{
     NodeOptions,
     config::registry_config,
 };
+
+mod logging;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -49,7 +42,7 @@ struct Args {
 #[tokio::main]
 async fn main() -> ExitCode {
     let args = Args::parse();
-    init_logging(args.debug);
+    logging::init(args.debug);
 
     match run(args).await {
         Ok(()) => ExitCode::SUCCESS,
@@ -130,18 +123,4 @@ async fn shutdown_signal() {
         () = ctrl_c => {}
         () = terminate => {}
     }
-}
-
-fn init_logging(debug: bool) {
-    let level = if debug { Level::DEBUG } else { Level::INFO };
-
-    let registry = tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().map_writer(|w| w.with_max_level(level)));
-
-    #[cfg(feature = "devtools-console")]
-    let registry = registry.with(console_subscriber::spawn());
-
-    registry
-        .with(EnvFilter::from_default_env().add_directive(level.into()))
-        .init();
 }

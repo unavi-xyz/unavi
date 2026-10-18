@@ -142,8 +142,8 @@ pub fn toggle_bar() -> MeshData {
 
 /// Where a cast's resting ring stands, as fractions of its body's radius: just
 /// outside the shell, and inside the ring a cast site draws once it fills.
-pub const CAST_RING_INNER: f32 = 1.04;
-pub const CAST_RING_OUTER: f32 = 1.1;
+pub const CAST_RING_INNER: f32 = 1.055;
+pub const CAST_RING_OUTER: f32 = 1.085;
 
 /// A cast's mark: a thin ring hugging the body's silhouette, in unit space.
 #[must_use]
@@ -258,6 +258,56 @@ pub fn face() -> MeshData {
         ],
         indices:   vec![0, 2, 1, 1, 2, 3],
     }
+}
+
+/// A glyph's face as a cap of the unit sphere, so its dots sit on the glass
+/// they are drawn for rather than on a flat pane standing off it.
+///
+/// `fill` is the half-width the grid's UV spans, so the grid keeps the size it
+/// had on a flat face; the cap reaches `reach` in-plane, past the grid's clip
+/// circle, so its own edge is never seen. u runs left to right and v top to
+/// bottom, the same as [`face`].
+#[must_use]
+pub fn dome(fill: f32, reach: f32) -> MeshData {
+    const RINGS: usize = 6;
+    const SEGMENTS: usize = 32;
+
+    let mut mesh = MeshData::default();
+    // The pole, then rings out to the cap's edge.
+    mesh.positions.extend_from_slice(&[0.0, 0.0, 1.0]);
+    mesh.normals.extend_from_slice(&[0.0, 0.0, 1.0]);
+    mesh.uvs.extend_from_slice(&[0.5, 0.5]);
+    for ring in 1..=RINGS {
+        let r = reach * ring as f32 / RINGS as f32;
+        let z = (1.0 - r * r).sqrt();
+        for segment in 0..=SEGMENTS {
+            let theta = TAU * segment as f32 / SEGMENTS as f32;
+            let (sin, cos) = theta.sin_cos();
+            let (x, y) = (r * cos, r * sin);
+            mesh.positions.extend_from_slice(&[x, y, z]);
+            // A unit sphere's normal is its own position.
+            mesh.normals.extend_from_slice(&[x, y, z]);
+            mesh.uvs.extend_from_slice(&[
+                x / (2.0 * fill) + 0.5,
+                0.5 - y / (2.0 * fill),
+            ]);
+        }
+    }
+
+    let stride = (SEGMENTS + 1) as u32;
+    for segment in 0..SEGMENTS as u32 {
+        mesh.indices
+            .extend_from_slice(&[0, 1 + segment, 1 + segment + 1]);
+    }
+    for ring in 0..RINGS as u32 - 1 {
+        for segment in 0..SEGMENTS as u32 {
+            let a = 1 + ring * stride + segment;
+            let b = a + stride;
+            mesh.indices
+                .extend_from_slice(&[a, b, a + 1, a + 1, b, b + 1]);
+        }
+    }
+    mesh
 }
 
 fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize, segments: usize) {
@@ -523,6 +573,38 @@ mod tests {
         let mesh = sphere(0.05, 0, 0);
         assert_well_formed(&mesh);
         assert_ne!(mesh.indices, [] as [u32; 0]);
+    }
+
+    /// A glyph's cap wraps the unit sphere, and its UV is the planar grid the
+    /// flat face used, so a glyph keeps its size and its cell layout.
+    #[test]
+    fn a_dome_wraps_the_unit_sphere_with_a_planar_grid() {
+        let fill = 0.62;
+        let mesh = dome(fill, fill * 1.05);
+        assert_eq!(mesh.positions.len(), mesh.normals.len());
+        assert_eq!(mesh.positions.len() % 3, 0);
+        assert_eq!(mesh.indices.len() % 3, 0);
+        let vertices = vertex_count(&mesh);
+        assert_eq!(mesh.uvs.len(), vertices * 2);
+        for &index in &mesh.indices {
+            assert!(index < vertices as u32, "index {index} out of range");
+        }
+        for (point, uv) in mesh
+            .positions
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .zip(mesh.uvs.as_chunks::<2>().0)
+        {
+            let length = point[0].hypot(point[1]).hypot(point[2]);
+            assert!((length - 1.0).abs() < 1.0e-4, "off the sphere: {length}");
+            let expected = (
+                point[0] / (2.0 * fill) + 0.5,
+                0.5 - point[1] / (2.0 * fill),
+            );
+            assert!((uv[0] - expected.0).abs() < 1.0e-5, "u {}", uv[0]);
+            assert!((uv[1] - expected.1).abs() < 1.0e-5, "v {}", uv[1]);
+        }
     }
 
     /// Bodies drawn away from the origin, once hidden pips collapse to zero

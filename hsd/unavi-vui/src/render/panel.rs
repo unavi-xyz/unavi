@@ -516,7 +516,15 @@ impl Panel {
                 }
             }
             Some(Outcome::Place(slot)) => {
-                if let Some((at, velocity)) = landed {
+                // A flick that displaced the mote before the engine could
+                // promote it never got a physics pose; it still lands where it
+                // was drawn, like a tap, rather than vanishing.
+                let placed = landed.or_else(|| {
+                    self.bodies
+                        .pose(doc, slot)
+                        .map(|pose| (pose.translation, Vec3::ZERO))
+                });
+                if let Some((at, velocity)) = placed {
                     done.released = self.build_released(slot, at, velocity);
                     done.opens_at = self.opens(slot).then_some(at);
                 }

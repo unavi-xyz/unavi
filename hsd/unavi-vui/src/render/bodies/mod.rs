@@ -84,6 +84,7 @@ mod hitbox;
 use face::{
     Face,
     Look,
+    Shape,
     Wear,
 };
 
@@ -380,7 +381,7 @@ impl Bodies {
             surface,
             input,
             park,
-            readout: Face::new(readout),
+            readout: Face::new(readout, Shape::Quad),
             chevrons: Chevrons::new().map_err(|err| anyhow::anyhow!("{err}"))?,
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
@@ -449,7 +450,13 @@ impl Bodies {
                     bar:  Mark::new(bar),
                     ring: Mark::new(ring),
                 },
-                face: Face::new(face),
+                face: Face::new(
+                    face,
+                    Shape::Dome {
+                        fill:  self.tuning.icon_fill,
+                        reach: self.tuning.icon_fill * 1.05,
+                    },
+                ),
                 label_xform: Shadow::new(),
                 icon: RefCell::new(None),
                 shell: Shadow::new(),
@@ -654,7 +661,7 @@ impl Bodies {
             } else {
                 eye
             };
-            let look = Look::of_slot(view, self.tuning.icon_fill, seen_from);
+            let look = Look::of_slot(view, seen_from, palette);
             self.apply_face(doc, &slot.face, look, Wear { owner, glyph }, delta)?;
         }
 
@@ -688,9 +695,9 @@ impl Bodies {
     ) -> anyhow::Result<()> {
         let up = self.shown.get();
         let look = Look {
-            pose: draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
-            color: palette.base,
-            heat: 0.0,
+            pose:  draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
+            color: palette.glyph,
+            heat:  0.0,
             bloom,
         };
         let wear = Wear {
@@ -810,9 +817,12 @@ impl Bodies {
                 false,
             ))
         };
+        // The cast mark wears the mote's own hue rather than the receded
+        // neutral, so it reads as part of the mote instead of a grey band
+        // around it.
         batch
             .set(slot.marks.bar.prim, styled(bar_color(palette, active)))
-            .set(slot.marks.ring.prim, styled(palette.dim))
+            .set(slot.marks.ring.prim, styled(view.style.color))
     }
 
     /// Marks the kind of mote the body is, scaled with the body.

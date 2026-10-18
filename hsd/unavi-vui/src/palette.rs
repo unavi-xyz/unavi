@@ -31,6 +31,10 @@ pub struct Palette {
     /// Type set on a placard's frosted panel: near-black, since the panel
     /// is light.
     pub ink:          Color,
+    /// Every glyph's dots, whatever the mote wears. Colour is spent on the
+    /// shell, so what it holds stays one cool off-white and reads against
+    /// any hue.
+    pub glyph:        Color,
     /// Warmth mixed into an item that is a source of its thing, so a mote you
     /// can take another of reads apart from the one of it.
     pub source:       Color,
@@ -63,6 +67,7 @@ impl Palette {
         mute:         0.55,
         warning:      rgb(0.90, 0.22, 0.04),
         ink:          rgb(0.04, 0.05, 0.07),
+        glyph:        shade(0.97),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
 

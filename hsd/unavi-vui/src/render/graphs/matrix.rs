@@ -84,7 +84,7 @@ const DOT_SOLID: f32 = 0.36;
 const DOT_EDGE: f32 = 0.47;
 /// Brightness of a face at rest and fully attended.
 const GLOW_REST: f32 = 1.25;
-const GLOW_ATTENDED: f32 = 1.8;
+const GLOW_ATTENDED: f32 = 2.4;
 
 /// Where a fragment sits in the grid.
 #[derive(Clone, Copy)]
@@ -189,8 +189,9 @@ impl Net {
         Turn { old, width }
     }
 
-    /// A soft disc about the cell's centre, squashed horizontally by `width`.
-    fn disc(&mut self, cell: Cell, width: Port) -> Port {
+    /// A soft disc about the cell's centre, squashed horizontally by `width`,
+    /// solid inside `solid` of a cell and faded out by `edge`.
+    fn disc(&mut self, cell: Cell, width: Port, solid: f32, edge: f32) -> Port {
         let local = self.push(Node::Sub(binary(
             cell.within,
             Port::Const(GraphValue::Vec2(Vec2::new(0.5, 0.5))),
@@ -212,8 +213,8 @@ impl Net {
         // Rising edges only: a smoothstep with its edges the wrong way round
         // is undefined, so the fade is built rising and then inverted.
         let fade = self.push(Node::Smoothstep(SmoothstepOp {
-            low:  cf(DOT_SOLID),
-            high: cf(DOT_EDGE),
+            low:  cf(solid),
+            high: cf(edge),
             x:    radius,
         }));
         self.push(Node::OneMinus(fade))
@@ -323,7 +324,7 @@ pub fn matrix() -> ShaderGraph {
     let cell = net.locate(size);
     let inside = net.clip(size, cell);
     let turn = net.turn(size, cell.column);
-    let disc = net.disc(cell, turn.width);
+    let dot = net.disc(cell, turn.width, DOT_SOLID, DOT_EDGE);
     let (value, place) = net.lane_value(size, cell, turn.old);
     let scale = net.unshift(place);
     let lit = net.bit(value, scale);
@@ -340,7 +341,7 @@ pub fn matrix() -> ShaderGraph {
     }));
     let bright = net.push(Node::Mul(binary(level, glow)));
     let bright = net.push(Node::Mul(binary(bright, Port::Input(MATRIX_BLOOM))));
-    let shaped = net.push(Node::Mul(binary(disc, inside)));
+    let shaped = net.push(Node::Mul(binary(dot, inside)));
     let drawn = net.push(Node::Mul(binary(shaped, bright)));
     let rgb = net.push(Node::Mul(binary(Port::Input(MATRIX_LIT), drawn)));
     // Alpha 0 for the same reason the ring has it: additive blending keeps
@@ -350,9 +351,9 @@ pub fn matrix() -> ShaderGraph {
 
     let mut public_inputs = vec![
         GraphValue::Color(Color {
-            r: 0.92,
+            r: 0.93,
             g: 0.95,
-            b: 1.0,
+            b: 0.97,
             a: 1.0,
         }),
         GraphValue::Float(9.0),

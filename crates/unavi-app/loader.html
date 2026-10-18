@@ -18,9 +18,23 @@
         background-color: #111;
         margin: 0;
         height: 100%;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background-color: #111;
         display: flex;
         align-items: center;
         justify-content: center;
+        opacity: 1;
+        transition: opacity 400ms ease-out;
+      }
+
+      .overlay.fading {
+        opacity: 0;
+        pointer-events: none;
       }
 
       .spinner {
@@ -39,6 +53,11 @@
       }
 
       .error {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         color: #f88;
         font-family: sans-serif;
         max-width: 32rem;
@@ -48,7 +67,9 @@
   </head>
 
   <body>
-    <div class="spinner" id="spinner"></div>
+    <div class="overlay" id="overlay">
+      <div class="spinner"></div>
+    </div>
     <noscript>UNAVI needs JavaScript enabled to load.</noscript>
     <script>
       (async function () {
@@ -83,13 +104,25 @@
 
           // Inject link tags (paths already correct).
           doc
-            .querySelectorAll('link[rel="stylesheet"], link[rel="icon"]')
+            .querySelectorAll(
+              'link[rel="stylesheet"], link[rel="icon"], link[rel="preload"], link[rel="modulepreload"]',
+            )
             .forEach((el) => {
               document.head.appendChild(el.cloneNode(true));
             });
 
-          // Remove spinner only once the variant is confirmed loadable.
-          document.getElementById("spinner").remove();
+          // The overlay stays over the canvas until the app reports its first
+          // frames, then fades out and is removed.
+          window.addEventListener(
+            "unavi-ready",
+            () => {
+              const overlay = document.getElementById("overlay");
+              if (!overlay) return;
+              overlay.classList.add("fading");
+              setTimeout(() => overlay.remove(), 450);
+            },
+            { once: true },
+          );
 
           // Inject and execute scripts (paths already correct).
           doc.querySelectorAll("script").forEach((el) => {
@@ -101,8 +134,8 @@
           });
         } catch (e) {
           console.error("Failed to load UNAVI:", e);
-          const spinner = document.getElementById("spinner");
-          if (spinner) spinner.remove();
+          const overlay = document.getElementById("overlay");
+          if (overlay) overlay.remove();
           const message = document.createElement("div");
           message.className = "error";
           message.textContent = "Failed to load: " + e;

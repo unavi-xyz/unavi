@@ -30,31 +30,35 @@ impl Plugin for CameraPlugin {
                 Update,
                 (sky::blend::target_sky, sky::blend::blend_sky).chain(),
             )
-            .add_systems(FixedUpdate, apply_camera_effects);
+            .add_observer(apply_camera_effects);
     }
 }
 
 pub fn apply_camera_effects(
+    trigger: On<Add, Camera3d>,
+    portal_views: Query<(), With<PortalViewCamera>>,
     mut commands: Commands,
-    new_cameras: Query<Entity, (Added<Camera3d>, Without<PortalViewCamera>)>,
     sky: Res<sky::blend::SkyBlend>,
 ) {
-    for entity in new_cameras {
-        commands.entity(entity).insert((
-            Hdr,
-            Bloom::OLD_SCHOOL,
-            Exposure::SUNLIGHT,
-            Msaa::Off,
-            ShadowFilteringMethod::Temporal,
-            TemporalAntiAliasing::default(),
-            DistanceFog {
-                color: sky.palette().fog().into(),
-                falloff: FogFalloff::Linear {
-                    start: FOG_START,
-                    end:   FOG_END,
-                },
-                ..default()
-            },
-        ));
+    let entity = trigger.entity;
+    if portal_views.contains(entity) {
+        return;
     }
+
+    commands.entity(entity).insert((
+        Hdr,
+        Bloom::OLD_SCHOOL,
+        Exposure::SUNLIGHT,
+        Msaa::Off,
+        ShadowFilteringMethod::Temporal,
+        TemporalAntiAliasing::default(),
+        DistanceFog {
+            color: sky.palette().fog().into(),
+            falloff: FogFalloff::Linear {
+                start: FOG_START,
+                end:   FOG_END,
+            },
+            ..default()
+        },
+    ));
 }

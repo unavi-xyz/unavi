@@ -67,7 +67,7 @@ pub(crate) fn spawn_crosshair(mut commands: Commands) {
             // A full-screen node over everything would otherwise swallow
             // whatever is behind it.
             Pickable::IGNORE,
-            GlobalZIndex(i32::MAX),
+            GlobalZIndex(i32::MAX - 1),
             Visibility::Hidden,
         ))
         .with_children(|screen| {

@@ -23,6 +23,8 @@ mod icon;
 mod identity;
 mod scene;
 
+#[cfg(target_family = "wasm")] mod ready;
+
 #[cfg(feature = "devtools")] mod devtools;
 
 #[cfg(feature = "profiling")] mod profiling;
@@ -150,6 +152,9 @@ impl Plugin for UnaviPlugin {
             unavi_script::ScriptSystems::Snapshot.after(unavi_agent::AgentMovementSet),
         )
         .add_systems(Startup, icon::set_window_icon);
+
+        #[cfg(target_family = "wasm")]
+        app.add_plugins(ready::ReadyPlugin);
 
         load_endpoint(app);
     }

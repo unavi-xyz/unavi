@@ -36,6 +36,7 @@ fn spawn_overlay(mut commands: Commands) {
             ..default()
         },
         BackgroundColor(CLEAR_COLOR),
+        GlobalZIndex(i32::MAX),
     ));
 }
 

@@ -71,7 +71,7 @@ winit                 = { default-features = false, version = "0.30.13" }
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-web-sys = { features = ["Location", "UrlSearchParams"], workspace = true }
+web-sys = { features = ["Event", "EventTarget", "Location", "UrlSearchParams", "Window"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_openxr         = "0.6.0"

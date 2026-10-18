@@ -124,6 +124,14 @@ strip         = true
 codegen-units = 16
 opt-level     = 3
 
+[profile.web-dev]
+codegen-units = 16
+debug         = false
+inherits      = "release"
+lto           = false
+opt-level     = 2
+strip         = true
+
 [profile.dev]
 codegen-backend = "cranelift"
 debug           = "line-tables-only"

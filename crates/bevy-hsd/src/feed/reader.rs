@@ -14,7 +14,14 @@ use hsd::{
 };
 use iroh_blobs::Hash;
 use iroh_docs::engine::LiveEvent;
-use n0_future::StreamExt;
+use n0_future::{
+    StreamExt,
+    time::{
+        Duration,
+        Instant,
+        timeout,
+    },
+};
 use unavi_store::{
     Document,
     Events,
@@ -38,15 +45,21 @@ pub(super) struct Reader {
     parked:      HashMap<Hash, HashSet<String>>,
     /// Each parked key's current hash.
     parked_hash: HashMap<String, Hash>,
+    /// Keys the initial snapshot parked that are still waiting.
+    initial:     HashSet<String>,
+    /// How long after the reader starts the feed stops waiting on content.
+    deadline:    Duration,
 }
 
 impl Reader {
-    pub(super) fn new(doc: Document, tx: Sender<Delta>) -> Self {
+    pub(super) fn new(doc: Document, tx: Sender<Delta>, deadline: Duration) -> Self {
         Self {
             doc,
             tx,
             parked: HashMap::new(),
             parked_hash: HashMap::new(),
+            initial: HashSet::new(),
+            deadline,
         }
     }
 
@@ -62,17 +75,43 @@ impl Reader {
             None => self.doc.subscribe().await?,
         };
 
+        let started = Instant::now();
         let holds_prim = self.snapshot().await?;
-        let mut waiting = match ready {
-            FeedReady::Snapshot => false,
-            FeedReady::RemoteSync => !holds_prim,
+        self.initial = self.parked_hash.keys().cloned().collect();
+        let ready_met = match ready {
+            FeedReady::Snapshot => true,
+            FeedReady::RemoteSync => holds_prim,
         };
-        if !waiting {
-            self.send(Delta::Synced).await?;
-        }
 
+        let mut synced = false;
         let mut synced_remote = false;
-        while let Some(event) = events.next().await {
+        loop {
+            if !synced && ready_met && self.initial.is_empty() {
+                synced = true;
+                self.send(Delta::Synced).await?;
+            }
+
+            let next = if synced {
+                events.next().await
+            } else {
+                let left = self.deadline.saturating_sub(started.elapsed());
+                if let Ok(next) = timeout(left, events.next()).await {
+                    next
+                } else {
+                    warn!(
+                        id = %self.doc.id(),
+                        parked = self.initial.len(),
+                        "document feed deadline passed before its content arrived",
+                    );
+                    synced = true;
+                    self.send(Delta::Synced).await?;
+                    continue;
+                }
+            };
+            let Some(event) = next else {
+                break;
+            };
+
             match event? {
                 LiveEvent::InsertLocal { entry } | LiveEvent::InsertRemote { entry, .. } => {
                     self.reread(entry.key()).await?;
@@ -84,8 +123,8 @@ impl Reader {
                     }
                 }
                 LiveEvent::SyncFinished(_) => synced_remote = true,
-                LiveEvent::PendingContentReady if waiting && synced_remote => {
-                    waiting = false;
+                LiveEvent::PendingContentReady if !synced && synced_remote => {
+                    synced = true;
                     self.send(Delta::Synced).await?;
                 }
                 LiveEvent::PendingContentReady
@@ -164,6 +203,7 @@ impl Reader {
     }
 
     fn unpark(&mut self, key: &str) {
+        self.initial.remove(key);
         let Some(hash) = self.parked_hash.remove(key) else {
             return;
         };

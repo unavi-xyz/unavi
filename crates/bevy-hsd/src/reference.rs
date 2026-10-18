@@ -215,7 +215,7 @@ async fn open_reference(
             world.spawn((
                 hsd,
                 HsdDocId(site),
-                DocFeed::joined(doc.clone(), events, FeedReady::Snapshot),
+                DocFeed::joined(doc.clone(), events, FeedReady::RemoteSync),
                 HsdNamespace(doc),
                 ReferenceInstance {
                     prim: prim_ent,

@@ -14,7 +14,10 @@ use hsd::{
     attributes::reference::LayerKey,
     state::entry::Entry,
 };
-use n0_future::FutureExt;
+use n0_future::{
+    FutureExt,
+    time::Duration,
+};
 use unavi_store::{
     Document,
     Events,
@@ -35,6 +38,9 @@ mod reader;
 /// Deltas buffered between the reader and the frame that projects them.
 const DELTA_CAPACITY: usize = 1024;
 
+/// How long after a feed starts it reports synced even if content is missing.
+pub const SYNC_DEADLINE: Duration = Duration::from_secs(10);
+
 pub(crate) enum Delta {
     /// A key's winner. An empty value is a key holding none.
     Entry(Entry),
@@ -42,13 +48,16 @@ pub(crate) enum Delta {
     Synced,
 }
 
-/// When a feed counts its first read complete.
+/// When a feed counts its first read complete. Either way it waits for the
+/// content of every entry the snapshot found without it, and gives up on
+/// content after [`SYNC_DEADLINE`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FeedReady {
-    /// Once the store's current entries are read.
+    /// Once the store's current entries are read and their content is held.
     Snapshot,
     /// Once a sync with a peer has finished and its content has downloaded,
-    /// or once the snapshot is read if the store already held a prim.
+    /// or once the snapshot is read and its content held if the store already
+    /// held a prim.
     RemoteSync,
 }
 
@@ -65,23 +74,32 @@ impl DocFeed {
     /// Subscribes to `doc` before reading it.
     #[must_use]
     pub fn spawn(doc: Document, ready: FeedReady) -> Self {
-        Self::start(doc, None, ready)
+        Self::start(doc, None, ready, SYNC_DEADLINE)
+    }
+
+    /// [`Self::spawn`] that stops waiting on content after `deadline`.
+    #[must_use]
+    pub fn spawn_with_deadline(doc: Document, ready: FeedReady, deadline: Duration) -> Self {
+        Self::start(doc, None, ready, deadline)
     }
 
     /// Feeds from the events [`Store::join`](unavi_store::Store::join)
     /// returned, which saw everything since before the sync started.
     #[must_use]
     pub fn joined(doc: Document, events: Events, ready: FeedReady) -> Self {
-        Self::start(doc, Some(events), ready)
+        Self::start(doc, Some(events), ready, SYNC_DEADLINE)
     }
 
-    fn start(doc: Document, events: Option<Events>, ready: FeedReady) -> Self {
+    fn start(doc: Document, events: Option<Events>, ready: FeedReady, deadline: Duration) -> Self {
         let (tx, rx) = async_channel::bounded(DELTA_CAPACITY);
         let (cancel, cancelled) = async_channel::bounded::<()>(1);
 
         let id = doc.id();
         let read = async move {
-            if let Err(err) = reader::Reader::new(doc, tx).run(events, ready).await {
+            if let Err(err) = reader::Reader::new(doc, tx, deadline)
+                .run(events, ready)
+                .await
+            {
                 warn!(%id, ?err, "document feed stopped");
             }
         };

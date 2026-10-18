@@ -13,6 +13,9 @@ use super::{
 pub const COVER: f32 = 0.35;
 /// Seconds it takes to come back, longer so an arrival settles gently.
 pub const REVEAL: f32 = 0.7;
+/// Seconds the world stays fully hidden before a reveal may begin, so new
+/// materials compile and settle behind the fog instead of popping in.
+pub const MIN_COVERED: f32 = 0.8;
 
 /// Fog distances at full cover. The halo sits at 0.7 m, so it stays legible
 /// while everything past arm's length melts into the sky.
@@ -24,16 +27,19 @@ const VEIL_END: f32 = 2.5;
 pub struct Veil {
     /// Linear position along the ease, which the level is a smoothstep of.
     /// Reversing walks it back from where it is, so the level never jumps.
-    progress: f32,
-    covering: bool,
+    progress:    f32,
+    covering:    bool,
+    /// Seconds spent fully covered, for [`MIN_COVERED`].
+    covered_for: f32,
 }
 
 impl Veil {
     #[must_use]
     pub const fn covered() -> Self {
         Self {
-            progress: 1.0,
-            covering: true,
+            progress:    1.0,
+            covering:    true,
+            covered_for: 0.0,
         }
     }
 
@@ -41,8 +47,9 @@ impl Veil {
     #[must_use]
     pub const fn revealed() -> Self {
         Self {
-            progress: 0.0,
-            covering: false,
+            progress:    0.0,
+            covering:    false,
+            covered_for: 0.0,
         }
     }
 
@@ -72,12 +79,19 @@ impl Veil {
     }
 
     pub fn step(&mut self, dt: f32) {
+        if self.is_covered() && (self.covering || self.covered_for < MIN_COVERED) {
+            self.covered_for += dt;
+            return;
+        }
         let rate = if self.covering {
             dt / COVER
         } else {
             -dt / REVEAL
         };
         self.progress = (self.progress + rate).clamp(0.0, 1.0);
+        if !self.is_covered() {
+            self.covered_for = 0.0;
+        }
     }
 
     /// The fog distances the cameras draw with at this level.
@@ -143,12 +157,28 @@ mod tests {
     fn revealing_takes_the_reveal_time() {
         let mut veil = Veil::covered();
         veil.reveal();
+        veil.step(MIN_COVERED);
 
         veil.step(REVEAL * 0.99);
         assert!(veil.level() > 0.0);
 
         veil.step(REVEAL * 0.5);
         assert!(veil.level().abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn a_reveal_waits_out_the_minimum_cover() {
+        let mut veil = Veil::revealed();
+        veil.cover();
+        veil.step(COVER);
+        veil.reveal();
+
+        veil.step(MIN_COVERED * 0.9);
+        assert!(veil.is_covered(), "revealed before the minimum cover");
+
+        veil.step(MIN_COVERED * 0.2);
+        veil.step(0.05);
+        assert!(!veil.is_covered());
     }
 
     #[test]

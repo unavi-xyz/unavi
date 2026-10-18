@@ -69,12 +69,16 @@ hsd-release:
 update-wit-deps:
     nu nu/update-wit-deps.nu
 
+# Wipe the local dev document stores so home/spaces re-import current scripts.
+reset *ARGS:
+    nu nu/reset-dev.nu {{ARGS}}
+
 # Materialize WIT deps and fail if it drifts from deps.lock.
 update-wit-deps-locked:
     nu nu/update-wit-deps.nu --locked
 
 # Build the shipped WebGL + WebGPU bundles into dist/.
-web *ARGS:
+web *ARGS: hsd-release
     trunk build --dist dist-webgl --public-url /webgl/ --no-default-features {{ARGS}}
     trunk build --dist dist-webgpu --public-url /webgpu/ --no-default-features --features webgpu {{ARGS}}
     rm -rf dist
@@ -98,7 +102,8 @@ debug := ""
 # SECRETSPEC_PROFILE is read at compile time, so it must reach the build.
 dev_env := "SECRETSPEC_PROFILE=development BEVY_ASSET_ROOT=crates/unavi-app"
 
-dev-build:
+# Build the node and app the dev recipes run, HSD assets first.
+dev-build: hsd-release
     {{dev_env}} cargo build -p unavi-node -p unavi-app
 
 node: dev-build

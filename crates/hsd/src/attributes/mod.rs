@@ -10,6 +10,7 @@ pub mod reference;
 pub mod rigid_body;
 pub mod script;
 pub mod shader;
+pub mod sky;
 pub mod spawn;
 pub mod text;
 pub mod xform;

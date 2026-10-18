@@ -62,6 +62,10 @@ use hsd::{
             self,
             MAX_TEXTURE_SAMPLES,
         },
+        sky::{
+            self,
+            SkyAttr,
+        },
         spawn::{
             self,
             SpawnAttr,
@@ -104,7 +108,7 @@ const MAX_TEXT_BYTES: usize = 4 * 1024;
 /// Every group the host defines. A custom property or relation must live
 /// outside them, so a script cannot write raw bytes into a field the host
 /// decodes.
-const BUILTIN_GROUPS: [&str; 15] = [
+const BUILTIN_GROUPS: [&str; 16] = [
     collider::GROUP,
     gravity_scale::GROUP,
     image::GROUP,
@@ -117,6 +121,7 @@ const BUILTIN_GROUPS: [&str; 15] = [
     rigid_body::GROUP,
     script::GROUP,
     shader::GROUP,
+    sky::GROUP,
     spawn::GROUP,
     text::GROUP,
     xform::GROUP,
@@ -250,6 +255,7 @@ pub enum PropertyKey {
     ColliderIndices,
     RigidBody,
     GravityScale,
+    Sky,
     Portal,
     Spawn,
     Relation(Relation),
@@ -276,6 +282,7 @@ impl PropertyKey {
             Self::ColliderIndices => ColliderIndices::NAME,
             Self::RigidBody => RigidBodyAttr::NAME,
             Self::GravityScale => GravityScaleAttr::NAME,
+            Self::Sky => SkyAttr::NAME,
             Self::Portal => PortalAttr::NAME,
             Self::Spawn => SpawnAttr::NAME,
             Self::Relation(relation) => relation.name()?,
@@ -303,6 +310,7 @@ impl PropertyKey {
             (ColliderIndices::NAME, Self::ColliderIndices),
             (RigidBodyAttr::NAME, Self::RigidBody),
             (GravityScaleAttr::NAME, Self::GravityScale),
+            (SkyAttr::NAME, Self::Sky),
             (PortalAttr::NAME, Self::Portal),
             (SpawnAttr::NAME, Self::Spawn),
         ];
@@ -373,6 +381,7 @@ impl PropertyKey {
             Self::GravityScale => {
                 Property::GravityScale(attr::<GravityScaleAttr>(state, prim)?.scale as f32)
             }
+            Self::Sky => Property::Sky(attr(state, prim)?),
             Self::Portal => Property::Portal(attr(state, prim)?),
             Self::Spawn => Property::Spawn(attr(state, prim)?),
             Self::Relation(relation) => {
@@ -406,6 +415,7 @@ pub enum Property {
     ColliderIndices(Vec<u32>),
     RigidBody(RigidBodyAttr),
     GravityScale(f32),
+    Sky(SkyAttr),
     Portal(PortalAttr),
     Spawn(SpawnAttr),
     Relation(Relation, PrimId),
@@ -432,6 +442,7 @@ impl Property {
             Self::ColliderIndices(_) => PropertyKey::ColliderIndices,
             Self::RigidBody(_) => PropertyKey::RigidBody,
             Self::GravityScale(_) => PropertyKey::GravityScale,
+            Self::Sky(_) => PropertyKey::Sky,
             Self::Portal(_) => PropertyKey::Portal,
             Self::Spawn(_) => PropertyKey::Spawn,
             Self::Relation(relation, _) => PropertyKey::Relation(relation.clone()),
@@ -498,6 +509,7 @@ impl Property {
             .flatten()
             .all(nonneg64),
             Self::GravityScale(scale) => scale.is_finite(),
+            Self::Sky(sky) => sky.color.0.iter().all(|channel| channel.is_finite()),
             Self::Portal(portal) => nonneg64(portal.size_x) && nonneg64(portal.size_y),
             Self::Spawn(spawn) => nonneg64(spawn.radius),
             Self::Material(material) => {
@@ -558,6 +570,7 @@ impl Property {
                 scale: f64::from(*scale),
             }
             .encode(),
+            Self::Sky(sky) => sky.encode(),
             Self::Portal(portal) => portal.encode(),
             Self::Spawn(spawn) => spawn.encode(),
         };

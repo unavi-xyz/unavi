@@ -263,6 +263,8 @@ interface properties {
     rigid-body(rigid-body),
     /// A multiple of the world's gravity. Defaults to 1.
     gravity-scale(f32),
+    /// The colour of the space's sky. Only its hue is guaranteed to show.
+    sky(color),
     portal(portal),
     spawn(spawn),
     relation(tuple<relation, prim-id>),
@@ -290,6 +292,7 @@ interface properties {
     collider-indices,
     rigid-body,
     gravity-scale,
+    sky,
     portal,
     spawn,
     relation(relation),

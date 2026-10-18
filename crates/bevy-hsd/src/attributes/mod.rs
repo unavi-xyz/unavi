@@ -21,6 +21,7 @@ pub mod portal;
 pub(crate) mod rigid_body;
 pub mod script;
 pub mod shader;
+pub mod sky;
 pub mod spawn;
 mod text;
 mod values;
@@ -86,6 +87,7 @@ pub(crate) fn apply(
         attributes::rigid_body::GROUP => rigid_body::apply(commands, prim, payload),
         attributes::script::GROUP => script::apply(commands, prim, payload),
         attributes::shader::GROUP => shader::apply(commands, prim, name, payload),
+        attributes::sky::GROUP => sky::apply(commands, prim, payload),
         attributes::spawn::GROUP => spawn::apply(commands, prim, payload),
         attributes::text::GROUP => text::apply(commands, prim, payload),
         attributes::xform::GROUP => xform::apply(commands, prim, payload),

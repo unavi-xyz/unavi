@@ -28,6 +28,7 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
+        sky::SkyAttr,
         spawn::SpawnAttr,
         text::{
             TextAlign,
@@ -388,6 +389,7 @@ pub fn property_key(key: wit::PropertyKey) -> Result<PropertyKey, ScriptError> {
         K::ColliderIndices => PropertyKey::ColliderIndices,
         K::RigidBody => PropertyKey::RigidBody,
         K::GravityScale => PropertyKey::GravityScale,
+        K::Sky => PropertyKey::Sky,
         K::Portal => PropertyKey::Portal,
         K::Spawn => PropertyKey::Spawn,
         K::Relation(r) => PropertyKey::Relation(relation(r)?),
@@ -414,6 +416,7 @@ pub fn wit_property_key(key: PropertyKey) -> wit::PropertyKey {
         PropertyKey::ColliderIndices => K::ColliderIndices,
         PropertyKey::RigidBody => K::RigidBody,
         PropertyKey::GravityScale => K::GravityScale,
+        PropertyKey::Sky => K::Sky,
         PropertyKey::Portal => K::Portal,
         PropertyKey::Spawn => K::Spawn,
         PropertyKey::Relation(r) => K::Relation(wit_relation(r)),
@@ -442,6 +445,9 @@ pub fn property(value: wit::Property) -> Result<Property, ScriptError> {
         P::ColliderIndices(values) => Property::ColliderIndices(values),
         P::RigidBody(b) => Property::RigidBody(rigid_body(b)),
         P::GravityScale(scale) => Property::GravityScale(scale),
+        P::Sky(c) => Property::Sky(SkyAttr {
+            color: color_vec(c),
+        }),
         P::Portal(p) => Property::Portal(portal(p)),
         P::Spawn(s) => Property::Spawn(SpawnAttr {
             radius: f64::from(s.radius),
@@ -473,6 +479,7 @@ pub fn wit_property(value: Property) -> wit::Property {
         Property::ColliderIndices(values) => P::ColliderIndices(values),
         Property::RigidBody(b) => P::RigidBody(wit_rigid_body(b)),
         Property::GravityScale(scale) => P::GravityScale(scale),
+        Property::Sky(sky) => P::Sky(wit_color_vec(&sky.color)),
         Property::Portal(p) => P::Portal(wit_portal(p)),
         Property::Spawn(s) => P::Spawn(wit::Spawn {
             radius: s.radius as f32,

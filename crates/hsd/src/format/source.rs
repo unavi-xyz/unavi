@@ -71,6 +71,8 @@ pub struct SourceAttributes {
     pub image:         Option<SourceImage>,
     pub material:      Option<SourceMaterial>,
     pub shader:        Option<SourceShader>,
+    /// Linear `r, g, b, a`.
+    pub sky:           Option<Vec<f64>>,
     pub name:          Option<String>,
     /// Path to another `.hsda`, compiled into its own document and referenced
     /// from here.

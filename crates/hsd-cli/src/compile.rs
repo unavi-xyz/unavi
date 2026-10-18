@@ -50,6 +50,7 @@ use hsd::{
             parse::parse as parse_hss,
             validate::validate,
         },
+        sky::SkyAttr,
         spawn::SpawnAttr,
         xform::XformAttr,
     },
@@ -268,6 +269,14 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         }
         if let Some(scale) = attrs.gravity_scale {
             self.set_attribute(id, &GravityScaleAttr { scale })?;
+        }
+        if let Some(color) = &attrs.sky {
+            self.set_attribute(
+                id,
+                &SkyAttr {
+                    color: ColorVec(color.clone()),
+                },
+            )?;
         }
         if let Some(spawn) = &attrs.spawn {
             self.set_attribute(

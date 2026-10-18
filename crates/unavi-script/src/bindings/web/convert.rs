@@ -38,6 +38,7 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
+        sky::SkyAttr,
         spawn::SpawnAttr,
         text::{
             TextAlign,
@@ -1039,6 +1040,7 @@ pub fn property_key(value: &JsValue) -> Result<PropertyKey, ScriptError> {
         "collider-indices" => PropertyKey::ColliderIndices,
         "rigid-body" => PropertyKey::RigidBody,
         "gravity-scale" => PropertyKey::GravityScale,
+        "sky" => PropertyKey::Sky,
         "portal" => PropertyKey::Portal,
         "spawn" => PropertyKey::Spawn,
         "relation" => PropertyKey::Relation(relation(val(value))?),
@@ -1079,6 +1081,7 @@ pub fn wit_property_key(key: PropertyKey) -> JsValue {
         PropertyKey::ColliderIndices => tagged("collider-indices", JsValue::UNDEFINED),
         PropertyKey::RigidBody => tagged("rigid-body", JsValue::UNDEFINED),
         PropertyKey::GravityScale => tagged("gravity-scale", JsValue::UNDEFINED),
+        PropertyKey::Sky => tagged("sky", JsValue::UNDEFINED),
         PropertyKey::Portal => tagged("portal", JsValue::UNDEFINED),
         PropertyKey::Spawn => tagged("spawn", JsValue::UNDEFINED),
         PropertyKey::Relation(r) => tagged("relation", wit_relation(r)),
@@ -1128,6 +1131,9 @@ pub fn property(value: &JsValue) -> Result<Property, ScriptError> {
                 .ok_or_else(|| ScriptError::invalid("a gravity scale is a number"))?
                 as f32,
         ),
+        "sky" => Property::Sky(SkyAttr {
+            color: color_vec(from_js(val)?),
+        }),
         "portal" => Property::Portal(portal(val)?),
         "spawn" => {
             #[derive(Deserialize)]
@@ -1188,6 +1194,7 @@ pub fn wit_property(value: Property) -> JsValue {
         Property::GravityScale(scale) => {
             tagged("gravity-scale", JsValue::from_f64(f64::from(scale)))
         }
+        Property::Sky(sky) => tagged("sky", to_js(&wire_color(&sky.color))),
         Property::Portal(p) => tagged("portal", wit_portal(p)),
         Property::Spawn(s) => {
             #[derive(Serialize)]

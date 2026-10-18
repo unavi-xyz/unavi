@@ -17,6 +17,7 @@ use unavi_agent::{
     LocalAgentEntities,
     config::AgentConfig,
 };
+use unavi_portal::body::PrevTranslation;
 use unavi_space::grid::{
     ActiveSpace,
     SPACE_CELL_SIZE,
@@ -24,12 +25,15 @@ use unavi_space::grid::{
 };
 
 pub mod arrival;
-pub mod diagnose;
 pub mod ground;
 
 #[cfg(test)] mod tests;
 
 const LIMBO_OFFSET: Vec3 = Vec3::new(SPACE_CELL_SIZE, 0.0, SPACE_CELL_SIZE);
+/// Where on the floor the agent is put down, kept off the floor entity's own
+/// origin: a body spawned exactly there picks up a phantom step and drops
+/// when it moves away. A few metres to the side is plain floor.
+const LIMBO_SPAWN_OFFSET: Vec3 = Vec3::new(3.0, 0.0, 3.0);
 /// Half the floor's extent on each horizontal axis.
 const PLANE_SIZE: f32 = 2048.0;
 const FLOOR_THICKNESS: f32 = 1.0;
@@ -84,37 +88,60 @@ pub fn spawn_limbo(
     ));
 }
 
-/// Pins the agent body to the limbo floor for as long as limbo lasts.
+/// Marks a local agent already put down on the limbo floor this stay.
+#[derive(Component)]
+pub(super) struct PlacedInLimbo;
+
+/// Puts the agent down on the limbo floor once per stay, then lets the normal
+/// character controller carry it.
 ///
-/// Held every tick rather than placed once on entry, since a space becoming
-/// active shifts the floor out from under an agent parked at a fixed point.
-/// The body's origin is its capsule's centre, so it is held at its float
-/// height above the floor rather than buried half in it.
-pub fn hold_agent_in_limbo(
-    agents: Query<(&LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
+/// Pinning the body every tick fought gravity, Tnua's walk spring and the
+/// solver's contact response, and that feedback grew into a bounce that could
+/// drive the camera into the floor. Limbo is a place to stand and walk in, not
+/// a loading screen that holds the player still.
+pub fn place_agent_in_limbo(
+    agents: Query<
+        (Entity, &LocalAgentEntities, &AgentConfig),
+        (With<LocalAgent>, Without<PlacedInLimbo>),
+    >,
     floor: Query<&Transform, With<Limbo>>,
     mut bodies: Query<
         (
             &mut Transform,
-            &mut Position,
+            Option<&mut Position>,
             &mut LinearVelocity,
             &mut AngularVelocity,
+            Option<&mut PrevTranslation>,
         ),
         Without<Limbo>,
     >,
+    mut commands: Commands,
 ) {
-    let (Ok((ents, config)), Ok(floor)) = (agents.single(), floor.single()) else {
+    let Ok(floor) = floor.single() else {
         return;
     };
-    let held = floor.translation + Vec3::Y * config.float_height();
-    let Ok((mut tr, mut pos, mut vel, mut ang_vel)) = bodies.get_mut(ents.body) else {
-        return;
-    };
+    for (agent, ents, config) in &agents {
+        let Ok((mut tr, pos, mut vel, mut ang_vel, prev)) = bodies.get_mut(ents.body) else {
+            continue;
+        };
 
-    tr.translation = held;
-    pos.0 = held;
-    *vel = LinearVelocity::default();
-    *ang_vel = AngularVelocity::default();
+        // The body's origin is its capsule's centre, so it sits a float height
+        // above the floor. Writing `Position` too keeps the jump out of the
+        // transform sync and out of portal-crossing detection.
+        let spawn = floor.translation + LIMBO_SPAWN_OFFSET + Vec3::Y * config.float_height();
+        tr.translation = spawn;
+        if let Some(mut pos) = pos {
+            pos.0 = spawn;
+        }
+        if let Some(mut prev) = prev {
+            prev.0 = Some(spawn);
+        }
+        *vel = LinearVelocity::default();
+        *ang_vel = AngularVelocity::default();
+
+        commands.entity(agent).insert(PlacedInLimbo);
+        commands.entity(ents.body).remove::<Sleeping>();
+    }
 }
 
 pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) {
@@ -142,6 +169,8 @@ pub fn leave_limbo(
     mut commands: Commands,
 ) {
     for entity in &agents {
-        commands.entity(entity).remove::<Spaceless>();
+        commands
+            .entity(entity)
+            .remove::<(Spaceless, PlacedInLimbo)>();
     }
 }

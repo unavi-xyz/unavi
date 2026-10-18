@@ -107,7 +107,10 @@ const fn is_cjk(c: char) -> bool {
 /// Requests `spec` at its position in [`FONT_STACK`], or warns if it is not
 /// part of the stack.
 fn request_font(commands: &mut Commands, assets: &AssetServer, spec: &AssetSpec) {
-    let Some(order) = FONT_STACK.iter().position(|face| face.rel_path == spec.rel_path) else {
+    let Some(order) = FONT_STACK
+        .iter()
+        .position(|face| face.rel_path == spec.rel_path)
+    else {
         warn!(path = spec.rel_path, "font is not in the fallback stack");
         return;
     };

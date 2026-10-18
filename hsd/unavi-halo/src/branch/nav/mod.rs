@@ -2,6 +2,11 @@
 //!
 //! A level that opens as a grid, so the listing gets pagination, attention and
 //! placards for free.
+//!
+//! The first entry is always "This space", standing for the space the user is
+//! in. The listed spaces follow, minus the one the user is in.
+
+mod here;
 
 use std::str::FromStr;
 
@@ -21,6 +26,7 @@ use wired_guest::{
     xform::hidden,
 };
 
+use self::here::Here;
 use crate::{
     glyph,
     unavi::{
@@ -82,57 +88,24 @@ pub enum Planting {
 
 /// A space the registries say has people in it.
 struct Space {
+    /// The registry's ordering key, which sorts the grid.
+    rank:   u32,
     /// For travelling, and the beacon's own colour seed.
-    ns:     (u64, u64, u64, u64),
+    ns:     Namespace,
     /// The same, as the registry wrote it, which is what a beacon is named.
     hex:    String,
-    /// Who is in it, as the description reads when you are not.
-    people: String,
-    /// Whether the user is in it now.
-    here:   bool,
+    /// The listing title as the registry wrote it; may be blank.
+    title:  String,
     group:  Mote,
-    /// Travel while you are elsewhere, respawn while you are here.
     cast:   Mote,
     beacon: Mote,
 }
 
-impl Space {
-    /// Sets whether the user is in this space, rewriting what that changes.
-    ///
-    /// The cast stays in its slot either way: travelling to the space you
-    /// stand in drops and re-reads it, which is the only way back from a space
-    /// a script or a peer has left broken, so it flips to a respawn rather
-    /// than leaving. Relabelled in place, so the ring never moves.
-    fn set_here(&mut self, here: bool) {
-        if self.here == here {
-            return;
-        }
-        self.here = here;
-        let text = if here { HERE } else { &self.people };
-        if let Err(err) = self.group.set_description(text) {
-            eprintln!("halo: space description: {err:?}");
-        }
-        // The pin says it at a glance, before anyone reads a placard.
-        let mark = if here { &glyph::HERE } else { &glyph::BEACON };
-        if let Err(err) = self.group.set_glyph(Some(&glyph::from_rows(mark))) {
-            eprintln!("halo: space glyph: {err:?}");
-        }
-        let (label, what) = if here { RESPAWN } else { TRAVEL };
-        if let Err(err) = self.cast.set_label(label) {
-            eprintln!("halo: space cast label: {err:?}");
-        }
-        if let Err(err) = self.cast.set_description(what) {
-            eprintln!("halo: space cast description: {err:?}");
-        }
-    }
-}
+/// A space's namespace as a `document-id`.
+type Namespace = (u64, u64, u64, u64);
 
-/// The cast a space wears while you are somewhere else.
+/// The cast a space wears.
 const TRAVEL: (&str, &str) = ("Travel", "Travel to this space.");
-
-/// The same cast while you stand in the space: the one way to ask for it
-/// again, where you already are.
-const RESPAWN: (&str, &str) = ("Respawn", "Reload this space.");
 
 /// Lists the spaces currently occupied per the registries this app follows.
 #[derive(Default)]
@@ -141,7 +114,10 @@ pub struct Nav {
     spaces:  Vec<Space>,
     beacons: Vec<Document>,
     /// The space the user was last seen in.
-    here:    Option<(u64, u64, u64, u64)>,
+    here:    Option<Namespace>,
+    /// The "This space" mote, built on the first update so it precedes every
+    /// listing in the grid.
+    pinned:  Option<Here>,
     /// The beacon body, built once and worn by every space's beacon mote.
     icon:    Option<(u64, u64)>,
 }
@@ -167,13 +143,16 @@ impl Nav {
             .collect();
     }
 
-    /// Hangs a mote under `parent` for each space that has appeared.
+    /// Hangs a mote under `parent` for each space that has appeared, after the
+    /// pinned "This space" mote.
     ///
     /// Sorted by the registry's own rank and then by namespace, so the order
     /// is the same every frame however the listings interleave — slot order is
-    /// position, and position is muscle memory.
+    /// position, and position is muscle memory. The space the user is in is
+    /// left out, since the pinned mote stands for it.
     pub fn fixed_update(&mut self, parent: &Mote) {
-        self.follow_user();
+        let mut dirty = self.pin(parent);
+        dirty |= self.follow_user();
         if self.icon.is_none() {
             match beacon_icon() {
                 Ok(icon) => self.icon = Some(icon),
@@ -192,55 +171,111 @@ impl Nav {
                 Err(err) => eprintln!("halo: registry active-space list error: {err:?}"),
             }
         }
-        if found.is_empty() {
-            return;
-        }
-
-        found.sort_by(|a, b| a.rank.cmp(&b.rank).then_with(|| a.hex.cmp(&b.hex)));
         for listing in found {
             if self.spaces.iter().any(|space| space.hex == listing.hex) {
                 continue;
             }
-            let Some(mut space) = build(&listing, self.icon) else {
+            let Some(space) = build(&listing, self.icon) else {
                 continue;
             };
-            space.set_here(self.here == Some(space.ns));
-            parent.add_child(&space.group);
             self.spaces.push(space);
+            dirty = true;
+        }
+
+        if dirty {
+            self.spaces
+                .sort_by(|a, b| a.rank.cmp(&b.rank).then_with(|| a.hex.cmp(&b.hex)));
+            self.sync(parent);
         }
     }
 
-    /// Marks the space the user is in. A user between spaces, or a host that
-    /// will not say, is in none.
-    fn follow_user(&mut self) {
+    /// Builds the pinned mote and hangs it under `parent`, which it must do
+    /// before any listing so it is the grid's first child. Whether it was
+    /// built just now.
+    fn pin(&mut self, parent: &Mote) -> bool {
+        if self.pinned.is_some() {
+            return false;
+        }
+        match Here::new() {
+            Ok(pinned) => {
+                parent.add_child(&pinned.group);
+                self.pinned = Some(pinned);
+                true
+            }
+            Err(err) => {
+                eprintln!("halo: this space mote: {err:?}");
+                false
+            }
+        }
+    }
+
+    /// Rehangs the listed spaces under `parent` and rewrites the pinned mote.
+    ///
+    /// The mote API can take a child out and append it, but not insert at an
+    /// index, so keeping the order means taking every listed space out and
+    /// putting back those that are shown. The pinned mote is never touched and
+    /// so stays first.
+    fn sync(&mut self, parent: &Mote) {
+        for space in &self.spaces {
+            parent.remove_child(&space.group);
+        }
+        let namespaces: Vec<_> = self.spaces.iter().map(|space| space.ns).collect();
+        for index in listed(&namespaces, self.here) {
+            parent.add_child(&self.spaces[index].group);
+        }
+        let title = self
+            .here
+            .and_then(|ns| self.spaces.iter().find(|space| space.ns == ns))
+            .map(|space| space.title.as_str());
+        if let Some(pinned) = &mut self.pinned {
+            pinned.show(self.here.is_some(), title);
+        }
+    }
+
+    /// Follows the space the user is in. A user between spaces, or a host that
+    /// will not say, is in none. Whether that changed.
+    fn follow_user(&mut self) -> bool {
         let here = current_space().ok().flatten();
         if here == self.here {
-            return;
+            return false;
         }
         self.here = here;
         // Beacons belong to the space they were planted in, and travel
         // despawns it, so the handles would only pile up pointing at nothing.
         self.beacons.clear();
-        for space in &mut self.spaces {
-            space.set_here(here == Some(space.ns));
-        }
+        true
     }
 
     /// Travels to whichever space's cast just filled.
     pub fn cast(&self, mote: &Mote) -> bool {
+        if let Some(pinned) = &self.pinned
+            && pinned.is_cast(mote)
+        {
+            self.respawn(pinned);
+            return true;
+        }
         let Some(space) = self.spaces.iter().find(|space| space.cast.is(mote)) else {
             return false;
         };
         if let Err(err) = travel(space.ns) {
             eprintln!("halo: travel failed: {err:?}");
-            let what = if space.here {
-                "Couldn't reload this space."
-            } else {
-                "Couldn't travel there."
-            };
-            space.cast.notify(what);
+            space.cast.notify("Couldn't travel there.");
         }
         true
+    }
+
+    /// Travels to the space the user is already in, which drops and re-reads
+    /// it. The cast is only attached in a space, so the notice for limbo is
+    /// a guard against a fill landing as the user leaves.
+    fn respawn(&self, pinned: &Here) {
+        let Some(ns) = self.here else {
+            pinned.notify("Not in a space");
+            return;
+        };
+        if let Err(err) = travel(ns) {
+            eprintln!("halo: respawn failed: {err:?}");
+            pinned.notify("Couldn't reload this space.");
+        }
     }
 
     /// Puts a beacon for a space where its mote was let go.
@@ -270,7 +305,7 @@ impl Nav {
 struct Listing {
     rank:      u32,
     hex:       String,
-    ns:        (u64, u64, u64, u64),
+    ns:        Namespace,
     occupants: u32,
     idle_secs: u64,
     /// The listing title as the registry wrote it; may be blank.
@@ -348,10 +383,10 @@ fn build(listing: &Listing, icon: Option<(u64, u64)>) -> Option<Space> {
     group.add_child(&beacon);
 
     Some(Space {
+        rank: listing.rank,
         ns: listing.ns,
         hex: listing.hex.clone(),
-        people,
-        here: false,
+        title: listing.title.clone(),
         group,
         cast,
         beacon,
@@ -376,12 +411,8 @@ fn label(listing: &Listing) -> Option<String> {
     Some(label)
 }
 
-/// What a space you are in says instead of its occupancy.
-const HERE: &str = "You are here";
-
 /// Who is in a space, and how long it has been quiet once that is worth
-/// saying. Only occupancy: the title is already the label, and anything about
-/// being "here" is for the one space you are in.
+/// saying. Only occupancy: the title is already the label.
 fn people(listing: &Listing) -> String {
     let people = match listing.occupants {
         0 => "Empty".to_owned(),
@@ -524,9 +555,20 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
     Ok(beacon)
 }
 
+/// The indices of the spaces to show, in their given order, leaving out the one
+/// the user is in.
+fn listed(namespaces: &[Namespace], here: Option<Namespace>) -> Vec<usize> {
+    namespaces
+        .iter()
+        .enumerate()
+        .filter(|(_, ns)| here != Some(**ns))
+        .map(|(index, _)| index)
+        .collect()
+}
+
 /// The registry writes a namespace as hex; a `document-id` is its bytes as
 /// four little-endian words.
-fn document_id_from_hex(hex: &str) -> Option<(u64, u64, u64, u64)> {
+fn document_id_from_hex(hex: &str) -> Option<Namespace> {
     if !hex.len().is_multiple_of(2) {
         return None;
     }
@@ -562,6 +604,20 @@ mod tests {
             idle_secs: 0,
             title:     title.to_owned(),
         }
+    }
+
+    #[test]
+    fn the_current_space_is_left_out_and_the_rest_keep_their_order() {
+        let spaces = [(1, 0, 0, 0), (2, 0, 0, 0), (3, 0, 0, 0)];
+        assert_eq!(listed(&spaces, Some((2, 0, 0, 0))), vec![0, 2]);
+        assert_eq!(listed(&spaces, Some((1, 0, 0, 0))), vec![1, 2]);
+    }
+
+    #[test]
+    fn the_left_space_comes_back_in_its_own_slot() {
+        let spaces = [(1, 0, 0, 0), (2, 0, 0, 0), (3, 0, 0, 0)];
+        assert_eq!(listed(&spaces, None), vec![0, 1, 2]);
+        assert_eq!(listed(&spaces, Some((9, 0, 0, 0))), vec![0, 1, 2]);
     }
 
     #[test]

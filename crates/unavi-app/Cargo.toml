@@ -50,6 +50,7 @@ n0-future.workspace   = true
 parking_lot.workspace = true
 postcard.workspace    = true
 tracing               = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
+tracing-subscriber.workspace = true
 unavi-agent.path      = "../unavi-agent"
 unavi-assets.path     = "../unavi-assets"
 unavi-avatar.path     = "../unavi-avatar"

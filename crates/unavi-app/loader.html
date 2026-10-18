@@ -138,7 +138,12 @@
     <noscript>UNAVI needs JavaScript enabled to load.</noscript>
     <script>
       (async function () {
-        const state = { current: 0, total: null, starting: false, queued: false };
+        const state = {
+          current: 0,
+          total: null,
+          starting: false,
+          queued: false,
+        };
 
         const showError = (e) => {
           console.error("Failed to load UNAVI:", e);

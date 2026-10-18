@@ -20,6 +20,7 @@ mod camera;
 mod config;
 mod icon;
 mod identity;
+mod logging;
 mod scene;
 
 #[cfg(target_family = "wasm")] mod ready;
@@ -55,6 +56,8 @@ impl Plugin for UnaviPlugin {
             .set(LogPlugin {
                 filter: filter.join(","),
                 level: self.log_level,
+                custom_layer: logging::collapsing_layer,
+                fmt_layer: logging::plain_layer,
                 ..default()
             })
             .set(WindowPlugin {

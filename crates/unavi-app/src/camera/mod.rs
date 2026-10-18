@@ -2,7 +2,6 @@
 //! material.
 
 use bevy::{
-    anti_alias::taa::TemporalAntiAliasing,
     camera::{
         Exposure,
         Hdr,
@@ -60,13 +59,24 @@ pub fn apply_camera_effects(
         Hdr,
         Bloom::OLD_SCHOOL,
         Exposure::SUNLIGHT,
-        Msaa::Off,
         ShadowFilteringMethod::Temporal,
-        TemporalAntiAliasing::default(),
         DistanceFog {
             color: sky.palette().fog().into(),
             falloff: veil.falloff(),
             ..default()
         },
     ));
+
+    // TAA is unsupported on WebGL2, so fall back to MSAA.
+    cfg_select! {
+        all(target_family = "wasm", not(feature = "webgpu")) => {
+            commands.entity(entity).insert(Msaa::Sample4);
+        }
+        _ => {
+            commands.entity(entity).insert((
+                Msaa::Off,
+                bevy::anti_alias::taa::TemporalAntiAliasing::default(),
+            ));
+        }
+    }
 }

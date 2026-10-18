@@ -11275,6 +11275,7 @@ dependencies = [
  "parking_lot",
  "postcard",
  "tracing",
+ "tracing-subscriber",
  "unavi-agent",
  "unavi-assets",
  "unavi-avatar",

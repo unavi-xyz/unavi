@@ -591,3 +591,98 @@ fn a_space_ready_at_once_still_waits_out_the_minimum_stay() {
     pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
 }
+
+#[test]
+fn limbo_puts_the_body_down_once_and_then_leaves_it_alone() {
+    use avian3d::prelude::{
+        AngularVelocity,
+        LinearVelocity,
+        Position,
+        RigidBodyDisabled,
+    };
+    use bevy::ecs::system::RunSystemOnce;
+    use unavi_agent::{
+        LocalAgent,
+        LocalAgentEntities,
+        config::AgentConfig,
+    };
+    use unavi_space::grid::Spaceless;
+
+    let mut app = App::new();
+    let config = AgentConfig::default();
+    let floor = Vec3::new(5000.0, 0.0, 5000.0);
+    let spawn = floor + super::LIMBO_SPAWN_OFFSET + Vec3::Y * config.float_height();
+
+    app.world_mut()
+        .spawn((super::Limbo, Transform::from_translation(floor)));
+    let body = app
+        .world_mut()
+        .spawn((
+            Transform::default(),
+            Position(Vec3::ZERO),
+            LinearVelocity(Vec3::ONE),
+            AngularVelocity(Vec3::ONE),
+        ))
+        .id();
+    let tracked_head = app.world_mut().spawn_empty().id();
+    let agent = app
+        .world_mut()
+        .spawn((
+            LocalAgent,
+            config,
+            LocalAgentEntities { body, tracked_head },
+        ))
+        .id();
+
+    app.world_mut()
+        .run_system_once(super::place_agent_in_limbo)
+        .expect("place runs");
+
+    assert_eq!(
+        app.world().entity(body).get::<Position>().map(|pos| pos.0),
+        Some(spawn),
+        "the agent must start on the limbo floor"
+    );
+    assert_eq!(
+        app.world()
+            .entity(body)
+            .get::<LinearVelocity>()
+            .map(|vel| vel.0),
+        Some(Vec3::ZERO)
+    );
+    assert!(
+        app.world().entity(agent).contains::<super::PlacedInLimbo>(),
+        "placement must happen once per limbo stay"
+    );
+    assert!(
+        !app.world().entity(body).contains::<RigidBodyDisabled>(),
+        "limbo must leave the body simulated so the player can walk"
+    );
+
+    // The player walks away from the spawn point. A later tick must not drag
+    // them back.
+    let walked = spawn + Vec3::new(3.0, 0.0, 0.0);
+    app.world_mut()
+        .entity_mut(body)
+        .insert((Transform::from_translation(walked), Position(walked)));
+    app.world_mut()
+        .run_system_once(super::place_agent_in_limbo)
+        .expect("place runs again");
+
+    assert_eq!(
+        app.world().entity(body).get::<Position>().map(|pos| pos.0),
+        Some(walked),
+        "limbo must not keep pulling the player back"
+    );
+
+    app.world_mut().entity_mut(agent).insert(Spaceless);
+    app.world_mut()
+        .run_system_once(super::leave_limbo)
+        .expect("leave runs");
+
+    assert!(!app.world().entity(agent).contains::<Spaceless>());
+    assert!(
+        !app.world().entity(agent).contains::<super::PlacedInLimbo>(),
+        "the next limbo stay must place the agent again"
+    );
+}

@@ -408,8 +408,14 @@ mod tests {
     fn a_fetch_restarts_for_a_missed_target_or_from_nobody_but_not_for_a_new_peer() {
         let (target, peer, other) = (endpoint_id(), endpoint_id(), endpoint_id());
 
-        assert!(needs_restart(&[], &[], &[peer]), "asked nobody, a peer is known");
-        assert!(needs_restart(&[peer], &[target], &[target, peer]), "missed a target");
+        assert!(
+            needs_restart(&[], &[], &[peer]),
+            "asked nobody, a peer is known"
+        );
+        assert!(
+            needs_restart(&[peer], &[target], &[target, peer]),
+            "missed a target"
+        );
         assert!(
             !needs_restart(&[target, peer], &[target], &[target, peer, other]),
             "a new peer leaves a running fetch alone"

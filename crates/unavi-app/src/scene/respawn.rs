@@ -1,6 +1,8 @@
 use avian3d::prelude::{
     AngularVelocity,
     LinearVelocity,
+    Position,
+    Sleeping,
 };
 use bevy::{
     ecs::system::SystemParam,
@@ -12,6 +14,7 @@ use unavi_agent::{
     LocalAgentEntities,
     config::AgentConfig,
 };
+use unavi_portal::body::PrevTranslation;
 use unavi_space::{
     grid::ActiveSpace,
     membership::Space,
@@ -66,13 +69,20 @@ pub fn respawn(
     local_agent: Query<(&LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
     active: Res<ActiveSpace>,
     places: SpawnPlaces,
-    mut body: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,
+    mut body: Query<(
+        &mut Transform,
+        Option<&mut Position>,
+        &mut LinearVelocity,
+        &mut AngularVelocity,
+        Option<&mut PrevTranslation>,
+    )>,
+    mut commands: Commands,
 ) {
     let Ok((ents, config)) = local_agent.single() else {
         warn!("Can't respawn, local agent not found");
         return;
     };
-    let Ok((mut tr, mut vel, mut ang_vel)) = body.get_mut(ents.body) else {
+    let Ok((mut tr, pos, mut vel, mut ang_vel, prev)) = body.get_mut(ents.body) else {
         return;
     };
 
@@ -88,9 +98,20 @@ pub fn respawn(
             .or(active.0)
             .map_or_else(Vec3::default, |space| places.pick(space))
     });
-    tr.translation = ground + Vec3::Y * config.float_height();
+    let spawn = ground + Vec3::Y * config.float_height();
+    tr.translation = spawn;
+    // Write `Position` too rather than relying on the transform sync: a body
+    // disabled in limbo is not stepped, and a large jump would otherwise
+    // read as a portal crossing on the next tick.
+    if let Some(mut pos) = pos {
+        pos.0 = spawn;
+    }
+    if let Some(mut prev) = prev {
+        prev.0 = Some(spawn);
+    }
+    commands.entity(ents.body).remove::<Sleeping>();
 
-    info!("Respawning at {}", tr.translation);
+    info!("Respawning at {spawn}");
 }
 
 const VOID_LEVEL: f32 = -512.0;

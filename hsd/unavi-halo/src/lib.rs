@@ -62,7 +62,7 @@ struct Script {
     home:     Home,
     nav:      Nav,
     summon:   Summon,
-    /// Last tick's eye, so a respawn carries the open halo along.
+    /// Last tick's eye, so a respawn, travel or home can close the halo.
     jumps:    Watch,
     /// The time on the root's face.
     clock:    Clock,
@@ -217,8 +217,11 @@ impl ScriptBehavior for Script {
         let Some(eye) = camera_pose() else {
             return Ok(());
         };
-        if let Some(by) = self.jumps.step(&eye) {
-            self.summon.carry(&by);
+        if self.jumps.step(&eye).is_some() {
+            // A respawn, a travel or home jumps the viewer somewhere else; a
+            // menu opened where they were standing no longer belongs there.
+            let dismiss = self.summon.taken();
+            self.apply(dismiss)?;
         }
         self.read_input(&eye);
 

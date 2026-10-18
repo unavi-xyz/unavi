@@ -1,51 +1,10 @@
-import {
-  generate,
-  GenerateOptions,
-  Transpiled,
-} from "@bytecodealliance/jco/component";
+import { generate, Transpiled } from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
-
-/**
- * Every import `bindings::native`'s linker marks `async`, named the way
- * `jco`'s `asyncMode.jspi.imports` option expects: `<interface>#<name>` for a
- * free function, `<interface>#[method]<resource>.<name>` for a resource
- * method. Everything else lifts as a plain synchronous call.
- *
- * Unversioned: the import *object keys* `buildImports` below returns are
- * unversioned (jco reads `imports['wired:scene/document']`), and the protocol
- * packages carry no version either, so `asyncMode`'s matcher sees one form
- * throughout.
- */
-const ASYNC_IMPORTS = [
-  "wired:scene/document#open-document",
-  "wired:scene/document#create-document",
-  "wired:scene/document#copy-document",
-  "wired:scene/document#delete-document",
-  "wired:scene/document#[method]document.create-prim",
-  "wired:scene/document#[method]document.apply",
-  "wired:scene/document#[method]document.commit",
-  "wired:scene/document#[method]document.place",
-  "wired:shading/graph#set-graph",
-  "wired:shading/graph#set-overrides",
-  "wired:physics/simulation#raycast",
-  "wired:physics/simulation#velocity",
-  "wired:physics/simulation#set-velocity",
-  "wired:physics/simulation#set-force",
-  "wired:agent/local#attach",
-  "wired:portal/portals#open",
-  "wired:portal/portals#pair",
-  "wired:portal/portals#travel",
-  "unavi:host/node-storage#get",
-  "unavi:host/node-storage#list-entries",
-];
-
-/** Every export `bindings::native`'s linker marks `async`: the whole of
- * `wired:script/lifecycle`. */
-const ASYNC_EXPORTS = [
-  "wired:script/lifecycle#init",
-  "wired:script/lifecycle#update",
-  "wired:script/lifecycle#fixed-update",
-];
+import {
+  transpileOptions,
+  type TranspileReply,
+  type TranspileRequest,
+} from "./transpile-options";
 
 interface Compiled {
   getCoreModule: (path: string) => Promise<WebAssembly.Module>;
@@ -62,39 +21,127 @@ interface Compiled {
  */
 const compiledByHash = new Map<string, Compiled>();
 
-async function compile(bytes: Uint8Array, name: string): Promise<Compiled> {
-  const options: GenerateOptions = {
-    asyncMode: {
-      tag: "jspi",
-      val: {
-        imports: ASYNC_IMPORTS,
-        exports: ASYNC_EXPORTS,
-      },
-    },
-    instantiation: { tag: "async" },
-    name,
-    noNamespacedExports: true,
-    noNodejsCompat: true,
-    noTypescript: true,
-    strict: true,
-    // `init`'s only WIT error is a plain `string`. Without this, a failing
-    // `init` throws a `ComponentError` wrapper instead of that string, and
-    // `engine::web::tick`'s `err.as_string()` check (which tells a guest's
-    // own `init` failure apart from a real trap) would never match.
-    noComponentErrorWrapping: true,
-  };
+/** Collapses concurrent compiles of one hash onto a single transpile. */
+const compilingByHash = new Map<string, Promise<Compiled>>();
 
+/**
+ * The page's one worker, created on first compile. A worker that fails to
+ * load is left undefined and every later compile takes the in-page path.
+ */
+let transpileWorker: Worker | undefined;
+const pendingReplies = new Map<string, (reply: TranspileReply) => void>();
+
+function ensureWorker(): Worker | undefined {
+  if (transpileWorker != undefined) {
+    return transpileWorker;
+  }
+  try {
+    const created = new Worker(
+      new URL("./transpile-worker.js", import.meta.url),
+      { type: "module", name: "transpile" },
+    );
+    created.addEventListener(
+      "message",
+      (event: MessageEvent<TranspileReply>) => {
+        const reply = event.data;
+        const settle = pendingReplies.get(reply.hash);
+        if (settle == undefined) {
+          return;
+        }
+        pendingReplies.delete(reply.hash);
+        settle(reply);
+      },
+    );
+    // A worker that fails to load or to post a cloneable reply never answers,
+    // so this fails every request it was holding. The next compile retries
+    // through `ensureWorker`.
+    const fail = () => {
+      const failed = transpileWorker;
+      transpileWorker = undefined;
+      failed?.terminate();
+      for (const [hash, settle] of pendingReplies) {
+        pendingReplies.delete(hash);
+        settle({ hash, error: "transpile worker failed" });
+      }
+    };
+    created.addEventListener("error", fail);
+    created.addEventListener("messageerror", fail);
+    transpileWorker = created;
+    return created;
+  } catch {
+    transpileWorker = undefined;
+    return undefined;
+  }
+}
+
+async function compileWithWorker(
+  worker: Worker,
+  bytes: Uint8Array,
+  hash: string,
+  name: string,
+): Promise<Compiled> {
+  const reply = await new Promise<TranspileReply>((resolve, reject) => {
+    pendingReplies.set(hash, resolve);
+    try {
+      worker.postMessage({ bytes, hash, name } satisfies TranspileRequest);
+    } catch (err) {
+      pendingReplies.delete(hash);
+      reject(err);
+    }
+  });
+  if ("error" in reply) {
+    throw new Error(reply.error);
+  }
+
+  const modules = new Map(reply.modules);
+  return await assemble(reply.js, async (path) => {
+    const module = modules.get(path);
+    if (module == undefined) {
+      throw new Error(`missing wasm module: ${path}`);
+    }
+    return module;
+  });
+}
+
+/**
+ * Compiles in page, the fallback `compile` takes when no worker is
+ * available. The component bytes are transpiled here through jco.
+ */
+async function compileInPage(
+  bytes: Uint8Array,
+  name: string,
+): Promise<Compiled> {
   const result = await (generate(
     bytes,
-    options,
+    transpileOptions(name),
   ) as unknown as Promise<Transpiled>);
 
   const jsFile = result.files.find(([path]) => path.endsWith(".js"));
   if (jsFile == undefined) {
     throw new Error("transpiled JS not found");
   }
-  const jsCode = new TextDecoder().decode(jsFile[1]);
-  const blob = new Blob([jsCode], { type: "text/javascript" });
+  const js = new TextDecoder().decode(jsFile[1]);
+  const fileMap = new Map(result.files);
+  return await assemble(js, async (path) => {
+    const contents = fileMap.get(path);
+    if (!contents) {
+      throw new Error(`missing wasm module: ${path}`);
+    }
+    return await WebAssembly.compile(contents as BufferSource);
+  });
+}
+
+/**
+ * A `Compiled` from generated module text and a way to reach its core
+ * modules. The text is imported from a blob URL and so must be
+ * self-contained, which `instantiation: { tag: "async" }` gives. Core-module
+ * loading is left to the `getCoreModule` passed in at instantiation.
+ */
+async function assemble(
+  js: string,
+  getCoreModule: Compiled["getCoreModule"],
+): Promise<Compiled> {
+  const blob = new Blob([js], { type: "text/javascript" });
   const url = URL.createObjectURL(blob);
   let mod: { instantiate: Compiled["instantiate"] };
   try {
@@ -102,17 +149,51 @@ async function compile(bytes: Uint8Array, name: string): Promise<Compiled> {
   } finally {
     URL.revokeObjectURL(url);
   }
-
-  const fileMap = new Map(result.files);
-  const getCoreModule = async (path: string): Promise<WebAssembly.Module> => {
-    const bytes = fileMap.get(path);
-    if (!bytes) {
-      throw new Error(`missing wasm module: ${path}`);
-    }
-    return await WebAssembly.compile(bytes as BufferSource);
-  };
-
   return { getCoreModule, instantiate: mod.instantiate };
+}
+
+async function compile(
+  bytes: Uint8Array,
+  hash: string,
+  name: string,
+): Promise<Compiled> {
+  const cached = compiledByHash.get(hash);
+  if (cached != undefined) {
+    return cached;
+  }
+  const compiling = compilingByHash.get(hash);
+  if (compiling != undefined) {
+    return await compiling;
+  }
+
+  const pending = compileUncached(bytes, hash, name);
+  compilingByHash.set(hash, pending);
+  try {
+    const compiled = await pending;
+    compiledByHash.set(hash, compiled);
+    return compiled;
+  } finally {
+    compilingByHash.delete(hash);
+  }
+}
+
+async function compileUncached(
+  bytes: Uint8Array,
+  hash: string,
+  name: string,
+): Promise<Compiled> {
+  const active = ensureWorker();
+  if (active != undefined) {
+    try {
+      return await compileWithWorker(active, bytes, hash, name);
+    } catch (err) {
+      console.warn(
+        `transpile worker failed for ${name}; compiling in page`,
+        err,
+      );
+    }
+  }
+  return await compileInPage(bytes, name);
 }
 
 export async function instantiateScript(
@@ -121,11 +202,7 @@ export async function instantiateScript(
   name: string,
   rt: unknown,
 ): Promise<unknown> {
-  let compiled = compiledByHash.get(hash);
-  if (compiled == undefined) {
-    compiled = await compile(bytes, name);
-    compiledByHash.set(hash, compiled);
-  }
+  const compiled = await compile(bytes, hash, name);
 
   const wasi = new WASIShim({
     sandbox: {

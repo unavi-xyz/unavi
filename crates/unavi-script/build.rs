@@ -7,6 +7,7 @@ fn main() {
     let dir = std::env::var("CARGO_MANIFEST_DIR").expect("no cargo manifest dir");
 
     println!("cargo:rerun-if-changed={dir}/runtime.ts");
+    println!("cargo:rerun-if-changed={dir}/transpile-worker.ts");
     println!("cargo:rerun-if-changed={dir}/package.json");
     println!("cargo:rerun-if-changed={dir}/package-lock.json");
 
@@ -19,19 +20,32 @@ fn main() {
         .expect("npm ci failed");
     assert!(status.success(), "npm ci failed");
 
-    let input = format!("{dir}/runtime.ts");
-    let outfile = format!("{dir}/dist/runtime.js");
+    // `runtime.js` is the wasm-bindgen snippet. `transpile-worker.js` must sit
+    // beside it so `import.meta.url` in
+    // `new Worker(new URL("./transpile-worker.js", import.meta.url))`
+    // resolves in the served snippet directory.
     let esbuild = format!("{dir}/node_modules/.bin/esbuild");
     let status = std::process::Command::new(esbuild)
         .args([
-            &input,
+            &format!("{dir}/runtime.ts"),
+            &format!("{dir}/transpile-worker.ts"),
             "--bundle",
             "--format=esm",
             "--platform=browser",
             "--external:node:fs/promises",
-            &format!("--outfile={outfile}"),
+            &format!("--outdir={dir}/dist"),
         ])
         .status()
         .expect("esbuild failed");
     assert!(status.success(), "esbuild failed");
+
+    // The worker is a second entry point, so a build that drops it stays
+    // green while the browser 404s it. Fail here instead.
+    for output in ["runtime.js", "transpile-worker.js"] {
+        let path = format!("{dir}/dist/{output}");
+        assert!(
+            std::path::Path::new(&path).exists(),
+            "esbuild did not emit {output}"
+        );
+    }
 }

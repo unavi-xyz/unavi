@@ -12,6 +12,7 @@ use std::{
         Mutex,
         MutexGuard,
     },
+    time::Duration,
 };
 
 use bevy::{
@@ -25,6 +26,7 @@ use bevy::{
         ImageSampler,
         ImageSamplerDescriptor,
     },
+    platform::time::Instant,
     prelude::*,
     render::render_resource::{
         Extent3d,
@@ -77,6 +79,10 @@ pub const MAX_FONTS: usize = 8;
 /// into a page on the main thread in one frame.
 const MAX_COMMITS_PER_PUMP: usize = 16;
 
+/// Wall-clock time one frame may spend polling finished glyph jobs, shared
+/// across every font's pump.
+pub(crate) const PUMP_BUDGET: Duration = Duration::from_millis(3);
+
 pub(crate) struct FontState {
     atlas:      Atlas,
     /// One image per page, in page order.
@@ -86,9 +92,19 @@ pub(crate) struct FontState {
     unit_range: Vec2,
     /// Characters pinned against eviction because text draws them.
     pinned:     HashSet<char>,
+    /// The characters text last asked for, sorted and deduplicated.
+    wanted:     Vec<char>,
     /// Glyph generations handed to the compute pool, polled each
     /// [`MsdfFont::pump`] and committed once finished.
     jobs:       Vec<Task<(char, GlyphField)>>,
+}
+
+impl FontState {
+    /// Whether `chars` is the wanted set this font already holds.
+    fn matches_wanted(&self, chars: &[char]) -> bool {
+        chars.len() == self.wanted.len()
+            && chars.iter().all(|ch| self.wanted.binary_search(ch).is_ok())
+    }
 }
 
 /// Recovers from a poisoned lock by logging and taking the guard anyway,
@@ -125,6 +141,7 @@ impl MsdfFont {
                 pages,
                 unit_range,
                 pinned: HashSet::new(),
+                wanted: Vec::new(),
                 jobs: Vec::new(),
             }),
         }
@@ -138,16 +155,25 @@ impl MsdfFont {
     /// abandoned, so an eviction never takes a glyph a mesh is drawing. A font
     /// no text draws is synced with nothing, which releases everything it had
     /// pinned.
+    ///
+    /// The wanted set is recorded, so a call that asks for the same characters
+    /// rebuilds nothing.
     pub fn sync(&self, text_chars: &[char]) {
         let mut guard = self.state();
         let state = &mut *guard;
-        let want = text_chars.iter().copied().collect::<HashSet<_>>();
+        if !state.matches_wanted(text_chars) {
+            state.wanted.clear();
+            state.wanted.extend_from_slice(text_chars);
+            state.wanted.sort_unstable();
+            state.wanted.dedup();
+        }
         let _ = state.atlas.request(text_chars);
 
-        let newly_pinned = want
+        let newly_pinned = state
+            .wanted
             .iter()
-            .filter(|ch| !state.pinned.contains(ch) && state.atlas.resident(**ch))
             .copied()
+            .filter(|ch| !state.pinned.contains(ch) && state.atlas.resident(*ch))
             .collect::<Vec<_>>();
         state.atlas.acquire(&newly_pinned);
         state.pinned.extend(newly_pinned);
@@ -155,8 +181,8 @@ impl MsdfFont {
         let released = state
             .pinned
             .iter()
-            .filter(|ch| !want.contains(ch))
             .copied()
+            .filter(|ch| state.wanted.binary_search(ch).is_err())
             .collect::<Vec<_>>();
         state.atlas.release(&released);
         for ch in &released {
@@ -174,12 +200,21 @@ impl MsdfFont {
     /// jobs already in flight, and commits up to [`MAX_COMMITS_PER_PUMP`] of
     /// the ones that finished. Returns whether anything landed this call.
     ///
-    /// Each job owns an `Arc<Font>` and runs on
-    /// [`AsyncComputeTaskPool`], so a cold run of CJK text costs worker-thread
-    /// time rather than a main-thread hitch. On wasm the pool is a
-    /// single-threaded executor that still yields to the browser between
-    /// polls.
+    /// Polling stops once [`PUMP_BUDGET`] has elapsed; a job left un-polled is
+    /// picked up on a later frame. On wasm the pool is the main thread, where a
+    /// poll runs one field generation synchronously.
     pub fn pump(&self) -> bool {
+        self.pump_within(PUMP_BUDGET)
+    }
+
+    /// [`MsdfFont::pump`] bounded to the time left before `deadline`.
+    pub(crate) fn pump_until(&self, deadline: Instant) -> bool {
+        self.pump_within(deadline.saturating_duration_since(Instant::now()))
+    }
+
+    /// [`MsdfFont::pump`] with an explicit poll budget.
+    fn pump_within(&self, budget: Duration) -> bool {
+        let started = Instant::now();
         let mut guard = self.state();
         let state = &mut *guard;
 
@@ -194,7 +229,7 @@ impl MsdfFont {
         let mut commits = 0;
         let mut index = 0;
         while index < state.jobs.len() {
-            if commits >= MAX_COMMITS_PER_PUMP {
+            if commits >= MAX_COMMITS_PER_PUMP || started.elapsed() >= budget {
                 break;
             }
             match block_on(poll_once(&mut state.jobs[index])) {
@@ -475,7 +510,10 @@ pub fn page_image(atlas: &Atlas, index: u32) -> Image {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{
+        sync::Arc,
+        time::Duration,
+    };
 
     use bevy::{
         asset::Assets,
@@ -716,5 +754,35 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
         assert!(landed, "the glyph never arrived through the async path");
+    }
+
+    #[test]
+    fn a_spent_pump_budget_polls_no_job_and_keeps_it_queued() {
+        let font = font();
+        let chars = "ABCDEFGHJKLMNPQRSTUVWXYZ".chars().collect::<Vec<_>>();
+        font.sync(&chars);
+
+        assert!(
+            !font.pump_within(Duration::ZERO),
+            "a spent budget commits nothing"
+        );
+        assert!(
+            chars.iter().all(|ch| !font.resident(*ch)),
+            "no job was polled"
+        );
+        assert!(
+            !font.state().jobs.is_empty(),
+            "jobs are spawned whatever the poll budget"
+        );
+
+        let mut landed = false;
+        for _ in 0..200 {
+            if font.pump() {
+                landed = true;
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(landed, "the same jobs land on a later frame");
     }
 }

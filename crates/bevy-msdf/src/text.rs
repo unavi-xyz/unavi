@@ -5,10 +5,10 @@
 //! the atlas still has to generate are requested first; one that has not landed
 //! yet holds its width open rather than drawing a placeholder that would flash.
 //!
-//! Nothing here walks every text every frame: [`sync_fonts`] and
-//! [`rebuild_text`] both gate on Bevy's own change detection, so an idle scene
-//! full of labels costs a handful of cheap "did anything change" checks
-//! rather than a re-layout.
+//! [`sync_fonts`] and [`rebuild_text`] gate their work on Bevy's change
+//! detection, so an idle scene full of labels pays a change-filter comparison
+//! per text rather than a re-layout. [`update_pages`] drains the font list
+//! that scan recorded instead of searching the texts again.
 
 use std::{
     collections::HashSet,
@@ -19,7 +19,10 @@ use bevy::{
     asset::AssetId,
     image::Image,
     light::NotShadowCaster,
-    platform::collections::HashMap,
+    platform::{
+        collections::HashMap,
+        time::Instant,
+    },
     prelude::*,
     render::{
         extract_resource::ExtractResource,
@@ -48,6 +51,7 @@ use crate::{
         DefaultFontStack,
         FontStack,
         MsdfFont,
+        PUMP_BUDGET,
         asset::FontRequest,
     },
     material::{
@@ -240,14 +244,15 @@ fn wanted(
         .collect()
 }
 
-/// What [`sync_fonts`] computed last time anything changed, kept so a frame
-/// with no text change costs a handful of "did anything change" checks
-/// instead of a walk of every character of every text.
-#[derive(Default)]
-pub(crate) struct SyncFontsCache {
+/// Every font a live text could draw with, and the characters each is asked
+/// for. [`sync_fonts`] recomputes it only when a text or the default stack
+/// changed, so an idle frame costs a handful of "did anything change" checks
+/// instead of a walk of every character of every text. [`update_pages`] drains
+/// the pages of these same fonts.
+#[derive(Resource)]
+pub(crate) struct LiveFonts {
     fonts:  Vec<Arc<MsdfFont>>,
     wanted: Vec<(Arc<MsdfFont>, Vec<char>)>,
-    ready:  bool,
 }
 
 /// Queues glyphs the live texts lack, pins every resident glyph a mesh is
@@ -266,27 +271,36 @@ pub(crate) fn sync_fonts(
     mut removed: RemovedComponents<MsdfText>,
     default: Option<Res<DefaultFontStack>>,
     time: Res<Time>,
-    mut cache: Local<SyncFontsCache>,
+    live: Option<Res<LiveFonts>>,
+    mut commands: Commands,
 ) {
     let stack_changed = default.as_ref().is_some_and(DetectChanges::is_changed);
     let dirty =
-        !cache.ready || !changed.is_empty() || stack_changed || removed.read().next().is_some();
+        live.is_none() || !changed.is_empty() || stack_changed || removed.read().next().is_some();
 
-    if dirty {
-        cache.fonts = fonts(&texts, default.as_deref());
-        cache.wanted = wanted(&texts, default.as_deref());
-        cache.ready = true;
+    if !dirty && let Some(live) = live {
+        advance_fonts(&live.fonts, &live.wanted, time.delta_secs());
+        return;
     }
 
-    for font in &cache.fonts {
-        let chars = cache
-            .wanted
+    let fonts = fonts(&texts, default.as_deref());
+    let wanted = wanted(&texts, default.as_deref());
+    advance_fonts(&fonts, &wanted, time.delta_secs());
+    commands.insert_resource(LiveFonts { fonts, wanted });
+}
+
+/// One frame of sync, tick and pump for every font in `fonts`, sharing
+/// [`PUMP_BUDGET`] across the frame's pumps.
+fn advance_fonts(fonts: &[Arc<MsdfFont>], wanted: &[(Arc<MsdfFont>, Vec<char>)], dt: f32) {
+    let deadline = Instant::now() + PUMP_BUDGET;
+    for font in fonts {
+        let chars = wanted
             .iter()
             .find(|(other, _)| Arc::ptr_eq(other, font))
             .map_or(&[][..], |(_, chars)| chars.as_slice());
         font.sync(chars);
-        font.tick(time.delta_secs());
-        font.pump();
+        font.tick(dt);
+        font.pump_until(deadline);
     }
 }
 
@@ -519,15 +533,19 @@ pub(crate) fn report_missing_glyphs(
 }
 
 /// Grows each font's page images and queues the sub-rects that changed since
-/// the last call, so the render world copies only what actually moved.
+/// the last call, so the render world copies only what actually moved. The
+/// fonts come from [`LiveFonts`], which [`sync_fonts`] recomputed on the last
+/// change.
 pub(crate) fn update_pages(
-    texts: Query<&MsdfText>,
-    default: Option<Res<DefaultFontStack>>,
+    fonts: Option<Res<LiveFonts>>,
     mut images: ResMut<Assets<Image>>,
     mut queue: ResMut<QueuedUploads>,
 ) {
     queue.0.clear();
-    for font in fonts(&texts, default.as_deref()) {
+    let Some(fonts) = fonts else {
+        return;
+    };
+    for font in &fonts.fonts {
         for upload in font.drain_dirty(&mut images) {
             queue.0.push(QueuedUpload {
                 image: upload.image,
@@ -696,6 +714,43 @@ mod tests {
         assert_eq!(
             pages_before, pages_after,
             "the same page entities and mesh handles survive frames with no change"
+        );
+    }
+
+    #[test]
+    fn an_idle_frame_queues_no_upload_and_a_new_glyph_queues_one() {
+        let mut app = app();
+        let entity = spawn(
+            &mut app,
+            MsdfText {
+                value: SmolStr::new("hello"),
+                ..Default::default()
+            },
+        );
+        settle(&mut app, entity);
+        app.update();
+
+        assert!(
+            app.world().resource::<QueuedUploads>().0.is_empty(),
+            "a frame with nothing to generate drains no page and queues no upload"
+        );
+
+        app.world_mut()
+            .get_mut::<MsdfText>(entity)
+            .expect("text")
+            .value = SmolStr::new("helloZ");
+        let mut queued = false;
+        for _ in 0..500 {
+            app.update();
+            if !app.world().resource::<QueuedUploads>().0.is_empty() {
+                queued = true;
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(
+            queued,
+            "the glyph a changed text asks for reaches the upload queue"
         );
     }
 

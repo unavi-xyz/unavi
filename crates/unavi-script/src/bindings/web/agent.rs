@@ -4,11 +4,11 @@ use std::rc::Rc;
 
 use bevy_vrm::BoneName;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::future_to_promise;
 
 use super::{
     Runtime,
     convert,
+    inline_promise as future_to_promise,
     scene::DocumentHandle,
 };
 use crate::{

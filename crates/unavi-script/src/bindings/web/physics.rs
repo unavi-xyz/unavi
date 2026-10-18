@@ -65,7 +65,7 @@ impl Runtime {
             Ok(v) => v,
             Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
         };
-        wasm_bindgen_futures::future_to_promise(async move {
+        super::inline_promise(async move {
             let host = host.borrow();
             physics::raycast(&host, origin, direction, max_distance, filter)
                 .await
@@ -81,7 +81,7 @@ impl Runtime {
             Ok(p) => p,
             Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
         };
-        wasm_bindgen_futures::future_to_promise(async move {
+        super::inline_promise(async move {
             let host = host.borrow();
             physics::velocity(&host, doc, prim)
                 .await
@@ -111,7 +111,7 @@ impl Runtime {
             Ok(v) => v,
             Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
         };
-        wasm_bindgen_futures::future_to_promise(async move {
+        super::inline_promise(async move {
             let host = host.borrow();
             physics::set_velocity(&host, doc, prim, linear, angular)
                 .await
@@ -136,7 +136,7 @@ impl Runtime {
             Ok(v) => v,
             Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
         };
-        wasm_bindgen_futures::future_to_promise(async move {
+        super::inline_promise(async move {
             let host = host.borrow();
             physics::set_force(&host, doc, prim, force)
                 .await

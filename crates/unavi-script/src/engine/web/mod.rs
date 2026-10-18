@@ -18,18 +18,22 @@ pub struct WebEnginePlugin;
 
 impl Plugin for WebEnginePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            tick::drive::<{ tick::UPDATE }>.in_set(crate::ScriptSystems::Tick),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                instantiate::instantiate_scripts,
-                instantiate::finish_instantiating,
-                tick::drive::<{ tick::FIXED }>,
+        app.init_resource::<tick::PendingCalls>()
+            .add_systems(
+                Update,
+                (tick::drive::<{ tick::UPDATE }>, tick::pump)
+                    .chain()
+                    .in_set(crate::ScriptSystems::Tick),
             )
-                .chain(),
-        );
+            .add_systems(
+                FixedUpdate,
+                (
+                    instantiate::instantiate_scripts,
+                    instantiate::finish_instantiating,
+                    tick::drive::<{ tick::FIXED }>,
+                    tick::pump,
+                )
+                    .chain(),
+            );
     }
 }

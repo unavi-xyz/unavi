@@ -3,12 +3,12 @@
 use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::future_to_promise;
 
 use super::{
     HostHandle,
     Runtime,
     convert,
+    inline_promise as future_to_promise,
 };
 use crate::host::storage;
 

@@ -27,7 +27,6 @@ use serde::{
     Serialize,
 };
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::future_to_promise;
 
 use super::{
     Runtime,
@@ -39,6 +38,7 @@ use super::{
         from_js,
         to_js,
     },
+    inline_promise as future_to_promise,
     scene::DocumentHandle,
 };
 use crate::{

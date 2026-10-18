@@ -24,10 +24,16 @@
 
 use std::{
     cell::RefCell,
+    future::Future,
     rc::Rc,
 };
 
+use bevy::tasks::futures_lite::future::{
+    block_on,
+    poll_once,
+};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::future_to_promise;
 
 use crate::host::ScriptHost;
 
@@ -88,6 +94,20 @@ pub fn wit_tick(tick: crate::engine::Tick) -> JsValue {
 /// lifecycle call never re-enters the same script's [`Runtime`] (the engine
 /// will not start a script's next call while one is still in flight).
 pub type HostHandle = Rc<RefCell<ScriptHost>>;
+
+/// [`future_to_promise`], but the future is polled once first, so a host call
+/// reaches the frame's pump before the guest yields to the microtask queue.
+fn inline_promise<F>(future: F) -> js_sys::Promise
+where
+    F: Future<Output = Result<JsValue, JsValue>> + 'static,
+{
+    let mut future = Box::pin(future);
+    match block_on(poll_once(future.as_mut())) {
+        Some(Ok(value)) => js_sys::Promise::resolve(&value),
+        Some(Err(err)) => js_sys::Promise::reject(&err),
+        None => future_to_promise(future),
+    }
+}
 
 /// The object `runtime.ts` binds every host import to.
 #[wasm_bindgen]

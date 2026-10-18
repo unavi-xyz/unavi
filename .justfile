@@ -86,6 +86,11 @@ web *ARGS: hsd-release
     cp crates/unavi-app/loader.html dist/index.html
     mv dist-webgl dist/webgl
     mv dist-webgpu dist/webgpu
+    nu nu/web-sizes.nu
+
+# Write .br and .gz copies of the compressible files in dist/. Run `just web` first.
+web-compress:
+    nu nu/web-compress.nu
 
 # Build both release web bundles and save raw, gzip -6 and brotli -q 11 sizes.
 web-metrics: (web "--release")

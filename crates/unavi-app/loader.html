@@ -26,6 +26,8 @@
         z-index: 2147483647;
         background-color: #e4d2df;
         display: flex;
+        flex-direction: column;
+        gap: 20px;
         align-items: center;
         justify-content: center;
         opacity: 1;
@@ -52,6 +54,65 @@
         }
       }
 
+      .progress {
+        width: 200px;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(42, 31, 40, 0.12);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0;
+        height: 100%;
+        border-radius: 2px;
+        background: rgba(42, 31, 40, 0.7);
+        transition: width 120ms linear;
+      }
+
+      .progress.indeterminate .progress-fill {
+        width: 40%;
+        animation: slide 1.4s ease-in-out infinite;
+      }
+
+      @keyframes slide {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(250%);
+        }
+      }
+
+      .progress-label {
+        min-height: 1em;
+        color: #2a1f28;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        opacity: 0.75;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+
+        .progress.indeterminate .progress-fill {
+          animation: none;
+          width: 100%;
+          opacity: 0.35;
+        }
+
+        .progress-fill {
+          transition: none;
+        }
+      }
+
       .error {
         position: fixed;
         inset: 0;
@@ -69,11 +130,77 @@
   <body>
     <div class="overlay" id="overlay">
       <div class="spinner"></div>
+      <div class="progress indeterminate" id="progress">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label" id="progress-label"></div>
     </div>
     <noscript>UNAVI needs JavaScript enabled to load.</noscript>
     <script>
       (async function () {
+        const state = { current: 0, total: null, starting: false, queued: false };
+
+        const showError = (e) => {
+          console.error("Failed to load UNAVI:", e);
+          const overlay = document.getElementById("overlay");
+          if (overlay) overlay.remove();
+          const message = document.createElement("div");
+          message.className = "error";
+          message.textContent = "Failed to load: " + e;
+          document.body.appendChild(message);
+        };
+
+        const megabytes = (bytes) => (bytes / 1048576).toFixed(1);
+
+        const render = () => {
+          const bar = document.getElementById("progress");
+          const fill = document.getElementById("progress-fill");
+          const label = document.getElementById("progress-label");
+          if (!bar || !fill || !label) return;
+
+          const known = state.total !== null;
+          bar.classList.toggle("indeterminate", !known && !state.starting);
+          if (state.starting) {
+            fill.style.width = "100%";
+            label.textContent = "Starting…";
+          } else if (known) {
+            const fraction = Math.min(state.current / state.total, 1);
+            fill.style.width = fraction * 100 + "%";
+            label.textContent = `Downloading ${megabytes(state.current)} / ${megabytes(state.total)} MB`;
+          } else if (state.current > 0) {
+            label.textContent = `Downloading ${megabytes(state.current)} MB`;
+          }
+        };
+
+        // Progress events arrive per network chunk, so draws are batched to one
+        // per animation frame.
+        const schedule = () => {
+          if (state.queued) return;
+          state.queued = true;
+          requestAnimationFrame(() => {
+            state.queued = false;
+            render();
+          });
+        };
+
+        window.addEventListener("unavi-load-progress", (event) => {
+          state.current = event.detail.current;
+          schedule();
+        });
+        window.addEventListener("unavi-load-complete", () => {
+          state.starting = true;
+          schedule();
+        });
+        window.addEventListener("unavi-load-failed", (event) => {
+          showError(event.detail.error);
+        });
+
         try {
+          // The uncompressed wasm sizes, which is what the decoded stream counts.
+          const sizesPromise = fetch("/sizes.json", { cache: "no-cache" })
+            .then((res) => (res.ok ? res.json() : null))
+            .catch(() => null);
+
           let variant = "webgl";
           try {
             if (navigator.gpu && (await navigator.gpu.requestAdapter())) {
@@ -83,6 +210,13 @@
             console.log("WebGPU detection failed, using WebGL:", e);
           }
           console.log("Loading variant:", variant);
+
+          const sizes = await sizesPromise;
+          const total = sizes && sizes[variant];
+          if (typeof total === "number" && total > 0) {
+            state.total = total;
+            schedule();
+          }
 
           // Bevy's wasm asset reader fetches "assets/..." relative to
           // `document.baseURI`, which without this stays "/" since this
@@ -133,13 +267,7 @@
             document.body.appendChild(script);
           });
         } catch (e) {
-          console.error("Failed to load UNAVI:", e);
-          const overlay = document.getElementById("overlay");
-          if (overlay) overlay.remove();
-          const message = document.createElement("div");
-          message.className = "error";
-          message.textContent = "Failed to load: " + e;
-          document.body.appendChild(message);
+          showError(e);
         }
       })();
     </script>

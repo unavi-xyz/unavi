@@ -43,6 +43,7 @@
           ../unavi-script/runtime.ts
           ./assets
           ./index.html
+          ./initializer.mjs
           ./loader.html
           ./public
           ./secretspec.toml
@@ -207,6 +208,7 @@
           inherit npmDeps;
 
           nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+            pkgs.brotli
             pkgs.just
             pkgs.nodejs
             pkgs.npmHooks.npmConfigHook
@@ -221,6 +223,7 @@
 
           buildPhaseCargoCommand = ''
             just web --release
+            just web-compress
           '';
 
           installPhaseCommand = ''

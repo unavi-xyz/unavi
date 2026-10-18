@@ -68,6 +68,15 @@
 
         doCheck = false;
 
+        # The HSD guests are a separate workspace with their own lock; vendor
+        # both so the in-sandbox guest build resolves offline.
+        cargoVendorDir = pkgs.crane.vendorMultipleCargoDeps {
+          cargoLockList = [
+            ../../Cargo.lock
+            ../../hsd/Cargo.lock
+          ];
+        };
+
         # Shipped Nix packages (native, AppImage, and the web trunk build
         # below) must not carry devtools (egui inspector, bevy/debug): that
         # feature set is default-on in Cargo.toml for local dev builds only.

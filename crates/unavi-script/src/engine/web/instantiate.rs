@@ -170,6 +170,12 @@ pub fn finish_instantiating(
             }
             Err(async_channel::TryRecvError::Empty) => {}
             Err(async_channel::TryRecvError::Closed) => {
+                if status.trap() {
+                    error!(
+                        name = %name,
+                        "Script instantiation ended without an instance; it will not run"
+                    );
+                }
                 commands.entity(entity).remove::<Instantiating>();
             }
         }

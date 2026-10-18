@@ -6,11 +6,17 @@ use bevy::{
     asset::{
         AssetLoader,
         LoadContext,
+        LoadState,
         io::Reader,
     },
     prelude::*,
     reflect::TypePath,
     tasks::ConditionalSendFuture,
+};
+
+use crate::{
+    Script,
+    ScriptStatus,
 };
 
 /// A script's component bytes, and their hash, which compiled code is cached
@@ -27,6 +33,26 @@ impl Wasm {
         Self {
             hash:  blake3::hash(&bytes),
             bytes: bytes.into(),
+        }
+    }
+}
+
+/// Retires a script whose `.wasm` failed to load, which would otherwise wait
+/// for bytes that never arrive.
+pub fn trap_failed_loads(
+    scripts: Query<(&Script, &ScriptStatus, NameOrEntity)>,
+    asset_server: Res<AssetServer>,
+) {
+    for (script, status, name) in &scripts {
+        if status.is_settled() {
+            continue;
+        }
+        if matches!(
+            asset_server.get_load_state(&script.0),
+            Some(LoadState::Failed(_))
+        ) && status.trap()
+        {
+            error!(name = %name, "Failed to load the script; it will not run");
         }
     }
 }

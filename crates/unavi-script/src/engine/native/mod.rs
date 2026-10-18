@@ -14,6 +14,7 @@ use wasmtime::{
 };
 
 use crate::{
+    ScriptStatus,
     ScriptSystems,
     bindings::native::{
         HostCtx,
@@ -40,6 +41,7 @@ impl Plugin for NativeEnginePlugin {
                     ?err,
                     "Failed to create the wasmtime engine; no script will run"
                 );
+                app.add_systems(Update, trap_without_engine);
                 return;
             }
         }
@@ -92,6 +94,16 @@ impl WasmtimeEngine {
         let pre = ShellPre::new(self.linker.instantiate_pre(&component)?)?;
         self.compiled.lock().insert(hash, pre.clone());
         Ok(pre)
+    }
+}
+
+/// Retires every script when there is no engine to run them, so a wait on
+/// scripts settling still ends.
+fn trap_without_engine(scripts: Query<&ScriptStatus>) {
+    for status in &scripts {
+        if status.trap() {
+            error!("No wasmtime engine; the script will not run");
+        }
     }
 }
 

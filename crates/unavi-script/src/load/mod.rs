@@ -12,6 +12,7 @@ impl Plugin for LoadPlugin {
     fn build(&self, app: &mut App) {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
+            .add_systems(Update, asset::trap_failed_loads)
             .add_observer(hsd::load_hsd_scripts);
     }
 }

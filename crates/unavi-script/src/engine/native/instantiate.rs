@@ -196,10 +196,10 @@ pub fn instantiate_scripts(
 }
 
 pub fn finish_instantiating(
-    mut scripts: Query<(Entity, &mut Instantiating)>,
+    mut scripts: Query<(Entity, &mut Instantiating, &ScriptStatus)>,
     mut commands: Commands,
 ) {
-    for (entity, mut instantiating) in &mut scripts {
+    for (entity, mut instantiating, status) in &mut scripts {
         match instantiating.0.try_recv() {
             Ok(instance) => {
                 commands
@@ -209,6 +209,12 @@ pub fn finish_instantiating(
             }
             Err(oneshot::error::TryRecvError::Empty) => {}
             Err(oneshot::error::TryRecvError::Closed) => {
+                // The task reports its own failure before dropping the sender;
+                // a drop without one means it died, and the script must still
+                // settle.
+                if status.trap() {
+                    error!("Script instantiation ended without an instance; it will not run");
+                }
                 commands.entity(entity).remove::<Instantiating>();
             }
         }

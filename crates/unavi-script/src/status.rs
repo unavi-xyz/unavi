@@ -54,6 +54,13 @@ impl ScriptStatus {
         self.0.trapped.load(Ordering::Acquire)
     }
 
+    /// Whether the script has reached an outcome, running or retired. A
+    /// script that failed counts: waiting on one never ends otherwise.
+    #[must_use]
+    pub fn is_settled(&self) -> bool {
+        self.is_initialized() || self.is_trapped()
+    }
+
     /// Retires the script, answering whether this call was the one to do so,
     /// so a failure is reported once rather than every frame.
     #[must_use]
@@ -108,6 +115,20 @@ mod tests {
         assert!(status.trap());
         assert!(!status.trap());
         assert!(status.is_trapped());
+    }
+
+    #[test]
+    fn a_failed_script_is_settled() {
+        let fresh = ScriptStatus::default();
+        assert!(!fresh.is_settled());
+
+        let initialized = ScriptStatus::default();
+        initialized.set_initialized();
+        assert!(initialized.is_settled());
+
+        let failed = ScriptStatus::default();
+        assert!(failed.trap());
+        assert!(failed.is_settled());
     }
 
     #[test]

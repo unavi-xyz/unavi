@@ -809,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-async"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "async-channel",
  "bevy",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-hsd"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-iroh"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -924,7 +924,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-msdf"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy_panorbit_camera",
@@ -5472,7 +5472,7 @@ dependencies = [
 
 [[package]]
 name = "hsd"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -5491,7 +5491,7 @@ dependencies = [
 
 [[package]]
 name = "hsd-cli"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -7031,7 +7031,7 @@ dependencies = [
 
 [[package]]
 name = "msdf"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "etagere",
  "fdsm",
@@ -11232,7 +11232,7 @@ checksum = "214ca0b2191785cbc06209b9ca1861e048e39b5ba33574b3cedd58363d5bb5f6"
 
 [[package]]
 name = "unavi-agent"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11249,7 +11249,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-app"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -11299,7 +11299,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-assets"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy-iroh",
@@ -11308,7 +11308,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-avatar"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy_vrm",
@@ -11319,7 +11319,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-config"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "prettyplease",
@@ -11331,14 +11331,14 @@ dependencies = [
 
 [[package]]
 name = "unavi-devtools"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
 ]
 
 [[package]]
 name = "unavi-grab"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11348,7 +11348,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-identity"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "hsd",
@@ -11375,7 +11375,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-input"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11392,7 +11392,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-local"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "hex",
@@ -11402,7 +11402,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-node"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "axum",
@@ -11431,7 +11431,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-physics"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11440,7 +11440,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-policy"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "bevy",
@@ -11461,7 +11461,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-portal"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11474,7 +11474,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-registry"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "iroh",
@@ -11497,7 +11497,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-script"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -11546,7 +11546,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-space"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -11587,7 +11587,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-space-devtools"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy-hsd",
@@ -11602,7 +11602,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-store"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",

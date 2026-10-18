@@ -1,5 +1,5 @@
-//! Node configuration: the build-time `secretspec.toml` values, and the
-//! operator's registry policy read from the data directory.
+//! Node configuration: the operator's registry policy read from the data
+//! directory.
 
 use std::{
     path::Path,
@@ -14,8 +14,6 @@ use unavi_registry::server::{
     Submitters,
 };
 use xdid::core::did::Did;
-
-unavi_config::config!("secretspec.toml");
 
 /// Where the operator's registry policy lives, under the data directory.
 pub const REGISTRY_FILE: &str = "registry.ron";

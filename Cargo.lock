@@ -11421,7 +11421,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "unavi-config",
  "unavi-identity",
  "unavi-local",
  "unavi-registry",

@@ -72,7 +72,6 @@ in
         WorkingDirectory = cfg.dataDir;
         Restart = "always";
         RestartSec = "10s";
-        Environment = "UNAVI_DOMAIN=${cfg.domain}";
 
         NoNewPrivileges = true;
         PrivateTmp = true;
@@ -83,6 +82,7 @@ in
 
       script = ''
         exec ${cfg.package}/bin/unavi-node \
+          --domain ${cfg.domain} \
           --port ${toString cfg.port}
       '';
     };

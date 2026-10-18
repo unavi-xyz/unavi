@@ -18,10 +18,7 @@ use tracing_subscriber::{
 };
 use unavi_node::{
     NodeOptions,
-    config::{
-        Config,
-        registry_config,
-    },
+    config::registry_config,
 };
 
 #[derive(Parser, Debug)]
@@ -38,6 +35,10 @@ struct Args {
     /// to the platform's data directory.
     #[arg(long)]
     data_dir:    Option<PathBuf>,
+    /// Domain the node's `did:web` identity resolves from. Defaults to
+    /// `localhost:<port>`.
+    #[arg(long)]
+    domain:      Option<String>,
     #[arg(short, long, default_value_t = 5000)]
     port:        u16,
     /// Do not serve discovery: catalog, curated views, and live presence.
@@ -60,7 +61,9 @@ async fn main() -> ExitCode {
 }
 
 async fn run(args: Args) -> anyhow::Result<()> {
-    let config = Config::load()?;
+    let domain = args
+        .domain
+        .unwrap_or_else(|| format!("localhost:{}", args.port));
 
     let data_dir = if args.in_memory {
         None
@@ -82,7 +85,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
 
     unavi_node::run(
         NodeOptions {
-            domain: config.unavi_domain,
+            domain,
             data_dir,
             port: args.port,
             registry,

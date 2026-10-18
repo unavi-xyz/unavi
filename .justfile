@@ -102,7 +102,7 @@ dev-build:
     {{dev_env}} cargo build -p unavi-node -p unavi-app
 
 node: dev-build
-    {{dev_env}} UNAVI_DOMAIN=localhost:{{port}} ./target/debug/unavi-node --port {{port}}
+    {{dev_env}} ./target/debug/unavi-node --port {{port}}
 
 # Run the app with its persistent identity and store, syncing to a local node.
 app: dev-build

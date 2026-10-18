@@ -242,6 +242,17 @@
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
           program = "${packageDrv}/bin/${pname}";
+
+          squashfsArgs = [
+            "-b"
+            "1M"
+            "-comp"
+            "xz"
+            "-Xbcj"
+            "x86"
+            "-Xdict-size"
+            "100%"
+          ];
         };
       };
     };

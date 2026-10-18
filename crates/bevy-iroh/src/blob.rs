@@ -142,9 +142,11 @@ fn provider_list(targets: &SyncTargets, peers: &BlobProviders) -> Vec<EndpointId
     providers
 }
 
-/// Whether a provider exists that a fetch started with `snapshot` never asked.
-fn lacks_provider(snapshot: &[EndpointId], current: &[EndpointId]) -> bool {
-    current.iter().any(|id| !snapshot.contains(id))
+/// Whether a fetch started with `snapshot` never asked a sync target, or
+/// asked nobody while providers are now known. A peer joining otherwise leaves
+/// a running fetch alone, so peer churn cannot cancel large transfers.
+fn needs_restart(snapshot: &[EndpointId], targets: &[EndpointId], current: &[EndpointId]) -> bool {
+    targets.iter().any(|id| !snapshot.contains(id)) || (snapshot.is_empty() && !current.is_empty())
 }
 
 pub(crate) fn on_blob_request_insert(
@@ -197,8 +199,9 @@ pub(crate) fn restart_stale_fetches(
     mut commands: Commands,
 ) {
     let current = provider_list(&targets, &peers);
+    let target_ids = targets.0.iter().map(|addr| addr.id).collect::<Vec<_>>();
     for (entity, request, load) in &pending {
-        if lacks_provider(&load.providers, &current) {
+        if needs_restart(&load.providers, &target_ids, &current) {
             commands.entity(entity).insert(BlobRequest(request.0));
         }
     }
@@ -402,14 +405,16 @@ mod tests {
     }
 
     #[test]
-    fn a_fetch_is_stale_only_when_a_provider_is_missing_from_its_snapshot() {
-        let (a, b) = (endpoint_id(), endpoint_id());
+    fn a_fetch_restarts_for_a_missed_target_or_from_nobody_but_not_for_a_new_peer() {
+        let (target, peer, other) = (endpoint_id(), endpoint_id(), endpoint_id());
 
-        assert!(lacks_provider(&[], &[a]));
-        assert!(lacks_provider(&[a], &[a, b]));
-        assert!(!lacks_provider(&[a, b], &[a, b]));
-        assert!(!lacks_provider(&[a, b], &[a]));
-        assert!(!lacks_provider(&[], &[]));
+        assert!(needs_restart(&[], &[], &[peer]), "asked nobody, a peer is known");
+        assert!(needs_restart(&[peer], &[target], &[target, peer]), "missed a target");
+        assert!(
+            !needs_restart(&[target, peer], &[target], &[target, peer, other]),
+            "a new peer leaves a running fetch alone"
+        );
+        assert!(!needs_restart(&[], &[], &[]));
     }
 
     #[test]

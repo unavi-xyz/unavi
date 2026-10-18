@@ -51,7 +51,7 @@ fn record_respawn(
 /// Stands in for `probe_ground`, whose ray cast needs the physics world.
 fn stand_in_probe(ground: Res<GroundPresent>, mut arrival: ResMut<LimboArrival>) {
     if ground.0 {
-        arrival.mark_grounded();
+        arrival.mark_grounded(Vec3::ZERO);
     }
 }
 

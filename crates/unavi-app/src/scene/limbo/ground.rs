@@ -2,16 +2,10 @@
 
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use unavi_agent::{
-    LocalAgent,
-    LocalAgentEntities,
-};
+use bevy_hsd::hierarchy::descends_from;
 
 use crate::scene::{
-    limbo::{
-        Limbo,
-        arrival::LimboArrival,
-    },
+    limbo::arrival::LimboArrival,
     respawn::SpawnPlaces,
 };
 
@@ -21,45 +15,41 @@ const GROUND_PROBE_DISTANCE: f32 = 64.0;
 /// not behind the origin.
 const GROUND_PROBE_LIFT: f32 = 0.5;
 
-/// Casts straight down from the point the arrival space would put the agent
-/// at, and records that ground was found.
+/// Casts straight down from a freshly picked spawn point each tick until one
+/// stands on ground, and records that point.
 ///
-/// The limbo floor and the agent's own colliders are skipped, since neither
-/// is part of the space.
+/// Only solid colliders inside the arrival space count, so neither a trigger
+/// volume, the limbo floor, the agent, nor a neighbouring space reads as
+/// ground.
 pub fn probe_ground(
     places: SpawnPlaces,
     spatial: SpatialQuery,
-    agents: Query<&LocalAgentEntities, With<LocalAgent>>,
-    floor: Query<Entity, With<Limbo>>,
-    children: Query<&Children>,
+    sensors: Query<(), With<Sensor>>,
+    parents: Query<&ChildOf>,
     mut arrival: ResMut<LimboArrival>,
 ) {
-    let Some(space) = arrival.ready_space() else {
+    let Some(space) = arrival.probing_space() else {
         return;
     };
-
-    let mut excluded: Vec<Entity> = floor.iter().collect();
-    if let Ok(ents) = agents.single() {
-        excluded.push(ents.body);
-        excluded.extend(children.iter_descendants(ents.body));
-    }
-    let filter = SpatialQueryFilter::from_excluded_entities(excluded);
-
     let Some(space_origin) = places.origin(space) else {
         return;
     };
-    let offset = arrival.spawn_offset().unwrap_or_else(|| {
-        let offset = places.pick(space) - space_origin;
-        arrival.set_spawn_offset(offset);
-        offset
-    });
 
-    let origin = space_origin + offset + Vec3::Y * GROUND_PROBE_LIFT;
+    let spawn = places.pick(space);
+    let origin = spawn + Vec3::Y * GROUND_PROBE_LIFT;
     let max_distance = GROUND_PROBE_DISTANCE + GROUND_PROBE_LIFT;
+    let in_space = |entity| !sensors.contains(entity) && descends_from(entity, space, &parents);
     if spatial
-        .cast_ray(origin, Dir3::NEG_Y, max_distance, true, &filter)
+        .cast_ray_predicate(
+            origin,
+            Dir3::NEG_Y,
+            max_distance,
+            true,
+            &SpatialQueryFilter::default(),
+            &in_space,
+        )
         .is_some()
     {
-        arrival.mark_grounded();
+        arrival.mark_grounded(spawn - space_origin);
     }
 }

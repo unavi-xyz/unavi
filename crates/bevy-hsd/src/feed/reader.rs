@@ -162,13 +162,18 @@ impl Reader {
         let Ok(key) = str::from_utf8(key) else {
             return Ok(());
         };
+        self.unpark(key);
+        self.initial.remove(key);
         self.send(Delta::Entry(Entry::new(key, Vec::new(), 0)))
             .await
     }
 
     /// An entry past [`MAX_ENTRY_BYTES`], which the store never fetches, is
     /// sent empty.
-    /// One whose content has not downloaded is parked until it has.
+    ///
+    /// One whose content has not downloaded is parked until it has. A key
+    /// from the initial snapshot stays pending across a re-park under a newer
+    /// hash, and only leaves once a value is sent.
     async fn forward(&mut self, entry: &iroh_docs::Entry) -> anyhow::Result<()> {
         let Ok(key) = String::from_utf8(entry.key().to_vec()) else {
             return Ok(());
@@ -191,6 +196,7 @@ impl Reader {
             bytes
         };
 
+        self.initial.remove(&key);
         let timestamp = entry.timestamp();
         self.send(Delta::Entry(Entry::new(key, value, timestamp)))
             .await
@@ -203,7 +209,6 @@ impl Reader {
     }
 
     fn unpark(&mut self, key: &str) {
-        self.initial.remove(key);
         let Some(hash) = self.parked_hash.remove(key) else {
             return;
         };

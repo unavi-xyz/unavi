@@ -49,33 +49,24 @@ pub struct LimboArrival {
 struct Arrival {
     space:    Entity,
     /// When the space first held that state.
-    since:    Duration,
-    /// Chosen once, so the point the probe checks is the point the agent is
-    /// put down at. Relative to the space's origin, which may move before
-    /// entry.
-    spawn:    Option<Vec3>,
-    grounded: bool,
+    since:  Duration,
+    /// The spawn point found standing on ground, relative to the space's
+    /// origin, which may move before entry.
+    ground: Option<Vec3>,
 }
 
 impl LimboArrival {
-    /// The space whose ground the probe should look for.
-    pub(super) fn ready_space(&self) -> Option<Entity> {
-        self.ready.as_ref().map(|ready| ready.space)
+    /// The space the probe should look for ground in, until it finds some.
+    pub(super) fn probing_space(&self) -> Option<Entity> {
+        self.ready
+            .as_ref()
+            .filter(|ready| ready.ground.is_none())
+            .map(|ready| ready.space)
     }
 
-    pub(super) fn spawn_offset(&self) -> Option<Vec3> {
-        self.ready.as_ref().and_then(|ready| ready.spawn)
-    }
-
-    pub(super) const fn set_spawn_offset(&mut self, offset: Vec3) {
+    pub(super) const fn mark_grounded(&mut self, offset: Vec3) {
         if let Some(ready) = &mut self.ready {
-            ready.spawn = Some(offset);
-        }
-    }
-
-    pub(super) const fn mark_grounded(&mut self) {
-        if let Some(ready) = &mut self.ready {
-            ready.grounded = true;
+            ready.ground = Some(offset);
         }
     }
 }
@@ -150,9 +141,12 @@ pub fn drive_limbo_exit(
         return;
     };
 
-    let unsettled = scripts
-        .iter()
-        .any(|(script, status)| !status.is_settled() && descends_from(script, space, &parents));
+    // Past the timeout a script still loading no longer holds the agent back,
+    // since one that never instantiates would otherwise hold it forever.
+    let unsettled = !arrival.timed_out
+        && scripts.iter().any(|(script, status)| {
+            !status.is_settled() && descends_from(script, space, &parents)
+        });
     if unsettled {
         arrival.ready = None;
         return;
@@ -165,27 +159,25 @@ pub fn drive_limbo_exit(
         .unwrap_or(Arrival {
             space,
             since: now,
-            spawn: None,
-            grounded: false,
+            ground: None,
         });
-    let (grounded, since) = (ready.grounded, ready.since);
-    let at = ready
-        .spawn
-        .zip(origins.get(space).ok())
-        .map(|(offset, origin)| origin.translation() + offset);
+    let (ground, since) = (ready.ground, ready.since);
     arrival.ready = Some(ready);
 
-    if grounded {
+    if let Some(offset) = ground {
         info!("Space loaded, exiting limbo");
         commands.trigger(EnterSpace {
             space: Some(space),
-            at,
+            at:    origins
+                .get(space)
+                .ok()
+                .map(|origin| origin.translation() + offset),
         });
     } else if now >= since + GROUND_GRACE {
-        warn!("No ground found under the spawn point, exiting limbo anyway");
+        warn!("No ground found under any spawn point, exiting limbo anyway");
         commands.trigger(EnterSpace {
             space: Some(space),
-            at,
+            at:    None,
         });
     }
 }
@@ -195,7 +187,7 @@ pub struct EnterSpace {
     /// Space to spawn into, overriding the active one so an arrival lands in
     /// what it travelled to rather than whichever space is nearest limbo.
     space: Option<Entity>,
-    /// The spawn point the ground probe checked.
+    /// The spawn point the ground probe found ground under.
     at:    Option<Vec3>,
 }
 

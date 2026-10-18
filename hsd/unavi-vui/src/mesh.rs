@@ -279,7 +279,7 @@ pub fn dome(fill: f32, reach: f32) -> MeshData {
     mesh.uvs.extend_from_slice(&[0.5, 0.5]);
     for ring in 1..=RINGS {
         let r = reach * ring as f32 / RINGS as f32;
-        let z = (1.0 - r * r).sqrt();
+        let z = r.mul_add(-r, 1.0).sqrt();
         for segment in 0..=SEGMENTS {
             let theta = TAU * segment as f32 / SEGMENTS as f32;
             let (sin, cos) = theta.sin_cos();
@@ -287,10 +287,8 @@ pub fn dome(fill: f32, reach: f32) -> MeshData {
             mesh.positions.extend_from_slice(&[x, y, z]);
             // A unit sphere's normal is its own position.
             mesh.normals.extend_from_slice(&[x, y, z]);
-            mesh.uvs.extend_from_slice(&[
-                x / (2.0 * fill) + 0.5,
-                0.5 - y / (2.0 * fill),
-            ]);
+            mesh.uvs
+                .extend_from_slice(&[x / (2.0 * fill) + 0.5, 0.5 - y / (2.0 * fill)]);
         }
     }
 
@@ -598,10 +596,7 @@ mod tests {
         {
             let length = point[0].hypot(point[1]).hypot(point[2]);
             assert!((length - 1.0).abs() < 1.0e-4, "off the sphere: {length}");
-            let expected = (
-                point[0] / (2.0 * fill) + 0.5,
-                0.5 - point[1] / (2.0 * fill),
-            );
+            let expected = (point[0] / (2.0 * fill) + 0.5, 0.5 - point[1] / (2.0 * fill));
             assert!((uv[0] - expected.0).abs() < 1.0e-5, "u {}", uv[0]);
             assert!((uv[1] - expected.1).abs() < 1.0e-5, "v {}", uv[1]);
         }

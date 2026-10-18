@@ -695,9 +695,9 @@ impl Bodies {
     ) -> anyhow::Result<()> {
         let up = self.shown.get();
         let look = Look {
-            pose:  draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
+            pose: draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
             color: palette.glyph,
-            heat:  0.0,
+            heat: 0.0,
             bloom,
         };
         let wear = Wear {

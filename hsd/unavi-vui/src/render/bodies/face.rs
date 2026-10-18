@@ -64,23 +64,23 @@ pub(super) enum Shape {
 /// A slot's glyph face: a surface that waits hidden until a glyph is first
 /// wanted, and what it last showed.
 pub(super) struct Face {
-    prim:  (u64, u64),
+    prim:   (u64, u64),
     /// Whether the face has its mesh and graph yet. Paid for on the first
     /// glyph rather than at every slot's creation, since most slots never
     /// wear one.
-    ready: Cell<bool>,
-    pose:  Shadow<Option<Transform>>,
-    flip:  RefCell<Flip>,
+    ready:  Cell<bool>,
+    pose:   Shadow<Option<Transform>>,
+    flip:   RefCell<Flip>,
     /// The surface the dots sit on.
-    shape: Shape,
+    shape:  Shape,
     /// The mote this face last belonged to, held rather than remembered by
     /// address so a new mote can never be mistaken for the old one.
-    owner: RefCell<Option<Mote>>,
+    owner:  RefCell<Option<Mote>>,
     /// Counts owner changes; it is what the flip tells owners apart by.
-    epoch: Cell<u64>,
+    epoch:  Cell<u64>,
     /// Whether the slot was drawn last frame. One that was not has been out of
     /// sight, and whatever glyph it comes back with simply appears.
-    seen:  Cell<bool>,
+    seen:   Cell<bool>,
     inputs: Shadow<Inputs>,
 }
 

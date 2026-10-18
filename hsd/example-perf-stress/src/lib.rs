@@ -65,7 +65,7 @@ impl ScriptBehavior for Script {
             let column = (index % COLUMNS) as f32;
             let row = (index / COLUMNS) as f32;
             let x = (column - (COLUMNS as f32 - 1.0) / 2.0) * SPACING_X;
-            let y = TOP_Y - row * SPACING_Y;
+            let y = row.mul_add(-SPACING_Y, TOP_Y);
 
             let prim = doc.create_prim(Layer::Local, Some(root))?;
             batch = batch

@@ -276,6 +276,12 @@ macro_rules! keep_open {
         AbortOnDropHandle::new(n0_future::task::spawn(async move {
             loop {
                 if let Err(err) = $send(&link, &connection).await {
+                    // A closed connection is how these loops normally end, and
+                    // `serve` already reports it once.
+                    if connection.close_reason().is_some() {
+                        debug!(?err, concat!($what, " stream ended with the connection"));
+                        return;
+                    }
                     error!(?err, concat!($what, " stream error"));
                 }
                 n0_future::time::sleep(STREAM_LOOP_DELAY).await;

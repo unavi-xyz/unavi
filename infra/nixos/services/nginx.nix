@@ -38,6 +38,7 @@ in
     recommendedTlsSettings = true;
     recommendedOptimisation = true;
     recommendedGzipSettings = true;
+    recommendedBrotliSettings = true;
 
     virtualHosts = proxyHosts // staticHosts;
   };

@@ -16,9 +16,14 @@ mod tick;
 
 pub struct WebEnginePlugin;
 
+fn prewarm_transpiler() {
+    crate::bindings::web::prewarm();
+}
+
 impl Plugin for WebEnginePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<tick::PendingCalls>()
+            .add_systems(Startup, prewarm_transpiler)
             .add_systems(
                 Update,
                 (tick::drive::<{ tick::UPDATE }>, tick::pump)

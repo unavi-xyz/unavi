@@ -10,9 +10,12 @@ use bevy_iroh::assets::{
     IrohAssetsPlugin,
     hex_hash,
 };
-use bevy_msdf::font::asset::{
-    FontBytes,
-    FontRequest,
+use bevy_msdf::{
+    font::asset::{
+        FontBytes,
+        FontRequest,
+    },
+    text::MsdfText,
 };
 
 /// Every asset must be hosted by a reachable unavi-node (or other provider).
@@ -53,7 +56,8 @@ pub const MANIFEST: &[AssetSpec] = &[
 ];
 
 /// The fallback chain text draws with, primary first. A character resolves to
-/// the first face here that covers it.
+/// the first face here that covers it. The primary loads at startup and the
+/// rest on demand.
 pub const FONT_STACK: &[AssetSpec] = &[DEFAULT_FONT, CJK_FONT];
 
 /// The path Bevy loads `spec` by, on every platform.
@@ -70,24 +74,84 @@ impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
         // Must exist before `AssetPlugin` builds the sources it knows about.
         app.add_plugins(IrohAssetsPlugin::new(MANIFEST))
-            .add_systems(Startup, load_font_stack);
+            .add_systems(Startup, load_primary_font)
+            .add_systems(
+                Update,
+                request_cjk_font.run_if(not(resource_exists::<CjkRequested>)),
+            );
     }
 }
 
-/// Requests the fallback chain over iroh. No face is embedded, so text draws
-/// nothing until the primary arrives.
-fn load_font_stack(mut commands: Commands, assets: Res<AssetServer>) {
-    for (order, spec) in FONT_STACK.iter().enumerate() {
-        commands.spawn((
-            Name::new(format!("font {}", spec.rel_path)),
-            FontRequest::new(assets.load::<FontBytes>(path(spec)), order as u32),
-        ));
+/// Present once the CJK face has been requested, which ends the text scan.
+#[derive(Resource)]
+struct CjkRequested;
+
+/// Whether `c` needs [`CJK_FONT`]: Han, kana, hangul, CJK punctuation and the
+/// half- and full-width forms.
+const fn is_cjk(c: char) -> bool {
+    matches!(
+        c,
+        '\u{1100}'..='\u{11FF}'
+            | '\u{3000}'..='\u{303F}'
+            | '\u{3040}'..='\u{309F}'
+            | '\u{30A0}'..='\u{30FF}'
+            | '\u{3400}'..='\u{4DBF}'
+            | '\u{4E00}'..='\u{9FFF}'
+            | '\u{AC00}'..='\u{D7AF}'
+            | '\u{FF00}'..='\u{FFEF}'
+    )
+}
+
+fn request_font(commands: &mut Commands, assets: &AssetServer, order: usize) {
+    let spec = &FONT_STACK[order];
+    commands.spawn((
+        Name::new(format!("font {}", spec.rel_path)),
+        FontRequest::new(assets.load::<FontBytes>(path(spec)), order as u32),
+    ));
+}
+
+/// Requests the primary face over iroh. No face is embedded, so text draws
+/// nothing until it arrives.
+fn load_primary_font(mut commands: Commands, assets: Res<AssetServer>) {
+    request_font(&mut commands, &assets, 0);
+}
+
+/// Requests the CJK face the first time changed text contains a character
+/// only it covers. It keeps its place in [`FONT_STACK`], so the chain order
+/// does not depend on when it is requested.
+fn request_cjk_font(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    texts: Query<&MsdfText, Changed<MsdfText>>,
+) {
+    if texts.iter().any(|text| text.value.chars().any(is_cjk)) {
+        request_font(&mut commands, &assets, 1);
+        commands.insert_resource(CjkRequested);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cjk_blocks_are_detected() {
+        for c in ["漢", "ぁ", "カ", "한", "ᄀ", "、", "Ａ", "ｱ", "㐀"] {
+            assert!(c.chars().all(is_cjk), "{c} should need the CJK face");
+        }
+    }
+
+    #[test]
+    fn other_scripts_are_not_cjk() {
+        for c in ["a", "Z", "é", "Ω", "Я", " ", "😀", "!"] {
+            assert!(!c.chars().any(is_cjk), "{c} should not need the CJK face");
+        }
+    }
+
+    #[test]
+    fn the_cjk_face_is_second_in_the_stack() {
+        assert_eq!(FONT_STACK[1].rel_path, CJK_FONT.rel_path);
+    }
 
     #[test]
     fn a_size_is_recorded() {

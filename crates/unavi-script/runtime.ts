@@ -74,6 +74,15 @@ function ensureWorker(): Worker | undefined {
   }
 }
 
+/**
+ * Starts the transpile worker so its bundle, which imports jco, downloads and
+ * evaluates before the first script compiles. A worker that cannot start
+ * leaves the in-page path to every compile, as it would without this.
+ */
+export function prewarm(): void {
+  ensureWorker();
+}
+
 async function compileWithWorker(
   worker: Worker,
   bytes: Uint8Array,

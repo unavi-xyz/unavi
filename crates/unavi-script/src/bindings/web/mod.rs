@@ -62,6 +62,8 @@ unsafe extern "C" {
         runtime: Runtime,
     ) -> Result<JsValue, JsValue>;
 
+    pub fn prewarm();
+
     #[wasm_bindgen(catch, js_name = "scriptInit")]
     pub async fn script_init(instance: &JsValue) -> Result<JsValue, JsValue>;
 

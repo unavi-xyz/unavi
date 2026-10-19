@@ -47,11 +47,7 @@ use crate::{
 /// else any scene camera.
 pub(crate) fn viewer_camera(world: &mut World) -> Option<Entity> {
     world
-        .query_filtered::<Entity, (
-            With<Camera3d>,
-            With<PortalViewer>,
-            Without<PortalCamera>,
-        )>()
+        .query_filtered::<Entity, (With<Camera3d>, With<PortalViewer>, Without<PortalCamera>)>()
         .iter(world)
         .next()
         .or_else(|| {
@@ -130,7 +126,10 @@ pub(crate) fn install_live(world: &mut World, portal: Entity) -> bool {
     let image = render_image(initial_size, "PortalViewImage");
     let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
-    if let Some(mut material) = world.resource_mut::<Assets<PortalMaterial>>().get_mut(material) {
+    if let Some(mut material) = world
+        .resource_mut::<Assets<PortalMaterial>>()
+        .get_mut(material)
+    {
         material.live = Some(image_handle.clone());
     }
 

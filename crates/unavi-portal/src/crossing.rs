@@ -166,28 +166,28 @@ pub fn apply_crossings(
                 continue;
             };
 
-            let (new_translation, new_rotation, transition_rotation) =
-                if portal_destinations.contains(destination.0) {
-                    let Ok(dest_transform) = destinations.get(destination.0) else {
-                        continue;
-                    };
-                    let m = portal_transfer(source_transform, dest_transform)
-                        * transform.compute_affine();
-                    let (_, rotation, translation) = m.to_scale_rotation_translation();
-                    let transition_rotation = rotation * transform.rotation.inverse();
-                    (translation, rotation, transition_rotation)
-                } else {
-                    let Some(arrival) = arrival else {
-                        continue;
-                    };
-                    let transition_rotation =
-                        arrival.rotation_from(source_transform, hit.from_front);
-                    (
-                        arrival.translation,
-                        transition_rotation * transform.rotation,
-                        transition_rotation,
-                    )
+            let (new_translation, new_rotation, transition_rotation) = if portal_destinations
+                .contains(destination.0)
+            {
+                let Ok(dest_transform) = destinations.get(destination.0) else {
+                    continue;
                 };
+                let m =
+                    portal_transfer(source_transform, dest_transform) * transform.compute_affine();
+                let (_, rotation, translation) = m.to_scale_rotation_translation();
+                let transition_rotation = rotation * transform.rotation.inverse();
+                (translation, rotation, transition_rotation)
+            } else {
+                let Some(arrival) = arrival else {
+                    continue;
+                };
+                let transition_rotation = arrival.rotation_from(source_transform, hit.from_front);
+                (
+                    arrival.translation,
+                    transition_rotation * transform.rotation,
+                    transition_rotation,
+                )
+            };
 
             transform.translation = new_translation;
             transform.rotation = new_rotation;

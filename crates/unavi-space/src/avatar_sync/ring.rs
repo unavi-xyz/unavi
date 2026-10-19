@@ -97,7 +97,7 @@ mod tests {
         .expect("portal");
 
         assert_eq!(portal, found);
-        assert!((plane - Vec2::new(0.5, 0.25)).length() < 1e-5);
+        assert!((plane - Vec2::new(0.5, 0.25)).length() < 1.0e-5);
     }
 
     #[test]
@@ -106,7 +106,19 @@ mod tests {
         let frame = frame_at(Vec3::ZERO);
 
         assert!(portal_at(Vec3::ZERO, [(portal, &frame, &PortalState::Closed)]).is_none());
-        assert!(portal_at(Vec3::new(0.0, 0.0, 0.5), [(portal, &frame, &PortalState::Open)]).is_none());
-        assert!(portal_at(Vec3::new(2.0, 0.0, 0.0), [(portal, &frame, &PortalState::Open)]).is_none());
+        assert!(
+            portal_at(
+                Vec3::new(0.0, 0.0, 0.5),
+                [(portal, &frame, &PortalState::Open)]
+            )
+            .is_none()
+        );
+        assert!(
+            portal_at(
+                Vec3::new(2.0, 0.0, 0.0),
+                [(portal, &frame, &PortalState::Open)]
+            )
+            .is_none()
+        );
     }
 }

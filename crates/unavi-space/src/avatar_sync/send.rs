@@ -20,9 +20,9 @@ use unavi_avatar::bones::AvatarBones;
 use crate::{
     avatar_sync::{
         AgentSender,
-        crossing::LastCrossing,
         OutgoingPose,
         RemoteAgent,
+        crossing::LastCrossing,
     },
     grid::ActiveSpace,
     index::Index,

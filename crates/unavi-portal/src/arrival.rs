@@ -62,9 +62,7 @@ pub fn update_arrivals(
     mut commands: Commands,
 ) {
     for (portal, destination, current) in &portals {
-        let root = destination
-            .map(|d| d.0)
-            .filter(|d| !portals.contains(*d));
+        let root = destination.map(|d| d.0).filter(|d| !portals.contains(*d));
         let next = root.and_then(|root| {
             let lowest = spawn_points
                 .iter()

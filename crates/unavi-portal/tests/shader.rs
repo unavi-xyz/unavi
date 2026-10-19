@@ -62,7 +62,8 @@ fn the_portal_shader_is_valid_wgsl() {
         Ok(module) => module,
         Err(err) => panic!("{}", err.emit_to_string(&source)),
     };
-    if let Err(err) = Validator::new(ValidationFlags::all(), Capabilities::all()).validate(&module) {
+    if let Err(err) = Validator::new(ValidationFlags::all(), Capabilities::all()).validate(&module)
+    {
         panic!("{}", err.emit_to_string(&source));
     }
 }

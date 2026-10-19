@@ -119,10 +119,7 @@ pub fn record_crossing(
         return;
     }
     let point_in_space = |portal: Entity, point: Vec2| {
-        let world = portals
-            .get(portal)
-            .ok()?
-            .transform_point(point.extend(0.0));
+        let world = portals.get(portal).ok()?.transform_point(point.extend(0.0));
         let owner = parents
             .iter_ancestors(portal)
             .find(|ancestor| spaces.contains(*ancestor))?;

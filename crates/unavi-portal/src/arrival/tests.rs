@@ -59,12 +59,7 @@ fn arrival_of(app: &mut App, root: Entity) -> Option<Arrival> {
 fn a_one_way_portal_arrives_at_the_lowest_keyed_spawn_point() {
     let (mut app, root) = setup();
     let facing = Quat::from_rotation_y(FRAC_PI_2);
-    spawn_point(
-        &mut app,
-        root,
-        9,
-        Transform::from_xyz(5.0, 0.0, 5.0),
-    );
+    spawn_point(&mut app, root, 9, Transform::from_xyz(5.0, 0.0, 5.0));
     spawn_point(
         &mut app,
         root,

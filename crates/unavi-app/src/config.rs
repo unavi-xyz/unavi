@@ -10,6 +10,7 @@ unavi_config::config!("secretspec.toml");
 /// Whether this binary is a development build. Diagnostics and lenient
 /// runtime behaviour key off this rather than the cargo profile, which a
 /// release-inheriting `web-dev` build would otherwise hide.
+#[must_use]
 pub fn dev_build() -> bool {
     Config::load().is_ok_and(|config| config.unavi_dev == "true")
 }
@@ -26,7 +27,7 @@ pub fn sync_config() -> SyncConfig {
     };
 
     SyncConfig {
-        targets: config
+        targets:          config
             .unavi_sync_targets
             .split(',')
             .map(str::trim)

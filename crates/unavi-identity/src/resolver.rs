@@ -8,6 +8,9 @@ use std::{
 
 use n0_future::time::Instant;
 use parking_lot::Mutex;
+/// Re-exported so a caller can choose where its `did:web` resolutions may
+/// reach without depending on `xdid` directly.
+pub use xdid::method::web::target::TargetPolicy;
 use xdid::{
     core::{
         Method,
@@ -25,10 +28,6 @@ use xdid::{
     },
     resolver::DidResolver,
 };
-
-/// Re-exported so a caller can choose where its `did:web` resolutions may
-/// reach without depending on `xdid` directly.
-pub use xdid::method::web::target::TargetPolicy;
 
 /// How long a resolved document is reused. A key rotation takes this long to
 /// reach a verifier.

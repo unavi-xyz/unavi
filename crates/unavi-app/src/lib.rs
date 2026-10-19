@@ -56,11 +56,10 @@ impl Plugin for UnaviPlugin {
 
         let default_plugins = DefaultPlugins
             .set(LogPlugin {
-                filter: filter.join(","),
-                level: self.log_level,
+                filter:       filter.join(","),
+                level:        self.log_level,
                 custom_layer: logging::collapsing_layer,
-                fmt_layer: logging::plain_layer,
-                ..default()
+                fmt_layer:    logging::plain_layer,
             })
             .set(WindowPlugin {
                 primary_window: Some(Window {

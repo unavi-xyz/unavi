@@ -53,6 +53,10 @@ pub fn collapsing_layer(_: &mut App) -> Option<BoxedLayer> {
 }
 
 /// The default field rendering, for every event that is not a redial warning.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the shape `LogPlugin::fmt_layer` requires"
+)]
 pub fn plain_layer(_: &mut App) -> Option<BoxedFmtLayer> {
     Some(Box::new(
         tfmt::Layer::default()
@@ -122,7 +126,7 @@ impl Message {
 impl Visit for Message {
     fn record_str(&mut self, field: &Field, value: &str) {
         if field.name() == "message" {
-            self.0 = value.to_owned();
+            value.clone_into(&mut self.0);
         }
     }
 
@@ -342,6 +346,46 @@ mod tests {
         });
 
         assert!(out.contains("sync actor error"), "got {out:?}");
+    }
+
+    #[test]
+    fn the_two_layers_partition_the_stream() {
+        let buf = Capture::default();
+        let subscriber = Registry::default()
+            .with(
+                tfmt::layer()
+                    .with_writer(buf.clone())
+                    .fmt_fields(OneLineFields)
+                    .with_filter(Redial),
+            )
+            .with(tfmt::layer().with_writer(buf.clone()).with_filter(Other));
+
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::warn!(
+                target: "iroh_docs::engine::live",
+                origin = ?"Connect",
+                err = ?chain(),
+                "sync failed"
+            );
+            tracing::warn!(
+                target: "iroh_docs::engine::live",
+                err = ?chain(),
+                "sync actor error"
+            );
+        });
+
+        let captured = buf.0.lock().expect("poisoned").clone();
+        let out = String::from_utf8(captured).expect("utf-8");
+
+        assert!(
+            out.contains("Failed to establish connection: Connection was rejected locally"),
+            "got {out:?}"
+        );
+        assert!(out.contains("sync actor error"), "got {out:?}");
+        assert!(
+            out.lines().any(|line| line.trim() == "Caused by:"),
+            "a non-redial event must keep its default rendering; got {out:?}"
+        );
     }
 
     #[test]

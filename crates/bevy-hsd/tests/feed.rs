@@ -209,3 +209,25 @@ fn a_feed_is_synced_at_its_deadline_when_content_never_arrives(mut ctx: TestCont
     let host = ctx.doc;
     ctx.tick_until(|world| is_synced(world, host));
 }
+
+#[rstest]
+fn an_empty_remote_sync_feed_waits_for_its_peer_past_the_deadline(mut ctx: TestContext) {
+    let backing = Backing::new();
+    let doc = backing.document();
+    attach_feed(
+        &mut ctx,
+        &doc,
+        FeedReady::RemoteSync,
+        Duration::from_millis(10),
+    );
+
+    let host = ctx.doc;
+    for _ in 0..10 {
+        ctx.app.update();
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(
+        !is_synced(ctx.app.world(), host),
+        "an empty store was synced before any peer sync finished"
+    );
+}

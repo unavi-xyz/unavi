@@ -91,7 +91,9 @@ impl Reader {
                 self.send(Delta::Synced).await?;
             }
 
-            let next = if synced {
+            // The deadline bounds the wait on content, never the wait on a
+            // peer: an empty store reporting synced reads as a loaded space.
+            let next = if synced || !ready_met {
                 events.next().await
             } else {
                 let left = self.deadline.saturating_sub(started.elapsed());

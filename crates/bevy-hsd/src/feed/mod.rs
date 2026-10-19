@@ -39,6 +39,8 @@ mod reader;
 const DELTA_CAPACITY: usize = 1024;
 
 /// How long after a feed starts it reports synced even if content is missing.
+/// A [`FeedReady::RemoteSync`] feed on an empty store waits for its peer
+/// regardless.
 pub const SYNC_DEADLINE: Duration = Duration::from_secs(10);
 
 pub(crate) enum Delta {

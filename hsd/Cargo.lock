@@ -547,7 +547,6 @@ name = "unavi-default-home"
 version = "0.0.17"
 dependencies = [
  "anyhow",
- "blake3",
  "wired-guest",
  "wit-bindgen",
 ]

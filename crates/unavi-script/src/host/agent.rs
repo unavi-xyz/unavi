@@ -20,6 +20,7 @@ use crate::{
 #[derive(Clone, Copy, Debug)]
 pub enum Attachment {
     Camera,
+    Body,
     Bone(BoneName),
 }
 
@@ -63,6 +64,7 @@ pub async fn attach(
     host.require(HostApi::LocalAgent)?;
     let tracked = match to {
         Attachment::Camera => host.shared.agents.camera(),
+        Attachment::Body => host.shared.agents.body(),
         Attachment::Bone(bone) => host.shared.agents.bone(bone),
     }
     .ok_or(ScriptError::NotReady)?;

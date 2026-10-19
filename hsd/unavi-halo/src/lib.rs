@@ -10,13 +10,11 @@
 //! knowing about — the glyphs inside its motes, and the body of whatever tool
 //! is in hand.
 
-use wired_guest::{
-    math::Transform,
-    teleport::Watch,
-};
+use wired_guest::math::Transform;
 
 use crate::{
     artifact::Artifact,
+    body::Body,
     branch::{
         hand::Toolbelt,
         home::Home,
@@ -29,6 +27,7 @@ use crate::{
     root::Root,
     summon::{
         Command,
+        Residence,
         Summon,
     },
     unavi::vui::api::{
@@ -36,17 +35,21 @@ use crate::{
         Event,
         Mote,
     },
-    wired::input::{
-        device,
-        types::{
-            Action,
-            Button,
-            InputSubscription,
+    wired::{
+        input::{
+            device,
+            types::{
+                Action,
+                Button,
+                InputSubscription,
+            },
         },
+        portal::portals::current_space,
     },
 };
 
 mod artifact;
+mod body;
 mod branch;
 mod clock;
 mod glyph;
@@ -62,8 +65,10 @@ struct Script {
     home:     Home,
     nav:      Nav,
     summon:   Summon,
-    /// Last tick's eye, so a respawn, travel or home can close the halo.
-    jumps:    Watch,
+    /// Attaches the halo's document to the user's body.
+    body:     Body,
+    /// The space last tick, so a respawn, travel or home can close the halo.
+    space:    Residence,
     /// The time on the root's face.
     clock:    Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
@@ -209,7 +214,8 @@ impl ScriptBehavior for Script {
             home:     Home::default(),
             nav:      Nav::default(),
             summon:   Summon::default(),
-            jumps:    Watch::default(),
+            body:     Body::default(),
+            space:    Residence::default(),
             clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
@@ -217,6 +223,7 @@ impl ScriptBehavior for Script {
     }
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
+        self.body.step()?;
         api::fixed_update()?;
         if self.home.fixed_update(&self.root.home) {
             self.put_away()?;
@@ -225,18 +232,23 @@ impl ScriptBehavior for Script {
         self.nav.fixed_update(&self.root.nav);
         self.show_time();
 
+        // A respawn, a travel or home changes the space; a menu opened in the
+        // one the user left no longer belongs to them.
+        if self.space.step(current_space().ok().flatten()) {
+            self.put_away()?;
+        }
+
         let Some(eye) = camera_pose() else {
             return Ok(());
         };
-        if self.jumps.step(&eye).is_some() {
-            // A respawn, a travel or home jumps the viewer somewhere else; a
-            // menu opened where they were standing no longer belongs there.
-            self.put_away()?;
-        }
         self.read_input(&eye);
 
-        let walked_away = self.summon.step(&eye);
-        self.apply(walked_away)
+        // Closing ends the grasp, so a mote in hand keeps the halo up.
+        if self.root.orbit.held() {
+            return Ok(());
+        }
+        let leaned_away = self.summon.step(&eye);
+        self.apply(leaned_away)
     }
 
     fn update(&mut self, tick: Tick) -> anyhow::Result<()> {

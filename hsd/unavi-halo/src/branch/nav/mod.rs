@@ -17,7 +17,10 @@ use wired_guest::{
         now_ms,
         planted_bytes,
     },
-    color::generate_color,
+    color::{
+        document_seed,
+        generate_color,
+    },
     math::{
         Color,
         Transform,
@@ -106,7 +109,7 @@ struct Space {
 }
 
 /// A space's namespace as a `document-id`.
-type Namespace = (u64, u64, u64, u64);
+pub type Namespace = (u64, u64, u64, u64);
 
 /// The cast a space wears.
 const TRAVEL: (&str, &str) = ("Travel", "Travel to this space.");
@@ -162,7 +165,12 @@ impl Nav {
         if self.icon.is_none() {
             if self.icon_retry_in == 0 {
                 match beacon_icon() {
-                    Ok(icon) => self.icon = Some(icon),
+                    Ok(icon) => {
+                        self.icon = Some(icon);
+                        if let Some(pinned) = &self.pinned {
+                            pinned.wear_icon(icon);
+                        }
+                    }
                     Err(err) => {
                         eprintln!("halo: beacon icon: {err:?}");
                         self.icon_retry_in = ICON_RETRY_TICKS;
@@ -211,6 +219,9 @@ impl Nav {
         }
         match Here::new() {
             Ok(pinned) => {
+                if let Some(icon) = self.icon {
+                    pinned.wear_icon(icon);
+                }
                 parent.add_child(&pinned.group);
                 self.pinned = Some(pinned);
                 true
@@ -241,6 +252,7 @@ impl Nav {
             .and_then(|ns| self.spaces.iter().find(|space| space.ns == ns))
             .map(|space| space.title.as_str());
         if let Some(pinned) = &mut self.pinned {
+            pinned.tint(self.here.map(|ns| generate_color(document_seed(ns))));
             pinned.show(self.here.is_some(), title);
         }
     }
@@ -303,6 +315,25 @@ impl Nav {
     /// our prims: beacons sync per document, and an instance has no document
     /// to sync.
     pub fn plant(&mut self, mote: &Mote, landing: Landing) -> Planting {
+        if let Some(pinned) = &self.pinned
+            && pinned.is_beacon(mote)
+        {
+            let Some(here) = self.here else {
+                pinned.notify_beacon("Not in a space");
+                return Planting::Failed;
+            };
+            return match mint(&hex_of(here), landing.at) {
+                Ok(beacon) => {
+                    self.beacons.push(beacon);
+                    Planting::Planted
+                }
+                Err(err) => {
+                    eprintln!("halo: could not put down a beacon: {err:?}");
+                    pinned.notify_beacon("Couldn't put the beacon down.");
+                    Planting::Failed
+                }
+            };
+        }
         let Some(space) = self.spaces.iter().find(|space| space.beacon.is(mote)) else {
             return Planting::NotOurs;
         };
@@ -318,6 +349,11 @@ impl Nav {
             }
         }
     }
+}
+
+/// A space's namespace as the registry writes it.
+fn hex_of(ns: Namespace) -> String {
+    document_seed(ns).to_hex().to_string()
 }
 
 /// One space as a registry reported it.
@@ -657,6 +693,12 @@ mod tests {
         let spaces = [(1, 0, 0, 0), (2, 0, 0, 0), (3, 0, 0, 0)];
         assert_eq!(listed(&spaces, None), vec![0, 1, 2]);
         assert_eq!(listed(&spaces, Some((9, 0, 0, 0))), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn a_namespace_survives_its_hex() {
+        let ns = (1, u64::MAX, 0x0123_4567_89ab_cdef, 42);
+        assert_eq!(document_id_from_hex(&hex_of(ns)), Some(ns));
     }
 
     #[test]

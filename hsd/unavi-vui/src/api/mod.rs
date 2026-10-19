@@ -79,6 +79,10 @@ fn shown(surface: SurfaceId) -> bool {
     VUI.with_borrow(|vui| vui.as_ref().is_some_and(|vui| vui.is_shown(surface)))
 }
 
+fn held(surface: SurfaceId) -> bool {
+    VUI.with_borrow(|vui| vui.as_ref().is_some_and(|vui| vui.is_held(surface)))
+}
+
 /// Driving before anything is put up is not an error: there is nothing drawn
 /// to step.
 fn drive(step: impl FnOnce(&mut Vui) -> anyhow::Result<()>) -> Result<(), Error> {

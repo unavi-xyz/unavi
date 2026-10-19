@@ -208,6 +208,11 @@ impl Vui {
         self.slot(surface).is_some_and(|slot| slot.shown)
     }
 
+    #[must_use]
+    pub fn is_held(&self, surface: SurfaceId) -> bool {
+        self.slot(surface).is_some_and(|slot| slot.panel.is_held())
+    }
+
     /// Everything a panel did since the last call.
     pub fn drain(&mut self, surface: SurfaceId) -> Vec<Event> {
         self.slot_mut(surface)

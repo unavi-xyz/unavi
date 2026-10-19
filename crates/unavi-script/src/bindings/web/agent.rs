@@ -106,6 +106,7 @@ impl Runtime {
         let parsed = (|| -> Result<_, ScriptError> {
             let to = match convert::tag(&to).as_str() {
                 "camera" => agent::Attachment::Camera,
+                "body" => agent::Attachment::Body,
                 "bone" => {
                     let bone = convert::val(&to)
                         .as_string()

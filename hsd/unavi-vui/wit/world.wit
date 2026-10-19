@@ -285,6 +285,10 @@ interface api {
     dismiss: func() -> result<_, error>;
     /// Whether it is up.
     shown: func() -> bool;
+    /// Whether a mote is in hand or a cast is filling. A consumer that
+    /// dismisses the surface on its own terms leaves it up while this holds,
+    /// since dismissing ends the grasp.
+    held: func() -> bool;
   }
 
   /// A bounded grid of `root`'s motes, and a destination a release over it
@@ -304,6 +308,8 @@ interface api {
     summon: func() -> result<_, error>;
     dismiss: func() -> result<_, error>;
     shown: func() -> bool;
+    /// Whether a mote is in hand or a cast is filling.
+    held: func() -> bool;
   }
 
   /// Reads input and resolves what it did, for every surface at once. Call

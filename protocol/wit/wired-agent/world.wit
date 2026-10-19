@@ -68,6 +68,9 @@ interface local {
 
   variant attachment {
     camera,
+    /// The agent's position, world-aligned: a document attached here moves
+    /// with the user but does not turn with their heading or head.
+    body,
     bone(humanoid-bone),
   }
 

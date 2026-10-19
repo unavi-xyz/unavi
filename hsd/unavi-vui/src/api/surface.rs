@@ -7,6 +7,7 @@ use crate::{
         dismiss,
         drain,
         drive,
+        held,
         mote::MoteRes,
         put_up,
         remove,
@@ -77,6 +78,10 @@ impl GuestOrbit for Orbit {
     fn shown(&self) -> bool {
         shown(self.0)
     }
+
+    fn held(&self) -> bool {
+        held(self.0)
+    }
 }
 
 /// Frees the surface's prims once nothing holds this handle, rather than
@@ -122,6 +127,10 @@ impl GuestGrid for Grid {
 
     fn shown(&self) -> bool {
         shown(self.0)
+    }
+
+    fn held(&self) -> bool {
+        held(self.0)
     }
 }
 

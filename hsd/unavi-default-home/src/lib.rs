@@ -4,6 +4,7 @@
 use wired_guest::{
     color::{
         desaturate,
+        document_seed,
         generate_color,
     },
     math::{
@@ -31,17 +32,6 @@ wired_guest::generate_script!(Script);
 const GROUND_SIZE: f32 = 30.0;
 const GROUND_THICK: f32 = 0.5;
 
-/// The document id's bytes, little-endian word by word, as `blake3::Hash`
-/// wants for [`generate_color`].
-fn document_color_seed(id: (u64, u64, u64, u64)) -> blake3::Hash {
-    let mut bytes = [0u8; 32];
-    bytes[0..8].copy_from_slice(&id.0.to_le_bytes());
-    bytes[8..16].copy_from_slice(&id.1.to_le_bytes());
-    bytes[16..24].copy_from_slice(&id.2.to_le_bytes());
-    bytes[24..32].copy_from_slice(&id.3.to_le_bytes());
-    blake3::Hash::from_bytes(bytes)
-}
-
 struct Script;
 
 impl ScriptBehavior for Script {
@@ -64,7 +54,7 @@ impl ScriptBehavior for Script {
                 ))),
             );
 
-        let base_color = desaturate(generate_color(document_color_seed(doc.id())), 0.6);
+        let base_color = desaturate(generate_color(document_seed(doc.id())), 0.6);
 
         let ground_root = doc.find_by_name("ground").into_iter().next();
         let mut material = ground_root

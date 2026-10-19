@@ -1,13 +1,17 @@
 //! Where the halo stands, and when it goes away.
 //!
-//! It is placed at the summon point and world-locked rather than parented to
-//! the viewer: a surface that follows you is one you cannot walk up to, and a
-//! hand-parented ring jitters with tracking noise and cannot be aimed at by
-//! the hand carrying it.
+//! It is placed at the summon point in a frame that follows the user's position
+//! but not their heading, which the halo's document is attached to. It rides
+//! along as the user walks and does not follow the head: a surface that follows your gaze is one you cannot walk
+//! up to, and a hand-parented ring jitters with tracking noise and cannot be
+//! aimed at by the hand carrying it.
 
 use wired_guest::math::Transform;
 
-/// Metres from the summon point, squared, past which the halo closes itself.
+use crate::branch::nav::Namespace;
+
+/// Metres the eye moves from the summon point within that frame,
+/// squared, past which the halo closes itself.
 const CLOSE_MOVE_SQ: f32 = 0.09;
 
 /// Metres of travel past which a menu press means "bring it here" rather than
@@ -64,8 +68,8 @@ impl Summon {
         self.pressed = false;
     }
 
-    /// Walking away closes it, so the halo never becomes something you have to
-    /// tidy up after.
+    /// Leaning or reaching away from it closes it, so the halo never becomes
+    /// something you have to tidy up after.
     pub fn step(&mut self, eye: &Transform) -> Option<Command> {
         let at = self.at?;
         let delta = eye.translation - at.translation;
@@ -81,6 +85,24 @@ impl Summon {
     pub fn taken(&mut self) -> Option<Command> {
         self.at.take()?;
         Some(Command::Dismiss)
+    }
+}
+
+/// Which space the user was in on the previous fixed tick.
+#[derive(Default)]
+pub enum Residence {
+    #[default]
+    Unread,
+    /// In a space, or between spaces as `None`.
+    In(Option<Namespace>),
+}
+
+impl Residence {
+    /// Records the space the user is in now, `None` between spaces. Whether
+    /// it differs from the previous tick's; the first reading never does.
+    pub fn step(&mut self, here: Option<Namespace>) -> bool {
+        let was = std::mem::replace(self, Self::In(here));
+        matches!(was, Self::In(last) if last != here)
     }
 }
 
@@ -121,5 +143,16 @@ mod tests {
         summon.press(&eye_at(0.0));
         assert_eq!(summon.taken(), Some(Command::Dismiss));
         assert!(!summon.is_up());
+    }
+
+    #[test]
+    fn a_change_of_space_is_reported_once() {
+        let mut residence = Residence::default();
+        let home = Some((1, 0, 0, 0));
+        assert!(!residence.step(home), "the first reading is not a change");
+        assert!(!residence.step(home));
+        assert!(residence.step(None), "leaving for limbo is a change");
+        assert!(residence.step(home), "so is arriving");
+        assert!(!residence.step(home));
     }
 }

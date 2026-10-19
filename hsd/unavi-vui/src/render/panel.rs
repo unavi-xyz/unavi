@@ -398,6 +398,11 @@ impl Panel {
         self.content.at(index)
     }
 
+    /// Whether a mote is in hand or a cast is filling.
+    pub const fn is_held(&self) -> bool {
+        self.surface.is_seized() || self.casting.is_some()
+    }
+
     /// Whether anything of it is still drawn. A panel sent away keeps being
     /// stepped until it has finished leaving.
     pub fn is_visible(&self) -> bool {

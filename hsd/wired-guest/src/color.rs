@@ -4,6 +4,19 @@ use blake3::Hash;
 
 use crate::math::Color;
 
+/// A `document-id`'s four words packed little-endian into the 32 bytes of the
+/// namespace, which is what [`generate_color`] takes and what a registry hex
+/// encodes.
+#[must_use]
+pub fn document_seed(id: (u64, u64, u64, u64)) -> Hash {
+    let mut bytes = [0u8; 32];
+    bytes[0..8].copy_from_slice(&id.0.to_le_bytes());
+    bytes[8..16].copy_from_slice(&id.1.to_le_bytes());
+    bytes[16..24].copy_from_slice(&id.2.to_le_bytes());
+    bytes[24..32].copy_from_slice(&id.3.to_le_bytes());
+    Hash::from_bytes(bytes)
+}
+
 /// Derives a stable, pleasant colour from a hash, such as a document id.
 #[must_use]
 pub fn generate_color(hash: Hash) -> Color {

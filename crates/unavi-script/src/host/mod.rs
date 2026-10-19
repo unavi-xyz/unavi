@@ -339,6 +339,17 @@ impl Plugin for HostPlugin {
                 )
                     .after(bevy::transform::TransformSystems::Propagate),
             )
+            .add_systems(
+                Update,
+                shared_state::agents::follow_body
+                    .before(bevy::transform::systems::mark_dirty_trees),
+            )
+            .add_systems(
+                PostUpdate,
+                shared_state::agents::follow_body
+                    .after(unavi_space::grid::apply_anchor_offsets)
+                    .before(bevy::transform::TransformSystems::Propagate),
+            )
             .add_systems(FixedUpdate, crate::link_intents::offer_link_intents);
     }
 }

@@ -40,6 +40,7 @@ impl Host for HostCtx {
     ) -> Result<(), ScriptError> {
         let to = match to {
             Attachment::Camera => agent::Attachment::Camera,
+            Attachment::Body => agent::Attachment::Body,
             Attachment::Bone(bone) => agent::Attachment::Bone(bone_name(bone)),
         };
         agent::attach(&self.host, doc.rep(), to, convert::xform(offset)).await

@@ -23,6 +23,8 @@ mod identity;
 mod logging;
 mod scene;
 
+pub use config::dev_build;
+
 #[cfg(target_family = "wasm")] mod ready;
 
 #[cfg(feature = "devtools")] mod devtools;

@@ -62,9 +62,10 @@ fn main() -> AppExit {
 
     let mut app = App::new();
 
-    // Don't panic on ECS errors in release builds.
-    #[cfg(not(debug_assertions))]
-    app.set_error_handler(bevy::ecs::error::warn);
+    // Don't panic on ECS errors outside a development build.
+    if !unavi_app::dev_build() {
+        app.set_error_handler(bevy::ecs::error::warn);
+    }
 
     app.add_plugins(unavi_app::UnaviPlugin {
         in_memory: args.in_memory,

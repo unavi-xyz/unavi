@@ -7,6 +7,13 @@ use crate::identity::SyncConfig;
 
 unavi_config::config!("secretspec.toml");
 
+/// Whether this binary is a development build. Diagnostics and lenient
+/// runtime behaviour key off this rather than the cargo profile, which a
+/// release-inheriting `web-dev` build would otherwise hide.
+pub fn dev_build() -> bool {
+    Config::load().is_ok_and(|config| config.unavi_dev == "true")
+}
+
 /// The registries to follow. A config that fails to load follows none, and
 /// the app runs peer to peer.
 pub fn sync_config() -> SyncConfig {

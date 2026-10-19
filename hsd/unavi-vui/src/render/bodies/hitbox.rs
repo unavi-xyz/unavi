@@ -28,4 +28,10 @@ impl Bodies {
         }
         signals
     }
+
+    /// Drops whatever the listener heard while nothing was reading it, so a
+    /// summon never replays a press or release from before it.
+    pub fn discard_input(&self) {
+        while !self.input.drain(64).is_empty() {}
+    }
 }

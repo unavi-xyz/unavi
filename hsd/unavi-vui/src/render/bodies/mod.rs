@@ -24,6 +24,7 @@ use wired_guest::math::{
 
 use crate::{
     attention::Attention,
+    fit::chain,
     glyph::Glyph,
     marks::Chevrons,
     mesh,
@@ -48,6 +49,7 @@ use crate::{
         Style,
     },
     wired::{
+        core::error::Error,
         input::{
             targeted::listen,
             types::InputSubscription,
@@ -556,10 +558,16 @@ impl Bodies {
         Ok(())
     }
 
+    /// Where `slot` stands. One no frame has drawn yet stands where it was
+    /// last written, which is where it is about to be drawn.
     #[must_use]
     pub fn pose(&self, doc: &Document, slot: usize) -> Option<Transform> {
         let prim = self.slots.borrow().get(slot)?.root;
-        doc.world_transform(prim).ok()
+        match doc.world_transform(prim) {
+            Ok(pose) => Some(pose),
+            Err(Error::NotReady) => Some(chain(&stated(doc, self.root)?, &stated(doc, prim)?)),
+            Err(_) => None,
+        }
     }
 
     #[must_use]
@@ -915,6 +923,14 @@ impl Bodies {
 }
 
 /// Where a slot's name stands, or nowhere for a slot that has none.
+/// The transform `prim` was written with, beneath its parent.
+fn stated(doc: &Document, prim: (u64, u64)) -> Option<Transform> {
+    match doc.get(prim, &PropertyKey::Transform)? {
+        Property::Transform(transform) => Some(transform),
+        _ => None,
+    }
+}
+
 fn label_pose(offset: Option<Vec3>) -> Transform {
     offset.map_or_else(draw::hidden, |offset| draw::placed(offset, 1.0))
 }

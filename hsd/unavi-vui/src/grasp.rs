@@ -59,6 +59,11 @@ impl Grasp {
         }
     }
 
+    /// Lets go without the release meaning anything: no tap, no landing.
+    pub const fn cancel(&mut self) {
+        self.seized = None;
+    }
+
     pub fn release(&mut self) -> Option<Outcome> {
         let seized = self.seized.take()?;
         Some(if seized.displaced {

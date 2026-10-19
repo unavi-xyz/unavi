@@ -186,6 +186,12 @@ impl Surface {
         self.reveal.set_open(open);
     }
 
+    /// Whether it is up or arriving, rather than sent away.
+    #[must_use]
+    pub const fn is_open(&self) -> bool {
+        self.reveal.is_open()
+    }
+
     /// Whether anything is still drawn. A surface that has finished going away
     /// needs no more frames.
     #[must_use]
@@ -261,6 +267,11 @@ impl Surface {
                 .get(slot)
                 .is_some_and(|view| view.role.is_takeable());
         self.grasp.press(slot, at, takeable);
+    }
+
+    /// Drops a grasp in progress without it tapping or placing anything.
+    pub const fn cancel(&mut self) {
+        self.grasp.cancel();
     }
 
     /// Releasing after the pointer has wandered off a fixed mote cancels

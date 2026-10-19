@@ -213,6 +213,9 @@ pub struct Panel {
     /// The slot the engine's grab is carrying. Its transform belongs to the
     /// solver until it comes back.
     held:     Option<usize>,
+    /// The mote the grasp took hold of. Slots are positions, and the content
+    /// under one can change mid-grasp.
+    grasped:  Option<Mote>,
     /// Last page reported, so a turn is announced once rather than every
     /// frame.
     paged:    Option<usize>,
@@ -253,6 +256,7 @@ impl Panel {
             capacity,
             depth: None,
             held: None,
+            grasped: None,
             paged: None,
             readout: None,
         })
@@ -284,6 +288,7 @@ impl Panel {
             capacity,
             depth: None,
             held: None,
+            grasped: None,
             paged: None,
             readout: None,
         })
@@ -329,10 +334,68 @@ impl Panel {
         self.bodies.root()
     }
 
-    /// Puts the panel up or takes it down, keeping its prims either way.
-    pub fn show(&mut self, doc: &Document, shown: bool) -> anyhow::Result<()> {
-        self.surface.set_open(shown);
-        self.bodies.show(doc, shown)
+    /// Puts the panel up where it is next anchored, keeping the prims it
+    /// already drew. A grasp under way belonged to where it stood, and input
+    /// heard while it was down belongs to nothing on it.
+    pub fn summon(&mut self, doc: &Document) -> anyhow::Result<Option<Event>> {
+        let aborted = self.abandon(doc);
+        self.bodies.discard_input();
+        self.surface.set_open(true);
+        let shown = self.bodies.show(doc, true);
+        let aborted = aborted?;
+        shown?;
+        Ok(aborted)
+    }
+
+    /// Takes the panel down, keeping its prims. A panel sent away stops being
+    /// stepped once it has left, so whatever a grasp had under way ends here,
+    /// or a cast left filling and a mote left in hand would outlast it.
+    pub fn dismiss(&mut self, doc: &Document) -> anyhow::Result<Option<Event>> {
+        self.surface.set_open(false);
+        let aborted = self.abandon(doc);
+        let hidden = self.bodies.show(doc, false);
+        let aborted = aborted?;
+        hidden?;
+        Ok(aborted)
+    }
+
+    /// Ends a grasp without it meaning anything, reporting an abandoned cast
+    /// like any other. Its state is dropped before anything is written, and
+    /// every write is tried, so one failing never leaves a cast or a held
+    /// mote live.
+    fn abandon(&mut self, doc: &Document) -> anyhow::Result<Option<Event>> {
+        self.depth = None;
+        self.grasped = None;
+        self.surface.cancel();
+        let held = self.held.take();
+        let aborted = self
+            .casting
+            .take()
+            .map(|casting| Event::Aborted(casting.mote));
+
+        let hidden = self.site.hide(doc);
+        // Back to its slot unplaced: letting go by abandonment is not a
+        // decision about where the mote should go.
+        let returned = held.map_or(Ok(()), |slot| self.bodies.clear_dynamic(doc, slot));
+        hidden.and(returned)?;
+        Ok(aborted)
+    }
+
+    /// Whether the slot in hand now draws a different mote than the one taken
+    /// hold of, as when the content was rebuilt mid-grasp.
+    fn drifted(&mut self) -> bool {
+        let Some(slot) = self.surface.seized_slot() else {
+            return false;
+        };
+        let Some(grasped) = self.grasped.clone() else {
+            return false;
+        };
+        self.mote_in(slot).is_none_or(|now| !now.is(&grasped))
+    }
+
+    fn mote_in(&mut self, slot: usize) -> Option<Mote> {
+        let index = self.surface.spec_index(slot)?;
+        self.content.at(index)
     }
 
     /// Whether anything of it is still drawn. A panel sent away keeps being
@@ -424,6 +487,9 @@ impl Panel {
         )?;
         let mut events = Vec::new();
         self.report_page(&mut events);
+        if self.drifted() {
+            events.extend(self.abandon(doc)?);
+        }
         drive_cast(
             doc,
             &mut self.casting,
@@ -449,8 +515,12 @@ impl Panel {
             released: None,
             opens_at: None,
         };
+        // A panel on its way out still hears releases, which end grasps, but
+        // nothing new starts on it.
+        let open = self.surface.is_open();
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
+                (Signal::Act(true) | Signal::Take(true) | Signal::Turn(_), _) if !open => {}
                 (Signal::Act(true), false) => self.press(gaze, anchor, false, &mut done.events),
                 (Signal::Take(true), false) => self.press(gaze, anchor, true, &mut done.events),
                 (Signal::Act(false) | Signal::Take(false), _) => self.release(doc, &mut done)?,
@@ -478,6 +548,7 @@ impl Panel {
         self.depth = Some(depth);
         self.surface
             .press(pointer::hand(&gaze.ray, depth), carrying);
+        self.grasped = self.mote_in(slot);
 
         if let Some(mote) = self.consequential(slot) {
             open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
@@ -487,10 +558,7 @@ impl Panel {
 
     /// The mote drawn in `slot`, if holding it is what fires it.
     fn consequential(&mut self, slot: usize) -> Option<Mote> {
-        let index = self.surface.spec_index(slot)?;
-        self.content
-            .at(index)
-            .filter(|mote| mote.kind() == Kind::Cast)
+        self.mote_in(slot).filter(|mote| mote.kind() == Kind::Cast)
     }
 
     /// Returns the carried mote to its panel, reporting what a tap did and
@@ -502,6 +570,13 @@ impl Panel {
     /// An item fired where it sits lands too, at the slot it was drawn in.
     /// Both buttons deliver the item; the grip only chooses where.
     fn release(&mut self, doc: &Document, done: &mut FixedUpdate) -> anyhow::Result<()> {
+        // A grasp whose mote moved out from under it lands nothing: the slot
+        // now holds something nobody took.
+        if self.drifted() {
+            done.events.extend(self.abandon(doc)?);
+            return Ok(());
+        }
+        self.grasped = None;
         self.depth = None;
         let outcome = self.surface.release();
 
@@ -524,8 +599,16 @@ impl Panel {
                 if self.surface.turn_tab(slot) {
                     return Ok(());
                 }
-                if let Some(released) = self.delivered(doc, slot) {
-                    done.released = Some(released);
+                // Delivery is the mote's kind, not whether a pose could be
+                // read: an item that cannot be placed is not selected instead.
+                if let Some(mote) = self.deliverable(slot) {
+                    done.released = self.bodies.pose(doc, slot).map(|pose| Released {
+                        mote,
+                        landing: Landing {
+                            at:       pose.translation,
+                            velocity: Vec3::ZERO,
+                        },
+                    });
                 } else if let Some(event) = self.select(slot) {
                     done.events.push(event);
                 }
@@ -549,27 +632,14 @@ impl Panel {
         Ok(())
     }
 
-    /// The item drawn in `slot`, landing where it stands.
-    fn delivered(&mut self, doc: &Document, slot: usize) -> Option<Released> {
-        let index = self.surface.spec_index(slot)?;
-        let mote = self
-            .content
-            .at(index)
-            .filter(|mote| mote.kind().delivers())?;
-        Some(Released {
-            mote,
-            landing: Landing {
-                at:       self.bodies.pose(doc, slot)?.translation,
-                velocity: Vec3::ZERO,
-            },
-        })
+    /// The item drawn in `slot`, if tapping it delivers it.
+    fn deliverable(&mut self, slot: usize) -> Option<Mote> {
+        self.mote_in(slot).filter(|mote| mote.kind().delivers())
     }
 
     /// Whether the mote drawn in `slot` is a level rather than a thing.
     fn opens(&mut self, slot: usize) -> bool {
-        self.surface
-            .spec_index(slot)
-            .and_then(|index| self.content.at(index))
+        self.mote_in(slot)
             .is_some_and(|mote| mote.kind().holds_children())
     }
 
@@ -633,9 +703,8 @@ impl Panel {
     }
 
     fn build_released(&mut self, slot: usize, at: Vec3, velocity: Vec3) -> Option<Released> {
-        let index = self.surface.spec_index(slot)?;
         Some(Released {
-            mote:    self.content.at(index)?,
+            mote:    self.mote_in(slot)?,
             landing: Landing { at, velocity },
         })
     }

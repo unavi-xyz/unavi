@@ -158,9 +158,11 @@ impl Vui {
         let Some(Some(slot)) = self.slots.get_mut(surface.0) else {
             return Ok(());
         };
-        slot.panel.show(&self.doc, true)?;
+        let aborted = slot.panel.summon(&self.doc);
         slot.anchor = None;
         slot.shown = true;
+        let aborted = aborted?;
+        self.report(surface.0, aborted);
         Ok(())
     }
 
@@ -176,8 +178,12 @@ impl Vui {
         let Some(Some(slot)) = self.slots.get_mut(surface.0) else {
             return Ok(());
         };
-        slot.panel.show(&self.doc, false)?;
+        // Down whatever the writes did, or a failed one leaves the panel
+        // stepped and shown with the summon already spent.
+        let aborted = slot.panel.dismiss(&self.doc);
         slot.shown = false;
+        let aborted = aborted?;
+        self.report(surface.0, aborted);
         Ok(())
     }
 

@@ -1,7 +1,11 @@
 //! This frame's poses, for scripts to read off the main thread.
 
 use std::{
-    collections::HashMap,
+    collections::{
+        HashMap,
+        HashSet,
+    },
+    mem,
     sync::Arc,
 };
 
@@ -24,7 +28,10 @@ use hsd::id::{
     DocId,
     PrimId,
 };
-use parking_lot::RwLock;
+use parking_lot::{
+    Mutex,
+    RwLock,
+};
 
 /// This frame's node poses and per-document root transforms, for scripts to
 /// read off-thread and for the host to resolve a prim's world transform
@@ -36,6 +43,17 @@ pub struct TransformSnapshots(Arc<Inner>);
 struct Inner {
     nodes:     RwLock<HashMap<AbsoluteNodeId, TransformSnapshot>>,
     doc_roots: RwLock<HashMap<DocId, GlobalTransform>>,
+    patched:   Mutex<Patched>,
+}
+
+/// Nodes [`TransformSnapshots::set_local`] back-patched, by how many frames
+/// have passed since. A write that never reaches the ECS `Transform` leaves no
+/// change to refresh the node, so [`refresh_patched`] refreshes it regardless
+/// a whole frame after the patch, by when a write that lands has landed.
+#[derive(Default)]
+struct Patched {
+    pending: HashSet<AbsoluteNodeId>,
+    aged:    HashSet<AbsoluteNodeId>,
 }
 
 impl TransformSnapshots {
@@ -81,7 +99,15 @@ impl TransformSnapshots {
     pub fn set_local(&self, id: &AbsoluteNodeId, local: Transform) {
         if let Some(snapshot) = self.0.nodes.write().get_mut(id) {
             snapshot.local = local;
+            self.0.patched.lock().pending.insert(*id);
         }
+    }
+
+    /// Ages this frame's patches, answering those due a refresh.
+    fn take_stale(&self) -> HashSet<AbsoluteNodeId> {
+        let mut patched = self.0.patched.lock();
+        let pending = mem::take(&mut patched.pending);
+        mem::replace(&mut patched.aged, pending)
     }
 
     /// `leaf`'s world affine, composed from its own and every ancestor's local
@@ -162,25 +188,46 @@ pub fn register_nodes(
 /// its snapshot. Propagation marks a moved subtree's `GlobalTransform`, so the
 /// filter never misses one.
 pub fn snapshot_transforms(
-    transforms: Query<
+    changed: Query<
         (&RegisterTransforms, &GlobalTransform, &Transform),
         Or<(Changed<GlobalTransform>, Changed<Transform>)>,
     >,
     registry: Res<TransformSnapshots>,
 ) {
-    if transforms.is_empty() {
+    if !changed.is_empty() {
+        registry.snapshot_nodes(changed.iter().map(snapshot));
+    }
+}
+
+/// Rewrites back-patched nodes from the ECS once their patch is a frame old,
+/// whether or not the write changed anything. Runs once a frame, so a patch
+/// outlives every snapshot of the frame it was made in.
+pub fn refresh_patched(
+    nodes: Query<(&RegisterTransforms, &GlobalTransform, &Transform)>,
+    registry: Res<TransformSnapshots>,
+) {
+    let stale = registry.take_stale();
+    if stale.is_empty() {
         return;
     }
+    registry.snapshot_nodes(
+        nodes
+            .iter()
+            .filter(|(id, ..)| stale.contains(&id.0))
+            .map(snapshot),
+    );
+}
 
-    registry.snapshot_nodes(transforms.iter().map(|(id, global, local)| {
-        (
-            id.0,
-            TransformSnapshot {
-                local: *local,
-                world: *global,
-            },
-        )
-    }));
+const fn snapshot(
+    (id, global, local): (&RegisterTransforms, &GlobalTransform, &Transform),
+) -> (AbsoluteNodeId, TransformSnapshot) {
+    (
+        id.0,
+        TransformSnapshot {
+            local: *local,
+            world: *global,
+        },
+    )
 }
 
 pub fn deregister_transforms(
@@ -193,17 +240,34 @@ pub fn deregister_transforms(
     }
 }
 
+/// A document's root is recorded when it moves, and when it gains its id or
+/// leaves [`Unplaced`] at a transform that settled long before.
 pub fn snapshot_doc_roots(
-    docs: Query<
+    changed: Query<
         (&HsdDocId, &GlobalTransform),
-        (With<Hsd>, Without<Unplaced>, Changed<GlobalTransform>),
+        (
+            With<Hsd>,
+            Without<Unplaced>,
+            Or<(Changed<GlobalTransform>, Changed<HsdDocId>, Added<Hsd>)>,
+        ),
     >,
+    placed_docs: Query<(&HsdDocId, &GlobalTransform), (With<Hsd>, Without<Unplaced>)>,
+    mut placed: RemovedComponents<Unplaced>,
     registry: Res<TransformSnapshots>,
 ) {
-    if docs.is_empty() {
+    let placed = placed
+        .read()
+        .filter_map(|entity| placed_docs.get(entity).ok())
+        .collect::<Vec<_>>();
+    if changed.is_empty() && placed.is_empty() {
         return;
     }
-    registry.snapshot_doc_roots(docs.iter().map(|(record, global)| (record.0, *global)));
+    registry.snapshot_doc_roots(
+        changed
+            .iter()
+            .chain(placed)
+            .map(|(record, global)| (record.0, *global)),
+    );
 }
 
 pub fn deregister_doc_root(
@@ -218,57 +282,120 @@ pub fn deregister_doc_root(
 
 #[cfg(test)]
 mod tests {
+    use hsd::state::HsdState;
+
     use super::*;
+
+    const ID: AbsoluteNodeId = AbsoluteNodeId {
+        doc:  DocId([0; 32]),
+        node: PrimId([0; 16]),
+    };
 
     fn app() -> App {
         let mut app = App::new();
-        app.init_resource::<TransformSnapshots>()
-            .add_systems(Update, snapshot_transforms);
+        app.init_resource::<TransformSnapshots>().add_systems(
+            Update,
+            (refresh_patched, snapshot_transforms, snapshot_doc_roots).chain(),
+        );
         app
     }
 
-    #[test]
-    fn an_unchanged_node_is_not_rewritten() {
-        let mut app = app();
-        let id = AbsoluteNodeId {
-            doc:  DocId([0; 32]),
-            node: PrimId::from_digest(&[0; 32]),
-        };
+    fn local(app: &App) -> Option<Vec3> {
+        app.world()
+            .resource::<TransformSnapshots>()
+            .node(&ID)
+            .map(|snapshot| snapshot.local.translation)
+    }
+
+    fn spawn_node(app: &mut App) -> Entity {
         let prim = app
             .world_mut()
             .spawn((
-                RegisterTransforms(id),
+                RegisterTransforms(ID),
                 Transform::default(),
                 GlobalTransform::default(),
             ))
             .id();
+        app.update();
+        prim
+    }
+
+    #[test]
+    fn a_back_patch_reads_back_for_a_frame_and_then_reverts() {
+        let mut app = app();
+        spawn_node(&mut app);
+        let patch = Vec3::new(1.0, 2.0, 3.0);
+        app.world()
+            .resource::<TransformSnapshots>()
+            .set_local(&ID, Transform::from_translation(patch));
 
         app.update();
-        let registry = app.world().resource::<TransformSnapshots>().clone();
-        let sentinel = Transform::from_translation(Vec3::new(1.0, 2.0, 3.0));
-        registry.set_local(&id, sentinel);
+        assert_eq!(local(&app), Some(patch), "the patch was dropped early");
 
         app.update();
         assert_eq!(
-            registry
-                .node(&id)
-                .map(|snapshot| snapshot.local.translation),
-            Some(sentinel.translation),
-            "an unchanged node was rewritten"
+            local(&app),
+            Some(Vec3::ZERO),
+            "a patch the ECS never took is still read back"
         );
+    }
+
+    #[test]
+    fn a_changed_node_is_rewritten() {
+        let mut app = app();
+        let prim = spawn_node(&mut app);
+        let moved = Vec3::new(4.0, 5.0, 6.0);
+        app.world_mut()
+            .get_mut::<Transform>(prim)
+            .expect("transform")
+            .translation = moved;
+
+        app.update();
+        assert_eq!(local(&app), Some(moved));
+    }
+
+    fn root(app: &App) -> Option<Vec3> {
+        app.world()
+            .resource::<TransformSnapshots>()
+            .doc_root(&ID.doc)
+            .map(|root| root.translation())
+    }
+
+    #[test]
+    fn a_document_arriving_at_a_settled_transform_records_its_root() {
+        let mut app = app();
+        let at = Vec3::new(5000.0, 0.0, 0.0);
+        let doc = app
+            .world_mut()
+            .spawn(GlobalTransform::from_translation(at))
+            .id();
+        app.update();
 
         app.world_mut()
-            .entity_mut(prim)
-            .get_mut::<Transform>()
-            .expect("transform")
-            .translation = Vec3::new(4.0, 5.0, 6.0);
+            .entity_mut(doc)
+            .insert((Hsd::new(HsdState::new()), HsdDocId(ID.doc)));
         app.update();
-        assert_eq!(
-            registry
-                .node(&id)
-                .map(|snapshot| snapshot.local.translation),
-            Some(Vec3::new(4.0, 5.0, 6.0)),
-            "a changed node was not rewritten"
-        );
+        assert_eq!(root(&app), Some(at));
+    }
+
+    #[test]
+    fn a_document_leaving_unplaced_records_its_root() {
+        let mut app = app();
+        let at = Vec3::new(0.0, 0.0, 5000.0);
+        let doc = app
+            .world_mut()
+            .spawn((
+                Hsd::new(HsdState::new()),
+                HsdDocId(ID.doc),
+                Unplaced,
+                GlobalTransform::from_translation(at),
+            ))
+            .id();
+        app.update();
+        assert_eq!(root(&app), None);
+
+        app.world_mut().entity_mut(doc).remove::<Unplaced>();
+        app.update();
+        assert_eq!(root(&app), Some(at));
     }
 }

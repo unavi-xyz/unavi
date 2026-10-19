@@ -10,7 +10,7 @@ use bevy::{
     post_process::bloom::Bloom,
     prelude::*,
 };
-use unavi_portal::view::camera::PortalViewCamera;
+use unavi_portal::view::camera::PortalCamera;
 
 mod sky;
 pub mod veil;
@@ -45,13 +45,13 @@ impl Plugin for CameraPlugin {
 
 pub fn apply_camera_effects(
     trigger: On<Add, Camera3d>,
-    portal_views: Query<(), With<PortalViewCamera>>,
+    portal_cameras: Query<(), With<PortalCamera>>,
     mut commands: Commands,
     sky: Res<sky::blend::SkyBlend>,
     veil: Res<veil::Veil>,
 ) {
     let entity = trigger.entity;
-    if portal_views.contains(entity) {
+    if portal_cameras.contains(entity) {
         return;
     }
 
@@ -59,7 +59,7 @@ pub fn apply_camera_effects(
         Hdr,
         Bloom::OLD_SCHOOL,
         Exposure::SUNLIGHT,
-        ShadowFilteringMethod::Temporal,
+        ShadowFilteringMethod::Gaussian,
         DistanceFog {
             color: sky.palette().fog().into(),
             falloff: veil.falloff(),
@@ -67,16 +67,12 @@ pub fn apply_camera_effects(
         },
     ));
 
-    // TAA is unsupported on WebGL2, so fall back to MSAA.
     cfg_select! {
         all(target_family = "wasm", not(feature = "webgpu")) => {
             commands.entity(entity).insert(Msaa::Sample4);
         }
         _ => {
-            commands.entity(entity).insert((
-                Msaa::Off,
-                bevy::anti_alias::taa::TemporalAntiAliasing::default(),
-            ));
+            commands.entity(entity).insert(Msaa::Sample8);
         }
     }
 }

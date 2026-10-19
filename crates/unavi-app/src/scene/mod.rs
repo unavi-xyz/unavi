@@ -122,30 +122,26 @@ fn spawn_local_agent(local_agent: Query<(), With<LocalAgent>>, mut commands: Com
 }
 
 fn spawn_sun(mut commands: Commands) {
-    let first_cascade_far_bound = cfg_select! {
-        all(target_family = "wasm", not(feature = "webgpu")) => 32.0,
-        _ => 8.0,
-    };
-
-    let num_cascades = cfg_select! {
-        all(target_family = "wasm", not(feature = "webgpu")) => 1,
-        _ => 3,
-    };
+    // WebGL2 caps a directional light at one cascade, so range is the only
+    // lever on texel size there.
+    let (num_cascades, maximum_distance): (usize, f32) =
+        cfg_select! {
+            all(target_family = "wasm", not(feature = "webgpu")) => (1, 45.0),
+            _ => (4, 100.0),
+        };
 
     commands.spawn((
         CascadeShadowConfigBuilder {
-            first_cascade_far_bound,
-            maximum_distance: 64.0,
+            first_cascade_far_bound: 8.0,
+            maximum_distance,
             minimum_distance: 0.1,
             num_cascades,
             ..Default::default()
         }
         .build(),
         DirectionalLight {
-            contact_shadows_enabled: true,
             illuminance: lux::DIRECT_SUNLIGHT,
             shadow_maps_enabled: true,
-            soft_shadow_size: Some(10.0),
             ..Default::default()
         },
         Transform::from_xyz(-0.9, 10.0, 3.8).looking_at(Vec3::ZERO, Vec3::Y),

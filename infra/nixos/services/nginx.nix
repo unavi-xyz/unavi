@@ -29,9 +29,19 @@ let
     add_header Cache-Control "${value}" always;
   '';
 
-  noCache = cacheControl "no-cache";
+  # Every file in the store has mtime 1, so nginx's Last-Modified and ETag
+  # (mtime plus size) survive a deploy that changed the content. A revalidating
+  # location must answer conditional requests with the full file, or a client
+  # keeps its stale copy as a 304.
+  revalidate = value: ''
+    ${cacheControl value}
+    etag off;
+    if_modified_since off;
+  '';
+
+  noCache = revalidate "no-cache";
   immutable = cacheControl "public, max-age=31536000, immutable";
-  shortLived = cacheControl "public, max-age=300, must-revalidate";
+  shortLived = revalidate "public, max-age=300, must-revalidate";
 
   staticHosts = lib.mapAttrs (_: _cfg: {
     enableACME = true;
@@ -44,14 +54,23 @@ let
     '';
 
     locations = {
+      # Anything no location below claims, such as a public file.
       "/" = {
         tryFiles = "$uri $uri/ =404";
+        extraConfig = noCache;
       };
 
       # Trunk content-hashes these names, so a changed file gets a new URL.
-      "~ ^/(webgl|webgpu)/[^/]+-[0-9a-f]{8,16}(_bg)?\\.(js|mjs|wasm|css|ico)$" = {
+      # Quoted, since nginx ends an unquoted word at `{`.
+      "~ \"^/(webgl|webgpu)/[^/]+-[0-9a-f]{8,16}(_bg)?\\.(js|mjs|wasm|css|ico)$\"" = {
         tryFiles = "$uri =404";
         extraConfig = immutable;
+      };
+
+      # wasm-bindgen names a snippet directory after the crate, not its content.
+      "~ ^/(webgl|webgpu)/snippets/" = {
+        tryFiles = "$uri =404";
+        extraConfig = noCache;
       };
 
       "~ ^/(webgl|webgpu)/assets/" = {

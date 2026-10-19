@@ -62,11 +62,13 @@ fn mesh_into(doc: &RefCell<Option<Document>>, raw: &RawMesh) -> Result<(u64, u64
     }
 }
 
-/// Writes `raw` as a new, parentless prim in `doc`.
+/// Writes `raw` as a new, parentless prim in `doc`, which is removed again if
+/// the mesh does not land.
 fn convert_raw_mesh(doc: &Document, raw: &RawMesh) -> Result<(u64, u64), Error> {
     let prim = doc.create_prim(Layer::Local, None)?;
 
-    doc.local()
+    let written = doc
+        .local()
         .set(prim, Property::MeshTopology(Topology::TriangleList))
         .set(
             prim,
@@ -90,7 +92,13 @@ fn convert_raw_mesh(doc: &Document, raw: &RawMesh) -> Result<(u64, u64), Error> 
             }),
         )
         .set(prim, Property::MeshIndices(raw.indices.clone()))
-        .flush()?;
+        .flush();
+    if let Err(err) = written {
+        if let Err(cleanup) = doc.local().remove(prim).flush() {
+            eprintln!("shapes: removing an unwritten mesh prim: {cleanup:?}");
+        }
+        return Err(err);
+    }
 
     Ok(prim)
 }

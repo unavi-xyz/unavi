@@ -76,6 +76,10 @@ const LIST_LIMIT: u32 = 256;
 /// kept at zero scale so the template itself never shows.
 const TEMPLATE_PRIM_NAME: &str = "beacon_template";
 
+/// About two seconds of fixed ticks between attempts at a beacon icon that
+/// failed to build.
+const ICON_RETRY_TICKS: u32 = 128;
+
 /// What letting go of a mote did, as far as Nav is concerned.
 pub enum Planting {
     /// The mote is not one of Nav's beacons.
@@ -110,16 +114,18 @@ const TRAVEL: (&str, &str) = ("Travel", "Travel to this space.");
 /// Lists the spaces currently occupied per the registries this app follows.
 #[derive(Default)]
 pub struct Nav {
-    lists:   Vec<PendingEntries>,
-    spaces:  Vec<Space>,
-    beacons: Vec<Document>,
+    lists:         Vec<PendingEntries>,
+    spaces:        Vec<Space>,
+    beacons:       Vec<Document>,
     /// The space the user was last seen in.
-    here:    Option<Namespace>,
+    here:          Option<Namespace>,
     /// The "This space" mote, built on the first update so it precedes every
     /// listing in the grid.
-    pinned:  Option<Here>,
+    pinned:        Option<Here>,
     /// The beacon body, built once and worn by every space's beacon mote.
-    icon:    Option<(u64, u64)>,
+    icon:          Option<(u64, u64)>,
+    /// Ticks left before a failed icon build is tried again.
+    icon_retry_in: u32,
 }
 
 impl Nav {
@@ -154,9 +160,16 @@ impl Nav {
         let mut dirty = self.pin(parent);
         dirty |= self.follow_user();
         if self.icon.is_none() {
-            match beacon_icon() {
-                Ok(icon) => self.icon = Some(icon),
-                Err(err) => eprintln!("halo: beacon icon: {err:?}"),
+            if self.icon_retry_in == 0 {
+                match beacon_icon() {
+                    Ok(icon) => self.icon = Some(icon),
+                    Err(err) => {
+                        eprintln!("halo: beacon icon: {err:?}");
+                        self.icon_retry_in = ICON_RETRY_TICKS;
+                    }
+                }
+            } else {
+                self.icon_retry_in -= 1;
             }
         }
 
@@ -433,7 +446,25 @@ fn people(listing: &Listing) -> String {
 /// One icon is shared by every space's beacon mote. Only one space's level is
 /// open at a time, so only one beacon mote is ever drawn and the surface's
 /// icon dock never has two slots claiming the same prim.
+///
+/// A build that fails partway removes every prim it made, so retries never
+/// pile orphans into the halo's prim quota.
 fn beacon_icon() -> anyhow::Result<(u64, u64)> {
+    let doc = script_document()?;
+    let mut made = Vec::new();
+    let built = build_beacon_icon(&doc, &mut made);
+    if built.is_err()
+        && let Err(err) = made
+            .iter()
+            .fold(doc.local(), |batch, prim| batch.remove(*prim))
+            .flush()
+    {
+        eprintln!("halo: removing a half-built beacon icon: {err:?}");
+    }
+    built
+}
+
+fn build_beacon_icon(doc: &Document, made: &mut Vec<(u64, u64)>) -> anyhow::Result<(u64, u64)> {
     const SIZE: f32 = 1.0;
     const CORNER: f32 = SIZE * 0.44;
     const CORNER_OFFSET: f32 = (SIZE - CORNER) * 0.5;
@@ -452,8 +483,8 @@ fn beacon_icon() -> anyhow::Result<(u64, u64)> {
         a: 1.0,
     };
 
-    let doc = script_document()?;
     let root = doc.create_prim(Layer::Local, None)?;
+    made.push(root);
     // Hidden until a beacon mote wears it, so the icon never stands at the
     // document's origin at its authored size.
     let mut batch = doc.local().set(root, Property::Transform(hidden()));
@@ -484,6 +515,7 @@ fn beacon_icon() -> anyhow::Result<(u64, u64)> {
         for y in [-1.0_f32, 1.0] {
             for z in [-1.0_f32, 1.0] {
                 let corner = Cuboid::new(Vec3::splat(CORNER)).mesh()?;
+                made.push(corner);
                 batch = batch
                     .set(corner, Property::Parent(Some(root)))
                     .set(
@@ -497,6 +529,7 @@ fn beacon_icon() -> anyhow::Result<(u64, u64)> {
         }
     }
     let middle = Cuboid::new(Vec3::splat(CORE)).mesh()?;
+    made.push(middle);
     batch = batch
         .set(middle, Property::Parent(Some(root)))
         .set(middle, Property::Material(core));

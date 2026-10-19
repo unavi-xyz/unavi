@@ -26,14 +26,12 @@ pub enum Attachment {
 /// `tracked`'s pose in the script's own frame. The node's snapshot is world,
 /// so this is where the engine's offsets are taken back out.
 fn script_transform(host: &ScriptHost, tracked: Tracked) -> Result<Transform, ScriptError> {
-    let snapshot = host
+    let world = host
         .shared
         .transforms
         .node(&tracked.node)
         .ok_or(ScriptError::NotReady)?;
-    Ok(host
-        .frame()
-        .transform_to_frame(snapshot.world.compute_transform()))
+    Ok(host.frame().transform_to_frame(world.compute_transform()))
 }
 
 pub fn camera_transform(host: &ScriptHost) -> Result<Transform, ScriptError> {

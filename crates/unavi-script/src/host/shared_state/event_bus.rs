@@ -100,7 +100,8 @@ impl EventBus {
     pub fn deliver(&self, emit: &Emit, transforms: &TransformSnapshots) {
         let origin = match emit.scope {
             Scope::Spatial { origin, radius } => {
-                let Some(position) = transforms.node(&origin).map(|s| s.world.translation()) else {
+                let Some(position) = transforms.node(&origin).map(|world| world.translation())
+                else {
                     return;
                 };
                 self.record_emit(emit.channel, position, radius);
@@ -149,7 +150,7 @@ impl EventBus {
                 Scope::Spatial { origin, radius } => {
                     transforms.node(&origin).map(|t| SpatialListener {
                         channels: listener.channels.clone(),
-                        position: t.world.translation(),
+                        position: t.translation(),
                         radius,
                     })
                 }
@@ -183,7 +184,7 @@ fn reach(origin: Option<(Vec3, f32)>, scope: Scope, transforms: &TransformSnapsh
         (_, Scope::Global) => Reach::Global,
         (None, Scope::Spatial { .. }) => Reach::Missed,
         (Some((from, emit_radius)), Scope::Spatial { origin, radius }) => {
-            let Some(at) = transforms.node(&origin).map(|t| t.world.translation()) else {
+            let Some(at) = transforms.node(&origin).map(|world| world.translation()) else {
                 return Reach::Missed;
             };
             let distance = from.distance(at);

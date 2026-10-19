@@ -63,7 +63,6 @@ use crate::{
                 namespace_of,
                 write_entries,
             },
-            node,
             property::{
                 Property,
                 PropertyKey,
@@ -167,21 +166,6 @@ pub async fn apply(
                 .map(shared_write)
                 .collect::<Result<Vec<_>, _>>()?;
             share(host, doc.id, writes).await?;
-        }
-    }
-
-    // A script reads back the transform it just wrote without waiting a
-    // frame for the next snapshot.
-    for edit in &edits {
-        if let Edit::Set(prim, Property::Transform(xform)) = edit {
-            host.shared.transforms.set_local(
-                &node(doc.id, *prim),
-                Transform {
-                    translation: Vec3::from_array(xform.translation),
-                    rotation:    Quat::from_array(xform.rotation),
-                    scale:       Vec3::from_array(xform.scale),
-                },
-            );
         }
     }
     Ok(())

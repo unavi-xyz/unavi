@@ -187,24 +187,24 @@ pub fn keys(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<Vec<PropertyKey
         .read(|state| PropertyKey::all(state, prim))
 }
 
-/// Where `prim` is in the script's own frame this frame, composed from the
-/// transform snapshot so physics and animation show.
+/// Where `prim` is this frame, in the script's own frame, as the engine
+/// placed it: physics, animation and the composed layers all show. Not ready
+/// until a frame has seen the prim, which a prim created this tick has not.
 pub fn world_transform(
     host: &ScriptHost,
     doc: u32,
     prim: PrimId,
 ) -> Result<Transform, ScriptError> {
     let doc = host.document(doc)?;
-    let state = Arc::clone(&doc.state);
     if !doc.read(|state| state.is_in_scene(prim))? {
         return Err(ScriptError::NotFound);
     }
-    let affine = host.shared.transforms.world_of(doc.id, prim, |id| {
-        state.lock().ok().and_then(|state| state.parent(id))
-    });
-    Ok(host
-        .frame()
-        .transform_to_frame(Transform::from_matrix(affine.into())))
+    let world = host
+        .shared
+        .transforms
+        .node(&node(doc.id, prim))
+        .ok_or(ScriptError::NotReady)?;
+    Ok(host.frame().transform_to_frame(world.compute_transform()))
 }
 
 /// The transform from the script's own document root to the engine world,

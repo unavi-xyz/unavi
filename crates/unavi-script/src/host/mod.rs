@@ -325,7 +325,6 @@ impl Plugin for HostPlugin {
                         bevy::transform::systems::sync_simple_transforms,
                     )
                         .chain(),
-                    shared_state::transforms::refresh_patched,
                     shared_state::transforms::snapshot_transforms,
                     shared_state::transforms::snapshot_doc_roots,
                 )

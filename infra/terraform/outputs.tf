@@ -19,5 +19,6 @@ resource "local_file" "deploy_info" {
       gh_unavi = data.digitalocean_ssh_key.gh_unavi.public_key
     }
   })
-  filename = "${path.module}/deploy.json"
+  filename        = "${path.module}/deploy.json"
+  file_permission = "0644"
 }

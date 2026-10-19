@@ -136,6 +136,9 @@
 
             packages.default = config.packages.unavi-app;
 
+            # Terraform writes it; formatting it makes every apply rewrite it.
+            treefmt.settings.global.excludes = [ "infra/terraform/deploy.json" ];
+
             treefmt.programs = {
               actionlint.enable = true;
               deadnix.enable = true;

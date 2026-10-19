@@ -418,6 +418,17 @@ impl SessionLayers {
         self.layer(doc, writer).map_or_default(Layer::opinions)
     }
 
+    /// The space `writer`'s layer on `doc` is in, and the keys it states.
+    pub(crate) fn keys_of(
+        &self,
+        writer: WriterId,
+        doc: DocId,
+    ) -> Option<(SpaceId, Vec<SessionKey>)> {
+        let layer = self.layer(doc, writer)?;
+        let keys = layer.cells.iter().map(|(key, _)| key).collect::<Vec<_>>();
+        (!keys.is_empty()).then_some((layer.space, keys))
+    }
+
     /// Every layer, for inspection.
     pub(crate) fn all(&self) -> Vec<(DocId, WriterId, Vec<Opinion>)> {
         self.docs

@@ -44,8 +44,10 @@ use xdid::core::did::Did;
 
 use crate::{
     authority::SpaceView,
+    identity::LocalIdentity,
     replication::{
         Replicas,
+        guards::layers::retract_layer,
         session::{
             LAYER_PREFIX,
             SessionKey,
@@ -102,6 +104,26 @@ fn release(world: DeferredWorld, ctx: HookContext) {
     let Some(layer) = world.get::<SessionLayerState>(ctx.entity) else {
         return;
     };
+    // The local writer's opinions last while it holds the document, so peers
+    // are told they are gone before the layer is. A remote writer's layer
+    // going says nothing about what it stated, and a layer another source
+    // still holds is not going. The keys to clear are the layer's own, so
+    // this is judged before the source is removed.
+    let last_source = layer
+        .replicas
+        .session_sources(layer.writer, layer.doc)
+        .iter()
+        .all(|source| *source == layer.source);
+    if last_source
+        && let (Some(view), Some(identity)) = (
+            world.get_resource::<SpaceView>(),
+            world.get_resource::<LocalIdentity>(),
+        )
+        && layer.writer.device == view.me()
+        && layer.source == view.me()
+    {
+        retract_layer(&layer.replicas, &identity.identity, view.me(), layer.doc);
+    }
     if !layer
         .replicas
         .remove_session_source(layer.writer, layer.doc, layer.source)

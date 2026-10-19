@@ -83,7 +83,7 @@ pub async fn send_state_stream(link: &PeerLink, connection: &Connection) -> anyh
 
     let me = link.view().me();
     let replicas = link.view().replicas();
-    let feed = replicas.register_stream(me);
+    let feed = replicas.register_stream(me, connection.remote_id());
     let res = async {
         while let Ok(msg) = feed.rx.recv().await {
             let msg = if feed.resync.load(std::sync::atomic::Ordering::Relaxed) {

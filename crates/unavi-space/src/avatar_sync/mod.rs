@@ -9,6 +9,7 @@ use iroh::EndpointId;
 use serde_vrm::vrm0::BoneName;
 
 use crate::{
+    avatar_sync::crossing::NumberedCrossing,
     index::{
         self,
         Indexed,
@@ -21,7 +22,9 @@ use crate::{
     membership::SpaceId,
 };
 
+pub mod crossing;
 pub mod receive;
+pub mod ring;
 pub mod send;
 pub mod wire;
 
@@ -65,8 +68,10 @@ impl Indexed for RemoteAgent {
 /// The local agent's pose for one tick, sent to every peer.
 #[derive(Clone)]
 pub struct OutgoingPose {
-    pub space: SpaceId,
-    pub pose:  Pose<Keyframe>,
+    pub space:    SpaceId,
+    pub pose:     Pose<Keyframe>,
+    /// The agent's latest crossing, carried until a newer one replaces it.
+    pub crossing: Option<NumberedCrossing>,
 }
 
 /// Feeds one peer's avatar stream.

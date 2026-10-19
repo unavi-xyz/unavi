@@ -20,6 +20,7 @@ use unavi_avatar::bones::AvatarBones;
 use crate::{
     avatar_sync::{
         AgentSender,
+        crossing::LastCrossing,
         OutgoingPose,
         RemoteAgent,
     },
@@ -65,6 +66,7 @@ const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
 pub fn send_agent_pose(
     time: Res<Time>,
     active: Res<ActiveSpace>,
+    last_crossing: Res<LastCrossing>,
     xr: Option<Res<InputMode>>,
     spaces: Query<&Space>,
     agent: Query<&AgentAvatar, With<LocalAgent>>,
@@ -105,11 +107,12 @@ pub fn send_agent_pose(
     };
 
     let outgoing = OutgoingPose {
-        space: space.id(),
-        pose:  Pose {
+        space:    space.id(),
+        pose:     Pose {
             root: (&root).into(),
             bones,
         },
+        crossing: last_crossing.latest(),
     };
 
     let now = time.elapsed();

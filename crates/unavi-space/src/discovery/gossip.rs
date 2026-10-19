@@ -52,6 +52,7 @@ use web_time::{
 
 use crate::{
     discovery::{
+        Heard,
         HeardPresence,
         PRESENCE_INTERVAL,
         gossip_wire,
@@ -82,10 +83,12 @@ impl Signable for SpaceBroadcast {
 #[derive(Serialize, Deserialize)]
 pub(super) enum SpaceMessage {
     Presence(EndpointAddr),
+    /// The sender is leaving the topic's space.
+    Leave,
 }
 
 /// How old a broadcast may be before it is ignored.
-const MAX_BROADCAST_AGE: Duration = PRESENCE_INTERVAL.saturating_mul(2);
+pub(super) const MAX_BROADCAST_AGE: Duration = PRESENCE_INTERVAL.saturating_mul(2);
 
 /// How far ahead of local time a broadcast may be stamped.
 const MAX_BROADCAST_SKEW: Duration = Duration::from_secs(30);
@@ -133,7 +136,7 @@ pub fn adopt_gossip(
 pub(super) struct GossipCtx {
     pub endpoint: Endpoint,
     pub gossip:   Gossip,
-    pub presence: Inbox<(EndpointId, SpaceId), EndpointAddr>,
+    pub presence: Inbox<(EndpointId, SpaceId), Heard>,
     /// Asked who is in a space before its gossip topic has neighbors.
     pub followed: Followed,
 }
@@ -178,13 +181,8 @@ pub fn join_space_topics(
         let space = space.id();
         task::spawn(
             async move {
-                tokio::select! {
-                    _ = leave_rx => {}
-                    res = handle_space_topic(ctx, space) => {
-                        if let Err(err) = res {
-                            error!(?err, "error handling space topic");
-                        }
-                    }
+                if let Err(err) = handle_space_topic(ctx, space, leave_rx).await {
+                    error!(?err, "error handling space topic");
                 }
             }
             .instrument(info_span!("gossip", %space)),
@@ -192,9 +190,11 @@ pub fn join_space_topics(
     }
 }
 
-/// Leaves the topic: removing [`SpaceGossip`] drops the sender its task waits
-/// on. Despawning the space drops it just as well, so a missing entity is not
-/// an error.
+/// Leaves a space's topic when the space goes.
+///
+/// Removing [`SpaceGossip`] drops the sender its task waits on, and the task
+/// broadcasts [`SpaceMessage::Leave`] before it ends. Despawning the space
+/// drops it just as well, so a missing entity is not an error.
 pub fn leave_space_topic(trigger: On<Remove, Space>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<SpaceGossip>();
 }
@@ -277,9 +277,13 @@ async fn bootstrap_loop(
     }
 }
 
-/// Runs one space's topic until a task fails or the caller drops this future,
-/// which aborts every task it spawned.
-async fn handle_space_topic(ctx: GossipCtx, space: SpaceId) -> anyhow::Result<()> {
+/// Runs one space's topic until a task fails or `leave` resolves, then
+/// broadcasts the departure. Ending aborts every task it spawned.
+async fn handle_space_topic(
+    ctx: GossipCtx,
+    space: SpaceId,
+    leave: oneshot::Receiver<()>,
+) -> anyhow::Result<()> {
     let peers = registry::find_bootstrap_peers(&ctx, space).await;
     if peers.is_empty() {
         warn!("No bootstrap peers for space topic; presence reaches nobody until one is found");
@@ -319,16 +323,21 @@ async fn handle_space_topic(ctx: GossipCtx, space: SpaceId) -> anyhow::Result<()
         async move { bootstrap_loop(&ctx, &tx, space, &neighbors).await }
     }));
 
-    let outbound = AbortOnDropHandle::new(n0_future::task::spawn(async move {
-        while let Err(err) = gossip_wire::announce(&ctx, &tx, space, &wake).await {
-            error!(?err, "Error handling outbound gossip");
-            n0_future::time::sleep(Duration::from_secs(1)).await;
+    let outbound = AbortOnDropHandle::new(n0_future::task::spawn({
+        let ctx = Arc::clone(&ctx);
+        let tx = tx.clone();
+        async move {
+            while let Err(err) = gossip_wire::announce(&ctx, &tx, space, &wake).await {
+                error!(?err, "Error handling outbound gossip");
+                n0_future::time::sleep(Duration::from_secs(1)).await;
+            }
         }
     }));
 
     tokio::select! {
         res = inbound => res?,
         res = outbound => res?,
+        _ = leave => gossip_wire::leave(&ctx, &tx, space).await?,
     }
     Ok(())
 }

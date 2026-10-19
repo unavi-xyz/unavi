@@ -30,6 +30,7 @@ use unavi_identity::signed::{
 
 use crate::{
     discovery::{
+        Heard,
         PRESENCE_INTERVAL,
         gossip::{
             GossipCtx,
@@ -94,13 +95,36 @@ pub(super) async fn receive(
                             debug!("presence address does not match its sender");
                             continue;
                         }
-                        ctx.presence.submit((addr.id, space), addr);
+                        ctx.presence
+                            .submit((addr.id, space), Heard::Present(addr, broadcast.issued_at));
+                    }
+                    SpaceMessage::Leave => {
+                        ctx.presence
+                            .submit((broadcast.sender, space), Heard::Left(broadcast.issued_at));
                     }
                 }
             }
         }
     }
 
+    Ok(())
+}
+
+/// Tells the topic's peers this node is leaving `space`.
+pub(super) async fn leave(
+    ctx: &GossipCtx,
+    tx: &GossipSender,
+    space: SpaceId,
+) -> anyhow::Result<()> {
+    let signer = EndpointSigner(ctx.endpoint.secret_key());
+    let broadcast = SpaceBroadcast {
+        sender: ctx.endpoint.id(),
+        space,
+        issued_at: unix_secs(),
+        msg: SpaceMessage::Leave,
+    };
+    let bytes = postcard::to_stdvec(&broadcast.sign(&signer)?)?;
+    tx.broadcast(bytes.into()).await?;
     Ok(())
 }
 

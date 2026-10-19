@@ -640,7 +640,7 @@ fn a_withdrawal_is_listed_in_snapshots_only_while_the_peer_is_in_its_space() {
     replicas.observe_record(&record_for(13, space, 2, false), peer(2));
 
     let listed = |replicas: &Replicas| {
-        let feed = replicas.register_stream(peer(1));
+        let feed = replicas.register_stream(peer(1), peer(9));
         let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
             panic!("a stream opens with a snapshot");
         };
@@ -688,7 +688,7 @@ fn a_pin_snapshot_carries_the_pins_own_record_and_the_withdrawal_apart() {
         .expect("pin");
     replicas.observe_record(&record_for(19, space, 9, false), peer(2));
 
-    let feed = replicas.register_stream(me);
+    let feed = replicas.register_stream(me, peer(9));
     let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
@@ -1097,7 +1097,7 @@ fn a_local_write_signs_the_root_of_the_cells_it_leaves() {
         })
         .expect("write");
 
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
@@ -1111,4 +1111,56 @@ fn a_local_write_signs_the_root_of_the_cells_it_leaves() {
         layer.matches_root(),
         "a relayed copy verifies against the signed root"
     );
+}
+
+#[test]
+fn resyncing_a_peer_replaces_its_queue_with_a_fresh_snapshot() {
+    let replicas = replicas();
+    let alice = identity();
+    let (doc, proof) = authored(21, &alice);
+    let space = space(b"resync-peer");
+    join(&replicas, space);
+    let me = peer(1);
+
+    let toward = replicas.register_stream(me, peer(8));
+    let elsewhere = replicas.register_stream(me, peer(9));
+    for feed in [&toward, &elsewhere] {
+        assert!(matches!(
+            feed.rx.try_recv(),
+            Ok(ReplicationMsg::Snapshot { .. })
+        ));
+    }
+
+    replicas
+        .add_pin(
+            me,
+            Some(alice.did()),
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(doc, space, 1),
+        )
+        .expect("pin");
+    replicas.broadcast(&ReplicationMsg::Unpin {
+        doc,
+        withdrawal: None,
+    });
+
+    replicas.resync_peer(peer(8));
+
+    let Ok(ReplicationMsg::Snapshot { docs, .. }) = toward.rx.try_recv() else {
+        panic!("the queued delta is replaced by a snapshot");
+    };
+    assert!(docs.iter().any(|d| d.doc == doc && d.pin.is_some()));
+    assert!(toward.rx.try_recv().is_err(), "nothing else is queued");
+    assert!(
+        matches!(
+            elsewhere.rx.try_recv(),
+            Ok(ReplicationMsg::Unpin { .. })
+        ),
+        "another peer's queue is left alone"
+    );
+    replicas.unregister_stream(toward.token);
+    replicas.unregister_stream(elsewhere.token);
 }

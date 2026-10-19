@@ -48,6 +48,7 @@ use crate::{
     avatar_sync::{
         RemoteAgent,
         ResolvedPose,
+        crossing::ReceivedCrossing,
     },
     discovery::Peer,
     identity::LocalIdentity,
@@ -91,7 +92,8 @@ struct LinkInner {
     next_token:  AtomicU64,
     next_stream: AtomicU64,
     poses:       Inbox<EndpointId, (Instant, ResolvedPose)>,
-    objects:     Inbox<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>,
+    crossings:   Inbox<EndpointId, ReceivedCrossing>,
+    objects:    Inbox<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>,
 }
 
 /// The `wired/space/1` link to other peers: one live connection each, and the
@@ -136,6 +138,7 @@ impl PeerLink {
             next_token: AtomicU64::new(0),
             next_stream: AtomicU64::new(0),
             poses: Inbox::default(),
+            crossings: Inbox::default(),
             objects: Inbox::default(),
         }))
     }
@@ -148,6 +151,11 @@ impl PeerLink {
     #[must_use]
     pub fn poses(&self) -> &Inbox<EndpointId, (Instant, ResolvedPose)> {
         &self.0.poses
+    }
+
+    #[must_use]
+    pub fn crossings(&self) -> &Inbox<EndpointId, ReceivedCrossing> {
+        &self.0.crossings
     }
 
     #[must_use]

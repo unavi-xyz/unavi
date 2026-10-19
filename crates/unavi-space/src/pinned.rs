@@ -249,19 +249,23 @@ pub fn prune_pinned_docs(
     }
 }
 
-/// Marks a loaded document the local peer will not pin: one it authors, or
-/// whose pin was refused.
+/// Marks a loaded document the local peer will not pin: one whose pin was
+/// refused.
 #[derive(Component)]
 pub struct NoLocalPin;
 
-/// Pins every loaded document of an adopted author the local peer does not
-/// pin yet.
+/// Pins every loaded document of an adopted author, or of the local peer, that
+/// the local peer does not pin yet.
 ///
 /// A peer arriving later can then learn of the document from this one. The
 /// pin hangs off the document's anchor, so it is dropped, and unpinned to
 /// everyone, when the document unloads. Retried every tick, so a document
 /// whose author becomes known later is still pinned. Waits for
 /// [`HsdLoaded`], so nobody is pointed at a source that is still empty.
+///
+/// The author pins again too: its pin went with the anchor when the space
+/// unloaded, and nothing else restates it. Deleting a document is a
+/// withdrawal, which is never pinned over.
 pub fn reconcile_local_pins(
     loaded: Query<(Entity, &PinnedDoc), (With<Hsd>, With<HsdLoaded>, Without<NoLocalPin>)>,
     replicas: Res<Replicas>,
@@ -279,11 +283,7 @@ pub fn reconcile_local_pins(
         let Some(proven) = replicas.proven(id) else {
             continue;
         };
-        if &proven.author == view.did() {
-            commands.entity(entity).try_insert(NoLocalPin);
-            continue;
-        }
-        if !view.adopts(&proven.author) {
+        if &proven.author != view.did() && !view.adopts(&proven.author) {
             continue;
         }
         commands.queue(move |world: &mut World| {

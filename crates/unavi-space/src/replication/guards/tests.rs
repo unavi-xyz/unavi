@@ -94,7 +94,10 @@ use crate::{
             SessionError,
             WriterId,
             cells::Cells,
-            compose::stack_on_arrival,
+            compose::{
+                SessionLayerState,
+                stack_on_arrival,
+            },
         },
         store::StateFeed,
     },
@@ -315,7 +318,7 @@ fn a_local_pin_broadcasts_and_its_guard_releases_it() {
     let space = space(b"pin-guard");
     let (doc, proven) = authored(1, &me, space);
 
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -750,7 +753,7 @@ fn a_far_half_written_by_a_visitor_lands_on_the_host_too() {
     author_frame(&visitor_gate);
     author_frame(&host_gate);
 
-    let feed = visitor_replicas.register_stream(visitor_id);
+    let feed = visitor_replicas.register_stream(visitor_id, peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -885,7 +888,7 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
     let space = space(b"cleared");
     let doc = space.doc();
     let state = spawn_doc(&mut world, doc);
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -924,13 +927,106 @@ fn a_cleared_opinion_leaves_the_document_and_every_replica() {
     replicas.unregister_stream(feed.token);
 }
 
+/// A world whose local peer is `me` at `peer(1)`, with a feed watching its
+/// broadcasts.
+fn local_world(me: &Identity) -> (World, Replicas, StateFeed) {
+    let (mut world, replicas) = world();
+    world.insert_resource(view_of(
+        &replicas,
+        me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
+    world.insert_resource(LocalIdentity {
+        identity: Arc::new(Identity::new(me.did().clone(), P256KeyPair::generate())),
+        bindings: Arc::new(Bindings::default()),
+        resolver: Arc::new(Resolver::new().expect("resolver")),
+        followed: FollowedSet::default(),
+    });
+    let feed = replicas.register_stream(peer(1), peer(9));
+    assert!(matches!(
+        feed.rx.try_recv(),
+        Ok(ReplicationMsg::Snapshot { .. })
+    ));
+    (world, replicas, feed)
+}
+
+/// Despawns every session layer guard.
+fn release_layers(world: &mut World) {
+    let guards = world
+        .query::<(Entity, &SessionLayerState)>()
+        .iter(world)
+        .map(|(entity, _)| entity)
+        .collect::<Vec<_>>();
+    for guard in guards {
+        world.despawn(guard);
+    }
+}
+
+#[test]
+fn releasing_the_local_layer_retracts_it_for_peers() {
+    let me = identity();
+    let (mut world, replicas, feed) = local_world(&me);
+    let space = space(b"retract-local");
+    let doc = space.doc();
+    spawn_doc(&mut world, doc);
+    local_write(
+        &mut world,
+        &me,
+        peer(1),
+        LocalWrite {
+            doc,
+            space,
+            writes: vec![write(&state_k(), b"v")],
+            clears: Vec::new(),
+        },
+    )
+    .expect("session set");
+    assert!(matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Session(_))));
+
+    release_layers(&mut world);
+
+    let Ok(ReplicationMsg::Session(tick)) = feed.rx.try_recv() else {
+        panic!("the clear reaches peers");
+    };
+    assert!(tick.writes.is_empty());
+    assert_eq!(tick.clears.len(), 1);
+    replicas.unregister_stream(feed.token);
+}
+
+#[test]
+fn releasing_a_remote_layer_sends_nothing() {
+    let me = identity();
+    let (mut world, replicas, feed) = local_world(&me);
+    let space = space(b"retract-remote");
+    let doc = space.doc();
+    spawn_doc(&mut world, doc);
+    let guest = identity();
+    let visitor = remote(&mut world, peer(2), Some(guest.did()));
+    Speaker {
+        source: &visitor,
+        who: &guest,
+        doc,
+        space,
+    }
+    .say(&mut world, vec![write(&state_k(), b"v")], 2);
+    while feed.rx.try_recv().is_ok() {}
+
+    release_layers(&mut world);
+
+    assert!(
+        feed.rx.try_recv().is_err(),
+        "a remote writer's layer going says nothing about what it stated"
+    );
+    replicas.unregister_stream(feed.token);
+}
+
 #[test]
 fn a_local_tick_too_large_for_a_frame_is_refused_whole() {
     let (mut world, replicas) = world();
     let me = identity();
     let space = space(b"split");
     let doc = space.doc();
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1127,7 +1223,7 @@ fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
     );
     release_remote_peer(&mut f.world, f.device.entity, 0);
 
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
@@ -1331,7 +1427,7 @@ fn locally_pinned_foreign_doc(
     join(replicas, space);
     let (doc, proven) = authored(40, alice, space);
     let (_, proof) = authored(40, alice, space);
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1455,7 +1551,7 @@ fn a_loaded_foreign_doc_is_pinned_locally_until_it_unloads() {
         &me,
         TrustTable::new(DeviceStorage::memory()),
     ));
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1571,7 +1667,7 @@ fn a_withdrawal_outlives_the_presence_and_is_listed_in_snapshots() {
         replicas.is_withdrawn(f.doc),
         "carriers keep it to tell late joiners"
     );
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     let Ok(ReplicationMsg::Snapshot { docs, .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
@@ -1595,7 +1691,7 @@ fn a_late_joiner_told_only_by_a_carrier_learns_the_withdrawal() {
     let (_carrier_world, carrier) = world();
     join(&carrier, space);
     carrier.observe_record(&record_of(40, space, 2, false), peer(2));
-    let feed = carrier.register_stream(peer(3));
+    let feed = carrier.register_stream(peer(3), peer(9));
     let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
         panic!("a stream opens with a snapshot");
     };
@@ -1641,7 +1737,7 @@ fn leaving_a_space_sends_a_plain_unpin_and_leaves_no_record() {
     let (doc, claim) = authored(47, &alice, space);
 
     let space_entity = world.spawn(Space(space)).id();
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1680,7 +1776,7 @@ fn withdrawing_signs_past_every_record_and_unpins_with_it() {
     let (doc, claim) = authored(48, &alice, space);
     let laptop = local(&mut world, peer(1), alice.did());
     assert!(spawn_pin(&mut world, &laptop, claim));
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1728,7 +1824,7 @@ fn an_unloaded_authored_document_is_unpinned_not_withdrawn() {
     let (doc, claim) = authored(50, &alice, space);
     let laptop = local(&mut world, peer(1), alice.did());
     assert!(spawn_pin(&mut world, &laptop, claim));
-    let feed = replicas.register_stream(peer(1));
+    let feed = replicas.register_stream(peer(1), peer(9));
     assert!(matches!(
         feed.rx.try_recv(),
         Ok(ReplicationMsg::Snapshot { .. })
@@ -1771,7 +1867,7 @@ fn reconcile_does_not_repin_a_withdrawn_doc() {
 }
 
 #[test]
-fn reconcile_does_not_pin_a_doc_the_local_peer_authors() {
+fn reconcile_repins_a_doc_the_local_peer_authors() {
     let (mut world, replicas) = world();
     let (me, bob) = (identity(), identity());
     let space = space(b"own-doc");
@@ -1788,8 +1884,36 @@ fn reconcile_does_not_pin_a_doc_the_local_peer_authors() {
 
     reconcile(&mut world);
 
+    assert!(replicas.pins_as_author(peer(1), doc));
+    assert!(world.get::<NoLocalPin>(tracker).is_none());
+}
+
+#[test]
+fn reconcile_does_not_repin_a_doc_the_local_peer_withdrew() {
+    let (mut world, replicas) = world();
+    let (me, bob) = (identity(), identity());
+    let space = space(b"own-doc-withdrawn");
+    join(&replicas, space);
+    let (doc, claim) = authored(46, &me, space);
+    let (_, second) = authored(46, &me, space);
+    world.insert_resource(view_of(
+        &replicas,
+        &me,
+        TrustTable::new(DeviceStorage::memory()),
+    ));
+    let laptop = local(&mut world, peer(1), me.did());
+    assert!(spawn_pin(&mut world, &laptop, claim));
+    let relayer = remote(&mut world, peer(3), Some(bob.did()));
+    assert!(spawn_pin(&mut world, &relayer, second));
+    let key = NamespaceSecret::from_bytes(&[46; 32]);
+    withdraw_pin(&mut world, peer(1), doc, &key).expect("withdraw");
     assert!(!replicas.pins_by(peer(1), doc));
-    assert!(world.get::<NoLocalPin>(tracker).is_some());
+    let tracker = index::lookup::<PinnedDoc>(&world, doc).expect("tracker");
+    load(&mut world, tracker);
+
+    reconcile(&mut world);
+
+    assert!(!replicas.pins_by(peer(1), doc), "a deleted document stays unpinned");
 }
 
 #[test]

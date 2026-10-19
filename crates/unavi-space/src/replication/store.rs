@@ -64,6 +64,7 @@ use crate::{
         record::Record,
         session::{
             SessionError,
+            SessionKey,
             WriterId,
             layers::{
                 Applied,
@@ -116,7 +117,12 @@ struct DocPresence {
 
 /// A registered outbound state stream.
 struct Outbound {
+    /// The endpoint this stream is open to.
+    remote: EndpointId,
+    /// The local endpoint whose state it carries.
+    me:     EndpointId,
     tx:     async_channel::Sender<ReplicationMsg>,
+    rx:     async_channel::Receiver<ReplicationMsg>,
     resync: Arc<AtomicBool>,
 }
 
@@ -169,6 +175,19 @@ impl Inner {
                 }
                 Err(async_channel::TrySendError::Closed(_)) => false,
             });
+    }
+
+    fn resync_peer(&self, remote: EndpointId) {
+        for out in self.senders.values().filter(|out| out.remote == remote) {
+            while out.rx.try_recv().is_ok() {}
+            let snapshot = ReplicationMsg::Snapshot {
+                docs: self.self_snapshot(out.me),
+                more: false,
+            };
+            if out.tx.try_send(snapshot).is_err() {
+                out.resync.store(true, Ordering::Relaxed);
+            }
+        }
     }
 
     fn author_of(&self, doc: DocId) -> Option<Did> {
@@ -445,10 +464,10 @@ impl Replicas {
         self.0.lock().attribution.clone()
     }
 
-    /// Registers an outbound state stream. Its first message is a snapshot
-    /// of `me`'s state.
+    /// Registers an outbound state stream to `remote`. Its first message is a
+    /// snapshot of `me`'s state.
     #[must_use]
-    pub fn register_stream(&self, me: EndpointId) -> StateFeed {
+    pub fn register_stream(&self, me: EndpointId, remote: EndpointId) -> StateFeed {
         let (tx, rx) = async_channel::bounded(OUTBOUND_QUEUE);
         let resync = Arc::new(AtomicBool::new(false));
         let mut inner = self.0.lock();
@@ -464,7 +483,10 @@ impl Replicas {
         inner.senders.insert(
             token,
             Outbound {
+                remote,
+                me,
                 tx,
+                rx: rx.clone(),
                 resync: Arc::clone(&resync),
             },
         );
@@ -483,6 +505,13 @@ impl Replicas {
             docs: inner.self_snapshot(me),
             more: false,
         }
+    }
+
+    /// Replaces whatever is queued toward `remote` with a fresh snapshot of
+    /// the local state, for a peer that may have dropped what it knew of it.
+    /// Taken under the store lock, so every delta queued afterwards is newer.
+    pub fn resync_peer(&self, remote: EndpointId) {
+        self.0.lock().resync_peer(remote);
     }
 
     pub fn unregister_stream(&self, token: StreamToken) {
@@ -710,6 +739,15 @@ impl Replicas {
     /// names.
     pub(crate) fn session_layers(&self, doc: DocId) -> Vec<(WriterId, Did)> {
         self.0.lock().sessions.layers(doc)
+    }
+
+    /// The space `writer`'s layer on `doc` is in, and the keys it states.
+    pub(crate) fn session_keys_of(
+        &self,
+        writer: WriterId,
+        doc: DocId,
+    ) -> Option<(SpaceId, Vec<SessionKey>)> {
+        self.0.lock().sessions.keys_of(writer, doc)
     }
 
     /// Writers holding a session layer on `doc`.

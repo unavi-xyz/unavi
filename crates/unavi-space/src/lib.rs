@@ -47,21 +47,23 @@ pub struct SpacePlugin {
 
 const SEND_INTERVAL_UPDATE: Duration = Duration::from_secs(5);
 
+fn load_trust(storage: unavi_local::DeviceStorage) -> TrustTable {
+    TrustTable::load(storage.clone()).unwrap_or_else(|err| {
+        error!(
+            ?err,
+            "Trust table could not be read; every block is inactive this session"
+        );
+        TrustTable::new(storage)
+    })
+}
+
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         if !app.is_plugin_added::<membership::MembershipPlugin>() {
             app.add_plugins(membership::MembershipPlugin);
         }
 
-        let storage = self.storage.clone().unwrap_or_default();
-        let trust = TrustTable::load(storage.clone()).unwrap_or_else(|err| {
-            error!(
-                ?err,
-                "Trust table could not be read; every block is inactive this session"
-            );
-            TrustTable::new(storage)
-        });
-        app.insert_resource(trust);
+        app.insert_resource(load_trust(self.storage.clone().unwrap_or_default()));
         app.init_resource::<Rules>();
 
         replication::guards::init_indexes(app.world_mut());
@@ -73,6 +75,9 @@ impl Plugin for SpacePlugin {
             .init_resource::<replication::Replicas>()
             .init_resource::<discovery::HeardPresence>()
             .init_resource::<grab::TakenHolds>()
+            .init_resource::<avatar_sync::crossing::LastCrossing>()
+            .add_observer(avatar_sync::crossing::record_crossing)
+            .add_observer(discovery::resync_on_space_added)
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)
             .add_observer(grid::release_anchor)
@@ -83,7 +88,6 @@ impl Plugin for SpacePlugin {
             .add_observer(link::register_protocol)
             .add_observer(link::disconnect_peer)
             .add_observer(discovery::gossip::leave_space_topic)
-            .add_observer(portal::spawn_portal_space)
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
             .add_observer(pinned::adopt_pinned_docs)
@@ -135,11 +139,20 @@ impl Plugin for SpacePlugin {
                 Update,
                 portal::sync_portal_home.before(unavi_portal::destination::resolve_destinations),
             )
-            .add_systems(Update, replication::session::compose::restack)
             .add_systems(
                 Update,
                 (
+                    replication::session::compose::restack,
+                    portal::reconcile_portal_spaces,
+                    portal::evict_portal_spaces,
+                ),
+            )
+            .add_systems(
+                Update,
+                (
+                    avatar_sync::ring::ring_remote_crossings,
                     avatar_sync::receive::apply_remote_poses,
+                    avatar_sync::receive::despawn_departed_agents,
                     avatar_sync::receive::advance_remote_lerp,
                 )
                     .chain(),

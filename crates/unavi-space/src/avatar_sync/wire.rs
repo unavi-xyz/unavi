@@ -12,6 +12,7 @@ use iroh::{
     endpoint::{
         Connection,
         RecvStream,
+        SendStream,
     },
 };
 use postcard::experimental::max_size::MaxSize;
@@ -31,6 +32,12 @@ use crate::{
         AgentSender,
         OutgoingPose,
         ResolvedPose,
+        crossing::{
+            Crossing,
+            CrossingGate,
+            CrossingPoint,
+            ReceivedCrossing,
+        },
     },
     link::{
         PeerLink,
@@ -64,6 +71,11 @@ enum AgentMsg {
         space:    SpaceId,
         pose:     Pose<Delta>,
     },
+    /// The sender's agent passed through a portal.
+    Crossed {
+        from: CrossingPoint,
+        to:   Option<CrossingPoint>,
+    },
 }
 
 // Frames are length-prefixed by one byte.
@@ -87,11 +99,21 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
     let mut last_keyframe = Pose::default();
     let mut last_keyframe_time: Option<Instant> = None;
     let mut last_space = None;
+    let mut gate = CrossingGate::default();
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
-    while let Ok(OutgoingPose { space, pose }) = pose_rx.recv().await {
+    while let Ok(OutgoingPose {
+        space,
+        pose,
+        crossing,
+    }) = pose_rx.recv().await
+    {
         let now = Instant::now();
+
+        if let Some(Crossing { from, to }) = gate.due(crossing) {
+            write_msg(&mut tx, &mut buf, &AgentMsg::Crossed { from, to }).await?;
+        }
 
         // A delta is only valid against a keyframe in the same space,
         // so a space change forces a fresh keyframe.
@@ -117,12 +139,21 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
             }
         };
 
-        let out = postcard::to_slice(&msg, &mut buf)?;
-        let len = out.len();
-        tx.write_u8(len as u8).await?;
-        tx.write_all(out).await?;
+        write_msg(&mut tx, &mut buf, &msg).await?;
     }
 
+    Ok(())
+}
+
+async fn write_msg(
+    tx: &mut SendStream,
+    buf: &mut [u8; AgentMsg::POSTCARD_MAX_SIZE],
+    msg: &AgentMsg,
+) -> anyhow::Result<()> {
+    let out = postcard::to_slice(msg, buf)?;
+    let len = out.len();
+    tx.write_u8(len as u8).await?;
+    tx.write_all(out).await?;
     Ok(())
 }
 
@@ -201,7 +232,22 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
             }
             .checked()
         }
+        AgentMsg::Crossed { .. } => None,
     }
+}
+
+/// The crossing a `Crossed` message describes, if every point is finite and
+/// inside its space's cell.
+fn resolve_crossing(from: CrossingPoint, to: Option<CrossingPoint>) -> Option<ReceivedCrossing> {
+    let (from_space, from_point) = from.checked()?;
+    let to = match to {
+        Some(to) => Some(to.checked()?),
+        None => None,
+    };
+    Some(ReceivedCrossing {
+        from: (from_space, from_point),
+        to,
+    })
 }
 
 pub async fn recv_agent_stream(
@@ -224,6 +270,13 @@ pub async fn recv_agent_stream(
         let buf = &mut buf[..len];
         rx.read_exact(buf).await?;
         let msg = postcard::from_bytes::<AgentMsg>(buf)?;
+
+        if let AgentMsg::Crossed { from, to } = msg {
+            if let Some(crossing) = resolve_crossing(from, to) {
+                link.crossings().submit(peer, crossing);
+            }
+            continue;
+        }
 
         if let Some(resolved) = resolve_msg(msg, &mut baseline) {
             let _ = link.poses().submit(peer, (Instant::now(), resolved));

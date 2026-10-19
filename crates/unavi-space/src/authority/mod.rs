@@ -237,9 +237,22 @@ pub fn record_minted(
     }
 }
 
-/// Forgets a minted document that left the world.
-pub fn forget_minted(trigger: On<Remove, Minted>, docs: Query<&HsdDocId>, replicas: Res<Replicas>) {
-    if let Ok(doc) = docs.get(trigger.entity) {
+/// Forgets a minted document once no entity holding it is still marked
+/// minted. A namespace can be instanced twice, as a space and as a portal's
+/// copy of it.
+pub fn forget_minted(
+    trigger: On<Remove, Minted>,
+    docs: Query<&HsdDocId>,
+    minted: Query<(Entity, &HsdDocId), With<Minted>>,
+    replicas: Res<Replicas>,
+) {
+    let Ok(doc) = docs.get(trigger.entity) else {
+        return;
+    };
+    let still_held = minted
+        .iter()
+        .any(|(entity, other)| entity != trigger.entity && other.0 == doc.0);
+    if !still_held {
         replicas.forget_minted(doc.0);
     }
 }

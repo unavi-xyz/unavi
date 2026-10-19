@@ -29,6 +29,7 @@ use crate::{
             session::{
                 ClearedKey,
                 LayerState,
+                MAX_WRITES_PER_TICK,
                 ReceivedLayer,
                 ReceivedTick,
                 SessionTick,
@@ -190,6 +191,46 @@ pub(crate) fn local_write(
         state:  state.signed,
     }));
     Ok(())
+}
+
+/// Clears the local writer's own opinions on `doc` for every peer, as the
+/// layer is released because the document left the local scene. Only the
+/// replicas are touched, since the document is going and nothing is composed.
+pub(crate) fn retract_layer(replicas: &Replicas, identity: &Identity, me: EndpointId, doc: DocId) {
+    let writer = WriterId::new(me, identity.did());
+    let Some((space, keys)) = replicas.session_keys_of(writer, doc) else {
+        return;
+    };
+    for chunk in keys.chunks(MAX_WRITES_PER_TICK) {
+        let tick = LocalTick {
+            device: me,
+            did: identity.did(),
+            doc,
+            space,
+            writes: &[],
+            clears: chunk,
+        };
+        let state = match replicas.write_local(&tick, |payload| {
+            SignedLayer::sign(payload, identity.signing_key())
+        }) {
+            Ok((_, state)) => state,
+            Err(err) => {
+                debug!(%doc, %err, "session opinions not retracted");
+                return;
+            }
+        };
+        replicas.broadcast(&ReplicationMsg::Session(SessionTick {
+            writes: Vec::new(),
+            clears: chunk
+                .iter()
+                .map(|key| ClearedKey {
+                    prim: key.prim,
+                    name: key.name.to_string(),
+                })
+                .collect(),
+            state:  state.signed,
+        }));
+    }
 }
 
 /// Drops every guard on layers `device` writes, whoever holds them. The device

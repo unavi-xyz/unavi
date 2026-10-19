@@ -185,6 +185,28 @@ pub fn apply_remote_poses(
     }
 }
 
+/// Despawns each remote avatar whose space its peer is no longer present in.
+pub fn despawn_departed_agents(
+    agents: Query<(Entity, &RemoteAgent, &ChildOf)>,
+    spaces: Query<&Space>,
+    peer_index: Res<Index<Peer>>,
+    peers: Query<&LastSeenIn, With<Peer>>,
+    mut commands: Commands,
+) {
+    for (agent, remote, child_of) in &agents {
+        let Ok(space) = spaces.get(child_of.parent()) else {
+            continue;
+        };
+        let present = peer_index
+            .get(remote.0)
+            .and_then(|e| peers.get(e).ok())
+            .is_some_and(|seen| seen.contains(space.id()));
+        if !present {
+            commands.entity(agent).despawn();
+        }
+    }
+}
+
 pub fn advance_remote_lerp(time: Res<Time>, mut remotes: Query<(&mut PoseLerp, &mut Transform)>) {
     let dt = time.delta();
 

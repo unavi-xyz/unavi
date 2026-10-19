@@ -4,6 +4,8 @@
 //! lit and the rest are dark, and there is nothing to keep in step with what
 //! the user can see. One at a time is halo's rule rather than VUI's.
 
+use std::cell::Cell;
+
 use wired_guest::math::Color;
 
 use crate::{
@@ -46,6 +48,9 @@ pub struct Toolbelt {
     tools:    Vec<Tool>,
     /// What is in the hand.
     held:     Option<(u64, u64, u64, u64)>,
+    /// Whether the hand's tool heard a trigger press it has not heard
+    /// released.
+    pressed:  Cell<bool>,
 }
 
 impl Default for Toolbelt {
@@ -61,6 +66,7 @@ impl Toolbelt {
             registry: ToolRegistry::new(),
             tools:    Vec::new(),
             held:     None,
+            pressed:  Cell::new(false),
         }
     }
 
@@ -185,7 +191,17 @@ impl Toolbelt {
     /// hears it.
     pub fn trigger(&self, pressed: bool) {
         if let Some(doc) = self.held {
+            self.pressed.set(pressed);
             self.registry.trigger(doc, pressed);
+        }
+    }
+
+    /// Releases a trigger the tool is still holding. Once the halo is up the
+    /// release goes to a surface instead, and the tool would otherwise fire
+    /// until the next press after the halo goes down.
+    pub fn lift(&self) {
+        if self.pressed.get() {
+            self.trigger(false);
         }
     }
 

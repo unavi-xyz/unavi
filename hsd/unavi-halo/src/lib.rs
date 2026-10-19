@@ -92,7 +92,10 @@ impl Script {
             // choosing it again or choosing another, never by looking at the
             // halo. Opening a menu is not a decision about what you are
             // holding.
-            Some(Command::Summon) => self.root.orbit.summon()?,
+            Some(Command::Summon) => {
+                self.hand.lift();
+                self.root.orbit.summon()?;
+            }
             Some(Command::Dismiss) => self.root.orbit.dismiss()?,
             None => {}
         }
@@ -104,7 +107,7 @@ impl Script {
     fn route(&mut self, event: &Event) -> anyhow::Result<()> {
         match event {
             Event::Opened(mote) => self.opened(mote),
-            Event::Cast(mote) => self.cast(mote),
+            Event::Cast(mote) => self.cast(mote)?,
             Event::Activated(mote) => self.activated(mote)?,
             Event::Planted(planted) => {
                 // Planting from the halo puts it away: attention has moved to
@@ -113,8 +116,7 @@ impl Script {
                     self.nav.plant(&planted.mote, planted.landing),
                     Planting::Planted
                 ) {
-                    let dismiss = self.summon.taken();
-                    self.apply(dismiss)?;
+                    self.put_away()?;
                 }
             }
             Event::Closed(_) | Event::Casting(_) | Event::Aborted(_) | Event::Filed(_) => {}
@@ -133,12 +135,20 @@ impl Script {
         }
     }
 
-    fn cast(&mut self, mote: &Mote) {
+    /// A journey begun puts the halo away at once: left up, it stands through
+    /// the whole departure and arrival with the cast that sent it.
+    fn cast(&mut self, mote: &Mote) -> anyhow::Result<()> {
         if mote.is(&self.root.home) {
             self.home.request(&self.root.home);
-        } else {
-            self.nav.cast(mote);
+        } else if self.nav.cast(mote) {
+            self.put_away()?;
         }
+        Ok(())
+    }
+
+    fn put_away(&mut self) -> anyhow::Result<()> {
+        let dismiss = self.summon.taken();
+        self.apply(dismiss)
     }
 
     fn activated(&mut self, mote: &Mote) -> anyhow::Result<()> {
@@ -148,8 +158,7 @@ impl Script {
         if let Some(color) = self.hand.held_color() {
             self.artifact.wear(color);
         }
-        let dismiss = self.summon.taken();
-        self.apply(dismiss)
+        self.put_away()
     }
 
     /// The menu button, and the primary action while the halo is down.
@@ -209,7 +218,9 @@ impl ScriptBehavior for Script {
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         api::fixed_update()?;
-        self.home.fixed_update(&self.root.home);
+        if self.home.fixed_update(&self.root.home) {
+            self.put_away()?;
+        }
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
         self.show_time();
@@ -220,8 +231,7 @@ impl ScriptBehavior for Script {
         if self.jumps.step(&eye).is_some() {
             // A respawn, a travel or home jumps the viewer somewhere else; a
             // menu opened where they were standing no longer belongs there.
-            let dismiss = self.summon.taken();
-            self.apply(dismiss)?;
+            self.put_away()?;
         }
         self.read_input(&eye);
 

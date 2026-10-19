@@ -259,35 +259,41 @@ impl Nav {
         true
     }
 
-    /// Travels to whichever space's cast just filled.
+    /// Travels to whichever space's cast just filled. Whether a journey began.
     pub fn cast(&self, mote: &Mote) -> bool {
         if let Some(pinned) = &self.pinned
             && pinned.is_cast(mote)
         {
-            self.respawn(pinned);
-            return true;
+            return self.respawn(pinned);
         }
         let Some(space) = self.spaces.iter().find(|space| space.cast.is(mote)) else {
             return false;
         };
-        if let Err(err) = travel(space.ns) {
-            eprintln!("halo: travel failed: {err:?}");
-            space.cast.notify("Couldn't travel there.");
+        match travel(space.ns) {
+            Ok(()) => true,
+            Err(err) => {
+                eprintln!("halo: travel failed: {err:?}");
+                space.cast.notify("Couldn't travel there.");
+                false
+            }
         }
-        true
     }
 
     /// Travels to the space the user is already in, which drops and re-reads
     /// it. The cast is only attached in a space, so the notice for limbo is
     /// a guard against a fill landing as the user leaves.
-    fn respawn(&self, pinned: &Here) {
+    fn respawn(&self, pinned: &Here) -> bool {
         let Some(ns) = self.here else {
             pinned.notify("Not in a space");
-            return;
+            return false;
         };
-        if let Err(err) = travel(ns) {
-            eprintln!("halo: respawn failed: {err:?}");
-            pinned.notify("Couldn't reload this space.");
+        match travel(ns) {
+            Ok(()) => true,
+            Err(err) => {
+                eprintln!("halo: respawn failed: {err:?}");
+                pinned.notify("Couldn't reload this space.");
+                false
+            }
         }
     }
 

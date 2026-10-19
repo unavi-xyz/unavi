@@ -53,22 +53,25 @@ impl Home {
     }
 
     /// Finishes a read started by [`Home::request`], telling the viewer on
-    /// `mote` why if it did not end in a journey.
-    pub fn fixed_update(&mut self, mote: &Mote) {
+    /// `mote` why if it did not end in a journey. Whether the journey began.
+    pub fn fixed_update(&mut self, mote: &Mote) -> bool {
         let Some(pending) = &self.pending else {
-            return;
+            return false;
         };
         let Some(result) = pending.poll() else {
-            return;
+            return false;
         };
         self.pending = None;
 
         match result {
             Ok(Some(bytes)) => {
                 if let Some(ns) = namespace(&bytes) {
-                    if let Err(err) = travel(ns) {
-                        eprintln!("halo: travel home failed: {err:?}");
-                        mote.notify(UNREACHABLE);
+                    match travel(ns) {
+                        Ok(()) => return true,
+                        Err(err) => {
+                            eprintln!("halo: travel home failed: {err:?}");
+                            mote.notify(UNREACHABLE);
+                        }
                     }
                 } else {
                     eprintln!("halo: malformed home space ref");
@@ -84,6 +87,7 @@ impl Home {
                 mote.notify(UNREACHABLE);
             }
         }
+        false
     }
 }
 

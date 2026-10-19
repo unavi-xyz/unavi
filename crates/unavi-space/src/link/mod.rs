@@ -93,7 +93,7 @@ struct LinkInner {
     next_stream: AtomicU64,
     poses:       Inbox<EndpointId, (Instant, ResolvedPose)>,
     crossings:   Inbox<EndpointId, ReceivedCrossing>,
-    objects:    Inbox<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>,
+    objects:     Inbox<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>,
 }
 
 /// The `wired/space/1` link to other peers: one live connection each, and the

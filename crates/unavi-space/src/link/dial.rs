@@ -1,6 +1,8 @@
-//! Dialing tracked peers: one attempt at a time per [`Peer`], backing off on
-//! failure, redialing after a connection closes, and giving up after
-//! [`MAX_DIAL_FAILURES`] until the peer's address changes.
+//! Dialing tracked peers.
+//!
+//! One attempt runs at a time per [`Peer`], backing off on failure at most
+//! [`MAX_BACKOFF`] apart, and redialing after a connection closes. A tracked
+//! peer is retried for as long as it is tracked.
 
 use std::{
     sync::{
@@ -31,8 +33,7 @@ use crate::{
     },
 };
 
-/// Consecutive failed dials before a peer is left alone.
-pub const MAX_DIAL_FAILURES: u32 = 8;
+#[cfg(test)] mod tests;
 
 const MIN_BACKOFF: Duration = Duration::from_secs(2);
 const MAX_BACKOFF: Duration = Duration::from_mins(5);
@@ -60,6 +61,15 @@ impl PeerDial {
         MIN_BACKOFF
             .saturating_mul(1 << self.failures.min(16))
             .min(MAX_BACKOFF)
+    }
+
+    fn record_failure(&mut self, now: Duration) {
+        self.failures = self.failures.saturating_add(1);
+        self.next = now + self.backoff();
+    }
+
+    fn due(&self, now: Duration) -> bool {
+        now >= self.next
     }
 }
 
@@ -91,8 +101,7 @@ pub fn dial_peers(
                 dial.cancel = None;
             }
             FAILED => {
-                dial.failures += 1;
-                dial.next = now + dial.backoff();
+                dial.record_failure(now);
                 dial.outcome.store(IDLE, Ordering::Release);
                 dial.cancel = None;
             }
@@ -102,7 +111,7 @@ pub fn dial_peers(
         if peer.is_changed() && !peer.is_added() {
             dial.failures = 0;
         }
-        if dial.failures >= MAX_DIAL_FAILURES || now < dial.next || link.is_connected(peer.0.id) {
+        if !dial.due(now) || link.is_connected(peer.0.id) {
             continue;
         }
 

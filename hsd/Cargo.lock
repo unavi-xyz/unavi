@@ -567,8 +567,17 @@ dependencies = [
  "anyhow",
  "blake3",
  "postcard",
+ "unavi-lens",
  "wired-guest",
  "wit-bindgen",
+]
+
+[[package]]
+name = "unavi-lens"
+version = "0.0.17"
+dependencies = [
+ "postcard",
+ "serde",
 ]
 
 [[package]]
@@ -603,6 +612,18 @@ version = "0.0.17"
 dependencies = [
  "postcard",
  "serde",
+ "wired-guest",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "unavi-visor"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "postcard",
+ "unavi-lens",
  "wired-guest",
  "wit-bindgen",
 ]

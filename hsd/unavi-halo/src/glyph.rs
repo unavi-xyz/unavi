@@ -52,6 +52,55 @@ pub const TOOLS: Rows = [
     ".........",
 ];
 
+/// You: a head and shoulders.
+pub const SELF: Rows = [
+    ".........",
+    "...###...",
+    "...###...",
+    "...###...",
+    ".........",
+    "..#####..",
+    ".#######.",
+    ".#######.",
+    ".........",
+];
+
+/// What you see through: a band with a clear pane in it.
+pub const VISOR: Rows = [
+    ".........",
+    ".........",
+    ".#######.",
+    "#########",
+    "#.......#",
+    "#########",
+    ".#######.",
+    ".........",
+    ".........",
+];
+
+/// The travel lens: a doorway with a point of light in it.
+pub const LENS_TRAVEL: Rows = [
+    ".........",
+    "...###...",
+    "..#...#..",
+    "..#...#..",
+    "..#.#.#..",
+    "..#...#..",
+    "..#...#..",
+    "..#####..",
+    ".........",
+];
+
+/// The mark of the lens named `id`; a lens this halo has no mark for wears the
+/// visor.
+#[must_use]
+pub fn lens(id: &str) -> &'static Rows {
+    match id {
+        unavi_lens::TRAVEL => &LENS_TRAVEL,
+        _ => &VISOR,
+    }
+}
+
 /// The space you are standing in: a map pin, worn in place of its beacon.
 pub const HERE: Rows = [
     ".........",
@@ -147,6 +196,9 @@ mod tests {
             ("HOME", HOME),
             ("NAV", NAV),
             ("TOOLS", TOOLS),
+            ("SELF", SELF),
+            ("VISOR", VISOR),
+            ("LENS_TRAVEL", LENS_TRAVEL),
             ("BEACON", BEACON),
             ("HERE", HERE),
             ("TRAVEL", TRAVEL),
@@ -158,7 +210,18 @@ mod tests {
 
     #[test]
     fn every_bitmap_is_nine_square() {
-        for rows in [HOME, NAV, TOOLS, BEACON, HERE, TRAVEL, TOOL] {
+        for rows in [
+            HOME,
+            NAV,
+            TOOLS,
+            SELF,
+            VISOR,
+            LENS_TRAVEL,
+            BEACON,
+            HERE,
+            TRAVEL,
+            TOOL,
+        ] {
             assert!(rows.iter().all(|row| row.len() == 9));
             let glyph = from_rows(&rows);
             assert_eq!((glyph.size, glyph.bits.len()), (9, 11));

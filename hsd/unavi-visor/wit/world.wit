@@ -1,0 +1,7 @@
+package unavi:visor;
+
+world guest {
+  import unavi:host/node-storage;
+  import unavi:vui/api;
+  include wired:prelude/script;
+}

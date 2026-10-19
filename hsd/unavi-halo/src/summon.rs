@@ -2,9 +2,9 @@
 //!
 //! It is placed at the summon point in a frame that follows the user's position
 //! but not their heading, which the halo's document is attached to. It rides
-//! along as the user walks and does not follow the head: a surface that follows your gaze is one you cannot walk
-//! up to, and a hand-parented ring jitters with tracking noise and cannot be
-//! aimed at by the hand carrying it.
+//! along as the user walks and does not follow the head: a surface that follows
+//! your gaze is one you cannot walk up to, and a hand-parented ring jitters
+//! with tracking noise and cannot be aimed at by the hand carrying it.
 
 use wired_guest::math::Transform;
 

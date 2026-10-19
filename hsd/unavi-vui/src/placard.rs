@@ -15,6 +15,43 @@ use crate::{
 /// Lines a placard may draw, title included.
 pub const MAX_LINES: usize = 8;
 
+/// Longest title a script may set on a standing placard.
+pub const MAX_TITLE_BYTES: usize = 256;
+/// Most paragraphs a script may set under the title.
+pub const MAX_PARAGRAPHS: usize = MAX_LINES - 1;
+/// Longest paragraph a script may set on a standing placard.
+pub const MAX_PARAGRAPH_BYTES: usize = 1024;
+
+/// Why a script's text was refused.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Refused {
+    Title(usize),
+    Paragraphs(usize),
+    Paragraph(usize),
+}
+
+impl std::fmt::Display for Refused {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Title(len) => {
+                write!(
+                    f,
+                    "title is {len} bytes, over the limit of {MAX_TITLE_BYTES}"
+                )
+            }
+            Self::Paragraphs(count) => {
+                write!(f, "{count} lines, over the limit of {MAX_PARAGRAPHS}")
+            }
+            Self::Paragraph(len) => {
+                write!(
+                    f,
+                    "a line is {len} bytes, over the limit of {MAX_PARAGRAPH_BYTES}"
+                )
+            }
+        }
+    }
+}
+
 /// Mounted text: a title and what there is to say under it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Placard {
@@ -49,6 +86,26 @@ impl Placard {
     pub fn line(mut self, line: impl Into<SmolStr>) -> Self {
         let _ = self.body.try_push(line.into());
         self
+    }
+
+    /// A script's text, held to the limits a standing placard has.
+    pub fn from_script(title: &str, lines: &[String]) -> Result<Self, Refused> {
+        if title.len() > MAX_TITLE_BYTES {
+            return Err(Refused::Title(title.len()));
+        }
+        if lines.len() > MAX_PARAGRAPHS {
+            return Err(Refused::Paragraphs(lines.len()));
+        }
+        if let Some(long) = lines
+            .iter()
+            .map(String::len)
+            .find(|&len| len > MAX_PARAGRAPH_BYTES)
+        {
+            return Err(Refused::Paragraph(long));
+        }
+        Ok(lines.iter().fold(Self::new(title), |placard, line| {
+            placard.line(line.as_str())
+        }))
     }
 
     /// The standard placard for a mote: its name and its description.
@@ -171,6 +228,27 @@ fn split_at_chars(text: &str, count: usize) -> (&str, &str) {
 /// here, not in the renderer.
 #[must_use]
 pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> PlacardView {
+    let (size, lines) = lay_out(placard, tuning);
+    PlacardView {
+        position: mount(mote, radius, size.y, tuning),
+        size,
+        lines,
+    }
+}
+
+/// Lays a placard out with its top centre at the origin, for one that stands
+/// where it is put rather than on a mote.
+#[must_use]
+pub fn standing(placard: &Placard, tuning: &Tuning) -> PlacardView {
+    let (size, lines) = lay_out(placard, tuning);
+    PlacardView {
+        position: Vec3::ZERO,
+        size,
+        lines,
+    }
+}
+
+fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, MAX_LINES>) {
     let mut lines = ArrayVec::new();
     let inner = tuning.placard_pad.mul_add(-2.0, tuning.placard_width);
     let mut y = -tuning.placard_pad;
@@ -216,12 +294,10 @@ pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> Plac
         }
     }
 
-    let size = Vec2::new(tuning.placard_width, -y + tuning.placard_pad);
-    PlacardView {
-        position: mount(mote, radius, size.y, tuning),
-        size,
+    (
+        Vec2::new(tuning.placard_width, -y + tuning.placard_pad),
         lines,
-    }
+    )
 }
 
 #[cfg(test)]
@@ -301,6 +377,41 @@ mod tests {
         assert!(
             view.position.z < tuning.mote_radius,
             "a placard further out than the mote is wide stops reading as its"
+        );
+    }
+
+    #[test]
+    fn a_standing_placard_hangs_from_the_origin_and_lays_out_like_a_mote_s() {
+        let placard = Placard::describing(&group());
+        let standing = standing(&placard, &tuning());
+        let on_mote = view_of(&placard);
+
+        assert_eq!(standing.position, Vec3::ZERO);
+        assert_eq!(standing.size, on_mote.size);
+        assert_eq!(standing.lines, on_mote.lines);
+    }
+
+    #[test]
+    fn script_text_at_the_limits_is_taken() {
+        let lines = vec!["x".repeat(MAX_PARAGRAPH_BYTES); MAX_PARAGRAPHS];
+        let placard = Placard::from_script(&"t".repeat(MAX_TITLE_BYTES), &lines).unwrap();
+        assert_eq!(placard.body.len(), MAX_PARAGRAPHS);
+    }
+
+    #[test]
+    fn script_text_over_a_limit_is_refused() {
+        let one = vec![String::from("x")];
+        assert_eq!(
+            Placard::from_script(&"t".repeat(MAX_TITLE_BYTES + 1), &one),
+            Err(Refused::Title(MAX_TITLE_BYTES + 1))
+        );
+        assert_eq!(
+            Placard::from_script("t", &vec![String::new(); MAX_PARAGRAPHS + 1]),
+            Err(Refused::Paragraphs(MAX_PARAGRAPHS + 1))
+        );
+        assert_eq!(
+            Placard::from_script("t", &["x".repeat(MAX_PARAGRAPH_BYTES + 1)]),
+            Err(Refused::Paragraph(MAX_PARAGRAPH_BYTES + 1))
         );
     }
 

@@ -697,7 +697,7 @@ mod tests {
 
     #[test]
     fn a_namespace_survives_its_hex() {
-        let ns = (1, u64::MAX, 0x0123_4567_89ab_cdef, 42);
+        let ns = (1, u64::MAX, 0x0123_4567_89AB_CDEF, 42);
         assert_eq!(document_id_from_hex(&hex_of(ns)), Some(ns));
     }
 

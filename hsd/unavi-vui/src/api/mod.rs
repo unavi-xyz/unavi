@@ -17,6 +17,7 @@ use crate::{
 
 mod convert;
 mod mote;
+mod placard;
 mod surface;
 
 thread_local! {
@@ -28,6 +29,7 @@ impl Guest for World {
     type Grid = surface::Grid;
     type Mote = mote::MoteRes;
     type Orbit = surface::Orbit;
+    type Placard = placard::PlacardRes;
 
     fn fixed_update() -> Result<(), Error> {
         drive(Vui::fixed_update)
@@ -38,7 +40,7 @@ impl Guest for World {
     }
 }
 
-fn put_up(shape: impl FnOnce(&mut Vui) -> anyhow::Result<SurfaceId>) -> Result<SurfaceId, Error> {
+fn put_up<T>(shape: impl FnOnce(&mut Vui) -> anyhow::Result<T>) -> Result<T, Error> {
     VUI.with_borrow_mut(|slot| {
         let vui = match slot {
             Some(vui) => vui,

@@ -312,6 +312,26 @@ interface api {
     held: func() -> bool;
   }
 
+  /// Text on a pane, standing where the script puts it rather than on a
+  /// mote: a label for something in the world. The same pane, type and pop
+  /// as a mote's placard.
+  resource placard {
+    /// Nothing shows until it has text and is shown.
+    constructor() -> result<placard, error>;
+
+    /// `title` is at most 256 bytes, and there are at most 7 `lines` of at
+    /// most 1024 bytes each. Over either is `invalid-argument`, and the
+    /// previous text is kept. Lines wrap to the pane's width.
+    set-text: func(title: string, lines: list<string>) -> result<_, error>;
+
+    /// Where its top centre stands, in the calling script's document frame.
+    /// It turns about the vertical axis to face the viewer on its own.
+    set-position: func(at: vec3);
+
+    /// Eases it in or out.
+    set-shown: func(value: bool);
+  }
+
   /// Reads input and resolves what it did, for every surface at once. Call
   /// from the script's `fixed-update`, where state belongs.
   fixed-update: func() -> result<_, error>;

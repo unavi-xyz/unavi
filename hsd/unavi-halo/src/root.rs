@@ -1,16 +1,19 @@
 //! The root form: what the halo opens as.
 //!
-//! Three slots around a ring: tools, navigation and going home. Nothing sits
-//! in the middle, so every slot is a direction.
+//! Four slots around a ring: going home, navigation, the self and tools.
+//! Nothing sits in the middle, so every slot is a direction, and a ring of
+//! four puts them on the cardinals: home up, navigation right, tools down and
+//! the self left. A slot is a child of the root in that order, because an
+//! orbit sets its first child at the top and advances clockwise.
 //!
-//! The cardinals are not settled until there are four of them. Home takes up,
-//! which is its fixed sense, and the other two fall where a three-point ring
-//! puts them. When more branches arrive the ring grows and they move once,
-//! deliberately, rather than drifting a slot at a time.
+//! Home keeps up, which is its fixed sense. Before the self arrived the ring
+//! held three and tools and navigation sat where a three-point ring puts
+//! them; the fourth slot is the one deliberate move, made once so the ring
+//! lands on the cardinals for good.
 //!
-//! A slot is never reordered and never repurposed. That is the basis of
-//! eyes-free use, and it is why the order below is written once and left
-//! alone.
+//! A slot is never reordered and never repurposed after this. That is the
+//! basis of eyes-free use, and it is why the order below is written once and
+//! left alone.
 
 use wired_guest::math::Vec2;
 
@@ -41,7 +44,7 @@ const MOUNT: Mount = Mount {
 };
 
 /// The most motes an orbit level draws on one page: the way back and eight
-/// more, matching the cells of a grid level. The root has three slots, so it
+/// more, matching the cells of a grid level. The root has four slots, so it
 /// is still drawn whole and a root that paged would not be a root.
 const CAPACITY: u32 = 9;
 
@@ -52,6 +55,10 @@ pub struct Root {
     pub nav:   Mote,
     /// What can be at hand.
     pub tools: Mote,
+    /// Who you are to the world: holds the visor.
+    pub me:    Mote,
+    /// The lenses worn over the world, one toggle each.
+    pub visor: Mote,
     pub orbit: Orbit,
 }
 
@@ -83,7 +90,19 @@ impl Root {
         tools.set_tint(Some(palette::TOOLS));
         wear(&tools, "Tools", &glyph::TOOLS);
 
-        for slot in [&home, &nav, &tools] {
+        let me = Mote::new(Kind::Group, "Self")?;
+        me.set_description("How you perceive the world.")?;
+        me.set_tint(Some(palette::SELF));
+        wear(&me, "Self", &glyph::SELF);
+
+        let visor = Mote::new(Kind::Group, "Visor")?;
+        visor.set_description("Lenses to wear over the world.")?;
+        visor.set_tint(Some(palette::SELF));
+        wear(&visor, "Visor", &glyph::VISOR);
+        me.add_child(&visor);
+
+        // Clockwise from the top: home up, nav right, tools down, self left.
+        for slot in [&home, &nav, &tools, &me] {
             level.add_child(slot);
         }
 
@@ -91,11 +110,13 @@ impl Root {
         orbit.dismiss()?;
 
         // `level` is not kept: the orbit holds the tree from here, and every
-        // slot beneath it is reached through the three handles above.
+        // slot beneath it is reached through the handles above.
         Ok(Self {
             home,
             nav,
             tools,
+            me,
+            visor,
             orbit,
         })
     }

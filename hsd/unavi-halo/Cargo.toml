@@ -16,5 +16,6 @@ crate-type = ["cdylib"]
 anyhow.workspace      = true
 blake3.workspace      = true
 postcard.workspace    = true
+unavi-lens.path       = "../unavi-lens"
 wired-guest.path      = "../wired-guest"
 wit-bindgen.workspace = true

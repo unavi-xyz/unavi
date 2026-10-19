@@ -1,0 +1,21 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-visor"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow.workspace      = true
+blake3.workspace      = true
+postcard.workspace    = true
+unavi-lens.path       = "../unavi-lens"
+wired-guest.path      = "../wired-guest"
+wit-bindgen.workspace = true

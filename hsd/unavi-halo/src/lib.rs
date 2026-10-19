@@ -1,8 +1,8 @@
 //! Halo: the personal shell.
 //!
 //! A tree of motes, summoned from anywhere, that reaches what is yours — your
-//! tools, and the spaces you can go to — and nothing belonging to the one you
-//! happen to be standing in.
+//! tools, the spaces you can go to, and the lenses you see the world through —
+//! and nothing belonging to the one you happen to be standing in.
 //!
 //! Everything in the halo itself is `unavi:vui`'s: halo builds motes, mounts an
 //! orbit over them, and reads back what happened, holding no prim and doing no
@@ -22,6 +22,7 @@ use crate::{
             Nav,
             Planting,
         },
+        visor::Visor,
     },
     clock::Clock,
     root::Root,
@@ -64,6 +65,8 @@ struct Script {
     hand:     Toolbelt,
     home:     Home,
     nav:      Nav,
+    /// The visor script's lenses, mirrored as toggles.
+    visor:    Visor,
     summon:   Summon,
     /// Attaches the halo's document to the user's body.
     body:     Body,
@@ -137,6 +140,8 @@ impl Script {
     fn opened(&mut self, mote: &Mote) {
         if mote.is(&self.root.nav) {
             self.nav.refresh();
+        } else if mote.is(&self.root.me) || mote.is(&self.root.visor) {
+            Visor::ask();
         }
     }
 
@@ -157,6 +162,11 @@ impl Script {
     }
 
     fn activated(&mut self, mote: &Mote) -> anyhow::Result<()> {
+        // A lens is a switch, not a decision to be done with the halo: it stays
+        // up so several can be set in one visit.
+        if self.visor.wear(mote) {
+            return Ok(());
+        }
         if !self.hand.equip(mote) {
             return Ok(());
         }
@@ -208,18 +218,23 @@ impl Script {
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        Ok(Self {
+        let mut script = Self {
             root:     Root::new()?,
             hand:     Toolbelt::new(),
             home:     Home::default(),
             nav:      Nav::default(),
+            visor:    Visor::default(),
             summon:   Summon::default(),
             body:     Body::default(),
             space:    Residence::default(),
             clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
-        })
+        };
+        // Listening before asking, so the answer cannot arrive unheard.
+        script.visor.start();
+        Visor::ask();
+        Ok(script)
     }
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
@@ -230,6 +245,7 @@ impl ScriptBehavior for Script {
         }
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
+        self.visor.fixed_update(&self.root.visor);
         self.show_time();
 
         // A respawn, a travel or home changes the space; a menu opened in the

@@ -21,6 +21,7 @@ use crate::{
     },
     layout::Layout,
     palette::Palette,
+    placard::Placard,
     pointer::{
         self,
         Gaze,
@@ -34,6 +35,10 @@ use crate::{
         mount::Mount,
         panel::Panel,
         site::Site,
+        stand::{
+            StandId,
+            Stands,
+        },
     },
     surface::Surface,
     tree::Mote,
@@ -51,6 +56,7 @@ mod placard;
 mod pop;
 pub mod shadow;
 mod site;
+pub mod stand;
 mod viewer;
 
 /// Events a panel holds for a consumer that has not asked. Past this the
@@ -82,6 +88,8 @@ pub struct Vui {
     palette: Palette,
     slots:   Vec<Option<Slot>>,
     free:    Vec<usize>,
+    /// Placards standing where a script put them.
+    stands:  Stands,
     /// Seconds of updates so far, which notices are timed against.
     now:     f64,
     /// The previous fixed tick's eye, which a respawn is told apart by.
@@ -96,6 +104,7 @@ impl Vui {
             palette: Palette::DEFAULT,
             slots:   Vec::new(),
             free:    Vec::new(),
+            stands:  Stands::default(),
             now:     0.0,
             jumps:   Watch::default(),
         })
@@ -295,7 +304,32 @@ impl Vui {
                 .update(&self.doc, &gaze, anchor, delta, self.now)?;
             self.report(index, events);
         }
+        self.stands
+            .update(&self.doc, &gaze.eye, &self.palette, delta)?;
         Ok(())
+    }
+
+    /// Makes a placard that stands where a script puts it. Nothing shows
+    /// until it has text and is shown.
+    pub fn stand(&mut self) -> anyhow::Result<StandId> {
+        self.stands.add(&self.doc)
+    }
+
+    pub fn stand_text(&mut self, id: StandId, text: &Placard) {
+        self.stands.set_text(id, text, &self.tuning);
+    }
+
+    pub fn stand_at(&mut self, id: StandId, at: Vec3) {
+        self.stands.set_position(id, at);
+    }
+
+    pub fn stand_shown(&mut self, id: StandId, shown: bool) {
+        self.stands.set_shown(id, shown);
+    }
+
+    /// Frees a standing placard's prims.
+    pub fn stand_remove(&mut self, id: StandId) -> anyhow::Result<()> {
+        self.stands.remove(&self.doc, id)
     }
 
     /// Moves every placed panel by the move the viewer just made, so a panel

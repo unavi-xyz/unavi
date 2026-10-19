@@ -1,0 +1,11 @@
+(
+    prims: [
+        (
+            attributes: (
+                name: "visor",
+                script: "./Cargo.toml",
+            ),
+            children: [],
+        ),
+    ],
+)

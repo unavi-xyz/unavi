@@ -15,6 +15,7 @@ use wired_guest::math::Color;
 pub const HOME: Color = rgb(0.95, 0.11, 0.09);
 pub const NAV: Color = rgb(0.10, 0.80, 0.35);
 pub const TOOLS: Color = rgb(0.05, 0.38, 0.94);
+pub const SELF: Color = rgb(0.85, 0.20, 0.90);
 
 /// A colour per tool, so two tools are told apart before either is read.
 ///

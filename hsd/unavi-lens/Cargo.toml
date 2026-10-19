@@ -1,0 +1,14 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-lens"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+postcard.workspace = true
+serde              = { features = ["derive"], workspace = true }

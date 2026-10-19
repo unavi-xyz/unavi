@@ -204,7 +204,7 @@ pub fn world_transform(
         .transforms
         .node(&node(doc.id, prim))
         .ok_or(ScriptError::NotReady)?;
-    Ok(host.frame().transform_to_frame(world.compute_transform()))
+    Ok(host.frame().transform_to_frame(world))
 }
 
 /// The transform from the script's own document root to the engine world,

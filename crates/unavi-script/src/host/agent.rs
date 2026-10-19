@@ -31,7 +31,7 @@ fn script_transform(host: &ScriptHost, tracked: Tracked) -> Result<Transform, Sc
         .transforms
         .node(&tracked.node)
         .ok_or(ScriptError::NotReady)?;
-    Ok(host.frame().transform_to_frame(world.compute_transform()))
+    Ok(host.frame().transform_to_frame(world))
 }
 
 pub fn camera_transform(host: &ScriptHost) -> Result<Transform, ScriptError> {

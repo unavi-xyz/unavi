@@ -50,10 +50,11 @@ impl Frame {
         self.0.inverse().transform_vector3(vector)
     }
 
-    /// `transform`, in this script's frame.
+    /// A world pose, in this script's frame. Decomposed once, from the
+    /// composed affine, so a sheared pose loses no more than it must.
     #[must_use]
-    pub fn transform_to_frame(self, transform: Transform) -> Transform {
-        Transform::from_matrix((self.0.inverse() * transform.compute_affine()).into())
+    pub fn transform_to_frame(self, world: GlobalTransform) -> Transform {
+        Transform::from_matrix((self.0.inverse() * world.affine()).into())
     }
 }
 
@@ -84,7 +85,7 @@ mod tests {
         let transform =
             Transform::from_xyz(0.5, -1.0, 2.0).with_rotation(Quat::from_rotation_x(0.3));
         let world = root.mul_transform(transform);
-        let round = Frame::from_root(root).transform_to_frame(world.compute_transform());
+        let round = Frame::from_root(root).transform_to_frame(world);
         assert!(
             (round.translation - transform.translation).length() < 1.0e-4,
             "translation round trip gave {}",

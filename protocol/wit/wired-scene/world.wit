@@ -379,7 +379,9 @@ interface document {
     /// Where `prim` is this frame, in the calling script's own document
     /// frame, including what physics and animation did to it since its
     /// `transform` was written. Never the engine world: loaded spaces sit at
-    /// different offsets there, and a script never sees them.
+    /// different offsets there, and a script never sees them. A transform
+    /// written this tick shows from the next frame on. `not-ready` for a
+    /// prim no frame has drawn yet, such as one created this tick.
     world-transform: func(prim: prim-id) -> result<transform, error>;
     /// The transform from this document's root to `other`'s, or `none` when
     /// either is not placed.

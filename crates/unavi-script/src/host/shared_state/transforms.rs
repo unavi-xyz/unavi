@@ -35,15 +35,19 @@ pub struct TransformSnapshots(Arc<Inner>);
 
 #[derive(Default)]
 struct Inner {
-    nodes:     RwLock<HashMap<AbsoluteNodeId, GlobalTransform>>,
+    /// Each node's pose, beside the entity it was read from.
+    nodes:     RwLock<HashMap<AbsoluteNodeId, (Entity, GlobalTransform)>>,
     doc_roots: RwLock<HashMap<DocId, GlobalTransform>>,
 }
 
 impl TransformSnapshots {
-    pub fn snapshot_nodes(&self, entries: impl Iterator<Item = (AbsoluteNodeId, GlobalTransform)>) {
+    pub fn snapshot_nodes(
+        &self,
+        entries: impl Iterator<Item = (AbsoluteNodeId, Entity, GlobalTransform)>,
+    ) {
         let mut nodes = self.0.nodes.write();
-        for (id, world) in entries {
-            nodes.insert(id, world);
+        for (id, entity, world) in entries {
+            nodes.insert(id, (entity, world));
         }
     }
 
@@ -54,8 +58,13 @@ impl TransformSnapshots {
         }
     }
 
-    pub fn remove_node(&self, id: &AbsoluteNodeId) {
-        self.0.nodes.write().remove(id);
+    /// Only `entity`'s entry: a prim respawned under the same id may have
+    /// been snapshotted before its old entity is removed.
+    pub fn remove_node(&self, id: &AbsoluteNodeId, entity: Entity) {
+        let mut nodes = self.0.nodes.write();
+        if nodes.get(id).is_some_and(|(held, _)| *held == entity) {
+            nodes.remove(id);
+        }
     }
 
     pub fn remove_doc_root(&self, doc: &DocId) {
@@ -66,7 +75,7 @@ impl TransformSnapshots {
     /// tick.
     #[must_use]
     pub fn node(&self, id: &AbsoluteNodeId) -> Option<GlobalTransform> {
-        self.0.nodes.read().get(id).copied()
+        self.0.nodes.read().get(id).map(|(_, world)| *world)
     }
 
     #[must_use]
@@ -112,11 +121,15 @@ pub fn register_nodes(
 /// Both instances run after a transform propagation, which marks every moved
 /// subtree's `GlobalTransform`, so the filter never misses a node.
 pub fn snapshot_transforms(
-    changed: Query<(&RegisterTransforms, &GlobalTransform), Changed<GlobalTransform>>,
+    changed: Query<(Entity, &RegisterTransforms, &GlobalTransform), Changed<GlobalTransform>>,
     registry: Res<TransformSnapshots>,
 ) {
     if !changed.is_empty() {
-        registry.snapshot_nodes(changed.iter().map(|(id, world)| (id.0, *world)));
+        registry.snapshot_nodes(
+            changed
+                .iter()
+                .map(|(entity, id, world)| (id.0, entity, *world)),
+        );
     }
 }
 
@@ -126,7 +139,7 @@ pub fn deregister_transforms(
     registry: Res<TransformSnapshots>,
 ) {
     if let Ok(id) = ids.get(trigger.entity) {
-        registry.remove_node(&id.0);
+        registry.remove_node(&id.0, trigger.entity);
     }
 }
 
@@ -208,6 +221,33 @@ mod tests {
                 .node(&ID)
                 .map(|world| world.translation()),
             Some(moved)
+        );
+    }
+
+    #[test]
+    fn a_replaced_entity_leaving_late_keeps_its_successor() {
+        let mut app = app();
+        app.add_observer(deregister_transforms);
+        let old = app
+            .world_mut()
+            .spawn((RegisterTransforms(ID), GlobalTransform::default()))
+            .id();
+        app.update();
+        let at = Vec3::new(1.0, 2.0, 3.0);
+        app.world_mut().spawn((
+            RegisterTransforms(ID),
+            GlobalTransform::from_translation(at),
+        ));
+        app.update();
+
+        app.world_mut().entity_mut(old).despawn();
+        assert_eq!(
+            app.world()
+                .resource::<TransformSnapshots>()
+                .node(&ID)
+                .map(|world| world.translation()),
+            Some(at),
+            "the removal of the old entity erased the pose of its successor"
         );
     }
 

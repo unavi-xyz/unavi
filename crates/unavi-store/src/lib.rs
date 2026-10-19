@@ -215,6 +215,20 @@ impl Store {
         Ok((doc, events))
     }
 
+    /// Names `peers` to a document already joined, as a second [`Self::join`]
+    /// would, without subscribing again or recording another visit.
+    pub async fn add_peers(&self, ns: NamespaceId, peers: Vec<EndpointAddr>) -> Result<()> {
+        let doc = self.held(ns).await?.ok_or(Error::NotHeld(ns))?;
+
+        let providers = peers.iter().map(|peer| peer.id).collect::<Vec<_>>();
+        self.0.fetchers.add_providers(ns, &providers);
+        if let Some(scope) = &self.0.dial_scope {
+            scope.name(&providers);
+        }
+        doc.doc().start_sync(peers).await?;
+        Ok(())
+    }
+
     /// The document this device records under `name`, minting and recording
     /// one on first use.
     pub async fn named(&self, name: &str) -> Result<Document> {

@@ -1,7 +1,5 @@
 //! Fetching a space's own document and instancing it on the space entity.
 
-use std::time::Duration;
-
 use async_channel::Receiver;
 use bevy::prelude::*;
 use bevy_async::task;
@@ -20,7 +18,6 @@ use bevy_hsd::{
 use bevy_iroh::store::DataStore;
 use hsd::state::HsdState;
 use iroh::EndpointAddr;
-use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_store::Document;
 
@@ -29,14 +26,12 @@ use crate::{
         LastSeenIn,
         Peer,
     },
-    membership::Space,
+    membership::{
+        Space,
+        SpaceId,
+    },
+    sync_peers,
 };
-
-/// How long [`start_space_fetch`] gives gossip to confirm an occupant before
-/// reading the space with whatever it found. A registry-listed occupant
-/// gossip has not reached would only fail the exact dial iroh-docs' own sync
-/// engine already tried, for a warning with nothing new to say.
-const PEER_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Component)]
 pub struct PendingScene {
@@ -47,105 +42,73 @@ pub struct PendingScene {
     _cancel: oneshot::Sender<()>,
 }
 
-/// A space entered but not yet read, waiting on [`start_space_fetch`] for
-/// gossip to confirm someone worth asking.
+/// A space whose document is instanced on its entity or served locally.
 #[derive(Component)]
-pub struct PendingSpacePeers {
-    ns:            NamespaceId,
-    waiting_since: Duration,
+pub struct SceneStarted;
+
+/// Occupants of `space` that gossip has confirmed.
+fn occupants<'a>(
+    peers: &'a Query<(&Peer, &LastSeenIn)>,
+    space: SpaceId,
+) -> impl Iterator<Item = EndpointAddr> + 'a {
+    peers
+        .iter()
+        .filter(move |(_, seen)| seen.contains(space))
+        .map(|(peer, _)| peer.0.clone())
 }
 
-pub fn spawn_space_scene(
-    trigger: On<Add, Space>,
-    spaces: Query<(&Space, Option<&HsdNamespace>)>,
+/// Starts reading every space that has not started yet, with whichever
+/// occupants are known. Later occupants are named by [`name_late_occupants`].
+///
+/// Waits for the store, so a space added before it exists starts once it does.
+pub fn start_space_scenes(
+    spaces: Query<
+        (Entity, &Space, Option<&HsdNamespace>),
+        (Without<SceneStarted>, Without<PendingScene>),
+    >,
     store: Option<Res<DataStore>>,
-    time: Res<Time>,
-    mut commands: Commands,
-) {
-    let Ok((ns, instanced)) = spaces
-        .get(trigger.entity)
-        .map(|(space, ns)| (space.namespace(), ns.map(|doc| doc.0.id())))
-    else {
-        return;
-    };
-
-    let Some(store) = store else {
-        warn!("Cannot read space: no local store");
-        return;
-    };
-
-    // A locally built space is already in the scene on this entity; reading
-    // it back would duplicate every prim and re-run every script. It still
-    // has to be served: presence is announced for it, so peers arrive
-    // expecting an answer.
-    if instanced == Some(ns) {
-        let store = store.0.clone();
-        task::spawn(async move {
-            let served = async {
-                let doc = store
-                    .held(ns)
-                    .await?
-                    .ok_or(unavi_store::Error::NotHeld(ns))?;
-                doc.serve().await
-            };
-            if let Err(err) = served.await {
-                warn!(%ns, ?err, "Failed to serve local space");
-            }
-        });
-        return;
-    }
-    info!(%ns, "Reading space");
-
-    commands
-        .entity(trigger.entity)
-        .try_insert(PendingSpacePeers {
-            ns,
-            waiting_since: time.elapsed(),
-        });
-}
-
-/// Starts the actual space-document fetch once gossip has confirmed an
-/// occupant for `ns` (see [`LastSeenIn`]), or the wait times
-/// out. A `NeighborUp` on that space's gossip topic fast-tracks a presence
-/// exchange (see [`crate::discovery::gossip`]), so a real
-/// occupant shows up here within milliseconds of connecting, not the full
-/// presence broadcast interval.
-pub fn start_space_fetch(
-    time: Res<Time>,
-    pending: Query<(Entity, &PendingSpacePeers)>,
-    store: Option<Res<DataStore>>,
-    active_peers: Query<(&Peer, &LastSeenIn)>,
+    peers: Query<(&Peer, &LastSeenIn)>,
     mut commands: Commands,
 ) {
     let Some(store) = store else {
         return;
     };
 
-    for (entity, waiting) in &pending {
-        let confirmed = active_peers
-            .iter()
-            .filter(|(_, seen)| seen.contains(waiting.ns.into()))
-            .map(|(peer, _)| peer.0.clone())
-            .collect::<Vec<_>>();
+    for (entity, space, instanced) in &spaces {
+        let ns = space.namespace();
 
-        let timed_out = time.elapsed().saturating_sub(waiting.waiting_since) >= PEER_WAIT_TIMEOUT;
-        if confirmed.is_empty() && !timed_out {
+        // A locally built space is already in the scene on this entity;
+        // reading it back would duplicate every prim and re-run every script.
+        // It still has to be served: presence is announced for it, so peers
+        // arrive expecting an answer.
+        if instanced.is_some_and(|doc| doc.0.id() == ns) {
+            let store = store.0.clone();
+            task::spawn(async move {
+                let served = async {
+                    let doc = store
+                        .held(ns)
+                        .await?
+                        .ok_or(unavi_store::Error::NotHeld(ns))?;
+                    doc.serve().await
+                };
+                if let Err(err) = served.await {
+                    warn!(%ns, ?err, "Failed to serve local space");
+                }
+            });
+            commands.entity(entity).try_insert(SceneStarted);
             continue;
         }
+        info!(%ns, "Reading space");
 
-        // Occupants only. A space's content lives with them, and the
-        // configured sync targets are registry nodes, which hold no space.
-        let peers = confirmed;
-
-        let ns = waiting.ns;
+        let known = occupants(&peers, space.id()).collect::<Vec<_>>();
+        let named = known.clone();
         let store = store.0.clone();
         let (tx, rx) = async_channel::bounded(1);
         let (cancel_tx, cancel_rx) = oneshot::channel();
-        let sync_peers = peers.clone();
 
         task::spawn(async move {
             let fetch = async {
-                let (doc, events) = store.join(ns, peers).await?;
+                let (doc, events) = store.join(ns, known).await?;
                 let feed = DocFeed::joined(doc.clone(), events, FeedReady::RemoteSync);
                 Ok::<_, unavi_store::Error>((doc, feed))
             };
@@ -162,14 +125,11 @@ pub fn start_space_fetch(
             }
         });
 
-        commands
-            .entity(entity)
-            .try_remove::<PendingSpacePeers>()
-            .try_insert(PendingScene {
-                rx,
-                peers: sync_peers,
-                _cancel: cancel_tx,
-            });
+        commands.entity(entity).try_insert(PendingScene {
+            rx,
+            peers: named,
+            _cancel: cancel_tx,
+        });
     }
 }
 
@@ -191,8 +151,30 @@ pub fn instance_pending_scenes(
                 HsdNamespace(doc),
                 SyncPeers(pending.peers.clone()),
                 feed,
+                SceneStarted,
             ))
             .try_remove::<PendingScene>();
+    }
+}
+
+/// Names occupants confirmed after a space joined, whether or not its feed has
+/// synced. Each occupant is named once.
+pub fn name_late_occupants(
+    mut spaces: Query<(&Space, &mut SyncPeers)>,
+    peers: Query<(&Peer, &LastSeenIn)>,
+    store: Option<Res<DataStore>>,
+) {
+    let Some(store) = store else {
+        return;
+    };
+
+    for (space, mut named) in &mut spaces {
+        let fresh = sync_peers::unnamed(&named, occupants(&peers, space.id()));
+        if fresh.is_empty() {
+            continue;
+        }
+        sync_peers::name_peers(&store.0, space.namespace(), fresh.clone());
+        named.0.extend(fresh);
     }
 }
 
@@ -202,5 +184,7 @@ pub fn despawn_space_scene(trigger: On<Remove, Space>, mut commands: Commands) {
     // is not an error.
     commands
         .entity(trigger.entity)
-        .try_remove::<(PendingScene, Hsd)>();
+        .try_remove::<(PendingScene, Hsd, SceneStarted)>();
 }
+
+#[cfg(test)] mod tests;

@@ -30,8 +30,10 @@ use bevy::prelude::{
 use holds::Holds;
 use hsd::id::DocId;
 use iroh::EndpointId;
+use n0_future::time::Instant;
 use parking_lot::Mutex;
 use records::Records;
+use requests::RequestLimiter;
 use unavi_identity::authorship::Authorship;
 use unavi_policy::{
     Policy,
@@ -81,6 +83,7 @@ use crate::{
 
 mod holds;
 mod records;
+mod requests;
 
 /// Messages one outbound state stream may queue before it falls back to a
 /// fresh snapshot.
@@ -122,7 +125,6 @@ struct Outbound {
     /// The local endpoint whose state it carries.
     me:     EndpointId,
     tx:     async_channel::Sender<ReplicationMsg>,
-    rx:     async_channel::Receiver<ReplicationMsg>,
     resync: Arc<AtomicBool>,
 }
 
@@ -162,6 +164,10 @@ struct Inner {
     authors:     u64,
     senders:     HashMap<StreamToken, Outbound>,
     next_token:  u64,
+    /// Requests other peers made of this node.
+    requests:    RequestLimiter,
+    /// Requests this node made of other peers.
+    asked:       RequestLimiter,
 }
 
 impl Inner {
@@ -175,19 +181,6 @@ impl Inner {
                 }
                 Err(async_channel::TrySendError::Closed(_)) => false,
             });
-    }
-
-    fn resync_peer(&self, remote: EndpointId) {
-        for out in self.senders.values().filter(|out| out.remote == remote) {
-            while out.rx.try_recv().is_ok() {}
-            let snapshot = ReplicationMsg::Snapshot {
-                docs: self.self_snapshot(out.me),
-                more: false,
-            };
-            if out.tx.try_send(snapshot).is_err() {
-                out.resync.store(true, Ordering::Relaxed);
-            }
-        }
     }
 
     fn author_of(&self, doc: DocId) -> Option<Did> {
@@ -357,7 +350,8 @@ impl Inner {
         Ok(())
     }
 
-    fn self_snapshot(&self, me: EndpointId) -> Vec<DocSnapshot> {
+    /// What `me` states, in `scope` if one is named and else everywhere.
+    fn self_snapshot(&self, me: EndpointId, scope: Option<SpaceId>) -> Vec<DocSnapshot> {
         let mut by_doc: HashMap<DocId, DocSnapshot> = HashMap::new();
         for (doc, pin) in self.pins.get(&me).into_iter().flatten() {
             let Some(presence) = self.docs.get(doc) else {
@@ -396,6 +390,7 @@ impl Inner {
         }
         by_doc
             .into_values()
+            .filter(|snapshot| scope.is_none_or(|scope| snapshot.space == scope))
             .filter(|snapshot| {
                 snapshot.pin.is_some()
                     || snapshot.hold.is_some()
@@ -455,6 +450,8 @@ impl Replicas {
             authors:     0,
             senders:     HashMap::new(),
             next_token:  0,
+            requests:    RequestLimiter::default(),
+            asked:       RequestLimiter::default(),
         })))
     }
 
@@ -472,8 +469,9 @@ impl Replicas {
         let resync = Arc::new(AtomicBool::new(false));
         let mut inner = self.0.lock();
         let snapshot = ReplicationMsg::Snapshot {
-            docs: inner.self_snapshot(me),
-            more: false,
+            scope: None,
+            docs:  inner.self_snapshot(me, None),
+            more:  false,
         };
         if tx.try_send(snapshot).is_err() {
             resync.store(true, Ordering::Relaxed);
@@ -486,7 +484,6 @@ impl Replicas {
                 remote,
                 me,
                 tx,
-                rx: rx.clone(),
                 resync: Arc::clone(&resync),
             },
         );
@@ -502,16 +499,53 @@ impl Replicas {
         while feed.rx.try_recv().is_ok() {}
         feed.resync.store(false, Ordering::Relaxed);
         ReplicationMsg::Snapshot {
-            docs: inner.self_snapshot(me),
-            more: false,
+            scope: None,
+            docs:  inner.self_snapshot(me, None),
+            more:  false,
         }
     }
 
-    /// Replaces whatever is queued toward `remote` with a fresh snapshot of
-    /// the local state, for a peer that may have dropped what it knew of it.
-    /// Taken under the store lock, so every delta queued afterwards is newer.
-    pub fn resync_peer(&self, remote: EndpointId) {
-        self.0.lock().resync_peer(remote);
+    /// Asks `remote`, over the stream open to it, for its state in `space`.
+    /// Answers whether a stream took the request. Held to the same rate limit
+    /// `remote` holds requests to, so a peer whose state keeps missing is not
+    /// asked in a loop.
+    #[must_use]
+    pub fn request(&self, remote: EndpointId, space: SpaceId) -> bool {
+        let mut inner = self.0.lock();
+        if !inner.asked.admit(remote, space, Instant::now()) {
+            return false;
+        }
+        let mut sent = false;
+        for out in inner.senders.values().filter(|out| out.remote == remote) {
+            sent |= out.tx.try_send(ReplicationMsg::Request { space }).is_ok();
+        }
+        drop(inner);
+        sent
+    }
+
+    /// Queues toward `remote` a snapshot of the local state in `space`, built
+    /// like the one a stream opens with. A space this node holds nothing in
+    /// is answered with an empty snapshot, so the asker drops what it
+    /// remembers there. Answers whether the request was within the rate limit
+    /// of `remote` for `space`; an excess request is dropped.
+    #[must_use]
+    pub fn answer_request(&self, remote: EndpointId, space: SpaceId, now: Instant) -> bool {
+        let mut inner = self.0.lock();
+        if !inner.requests.admit(remote, space, now) {
+            return false;
+        }
+        for out in inner.senders.values().filter(|out| out.remote == remote) {
+            let snapshot = ReplicationMsg::Snapshot {
+                scope: Some(space),
+                docs:  inner.self_snapshot(out.me, Some(space)),
+                more:  false,
+            };
+            if out.tx.try_send(snapshot).is_err() {
+                out.resync.store(true, Ordering::Relaxed);
+            }
+        }
+        drop(inner);
+        true
     }
 
     pub fn unregister_stream(&self, token: StreamToken) {
@@ -748,6 +782,11 @@ impl Replicas {
         doc: DocId,
     ) -> Option<(SpaceId, Vec<SessionKey>)> {
         self.0.lock().sessions.keys_of(writer, doc)
+    }
+
+    /// The space the session layers on `doc` are in.
+    pub(crate) fn session_space(&self, doc: DocId) -> Option<SpaceId> {
+        self.0.lock().sessions.space_of(doc)
     }
 
     /// Writers holding a session layer on `doc`.

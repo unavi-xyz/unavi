@@ -14,6 +14,10 @@ use xdid::method::key::{
 
 use super::{
     holds::MAX_HOLDS_PER_PEER,
+    requests::{
+        REQUEST_BURST,
+        REQUEST_INTERVAL,
+    },
     *,
 };
 use crate::replication::{
@@ -1114,12 +1118,14 @@ fn a_local_write_signs_the_root_of_the_cells_it_leaves() {
 }
 
 #[test]
-fn resyncing_a_peer_replaces_its_queue_with_a_fresh_snapshot() {
+fn a_request_queues_a_snapshot_of_only_its_space() {
     let replicas = replicas();
     let alice = identity();
-    let (doc, proof) = authored(21, &alice);
-    let space = space(b"resync-peer");
-    join(&replicas, space);
+    let (doc_a, proof_a) = authored(21, &alice);
+    let (doc_b, proof_b) = authored(22, &alice);
+    let (space_a, space_b) = (space(b"request-a"), space(b"request-b"));
+    join(&replicas, space_a);
+    join(&replicas, space_b);
     let me = peer(1);
 
     let toward = replicas.register_stream(me, peer(8));
@@ -1130,37 +1136,108 @@ fn resyncing_a_peer_replaces_its_queue_with_a_fresh_snapshot() {
             Ok(ReplicationMsg::Snapshot { .. })
         ));
     }
+    for (doc, proof, space) in [(doc_a, proof_a, space_a), (doc_b, proof_b, space_b)] {
+        replicas
+            .add_pin(
+                me,
+                Some(alice.did()),
+                Proven {
+                    author: alice.did().clone(),
+                    proof,
+                },
+                pin_record(doc, space, 1),
+            )
+            .expect("pin");
+    }
 
-    replicas
-        .add_pin(
-            me,
-            Some(alice.did()),
-            Proven {
-                author: alice.did().clone(),
-                proof,
-            },
-            pin_record(doc, space, 1),
-        )
-        .expect("pin");
-    replicas.broadcast(&ReplicationMsg::Unpin {
-        doc,
-        withdrawal: None,
-    });
+    assert!(replicas.answer_request(peer(8), space_a, Instant::now()));
 
-    replicas.resync_peer(peer(8));
-
-    let Ok(ReplicationMsg::Snapshot { docs, .. }) = toward.rx.try_recv() else {
-        panic!("the queued delta is replaced by a snapshot");
+    let Ok(ReplicationMsg::Snapshot { scope, docs, .. }) = toward.rx.try_recv() else {
+        panic!("the request is answered with a snapshot");
     };
-    assert!(docs.iter().any(|d| d.doc == doc && d.pin.is_some()));
+    assert_eq!(scope, Some(space_a));
+    assert_eq!(1, docs.len(), "only the requested space");
+    assert!(docs[0].doc == doc_a && docs[0].pin.is_some());
     assert!(toward.rx.try_recv().is_err(), "nothing else is queued");
     assert!(
-        matches!(
-            elsewhere.rx.try_recv(),
-            Ok(ReplicationMsg::Unpin { .. })
-        ),
-        "another peer's queue is left alone"
+        elsewhere.rx.try_recv().is_err(),
+        "another peer is not answered"
     );
     replicas.unregister_stream(toward.token);
     replicas.unregister_stream(elsewhere.token);
+}
+
+#[test]
+fn a_request_for_a_space_held_nothing_in_is_answered_empty() {
+    let replicas = replicas();
+    let toward = replicas.register_stream(peer(1), peer(8));
+    assert!(toward.rx.try_recv().is_ok());
+    let unknown = space(b"request-unknown");
+
+    assert!(replicas.answer_request(peer(8), unknown, Instant::now()));
+
+    let Ok(ReplicationMsg::Snapshot { scope, docs, .. }) = toward.rx.try_recv() else {
+        panic!("an empty snapshot answers");
+    };
+    assert_eq!(scope, Some(unknown));
+    assert!(docs.is_empty());
+    replicas.unregister_stream(toward.token);
+}
+
+#[test]
+fn requests_past_the_rate_limit_are_dropped() {
+    let replicas = replicas();
+    let toward = replicas.register_stream(peer(1), peer(8));
+    assert!(toward.rx.try_recv().is_ok());
+    let (a, b) = (space(b"rate-a"), space(b"rate-b"));
+    let start = Instant::now();
+
+    for _ in 0..REQUEST_BURST {
+        assert!(replicas.answer_request(peer(8), a, start));
+    }
+    assert!(!replicas.answer_request(peer(8), a, start), "burst spent");
+    assert!(
+        replicas.answer_request(peer(8), b, start),
+        "another space has its own allowance"
+    );
+    assert!(
+        replicas.answer_request(peer(7), a, start),
+        "another peer has its own allowance"
+    );
+    let half = start + REQUEST_INTERVAL / 2;
+    assert!(!replicas.answer_request(peer(8), a, half), "not yet earned");
+    let later = start + REQUEST_INTERVAL;
+    assert!(
+        replicas.answer_request(peer(8), a, later),
+        "one earned back"
+    );
+    assert!(!replicas.answer_request(peer(8), a, later), "only one");
+
+    let mut answered = 0;
+    while toward.rx.try_recv().is_ok() {
+        answered += 1;
+    }
+    assert_eq!(
+        REQUEST_BURST + 1 + 1,
+        answered,
+        "dropped requests queue nothing"
+    );
+    replicas.unregister_stream(toward.token);
+}
+
+#[test]
+fn a_request_goes_out_over_the_stream_to_its_peer() {
+    let replicas = replicas();
+    let toward = replicas.register_stream(peer(1), peer(8));
+    assert!(toward.rx.try_recv().is_ok());
+    let s = space(b"request-out");
+
+    assert!(!replicas.request(peer(7), s), "no stream to that peer");
+    assert!(replicas.request(peer(8), s));
+
+    let Ok(ReplicationMsg::Request { space }) = toward.rx.try_recv() else {
+        panic!("the request is queued");
+    };
+    assert_eq!(space, s);
+    replicas.unregister_stream(toward.token);
 }

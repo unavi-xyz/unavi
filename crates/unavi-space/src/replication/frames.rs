@@ -47,7 +47,7 @@ pub fn fits_one_tick(writes: &[SessionWrite]) -> bool {
 /// too large for any frame is skipped.
 #[must_use]
 pub fn split(msg: ReplicationMsg, limit: usize) -> Vec<ReplicationMsg> {
-    let ReplicationMsg::Snapshot { docs, .. } = msg else {
+    let ReplicationMsg::Snapshot { scope, docs, .. } = msg else {
         return vec![msg];
     };
     let mut packer = Packer {
@@ -72,6 +72,7 @@ pub fn split(msg: ReplicationMsg, limit: usize) -> Vec<ReplicationMsg> {
         .into_iter()
         .enumerate()
         .map(|(index, docs)| ReplicationMsg::Snapshot {
+            scope,
             docs,
             more: index < last,
         })
@@ -255,7 +256,11 @@ mod tests {
     }
 
     fn snapshot(docs: Vec<DocSnapshot>) -> ReplicationMsg {
-        ReplicationMsg::Snapshot { docs, more: false }
+        ReplicationMsg::Snapshot {
+            scope: None,
+            docs,
+            more: false,
+        }
     }
 
     #[test]

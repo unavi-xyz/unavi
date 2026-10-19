@@ -12,10 +12,9 @@ use crate::{
     },
     discovery::{
         Heard,
-        gossip::unix_secs,
         HeardPresence,
         Peer,
-        resync_on_space_added,
+        gossip::unix_secs,
         track_peers,
     },
     index::Index,
@@ -26,6 +25,7 @@ use crate::{
     replication::{
         Replicas,
         message::ReplicationMsg,
+        request::request_on_space_added,
         store::StateFeed,
     },
 };
@@ -45,7 +45,7 @@ fn app() -> App {
         .init_resource::<Index<RemoteAgent>>()
         .init_resource::<Index<Space>>()
         .init_resource::<Replicas>()
-        .add_observer(resync_on_space_added)
+        .add_observer(request_on_space_added)
         .add_systems(Update, (track_peers, despawn_departed_agents).chain());
     app
 }
@@ -152,62 +152,86 @@ fn a_presence_stamped_before_the_last_leave_is_ignored() {
     assert_eq!(1, count::<Peer>(&mut app), "later presence rejoins");
 }
 
-/// A state stream toward the peer under test, its opening snapshot read.
-fn feed_to_peer(app: &App) -> StateFeed {
+/// A state stream toward each of `seeds`, opening snapshots read.
+fn feeds_to(app: &App, seeds: &[u8]) -> Vec<StateFeed> {
     let me = SecretKey::from_bytes(&[3; 32]).public();
-    let feed = app
-        .world()
-        .resource::<Replicas>()
-        .register_stream(me, peer_id());
-    assert!(matches!(
-        feed.rx.try_recv(),
-        Ok(ReplicationMsg::Snapshot { .. })
-    ));
-    feed
+    seeds
+        .iter()
+        .map(|seed| {
+            let remote = SecretKey::from_bytes(&[*seed; 32]).public();
+            let feed = app
+                .world()
+                .resource::<Replicas>()
+                .register_stream(me, remote);
+            assert!(matches!(
+                feed.rx.try_recv(),
+                Ok(ReplicationMsg::Snapshot { .. })
+            ));
+            feed
+        })
+        .collect()
 }
 
-fn resynced(feed: &StateFeed) -> bool {
-    matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Snapshot { .. }))
+fn present_seed(app: &mut App, seed: u8, space: SpaceId) {
+    let id = SecretKey::from_bytes(&[seed; 32]).public();
+    app.world().resource::<HeardPresence>().inbox().submit(
+        (id, space),
+        Heard::Present(EndpointAddr::new(id), unix_secs()),
+    );
+    app.update();
+}
+
+fn requested(feed: &StateFeed) -> Option<SpaceId> {
+    match feed.rx.try_recv() {
+        Ok(ReplicationMsg::Request { space }) => Some(space),
+        _ => None,
+    }
 }
 
 #[test]
-fn a_peer_arriving_in_a_space_is_sent_a_fresh_snapshot() {
+fn instancing_a_space_asks_each_peer_heard_in_it_once() {
     let mut app = app();
+    present_seed(&mut app, 21, A);
+    present_seed(&mut app, 22, A);
+    present_seed(&mut app, 23, B);
+    let feeds = feeds_to(&app, &[21, 22, 23]);
+
     app.world_mut().spawn(Space(A));
-    app.world_mut().spawn(Space(B));
-    let feed = feed_to_peer(&app);
-    let now = unix_secs();
+    app.update();
 
-    present_at(&mut app, A, now);
-    assert!(resynced(&feed), "first sight of the peer");
-
-    present_at(&mut app, A, now + 1);
-    assert!(!resynced(&feed), "a refresh is not an arrival");
-
-    present_at(&mut app, B, now);
-    assert!(resynced(&feed), "an arrival in another space");
-
-    hear(&mut app, A, Heard::Left(now + 2));
-    assert!(!resynced(&feed), "a leave sends nothing");
-
-    present_at(&mut app, A, now + 3);
-    assert!(resynced(&feed), "arriving again after a leave");
+    assert_eq!(requested(&feeds[0]), Some(A));
+    assert_eq!(requested(&feeds[1]), Some(A));
+    assert_eq!(requested(&feeds[2]), None, "heard in B, not A");
+    for feed in &feeds {
+        assert!(feed.rx.try_recv().is_err(), "one request each");
+    }
 }
 
 #[test]
-fn loading_a_space_resyncs_the_peers_heard_in_it() {
+fn instancing_a_space_again_asks_again() {
     let mut app = app();
+    present_seed(&mut app, 21, A);
+    let feeds = feeds_to(&app, &[21]);
+
     let space = app.world_mut().spawn(Space(A)).id();
-    present(&mut app, A);
-    let feed = feed_to_peer(&app);
+    assert_eq!(requested(&feeds[0]), Some(A));
 
     app.world_mut().despawn(space);
-    app.update();
-    assert!(!resynced(&feed));
-
-    app.world_mut().spawn(Space(B));
-    assert!(!resynced(&feed), "the peer is not in B");
-
     app.world_mut().spawn(Space(A));
-    assert!(resynced(&feed), "the peer is still tracked in A");
+    assert_eq!(requested(&feeds[0]), Some(A));
+}
+
+#[test]
+fn a_peer_heard_after_the_space_loaded_is_not_asked() {
+    let mut app = app();
+    app.world_mut().spawn(Space(A));
+    let feeds = feeds_to(&app, &[21]);
+
+    present_seed(&mut app, 21, A);
+
+    assert_eq!(
+        requested(&feeds[0]),
+        None,
+        "its opening snapshot covered it"
+    );
 }

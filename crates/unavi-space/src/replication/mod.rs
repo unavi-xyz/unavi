@@ -14,6 +14,7 @@ pub mod frames;
 pub mod guards;
 pub mod message;
 pub mod record;
+pub mod request;
 pub mod session;
 pub mod snapshot;
 pub mod store;

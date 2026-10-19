@@ -27,11 +27,7 @@ use crate::{
         Indexed,
     },
     link::inbox::Inbox,
-    membership::{
-        Space,
-        SpaceId,
-    },
-    replication::Replicas,
+    membership::SpaceId,
 };
 
 pub mod gossip;
@@ -74,6 +70,12 @@ impl Indexed for Peer {
 pub struct LastSeenIn(HashMap<SpaceId, Duration>);
 
 impl LastSeenIn {
+    /// A peer first heard in `space` at `now`.
+    #[must_use]
+    pub fn heard_in(space: SpaceId, now: Duration) -> Self {
+        Self(HashMap::from([(space, now)]))
+    }
+
     #[must_use]
     pub fn contains(&self, space: SpaceId) -> bool {
         self.0.contains_key(&space)
@@ -117,7 +119,6 @@ pub fn track_peers(
     time: Res<Time>,
     heard: Res<HeardPresence>,
     index: Res<Index<Peer>>,
-    replicas: Res<Replicas>,
     mut peers: Query<(Entity, &mut Peer, &mut LastSeenIn)>,
     mut stamps: Local<Stamps>,
     mut commands: Commands,
@@ -133,7 +134,6 @@ pub fn track_peers(
     }
     let mut total = index.len();
     let mut spawned = HashMap::<EndpointId, SpaceId>::default();
-    let mut arrived = Vec::<EndpointId>::new();
 
     stamps.prune(unix_secs(), MAX_BROADCAST_AGE);
 
@@ -167,7 +167,6 @@ pub fn track_peers(
             } else if room {
                 seen.0.insert(space, now);
                 *per_space.entry(space).or_default() += 1;
-                arrived.push(id);
             }
             if peer.0 != addr {
                 peer.0 = addr;
@@ -183,22 +182,10 @@ pub fn track_peers(
             continue;
         }
         info!("+peer: {id}");
-        let mut seen = LastSeenIn::default();
-        seen.0.insert(space, now);
-        commands.spawn((Peer(addr), seen));
+        commands.spawn((Peer(addr), LastSeenIn::heard_in(space, now)));
         *per_space.entry(space).or_default() += 1;
         total += 1;
         spawned.insert(id, space);
-        arrived.push(id);
-    }
-
-    // A peer that arrives in a space may have dropped what it knew of this
-    // node while away, and pins are otherwise restated only when a stream
-    // opens, so it is sent the local state afresh.
-    arrived.sort_unstable();
-    arrived.dedup();
-    for id in arrived {
-        replicas.resync_peer(id);
     }
 
     let limit = now.saturating_sub(INACTIVE);
@@ -207,27 +194,6 @@ pub fn track_peers(
         if seen.0.is_empty() {
             info!("-peer: {}", peer.0.id);
             commands.entity(entity).despawn();
-        }
-    }
-}
-
-/// Restates the local state to every peer heard in a space just loaded here.
-///
-/// A space reloaded while its occupants stayed connected keeps them in
-/// [`LastSeenIn`], so no arrival is seen for them; what this node dropped with
-/// the space is theirs to restate, and what they dropped is ours.
-pub fn resync_on_space_added(
-    trigger: On<Add, Space>,
-    spaces: Query<&Space>,
-    peers: Query<(&Peer, &LastSeenIn)>,
-    replicas: Res<Replicas>,
-) {
-    let Ok(space) = spaces.get(trigger.entity) else {
-        return;
-    };
-    for (peer, seen) in &peers {
-        if seen.contains(space.id()) {
-            replicas.resync_peer(peer.0.id);
         }
     }
 }

@@ -170,6 +170,7 @@ pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64)
 pub struct HoldState {
     peer:     EndpointId,
     doc:      DocId,
+    space:    SpaceId,
     local:    bool,
     /// Held because a drop takes no arguments.
     replicas: Replicas,
@@ -196,7 +197,12 @@ pub struct Source {
 
 /// A remote change whose proofs and records are already checked.
 pub enum Remote {
-    Snapshot(Vec<RemoteDoc>),
+    /// What the sender states, in `scope` if one is named and else in every
+    /// space. Only that much of its earlier state is replaced.
+    Snapshot {
+        scope: Option<SpaceId>,
+        docs:  Vec<RemoteDoc>,
+    },
     Pin(PinClaim),
     Unpin {
         doc:        DocId,
@@ -286,6 +292,7 @@ fn spawn_hold(world: &mut World, source: &Source, hold: HoldClaim) {
             HoldState {
                 peer: source.id,
                 doc,
+                space,
                 local: source.local,
                 replicas,
             },
@@ -457,9 +464,9 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
     };
 
     match change {
-        Remote::Snapshot(docs) => {
-            drop_unstated(world, peer_ent, &docs);
-            layers::drop_layers_of(world, source.id);
+        Remote::Snapshot { scope, docs } => {
+            drop_unstated(world, peer_ent, scope, &docs);
+            layers::drop_layers_of(world, source.id, scope);
             for doc in docs {
                 apply_snapshot_doc(world, &source, doc);
             }
@@ -482,8 +489,10 @@ pub fn apply_remote(world: &mut World, peer_ent: Entity, change: Remote) {
 /// Despawns the guards of a peer's that its snapshot no longer states. Pins
 /// and holds it restates keep their guards, so nothing it still states is
 /// released and taken again. Every layer guard goes, since a snapshot
-/// replaces the layers it held.
-fn drop_unstated(world: &mut World, peer_ent: Entity, docs: &[RemoteDoc]) {
+/// replaces the layers it held. Under a `scope`, guards on documents in other
+/// spaces are left alone.
+fn drop_unstated(world: &mut World, peer_ent: Entity, scope: Option<SpaceId>, docs: &[RemoteDoc]) {
+    let replicas = world.resource::<Replicas>().clone();
     let pinned = docs
         .iter()
         .filter(|doc| doc.pin.is_some())
@@ -497,6 +506,7 @@ fn drop_unstated(world: &mut World, peer_ent: Entity, docs: &[RemoteDoc]) {
     let unstated = world.get::<PeerGuards>(peer_ent).map_or_default(|guards| {
         guards
             .iter()
+            .filter(|e| in_scope(world, &replicas, scope, *e))
             .filter(|e| {
                 let pin_doc = world.get::<PinState>(*e).map(|pin| pin.doc);
                 let hold_doc = world.get::<HoldState>(*e).map(|hold| hold.doc);
@@ -531,6 +541,24 @@ fn apply_snapshot_doc(world: &mut World, source: &Source, doc: RemoteDoc) {
     for layer in doc.layers {
         layers::apply_layer(world, source, layer);
     }
+}
+
+/// Whether the guard `e` is about a document in `scope`, or `scope` is
+/// unbounded. A guard on a document with no known space is outside any scope.
+fn in_scope(world: &World, replicas: &Replicas, scope: Option<SpaceId>, e: Entity) -> bool {
+    let Some(scope) = scope else {
+        return true;
+    };
+    let space = world.get::<PinState>(e).map_or_else(
+        || {
+            world.get::<HoldState>(e).map_or_else(
+                || layers::guard_space(world, replicas, e),
+                |hold| Some(hold.space),
+            )
+        },
+        |pin| replicas.space_of(pin.doc),
+    );
+    space == Some(scope)
 }
 
 /// Registers the indexes guards resolve through.

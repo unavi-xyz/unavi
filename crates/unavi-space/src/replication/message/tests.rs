@@ -107,8 +107,9 @@ fn a_layer_naming_another_document_is_skipped_and_the_rest_applies() {
         cells: Vec::new(),
     };
     let msg = ReplicationMsg::Snapshot {
-        docs: vec![doc(vec![elsewhere, good])],
-        more: false,
+        scope: None,
+        docs:  vec![doc(vec![elsewhere, good])],
+        more:  false,
     };
     let Ok(Received::Snapshot { docs, .. }) = msg.validate(0) else {
         panic!("a bad layer does not reject the message");
@@ -126,8 +127,9 @@ fn pieces_of_one_layer_split_across_frames_join_back_into_it() {
     };
     let frame = |layer| {
         let Ok(Received::Snapshot { docs, .. }) = (ReplicationMsg::Snapshot {
-            docs: vec![doc(vec![layer])],
-            more: true,
+            scope: None,
+            docs:  vec![doc(vec![layer])],
+            more:  true,
         })
         .validate(0) else {
             panic!("a piece validates");
@@ -177,8 +179,9 @@ fn a_hold_stamped_past_the_skew_is_refused() {
     let mut snapshot = doc(Vec::new());
     snapshot.hold = Some(u64::MAX);
     let msg = ReplicationMsg::Snapshot {
-        docs: vec![snapshot],
-        more: false,
+        scope: None,
+        docs:  vec![snapshot],
+        more:  false,
     };
     let Ok(Received::Snapshot { docs, .. }) = msg.validate(recv) else {
         panic!("a future hold costs the document only its hold");

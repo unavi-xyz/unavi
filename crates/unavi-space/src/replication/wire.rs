@@ -1,7 +1,10 @@
 //! The state stream: length-prefixed [`ReplicationMsg`] frames, checked and
 //! proven before they reach the world.
 
-use std::time::Duration;
+use std::{
+    collections::HashSet,
+    time::Duration,
+};
 
 use anyhow::{
     Context,
@@ -17,7 +20,10 @@ use iroh::{
     },
 };
 use iroh_docs::NamespaceId;
-use n0_future::time::timeout;
+use n0_future::time::{
+    Instant,
+    timeout,
+};
 use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
@@ -158,6 +164,7 @@ async fn recv_loop(
     // so the world never sees the sender's state half restated.
     let mut snapshot = Vec::new();
     let mut snapshot_frames = 0;
+    let mut snapshot_scope = None;
     loop {
         let len = match rx.read_u32().await {
             Ok(len) => len as usize,
@@ -192,7 +199,21 @@ async fn recv_loop(
             }
         };
         let msg = match msg {
-            Received::Snapshot { docs, more } => {
+            Received::Request { space } => {
+                if !link
+                    .view()
+                    .replicas()
+                    .answer_request(peer, space, Instant::now())
+                {
+                    debug!(%peer, %space, "state request dropped");
+                }
+                continue;
+            }
+            Received::Snapshot { scope, docs, more } => {
+                if snapshot_frames > 0 && scope != snapshot_scope {
+                    bail!("snapshot frames name different scopes");
+                }
+                snapshot_scope = scope;
                 snapshot.extend(docs);
                 snapshot_frames += 1;
                 if snapshot_frames > MAX_SNAPSHOT_FRAMES {
@@ -203,6 +224,7 @@ async fn recv_loop(
                 }
                 snapshot_frames = 0;
                 Received::Snapshot {
+                    scope,
                     docs: merge_snapshot(std::mem::take(&mut snapshot)),
                     more: false,
                 }
@@ -210,8 +232,18 @@ async fn recv_loop(
             msg => msg,
         };
 
+        // A scoped snapshot answers a request, and asking again for what it
+        // could not vouch for would only repeat the same timeout.
+        let answers_request = matches!(msg, Received::Snapshot { scope: Some(_), .. });
         let mut sender = Sender::new(peer, did, &link.view().identity().resolver);
-        let Some(change) = prove(msg, &mut sender).await else {
+        let change = prove(msg, &mut sender).await;
+        if !answers_request {
+            for space in sender.unresolved {
+                debug!(%peer, %space, "layers dropped for want of a DID; asking again");
+                let _ = link.view().replicas().request(peer, space);
+            }
+        }
+        let Some(change) = change else {
             continue;
         };
 
@@ -229,19 +261,22 @@ async fn recv_loop(
 /// The peer a frame came from: its endpoint, the DID it proved, and that DID's
 /// document, resolved the first time a signature needs it.
 struct Sender<'a> {
-    id:       EndpointId,
-    did:      Option<&'a Did>,
-    resolver: &'a Resolver,
-    document: Option<Document>,
+    id:         EndpointId,
+    did:        Option<&'a Did>,
+    resolver:   &'a Resolver,
+    document:   Option<Document>,
+    /// Spaces a layer was dropped in because its DID did not resolve.
+    unresolved: HashSet<SpaceId>,
 }
 
 impl<'a> Sender<'a> {
-    const fn new(id: EndpointId, did: Option<&'a Did>, resolver: &'a Resolver) -> Self {
+    fn new(id: EndpointId, did: Option<&'a Did>, resolver: &'a Resolver) -> Self {
         Self {
             id,
             did,
             resolver,
             document: None,
+            unresolved: HashSet::new(),
         }
     }
 
@@ -286,7 +321,11 @@ async fn resolve(resolver: &Resolver, did: &Did) -> Option<Document> {
 /// would couple one transport to another's timing.
 async fn prove(msg: Received, sender: &mut Sender<'_>) -> Option<Remote> {
     Some(match msg {
-        Received::Snapshot { docs, .. } => Remote::Snapshot(prove_docs(docs, sender).await),
+        Received::Snapshot { scope, docs, .. } => Remote::Snapshot {
+            scope,
+            docs: prove_docs(docs, sender).await,
+        },
+        Received::Request { .. } => return None,
         Received::Pin { author, record } => {
             let (doc, space) = (record.payload.doc, record.payload.space);
             Remote::Pin(claim(proven(doc, author)?, checked(record, doc, space)?)?)
@@ -371,12 +410,21 @@ async fn vouched(mut layer: ReceivedLayer, sender: &mut Sender<'_>) -> Option<Re
         return sender.owns(state).then_some(layer);
     }
     let did = state.did.clone();
+    let space = state.space;
     let peer = sender.id;
     let resolved;
     let document = if sender.did == Some(&did) {
-        sender.own_document().await?
+        let Some(document) = sender.own_document().await else {
+            sender.unresolved.insert(space);
+            return None;
+        };
+        document
     } else {
-        resolved = resolve(sender.resolver, &did).await?;
+        let Some(document) = resolve(sender.resolver, &did).await else {
+            sender.unresolved.insert(space);
+            return None;
+        };
+        resolved = document;
         &resolved
     };
     if let Err(err) = layer.state.signed.verify_document(&did, document) {
@@ -530,7 +578,8 @@ mod tests {
     /// A snapshot stating one layer holding `cells`.
     fn snapshot_of(state: SignedLayer, cells: Vec<SessionWrite>) -> Received {
         let msg = ReplicationMsg::Snapshot {
-            docs: vec![DocSnapshot {
+            scope: None,
+            docs:  vec![DocSnapshot {
                 doc:        DOC,
                 space:      SpaceId([1; 32]),
                 pin:        None,
@@ -541,13 +590,13 @@ mod tests {
                     cells,
                 }],
             }],
-            more: false,
+            more:  false,
         };
         msg.validate(0).expect("valid snapshot")
     }
 
     fn relayed_layers(remote: Option<Remote>) -> usize {
-        let Some(Remote::Snapshot(docs)) = remote else {
+        let Some(Remote::Snapshot { docs, .. }) = remote else {
             panic!("a snapshot is accepted");
         };
         docs.iter().map(|doc| doc.layers.len()).sum()
@@ -661,7 +710,8 @@ mod tests {
         let proof = Authorship::sign(&ns, &alice).expect("sign");
         let snapshot = |pin: Option<Record>, withdrawal: Option<Record>| {
             let msg = Received::Snapshot {
-                docs: vec![ReceivedDoc {
+                scope: None,
+                docs:  vec![ReceivedDoc {
                     doc,
                     space,
                     pin: pin.map(|record| ReceivedPin {
@@ -672,9 +722,9 @@ mod tests {
                     withdrawal,
                     layers: Vec::new(),
                 }],
-                more: false,
+                more:  false,
             };
-            let Some(Remote::Snapshot(mut docs)) = prove_as(msg, peer(1), None) else {
+            let Some(Remote::Snapshot { mut docs, .. }) = prove_as(msg, peer(1), None) else {
                 panic!("a snapshot is accepted");
             };
             docs.remove(0)
@@ -735,7 +785,7 @@ mod tests {
     fn a_snapshot_keeps_its_layers_and_occupancy() {
         let alice = identity();
         let msg = snapshot_of(state(peer(1), &alice, &alice, root()), vec![cell()]);
-        let Some(Remote::Snapshot(docs)) = prove_as(msg, peer(1), Some(alice.did())) else {
+        let Some(Remote::Snapshot { docs, .. }) = prove_as(msg, peer(1), Some(alice.did())) else {
             panic!("a snapshot is accepted");
         };
         assert_eq!(docs[0].layers.len(), 1);

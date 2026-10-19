@@ -37,6 +37,8 @@ pub mod portal;
 pub mod replication;
 mod scene;
 pub mod spawn;
+mod sync_peers;
+#[cfg(test)] mod test_store;
 pub mod travel;
 
 pub struct SpacePlugin {
@@ -74,10 +76,10 @@ impl Plugin for SpacePlugin {
             .init_resource::<travel::PendingTravel>()
             .init_resource::<replication::Replicas>()
             .init_resource::<discovery::HeardPresence>()
-            .init_resource::<grab::TakenHolds>()
+            .init_resource::<grab::Holds>()
             .init_resource::<avatar_sync::crossing::LastCrossing>()
             .add_observer(avatar_sync::crossing::record_crossing)
-            .add_observer(discovery::resync_on_space_added)
+            .add_observer(replication::request::request_on_space_added)
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)
             .add_observer(grid::release_anchor)
@@ -89,10 +91,7 @@ impl Plugin for SpacePlugin {
             .add_observer(link::disconnect_peer)
             .add_observer(discovery::gossip::leave_space_topic)
             .add_observer(scene::despawn_space_scene)
-            .add_observer(scene::spawn_space_scene)
             .add_observer(pinned::adopt_pinned_docs)
-            .add_observer(grab::take_hold_on_grab)
-            .add_observer(grab::release_hold_on_release)
             .add_observer(replication::session::compose::stack_on_arrival)
             .add_systems(
                 PostUpdate,
@@ -127,10 +126,12 @@ impl Plugin for SpacePlugin {
                     )
                         .chain(),
                     portal::enter_portal_space,
-                    scene::start_space_fetch,
+                    scene::start_space_scenes,
                     scene::instance_pending_scenes,
+                    scene::name_late_occupants,
                     pinned::fetch_pinned_docs,
                     pinned::instance_pinned_docs,
+                    pinned::name_late_pinners,
                     pinned::prune_pinned_docs,
                     pinned::reconcile_local_pins,
                 ),
@@ -142,6 +143,7 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 Update,
                 (
+                    grab::reconcile_holds,
                     replication::session::compose::restack,
                     portal::reconcile_portal_spaces,
                     portal::evict_portal_spaces,

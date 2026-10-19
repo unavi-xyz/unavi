@@ -123,8 +123,18 @@ pub(super) fn apply_tick(world: &mut World, source: &Source, tick: &ReceivedTick
     drop_other_sources(world, tick.state.writer(), state.doc, source.id);
     let replicas = world.resource::<Replicas>().clone();
     match replicas.apply_tick(source.id, tick) {
-        Ok(applied) => land(world, source, state, &applied),
-        Err(err) => debug!(doc = %state.doc, %err, "session tick refused"),
+        Ok(applied) => {
+            land(world, source, state, &applied);
+            if applied.diverged {
+                debug!(doc = %state.doc, peer = %source.id, "session layer root differs; asking for the layer");
+                let _ = replicas.request(source.id, state.space);
+            }
+        }
+        Err(SessionError::Stale) => debug!(doc = %state.doc, "stale session tick"),
+        Err(err) => {
+            debug!(doc = %state.doc, %err, "session tick refused; asking for the layer");
+            let _ = replicas.request(source.id, state.space);
+        }
     }
 }
 
@@ -233,13 +243,21 @@ pub(crate) fn retract_layer(replicas: &Replicas, identity: &Identity, me: Endpoi
     }
 }
 
-/// Drops every guard on layers `device` writes, whoever holds them. The device
-/// is present, so only its word counts.
-pub(super) fn drop_layers_of(world: &mut World, device: EndpointId) {
+/// Drops every guard on layers `device` writes, whoever holds them, in `scope`
+/// if one is named. The device is present, so only its word counts.
+pub(super) fn drop_layers_of(world: &mut World, device: EndpointId, scope: Option<SpaceId>) {
     let replicas = world.resource::<Replicas>().clone();
     for (doc, writer, source) in replicas.session_sources_of_device(device) {
-        drop_source(world, source, writer, doc);
+        if scope.is_none_or(|scope| replicas.session_space(doc) == Some(scope)) {
+            drop_source(world, source, writer, doc);
+        }
     }
+}
+
+/// The space of the document a session layer guard `e` holds a layer on.
+pub(super) fn guard_space(world: &World, replicas: &Replicas, e: Entity) -> Option<SpaceId> {
+    let layer = world.get::<SessionLayerState>(e)?;
+    replicas.session_space(layer.doc)
 }
 
 /// Drops every guard on `writer`'s layer on `doc` except `keep`'s.

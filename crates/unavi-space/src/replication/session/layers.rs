@@ -57,11 +57,14 @@ pub(crate) type Opinion = (SessionKey, Option<Vec<u8>>, u64);
 /// What applying a tick or a layer changed.
 #[derive(Default)]
 pub(crate) struct Applied {
-    pub(crate) set:     Vec<Opinion>,
+    pub(crate) set:      Vec<Opinion>,
     /// Keys that had an opinion and no longer do.
-    pub(crate) cleared: Vec<SessionKey>,
+    pub(crate) cleared:  Vec<SessionKey>,
     /// Whether the writer's layer exists, with the source among its sources.
-    pub(crate) held:    bool,
+    pub(crate) held:     bool,
+    /// Whether a tick left the layer with another root than the one its
+    /// writer signed, so the layer differs from the writer's.
+    pub(crate) diverged: bool,
 }
 
 /// A layer a departing source was the last to hold.
@@ -282,8 +285,12 @@ impl SessionLayers {
             layer.state = Some(tick.state.clone());
             layer.sources.insert(source);
         }
+        let diverged = result.is_ok() && layer.cells.root() != state.root;
         match result {
-            Ok((applied, _)) => Ok(applied),
+            Ok((applied, _)) => Ok(Applied {
+                diverged,
+                ..applied
+            }),
             Err(err) => {
                 if let Some(layers) = self.docs.get_mut(&state.doc) {
                     layers.remove(&writer);

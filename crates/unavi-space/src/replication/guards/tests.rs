@@ -1,6 +1,9 @@
-use std::sync::{
-    Arc,
-    Mutex,
+use std::{
+    sync::{
+        Arc,
+        Mutex,
+    },
+    time::Duration,
 };
 
 use bevy::ecs::system::RunSystemOnce;
@@ -34,7 +37,9 @@ use hsd::{
         entry::Entry,
     },
 };
+use iroh::EndpointAddr;
 use iroh_docs::NamespaceSecret;
+use n0_future::time::Instant;
 use unavi_identity::{
     auth::Bindings,
     authorship::Authorship,
@@ -60,6 +65,10 @@ use xdid::method::key::{
 use super::*;
 use crate::{
     authority::SpaceView,
+    discovery::{
+        LastSeenIn,
+        Peer,
+    },
     membership::{
         forget_space,
         register_space,
@@ -78,6 +87,7 @@ use crate::{
         },
         message::{
             Received,
+            ReceivedDoc,
             session::{
                 ClearedKey,
                 LayerState,
@@ -90,6 +100,7 @@ use crate::{
                 check_tick,
             },
         },
+        request::request_on_space_added,
         session::{
             SessionError,
             WriterId,
@@ -667,14 +678,17 @@ fn a_snapshot_keeps_what_it_restates_and_drops_the_rest() {
     apply_remote(
         &mut world,
         device.entity,
-        Remote::Snapshot(vec![RemoteDoc {
-            doc: kept,
-            space,
-            pin: Some(restated),
-            hold: Some(3),
-            withdrawal: None,
-            layers: Vec::new(),
-        }]),
+        Remote::Snapshot {
+            scope: None,
+            docs:  vec![RemoteDoc {
+                doc: kept,
+                space,
+                pin: Some(restated),
+                hold: Some(3),
+                withdrawal: None,
+                layers: Vec::new(),
+            }],
+        },
     );
 
     assert_eq!(
@@ -1106,7 +1120,10 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_connected() {
     apply_remote(
         &mut world,
         relayer.entity,
-        Remote::Snapshot(vec![remote_doc]),
+        Remote::Snapshot {
+            scope: None,
+            docs:  vec![remote_doc],
+        },
     );
 
     assert!(
@@ -1254,7 +1271,11 @@ fn a_carried_layer_reaches_a_late_joiner_masked_by_the_writers_standing() {
             layers:     d.layers,
         })
         .collect();
-    apply_remote(&mut joiner_world, relayer.entity, Remote::Snapshot(docs));
+    apply_remote(
+        &mut joiner_world,
+        relayer.entity,
+        Remote::Snapshot { scope: None, docs },
+    );
 
     assert_eq!(
         joiner_replicas.session_layers(doc),
@@ -1288,7 +1309,14 @@ fn the_writers_return_replaces_the_carried_layer() {
         withdrawal: None,
         layers:     vec![layer],
     };
-    apply_remote(&mut f.world, back.entity, Remote::Snapshot(vec![doc]));
+    apply_remote(
+        &mut f.world,
+        back.entity,
+        Remote::Snapshot {
+            scope: None,
+            docs:  vec![doc],
+        },
+    );
 
     assert_eq!(
         replicas.session_sources(f.writer(), f.doc),
@@ -1340,7 +1368,14 @@ fn a_relayed_layer_is_ignored_while_its_writer_is_present() {
         withdrawal: None,
         layers:     vec![stale],
     };
-    apply_remote(&mut f.world, relayer.entity, Remote::Snapshot(vec![doc]));
+    apply_remote(
+        &mut f.world,
+        relayer.entity,
+        Remote::Snapshot {
+            scope: None,
+            docs:  vec![doc],
+        },
+    );
 
     assert_eq!(replicas.session_sources(f.writer(), f.doc), vec![peer(2)]);
     assert_eq!(resolved(&f.state, &state_k()).as_deref(), Some(&b"old"[..]));
@@ -1715,7 +1750,11 @@ fn a_late_joiner_told_only_by_a_carrier_learns_the_withdrawal() {
             layers:     d.layers,
         })
         .collect();
-    apply_remote(&mut world, from_carrier.entity, Remote::Snapshot(docs));
+    apply_remote(
+        &mut world,
+        from_carrier.entity,
+        Remote::Snapshot { scope: None, docs },
+    );
     assert!(joiner.is_withdrawn(doc), "the carrier told it");
 
     let pinner = remote(&mut world, peer(4), Some(bob.did()));
@@ -1913,7 +1952,10 @@ fn reconcile_does_not_repin_a_doc_the_local_peer_withdrew() {
 
     reconcile(&mut world);
 
-    assert!(!replicas.pins_by(peer(1), doc), "a deleted document stays unpinned");
+    assert!(
+        !replicas.pins_by(peer(1), doc),
+        "a deleted document stays unpinned"
+    );
 }
 
 #[test]
@@ -1937,4 +1979,185 @@ fn reconcile_pins_once_the_author_becomes_known() {
     assert!(spawn_pin(&mut world, &author, proven));
     reconcile(&mut world);
     assert!(replicas.pins_by(peer(1), doc));
+}
+
+/// Converts the proven pins of a validated snapshot into what the world
+/// applies, as the wire does after checking each proof.
+fn proven_docs(docs: Vec<ReceivedDoc>, author: &Did) -> Vec<RemoteDoc> {
+    docs.into_iter()
+        .map(|d| RemoteDoc {
+            doc:        d.doc,
+            space:      d.space,
+            pin:        d.pin.map(|pin| PinClaim {
+                proven: Proven {
+                    author: author.clone(),
+                    proof:  pin.author,
+                },
+                record: pin.record,
+            }),
+            hold:       d.hold,
+            withdrawal: d.withdrawal,
+            layers:     d.layers,
+        })
+        .collect()
+}
+
+/// Takes the next queued message off `feed`, validated, and applies the
+/// snapshot it carries to `world` as `from`'s.
+fn deliver_snapshot(feed: &StateFeed, world: &mut World, from: Entity, author: &Did) {
+    let Ok(msg @ ReplicationMsg::Snapshot { .. }) = feed.rx.try_recv() else {
+        panic!("a snapshot is queued");
+    };
+    let Ok(Received::Snapshot { scope, docs, .. }) = msg.validate(clock::current_micros()) else {
+        panic!("the snapshot validates");
+    };
+    apply_remote(
+        world,
+        from,
+        Remote::Snapshot {
+            scope,
+            docs: proven_docs(docs, author),
+        },
+    );
+}
+
+#[test]
+fn a_scoped_snapshot_leaves_the_senders_other_spaces_intact() {
+    let (mut world, replicas) = world();
+    let alice = identity();
+    let (here, there) = (space(b"scope-here"), space(b"scope-there"));
+    let (near, near_claim) = authored(31, &alice, here);
+    let (far, far_claim) = authored(32, &alice, there);
+    let state = spawn_doc(&mut world, there.doc());
+    let device = remote(&mut world, peer(2), Some(alice.did()));
+    assert!(spawn_pin(&mut world, &device, near_claim));
+    assert!(spawn_pin(&mut world, &device, far_claim));
+    spawn_hold(
+        &mut world,
+        &device,
+        HoldClaim {
+            doc:   far,
+            space: there,
+            at:    3,
+        },
+    );
+    Speaker {
+        source: &device,
+        who:    &alice,
+        doc:    there.doc(),
+        space:  there,
+    }
+    .say(&mut world, vec![write(&state_k(), b"v")], 1);
+
+    apply_remote(
+        &mut world,
+        device.entity,
+        Remote::Snapshot {
+            scope: Some(here),
+            docs:  Vec::new(),
+        },
+    );
+
+    assert!(!replicas.pins_by(peer(2), near), "the scope is replaced");
+    assert!(replicas.pins_by(peer(2), far), "other spaces stay");
+    assert_eq!(replicas.holder(there, far), Some(peer(2)));
+    assert_eq!(resolved(&state, &state_k()).as_deref(), Some(&b"v"[..]));
+
+    apply_remote(
+        &mut world,
+        device.entity,
+        Remote::Snapshot {
+            scope: None,
+            docs:  Vec::new(),
+        },
+    );
+
+    assert!(!replicas.pins_by(peer(2), far), "an unscoped one wipes all");
+    assert_eq!(resolved(&state, &state_k()), None);
+}
+
+/// Peer A instances a space again and asks peer B, who pinned a document in
+/// it, to restate: no presence, leave or gossip is involved.
+#[test]
+fn a_peers_pin_returns_after_the_space_is_instanced_again() {
+    let (mut a_world, a_replicas) = world();
+    let (mut b_world, b_replicas) = world();
+    a_world.add_observer(request_on_space_added);
+    let bob = identity();
+    let (a_id, b_id) = (peer(1), peer(2));
+    let beacon_space = space(b"beacon");
+    let (beacon, claim) = authored(41, &bob, beacon_space);
+
+    let b_source = local(&mut b_world, b_id, bob.did());
+    assert!(spawn_pin(&mut b_world, &b_source, claim));
+    let b_feed = b_replicas.register_stream(b_id, a_id);
+    let a_feed = a_replicas.register_stream(a_id, b_id);
+    assert!(a_feed.rx.try_recv().is_ok(), "the opening snapshot");
+    a_world.spawn((
+        Peer(EndpointAddr::new(b_id)),
+        LastSeenIn::heard_in(beacon_space, Duration::ZERO),
+    ));
+    let b_peer = remote(&mut a_world, b_id, Some(bob.did()));
+    let instance = a_world.spawn(Space(beacon_space)).id();
+    assert!(
+        matches!(a_feed.rx.try_recv(), Ok(ReplicationMsg::Request { .. })),
+        "first load"
+    );
+    deliver_snapshot(&b_feed, &mut a_world, b_peer.entity, bob.did());
+    assert!(a_replicas.pins_by(b_id, beacon));
+
+    a_world.despawn(instance);
+    assert!(!a_replicas.pins_by(b_id, beacon), "the space took it along");
+
+    a_world.spawn(Space(beacon_space));
+    let Ok(request) = a_feed.rx.try_recv() else {
+        panic!("instancing the space asks again");
+    };
+    assert!(a_feed.rx.try_recv().is_err(), "one request");
+    let Ok(Received::Request { space }) = request.validate(clock::current_micros()) else {
+        panic!("a request validates");
+    };
+    assert_eq!(space, beacon_space);
+    assert!(b_replicas.answer_request(a_id, space, Instant::now()));
+    deliver_snapshot(&b_feed, &mut a_world, b_peer.entity, bob.did());
+
+    assert!(a_replicas.pins_by(b_id, beacon), "B's pin is restored");
+    a_replicas.unregister_stream(a_feed.token);
+    b_replicas.unregister_stream(b_feed.token);
+}
+
+#[test]
+fn a_tick_whose_root_does_not_match_asks_its_writer_for_the_space() {
+    let (mut world, _) = world();
+    let guest = identity();
+    let space = space(b"root-mismatch");
+    let doc = space.doc();
+    spawn_doc(&mut world, doc);
+    let visitor = remote(&mut world, peer(3), Some(guest.did()));
+    let speaker = Speaker {
+        source: &visitor,
+        who: &guest,
+        doc,
+        space,
+    };
+    let replicas = world.resource::<Replicas>().clone();
+    let feed = replicas.register_stream(peer(1), peer(3));
+    assert!(feed.rx.try_recv().is_ok(), "the opening snapshot");
+
+    let honest = speaker.layer(&[write(&state_k(), b"v")], 1);
+    let (writes, clears) = check_tick(&[write(&state_k(), b"v")], &[]).expect("within bounds");
+    let tick = ReceivedTick {
+        writes,
+        clears,
+        state: honest.state,
+    };
+    layers::apply_tick(&mut world, &visitor, &tick);
+    assert!(feed.rx.try_recv().is_err(), "a matching root asks nothing");
+
+    speaker.say(&mut world, vec![write(&state_k(), b"w")], 2);
+    assert!(
+        matches!(feed.rx.try_recv(), Ok(ReplicationMsg::Request { space: asked }) if asked == space),
+        "a root that differs asks for the space"
+    );
+    replicas.unregister_stream(feed.token);
 }

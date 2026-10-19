@@ -46,10 +46,20 @@ pub const MAX_SNAPSHOT_DOCS: usize = 1024;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ReplicationMsg {
-    /// Everything the sender states, replacing whatever it stated before. A
-    /// snapshot too large for one frame is sent as consecutive frames, each
-    /// but the last with `more` set, and is applied once the last arrives.
-    Snapshot { docs: Vec<DocSnapshot>, more: bool },
+    /// Everything the sender states, replacing whatever it stated before. With
+    /// a `scope`, only what it states in that space is replaced, and every
+    /// document must be in it. A snapshot too large for one frame is sent as
+    /// consecutive frames, each but the last with `more` set, and is
+    /// applied once the last arrives.
+    Snapshot {
+        scope: Option<SpaceId>,
+        docs:  Vec<DocSnapshot>,
+        more:  bool,
+    },
+    /// Asks the receiver for its state in `space`, which it answers with a
+    /// snapshot scoped to that space. Sent by a peer that lost what it held of
+    /// the receiver in `space`.
+    Request { space: SpaceId },
     /// The sender holds `doc` in `space`. `author` is the author's proof,
     /// whoever sends it; each receiver records whether the sender is the
     /// author. `record` is the newest record of the author's the sender
@@ -149,8 +159,12 @@ pub struct ReceivedDoc {
 /// yet checked against their document's namespace.
 pub enum Received {
     Snapshot {
-        docs: Vec<ReceivedDoc>,
-        more: bool,
+        scope: Option<SpaceId>,
+        docs:  Vec<ReceivedDoc>,
+        more:  bool,
+    },
+    Request {
+        space: SpaceId,
     },
     Pin {
         author: Authorship,
@@ -172,10 +186,19 @@ impl ReplicationMsg {
     /// decodes what it carries.
     pub fn validate(self, recv: u64) -> Result<Received, Rejected> {
         Ok(match self {
-            Self::Snapshot { docs, more } => Received::Snapshot {
-                docs: check_docs(docs, recv)?,
-                more,
-            },
+            Self::Snapshot { scope, docs, more } => {
+                if let Some(scope) = scope
+                    && docs.iter().any(|doc| doc.space != scope)
+                {
+                    return Err(Rejected::Mismatched);
+                }
+                Received::Snapshot {
+                    scope,
+                    docs: check_docs(docs, recv)?,
+                    more,
+                }
+            }
+            Self::Request { space } => Received::Request { space },
             Self::Session(tick) => Received::Session(tick.check()?),
             Self::Pin { author, record } => Received::Pin {
                 author,

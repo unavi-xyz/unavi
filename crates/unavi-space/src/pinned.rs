@@ -28,7 +28,10 @@ use hsd::{
     id::DocId,
     state::HsdState,
 };
-use iroh::EndpointAddr;
+use iroh::{
+    EndpointAddr,
+    EndpointId,
+};
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_store::Document;
@@ -52,6 +55,7 @@ use crate::{
             DocGuards,
         },
     },
+    sync_peers,
 };
 
 /// A document tracked because some peer references it, anchoring its guards.
@@ -145,12 +149,7 @@ pub fn fetch_pinned_docs(
             continue;
         }
 
-        let sync_from = replicas
-            .sync_sources(doc.doc, me)
-            .into_iter()
-            .filter_map(|id| peers.get(peer_index.get(id)?).ok())
-            .map(|p| p.0.clone())
-            .collect::<Vec<_>>();
+        let sync_from = sync_addrs(&replicas, doc.doc, me, &peers, &peer_index);
         if sync_from.is_empty() {
             continue;
         }
@@ -188,6 +187,46 @@ pub fn fetch_pinned_docs(
                 peers,
                 _cancel: cancel_tx,
             });
+    }
+}
+
+/// Addresses of the connected peers that pin `doc`.
+fn sync_addrs(
+    replicas: &Replicas,
+    doc: DocId,
+    me: EndpointId,
+    peers: &Query<&Peer>,
+    peer_index: &Index<Peer>,
+) -> Vec<EndpointAddr> {
+    replicas
+        .sync_sources(doc, me)
+        .into_iter()
+        .filter_map(|id| peers.get(peer_index.get(id)?).ok())
+        .map(|p| p.0.clone())
+        .collect()
+}
+
+/// Names pinners that appeared after a pinned document joined, whether or not
+/// its feed has synced. Each pinner is named once.
+pub fn name_late_pinners(
+    mut instanced: Query<(&PinnedDoc, &mut SyncPeers)>,
+    peers: Query<&Peer>,
+    peer_index: Res<Index<Peer>>,
+    store: Option<Res<DataStore>>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
+) {
+    let (Some(store), Some(me)) = (store, view.as_deref().map(SpaceView::me)) else {
+        return;
+    };
+    for (doc, mut named) in &mut instanced {
+        let known = sync_addrs(&replicas, doc.doc, me, &peers, &peer_index);
+        let fresh = sync_peers::unnamed(&named, known);
+        if fresh.is_empty() {
+            continue;
+        }
+        sync_peers::name_peers(&store.0, NamespaceId::from(&doc.doc.0), fresh.clone());
+        named.0.extend(fresh);
     }
 }
 

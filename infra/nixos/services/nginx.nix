@@ -29,21 +29,11 @@ let
     add_header Cache-Control "public, max-age=31536000, immutable" always;
   '';
 
-  # Every file in the store has mtime 1, so nginx's own Last-Modified and ETag
-  # (mtime plus size) survive a deploy that changed the content, and a client
-  # would keep its stale copy as a 304. The package's store hash changes with
-  # any file in it, so it stands in as the ETag: a revalidation is a 304 until
-  # the next deploy that changed something, then a full fetch of everything.
-  # Weak, since brotli and gzip copies share it.
-  deployTag = ''W/"${builtins.substring 11 32 "${webAppPkg}"}"'';
+  # nixpkgs' nginx tags a store file with its store path's hash and size and
+  # sends no Last-Modified, so a revalidation is a 304 until a deploy changes
+  # the package, then a full fetch.
   revalidate = ''
-    etag off;
-    if_modified_since off;
     add_header Cache-Control "no-cache" always;
-    add_header ETag '${deployTag}' always;
-    if ($http_if_none_match = '${deployTag}') {
-      return 304;
-    }
   '';
 
   staticHosts = lib.mapAttrs (_: _cfg: {

@@ -18,6 +18,9 @@ pub enum HostApi {
     InputContext,
     LocalAgent,
     Peer,
+    /// Reading the portals, document metadata and trust rungs around the
+    /// local user.
+    Perception,
     Physics,
     Portal,
     Scene,
@@ -74,7 +77,7 @@ impl Permissions {
 mod tests {
     use super::*;
 
-    const ALL: [HostApi; 13] = [
+    const ALL: [HostApi; 14] = [
         HostApi::Commit,
         HostApi::CreateDocument,
         HostApi::Event,
@@ -83,6 +86,7 @@ mod tests {
         HostApi::InputContext,
         HostApi::LocalAgent,
         HostApi::Peer,
+        HostApi::Perception,
         HostApi::Physics,
         HostApi::Portal,
         HostApi::Scene,

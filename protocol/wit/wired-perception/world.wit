@@ -1,0 +1,64 @@
+/// What the local user can perceive of the world around them: portals in
+/// range, what a document says about itself, and how far a user is trusted.
+///
+/// Reads only. Every call needs the `perception` permission, which only the
+/// local user's own content holds.
+package wired:perception;
+
+interface perception {
+  use wired:core/math.{transform};
+  use wired:core/ids.{did, document-id, prim-ref};
+  use wired:core/error.{error};
+
+  enum portal-state {
+    closed,
+    /// Its destination is loading.
+    loading,
+    open,
+  }
+
+  /// A portal in a loaded space.
+  record portal {
+    prim:        prim-ref,
+    /// Where the portal prim is this frame, in the calling script's own
+    /// document frame.
+    transform:   transform,
+    /// Meters, in the prim's XY plane, facing +Z.
+    width:       f32,
+    height:      f32,
+    /// The space it opens onto, `none` while it opens onto nothing.
+    destination: option<document-id>,
+    /// Whether it is one half of a two-way pair. A portal with a destination
+    /// and no partner is one-way.
+    linked:      bool,
+    state:       portal-state,
+  }
+
+  /// Up to 64 portals whose centre lies within `radius` meters of the local
+  /// user's camera, nearest first. Empty before the camera exists.
+  portals: func(radius: f32) -> result<list<portal>, error>;
+
+  /// What a document declares about itself. Self-asserted: anyone who can
+  /// write the document can say anything here.
+  record document-meta {
+    name:        option<string>,
+    description: option<string>,
+  }
+
+  /// The meta of a document loaded on this peer, `none` when it is not.
+  meta: func(document: document-id) -> result<option<document-meta>, error>;
+
+  /// How far this peer trusts a user, lowest first.
+  enum trust-rung {
+    blocked,
+    anonymous,
+    guest,
+    trusted,
+    /// The local user.
+    myself,
+  }
+
+  /// The local rung of `user`. `invalid-argument` for a string that is not a
+  /// DID.
+  rung: func(user: did) -> result<trust-rung, error>;
+}

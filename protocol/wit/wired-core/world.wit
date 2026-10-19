@@ -118,6 +118,9 @@ interface error {
     portal,
     /// Moving the local user to another space.
     travel,
+    /// Reading what the local user perceives: portals in range, document
+    /// meta and trust rungs.
+    perception,
   }
 
   /// A budget that refills over time.

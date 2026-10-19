@@ -52,9 +52,11 @@ impl Default for Rules {
             HostApi::Identity,
             HostApi::LocalAgent,
         ]));
-        // Global input listening, the physics solver and cross-space reach.
+        // Global input listening, the physics solver, cross-space reach and
+        // sight of the portals around the local user.
         let myself = trusted.union(Permissions::of(&[
             HostApi::InputContext,
+            HostApi::Perception,
             HostApi::Physics,
             HostApi::Storage,
             HostApi::Travel,
@@ -146,7 +148,7 @@ mod tests {
         Stock,
     };
 
-    const ALL: [HostApi; 13] = [
+    const ALL: [HostApi; 14] = [
         HostApi::Commit,
         HostApi::CreateDocument,
         HostApi::Event,
@@ -155,6 +157,7 @@ mod tests {
         HostApi::InputContext,
         HostApi::LocalAgent,
         HostApi::Peer,
+        HostApi::Perception,
         HostApi::Physics,
         HostApi::Portal,
         HostApi::Scene,
@@ -239,6 +242,7 @@ mod tests {
         let rules = Rules::default();
         for name in [
             HostApi::InputContext,
+            HostApi::Perception,
             HostApi::Physics,
             HostApi::Storage,
             HostApi::Travel,

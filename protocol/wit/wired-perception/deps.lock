@@ -1,0 +1,4 @@
+[wired-core]
+path = "../wired-core"
+sha256 = "ddbe94cc009955849da52e37fb81d36e0d9d049b90d153e9ebcd49de95cf7138"
+sha512 = "78f0242ab7ac65f7043f1650a2a5cd81bac819edcec0b3fb5c5705eb08a14cfac0c8d7b489ab4aa8e2ac22335fa093d75e5443b0e3b5ef6e42ee44a812ac3894"

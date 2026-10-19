@@ -15,6 +15,7 @@ world imports {
   import wired:input/device;
   import wired:agent/local;
   import wired:portal/portals;
+  import wired:perception/perception;
 }
 
 world script {

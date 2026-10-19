@@ -1,14 +1,29 @@
 use std::time::Duration;
 
+use avian3d::prelude::{
+    AngularVelocity,
+    LinearVelocity,
+    Position,
+    RigidBodyDisabled,
+};
 use bevy::{
+    ecs::system::RunSystemOnce,
     prelude::*,
     state::app::StatesPlugin,
 };
 use bevy_hsd::loaded::HsdLoaded;
 use iroh_docs::NamespaceId;
+use unavi_agent::{
+    LocalAgent,
+    LocalAgentEntities,
+    config::AgentConfig,
+};
 use unavi_script::ScriptStatus;
 use unavi_space::{
-    grid::ActiveSpace,
+    grid::{
+        ActiveSpace,
+        Spaceless,
+    },
     membership::Space,
     portal::ByPortal,
     travel::PendingTravel,
@@ -34,7 +49,10 @@ use crate::{
     },
     scene::{
         SceneState,
-        respawn::Respawn,
+        respawn::{
+            Respawn,
+            respawn,
+        },
         travel::{
             Departing,
             drive_travel,
@@ -609,20 +627,6 @@ fn a_space_ready_at_once_still_waits_out_the_minimum_stay() {
 
 #[test]
 fn limbo_puts_the_body_down_once_and_then_leaves_it_alone() {
-    use avian3d::prelude::{
-        AngularVelocity,
-        LinearVelocity,
-        Position,
-        RigidBodyDisabled,
-    };
-    use bevy::ecs::system::RunSystemOnce;
-    use unavi_agent::{
-        LocalAgent,
-        LocalAgentEntities,
-        config::AgentConfig,
-    };
-    use unavi_space::grid::Spaceless;
-
     let mut app = App::new();
     let config = AgentConfig::default();
     let floor = Vec3::new(5000.0, 0.0, 5000.0);
@@ -733,4 +737,43 @@ fn a_space_fallen_out_of_is_dropped_once_limbo_targets_elsewhere() {
     travel_to(&mut app, namespace(2));
     app.update();
     assert!(app.world().get_entity(start).is_err());
+}
+
+#[test]
+fn a_spaceless_respawn_in_limbo_puts_the_agent_back_on_the_floor() {
+    let mut app = setup();
+    app.add_observer(respawn);
+    let fallen = Vec3::new(0.0, -600.0, 0.0);
+    let body = app
+        .world_mut()
+        .spawn((
+            Transform::from_translation(fallen),
+            Position(fallen),
+            LinearVelocity(Vec3::NEG_Y),
+            AngularVelocity::default(),
+        ))
+        .id();
+    let tracked_head = app.world_mut().spawn_empty().id();
+    let agent = app
+        .world_mut()
+        .spawn((
+            LocalAgent,
+            AgentConfig::default(),
+            LocalAgentEntities { body, tracked_head },
+            super::PlacedInLimbo,
+        ))
+        .id();
+
+    app.world_mut().trigger(Respawn::default());
+    app.world_mut().flush();
+
+    assert!(
+        !app.world().entity(agent).contains::<super::PlacedInLimbo>(),
+        "a void respawn in limbo must place the agent on the floor again"
+    );
+    assert_eq!(
+        app.world().entity(body).get::<Position>().map(|pos| pos.0),
+        Some(fallen),
+        "the agent was put down at the world origin, which has no floor"
+    );
 }

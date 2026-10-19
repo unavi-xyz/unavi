@@ -21,6 +21,13 @@ use unavi_space::{
     spawn::pick_spawn,
 };
 
+use crate::scene::{
+    SceneState,
+    limbo::PlacedInLimbo,
+};
+
+/// In limbo, a respawn naming no space puts the agent back on the limbo floor,
+/// since no space holds a place to put it.
 #[derive(Event, Default)]
 pub struct Respawn {
     /// Space to spawn into; `None` uses the active space.
@@ -66,8 +73,9 @@ impl SpawnPlaces<'_, '_> {
 
 pub fn respawn(
     trigger: On<Respawn>,
-    local_agent: Query<(&LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
+    local_agent: Query<(Entity, &LocalAgentEntities, &AgentConfig), With<LocalAgent>>,
     active: Res<ActiveSpace>,
+    state: Res<State<SceneState>>,
     places: SpawnPlaces,
     mut body: Query<(
         &mut Transform,
@@ -78,10 +86,17 @@ pub fn respawn(
     )>,
     mut commands: Commands,
 ) {
-    let Ok((ents, config)) = local_agent.single() else {
+    let Ok((agent, ents, config)) = local_agent.single() else {
         warn!("Can't respawn, local agent not found");
         return;
     };
+    let event = trigger.event();
+    let space = event.space.or(active.0);
+    if event.at.is_none() && space.is_none() && *state.get() == SceneState::Limbo {
+        commands.entity(agent).remove::<PlacedInLimbo>();
+        info!("Respawning on the limbo floor");
+        return;
+    }
     let Ok((mut tr, pos, mut vel, mut ang_vel, prev)) = body.get_mut(ents.body) else {
         return;
     };
@@ -91,13 +106,9 @@ pub fn respawn(
 
     // Spawn points name where the feet go, and the body's origin is its
     // capsule's centre, so it is set at its float height above the point.
-    let event = trigger.event();
-    let ground = event.at.unwrap_or_else(|| {
-        event
-            .space
-            .or(active.0)
-            .map_or_else(Vec3::default, |space| places.pick(space))
-    });
+    let ground = event
+        .at
+        .unwrap_or_else(|| space.map_or_else(Vec3::default, |space| places.pick(space)));
     let spawn = ground + Vec3::Y * config.float_height();
     tr.translation = spawn;
     // Write `Position` too rather than relying on the transform sync: a body

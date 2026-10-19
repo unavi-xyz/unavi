@@ -39,13 +39,15 @@ impl Plugin for MembershipPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Policy>()
             .init_resource::<Index<Space>>()
-            .add_observer(register_document)
             .add_observer(forget_document)
             .add_observer(register_space)
             .add_observer(register_membership)
             .add_observer(forget_membership)
             .add_observer(forget_space)
-            .add_systems(Update, parent_docs_under_space.before(HsdSystems));
+            .add_systems(
+                Update,
+                (parent_docs_under_space, register_documents).before(HsdSystems),
+            );
     }
 }
 
@@ -231,34 +233,32 @@ pub fn forget_space(
     }
 }
 
-/// Records the document that composed `doc`, once it has an id to key on.
-pub fn register_document(
-    trigger: On<Insert, HsdDocId>,
-    docs: Query<(&HsdDocId, Option<&ChildOf>)>,
+/// Records the document that composed each document hanging off a prim.
+///
+/// A system rather than an observer, since the parent and the host's id can
+/// arrive after the document's own.
+pub fn register_documents(
+    docs: Query<(&HsdDocId, &ChildOf)>,
     prims: Query<&PrimOf>,
     ids: Query<&HsdDocId>,
     policy: Res<Policy>,
 ) {
-    let Ok((doc, parent)) = docs.get(trigger.entity) else {
-        return;
-    };
-    let Some(host) = host_of(parent, &prims, &ids) else {
-        // A document composed some other way — one a script created — states
-        // its own host before it is spawned, and the prim chain has nothing to
-        // say about it. Clearing it here would orphan it from its author.
-        return;
-    };
-    policy.update(doc.0, |record| record.host = Some(host));
+    for (doc, parent) in &docs {
+        // A document composed some other way, such as one a script created,
+        // states its own host before it is spawned and has no prim chain.
+        // Clearing it would orphan it from its author.
+        let Some(host) = host_of(parent, &prims, &ids) else {
+            continue;
+        };
+        if policy.get(doc.0).host != Some(host) {
+            policy.update(doc.0, |record| record.host = Some(host));
+        }
+    }
 }
 
 /// The document that composed this one in, for a reference site.
-fn host_of(
-    parent: Option<&ChildOf>,
-    prims: &Query<&PrimOf>,
-    ids: &Query<&HsdDocId>,
-) -> Option<DocId> {
-    let prim = parent.map(ChildOf::parent)?;
-    let host = prims.get(prim).ok()?.0;
+fn host_of(parent: &ChildOf, prims: &Query<&PrimOf>, ids: &Query<&HsdDocId>) -> Option<DocId> {
+    let host = prims.get(parent.parent()).ok()?.0;
     ids.get(host).ok().map(|id| id.0)
 }
 
@@ -388,6 +388,7 @@ mod tests {
         let site_id = DocId::site(host_id, prim_id);
         app.world_mut()
             .spawn((Hsd::new(HsdState::new()), HsdDocId(site_id), ChildOf(prim)));
+        app.update();
 
         assert_eq!(policy.get(site_id).host, Some(host_id));
         assert_eq!(
@@ -399,6 +400,32 @@ mod tests {
     }
 
     #[test]
+    fn a_document_parented_after_its_id_still_records_its_host() {
+        let (mut app, policy) = app();
+        let host_id = DocId([26; 32]);
+
+        let host = app
+            .world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(host_id)))
+            .id();
+        let prim_id = PrimId::new();
+        let prim = app.world_mut().spawn((Prim(prim_id), PrimOf(host))).id();
+
+        let site_id = DocId::site(host_id, prim_id);
+        let site = app
+            .world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(site_id)))
+            .id();
+        app.update();
+        assert_eq!(policy.get(site_id).host, None);
+
+        app.world_mut().entity_mut(site).insert(ChildOf(prim));
+        app.update();
+
+        assert_eq!(policy.get(site_id).host, Some(host_id));
+    }
+
+    #[test]
     fn a_host_stated_before_the_spawn_survives_registration() {
         let (mut app, policy) = app();
         let (parent, child) = (DocId([24; 32]), DocId([25; 32]));
@@ -406,6 +433,7 @@ mod tests {
         policy.update(child, |record| record.host = Some(parent));
         app.world_mut()
             .spawn((Hsd::new(HsdState::new()), HsdDocId(child)));
+        app.update();
 
         assert_eq!(
             policy.get(child).host,

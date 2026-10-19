@@ -1,16 +1,11 @@
-use std::{
-    future::Future,
-    sync::Arc,
-};
+use std::sync::Arc;
 
+use bevy::ecs::system::RunSystemOnce;
 use hsd::state::HsdState;
 use iroh::{
-    Endpoint,
     EndpointId,
     SecretKey,
-    endpoint::presets::N0DisableRelay,
 };
-use iroh_docs::Author;
 use unavi_identity::{
     auth::Bindings,
     authorship::Authorship,
@@ -24,10 +19,6 @@ use unavi_policy::{
     trust::TrustTable,
 };
 use unavi_registry::client::Followed;
-use unavi_store::{
-    Store,
-    StoreBuilder,
-};
 use xdid::method::key::{
     DidKeyPair,
     PublicKey,
@@ -44,6 +35,10 @@ use crate::{
         },
         store::Proven,
     },
+    test_store::{
+        block_on,
+        store,
+    },
 };
 
 fn identity() -> Identity {
@@ -56,34 +51,8 @@ fn peer(seed: u8) -> EndpointId {
     SecretKey::from_bytes(&[seed; 32]).public()
 }
 
-/// Runs `future` on the task runtime [`bevy_async::task::spawn`] uses, and
-/// blocks this thread for the result.
-fn block_on<T: Send + 'static>(future: impl Future<Output = T> + Send + 'static) -> T {
-    let (tx, rx) = async_channel::bounded(1);
-    bevy_async::task::spawn(async move {
-        tx.send(future.await).await.expect("send result");
-    });
-    rx.recv_blocking().expect("task result")
-}
-
-fn store() -> Store {
-    block_on(async {
-        let secret_key = SecretKey::generate();
-        let author = Author::from_bytes(&secret_key.to_bytes());
-        let endpoint = Endpoint::builder(N0DisableRelay)
-            .secret_key(secret_key)
-            .bind()
-            .await
-            .expect("bind endpoint");
-        StoreBuilder::new(endpoint, author)
-            .build()
-            .await
-            .expect("build store")
-    })
-}
-
-/// An App wired with just the two hold observers, a real HSD document this
-/// node authors, and a [`SpaceView`] for its own identity.
+/// An App wired with just the hold markers, a real HSD document this node
+/// authors, and a [`SpaceView`] for its own identity.
 struct Fixture {
     app:          App,
     pointer:      Entity,
@@ -155,9 +124,7 @@ fn fixture() -> Fixture {
     let mut app = App::new();
     app.add_plugins(bevy_async::AsyncPlugin)
         .insert_resource(replicas.clone())
-        .init_resource::<TakenHolds>()
-        .add_observer(take_hold_on_grab)
-        .add_observer(release_hold_on_release);
+        .init_resource::<Holds>();
     crate::replication::guards::init_indexes(app.world_mut());
 
     let async_world = app.world().resource::<bevy_async::AsyncWorld>().clone();
@@ -195,10 +162,27 @@ fn fixture() -> Fixture {
     }
 }
 
-/// Drains the async commands [`SpaceView::local`]'s hold calls queue,
-/// without waiting for a frame boundary.
+/// Runs one reconcile, then drains the async commands [`SpaceView::local`]'s
+/// hold calls queue, without waiting for a frame boundary.
 fn pump(app: &mut App) {
+    app.world_mut()
+        .run_system_once(reconcile_holds)
+        .expect("run the hold reconcile");
     bevy_async::commands::pump(app.world_mut(), web_time::Instant::now());
+}
+
+fn grab(fixture: &mut Fixture) {
+    fixture
+        .app
+        .world_mut()
+        .entity_mut(fixture.object)
+        .insert(Held {
+            pointer:       fixture.pointer,
+            reach:         1.0,
+            offset_tra:    Vec3::ZERO,
+            offset_rot:    Quat::IDENTITY,
+            prior_gravity: None,
+        });
 }
 
 #[test]
@@ -211,10 +195,7 @@ fn grabbing_ones_own_object_takes_its_hold() {
         "setup: the holder was not the pinning device by default"
     );
 
-    fixture.app.world_mut().trigger(Grabbed {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
+    grab(&mut fixture);
     pump(&mut fixture.app);
 
     assert_eq!(
@@ -229,10 +210,7 @@ fn releasing_drops_the_hold_it_took() {
     let mut fixture = fixture();
     let replicas = fixture.app.world().resource::<Replicas>().clone();
 
-    fixture.app.world_mut().trigger(Grabbed {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
+    grab(&mut fixture);
     pump(&mut fixture.app);
     assert_eq!(
         replicas.holder(fixture.space, fixture.doc),
@@ -240,10 +218,11 @@ fn releasing_drops_the_hold_it_took() {
         "setup: the grab did not take the hold"
     );
 
-    fixture.app.world_mut().trigger(Released {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
+    fixture
+        .app
+        .world_mut()
+        .entity_mut(fixture.object)
+        .remove::<Held>();
     pump(&mut fixture.app);
 
     assert_eq!(
@@ -259,10 +238,7 @@ fn releasing_after_the_entity_is_gone_still_drops_the_hold() {
     let mut fixture = fixture();
     let replicas = fixture.app.world().resource::<Replicas>().clone();
 
-    fixture.app.world_mut().trigger(Grabbed {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
+    grab(&mut fixture);
     pump(&mut fixture.app);
     assert_eq!(
         replicas.holder(fixture.space, fixture.doc),
@@ -270,22 +246,40 @@ fn releasing_after_the_entity_is_gone_still_drops_the_hold() {
         "setup: the grab did not take the hold"
     );
 
-    // The object is gone by the time the release is told about it — a
-    // scene unload, or a script despawning what it grabbed. `unavi-grab`
-    // fires `Released` from its own `on_held_removed`, which runs while
-    // the despawning entity's components are still readable, but this
-    // observer must not depend on that: it reads `TakenHolds` instead.
+    // A scene unload, or a script despawning what it grabbed.
     fixture.app.world_mut().despawn(fixture.object);
-    fixture.app.world_mut().trigger(Released {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
     pump(&mut fixture.app);
 
     assert_eq!(
         replicas.holder(fixture.space, fixture.doc),
         Some(fixture.other_device),
         "a release after the entity despawned could not resolve what hold to drop"
+    );
+}
+
+#[test]
+fn a_grab_whose_document_arrives_late_takes_its_hold() {
+    let mut fixture = fixture();
+    let tracked = fixture.app.world().resource::<Replicas>().clone();
+    fixture
+        .app
+        .insert_resource(Replicas::new(Policy::new(), Rules::default()));
+
+    grab(&mut fixture);
+    pump(&mut fixture.app);
+    assert_eq!(
+        tracked.holder(fixture.space, fixture.doc),
+        Some(fixture.other_device),
+        "setup: a hold was taken before the document was tracked"
+    );
+
+    fixture.app.insert_resource(tracked.clone());
+    pump(&mut fixture.app);
+
+    assert_eq!(
+        tracked.holder(fixture.space, fixture.doc),
+        Some(fixture.me),
+        "a grab still in progress never took the hold once its document was tracked"
     );
 }
 
@@ -297,10 +291,7 @@ fn grabbing_an_untracked_document_takes_no_hold() {
     let empty = Replicas::new(Policy::new(), Rules::default());
     fixture.app.insert_resource(empty);
 
-    fixture.app.world_mut().trigger(Grabbed {
-        entity:  fixture.object,
-        pointer: fixture.pointer,
-    });
+    grab(&mut fixture);
     pump(&mut fixture.app);
 
     let replicas = fixture.app.world().resource::<Replicas>().clone();

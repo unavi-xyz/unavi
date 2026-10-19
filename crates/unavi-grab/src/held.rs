@@ -1,6 +1,7 @@
-//! What a grabbed body does while a pointer carries it: driven by velocity
-//! toward the pointer rather than teleported, so it still collides on the
-//! way. A release, a vanished pointer, a demotion off
+//! What a grabbed body does while a pointer carries it.
+//!
+//! It is driven by velocity toward the pointer rather than teleported, so it
+//! still collides on the way. A release, a vanished pointer, a demotion off
 //! [`RigidBody::Dynamic`](avian3d::prelude::RigidBody::Dynamic) and the
 //! held entity despawning all just remove [`Held`]; [`on_held_removed`]
 //! is the one place that turns that removal into [`Released`].
@@ -24,6 +25,8 @@ use crate::events::{
     Released,
 };
 
+/// The fastest a grabbed body is driven, in metres per second.
+///
 /// Past this, a grabbed body's velocity is no longer "catching up to the
 /// pointer" but "flung by whatever moved the pointer" — a teleport, a portal
 /// crossing, a pointer respawn. Clamped rather than smoothed away, so a
@@ -114,10 +117,11 @@ pub fn begin_grab(
         .trigger(move |entity| Grabbed { entity, pointer });
 }
 
-/// The one place a grab ends, however it ends: a release, a pointer going
-/// away, a demotion off [`RigidBody::Dynamic`], or the held entity
-/// despawning outright. Every other end-of-grab path only removes
-/// [`Held`]; this restores whatever gravity scale preceded the grab and
+/// The one place a grab ends, however it ends.
+///
+/// A release, a pointer going away, a demotion off [`RigidBody::Dynamic`], or
+/// the held entity despawning outright. Every other end-of-grab path only
+/// removes [`Held`]; this restores whatever gravity scale preceded the grab and
 /// fires [`Released`].
 ///
 /// Runs before the removal — and, on a despawn, before any of the entity's

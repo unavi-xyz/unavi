@@ -7,7 +7,7 @@
 //! whatever crate owns that claim.
 
 pub mod events;
-mod held;
+pub mod held;
 mod pending;
 
 use bevy::prelude::*;

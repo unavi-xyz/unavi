@@ -33,6 +33,7 @@ unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
 unavi-physics.path      = "../unavi-physics"
 unavi-policy.path       = "../unavi-policy"
+unavi-portal.path       = "../unavi-portal"
 unavi-space.path        = "../unavi-space"
 unavi-store.path        = "../unavi-store"
 xdid.workspace          = true

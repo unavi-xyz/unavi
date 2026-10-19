@@ -29,6 +29,7 @@ const ASYNC_IMPORTS = [
   "wired:portal/portals#open",
   "wired:portal/portals#pair",
   "wired:portal/portals#travel",
+  "wired:perception/perception#meta",
   "unavi:host/node-storage#get",
   "unavi:host/node-storage#list-entries",
 ];

@@ -45,6 +45,7 @@ use crate::{
             input_listeners::InputListeners,
             link_intents::LinkIntents,
             pointers::Pointers,
+            portals::Portals,
             transforms::TransformSnapshots,
         },
         storage::{
@@ -60,6 +61,7 @@ pub mod frame;
 pub mod handles;
 pub mod input;
 pub mod peer;
+pub mod perception;
 pub mod physics;
 pub mod portal;
 pub mod queue;
@@ -75,6 +77,7 @@ pub struct SharedState {
     pub agents:          LocalAgentNodes,
     pub current_space:   CurrentSpace,
     pub pointers:        Pointers,
+    pub portals:         Portals,
     pub transforms:      TransformSnapshots,
     pub event_bus:       EventBus,
     pub input_listeners: InputListeners,
@@ -87,6 +90,7 @@ pub struct SharedResources<'w> {
     agents:          Res<'w, LocalAgentNodes>,
     current_space:   Res<'w, CurrentSpace>,
     pointers:        Res<'w, Pointers>,
+    portals:         Res<'w, Portals>,
     transforms:      Res<'w, TransformSnapshots>,
     event_bus:       Res<'w, EventBus>,
     input_listeners: Res<'w, InputListeners>,
@@ -100,6 +104,7 @@ impl SharedResources<'_> {
             agents:          self.agents.clone(),
             current_space:   self.current_space.clone(),
             pointers:        self.pointers.clone(),
+            portals:         self.portals.clone(),
             transforms:      self.transforms.clone(),
             event_bus:       self.event_bus.clone(),
             input_listeners: self.input_listeners.clone(),
@@ -295,6 +300,7 @@ impl Plugin for HostPlugin {
             .init_resource::<InputListeners>()
             .init_resource::<LinkIntents>()
             .init_resource::<Pointers>()
+            .init_resource::<Portals>()
             .init_resource::<TransformSnapshots>()
             .add_observer(input::bridge::bridge_press)
             .add_observer(input::bridge::bridge_enter)
@@ -327,6 +333,7 @@ impl Plugin for HostPlugin {
                         .chain(),
                     shared_state::transforms::snapshot_transforms,
                     shared_state::transforms::snapshot_doc_roots,
+                    shared_state::portals::snapshot_portals,
                 )
                     .chain()
                     .in_set(ScriptSystems::Snapshot),
@@ -336,6 +343,7 @@ impl Plugin for HostPlugin {
                 (
                     shared_state::transforms::snapshot_transforms,
                     shared_state::transforms::snapshot_doc_roots,
+                    shared_state::portals::snapshot_portals,
                 )
                     .after(bevy::transform::TransformSystems::Propagate),
             )

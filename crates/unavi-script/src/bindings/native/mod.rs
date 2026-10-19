@@ -23,6 +23,7 @@ mod convert;
 mod event;
 mod input;
 mod peer;
+mod perception;
 mod physics;
 mod portal;
 mod scene;
@@ -55,6 +56,7 @@ pub mod generated {
             "wired:portal/portals.open": async | trappable,
             "wired:portal/portals.pair": async | trappable,
             "wired:portal/portals.travel": async | trappable,
+            "wired:perception/perception.meta": async | trappable,
             "unavi:host/node-storage.get": async | trappable,
             "unavi:host/node-storage.list-entries": async | trappable,
             default: trappable,

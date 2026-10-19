@@ -149,6 +149,7 @@ enum WirePermission {
     Physics,
     Portal,
     Travel,
+    Perception,
 }
 
 #[derive(Serialize)]
@@ -216,6 +217,7 @@ const fn wire_permission(api: HostApi) -> Option<WirePermission> {
         HostApi::LocalAgent => WirePermission::LocalAgent,
         HostApi::Identity => WirePermission::Identity,
         HostApi::Peer => WirePermission::Peer,
+        HostApi::Perception => WirePermission::Perception,
         HostApi::Physics => WirePermission::Physics,
         HostApi::Portal => WirePermission::Portal,
         HostApi::Travel => WirePermission::Travel,
@@ -235,6 +237,7 @@ pub fn permission(value: &str) -> Result<HostApi, ScriptError> {
         "local-agent" => HostApi::LocalAgent,
         "identity" => HostApi::Identity,
         "peer" => HostApi::Peer,
+        "perception" => HostApi::Perception,
         "physics" => HostApi::Physics,
         "portal" => HostApi::Portal,
         "travel" => HostApi::Travel,

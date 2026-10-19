@@ -42,6 +42,7 @@ mod convert;
 mod event;
 mod input;
 mod peer;
+mod perception;
 mod physics;
 mod portal;
 mod scene;

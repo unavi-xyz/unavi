@@ -389,6 +389,11 @@ function buildImports(wasi: WASIShim, rt: any) {
       currentSpace: rt.currentSpace.bind(rt),
       intents: rt.intents.bind(rt),
     },
+    "wired:perception/perception": {
+      portals: rt.perceptionPortals.bind(rt),
+      meta: rt.perceptionMeta.bind(rt),
+      rung: rt.perceptionRung.bind(rt),
+    },
     "wired:shading/graph": {
       setGraph: rt.setGraph.bind(rt),
       overrides: rt.overrides.bind(rt),

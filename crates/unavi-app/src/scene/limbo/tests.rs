@@ -10,6 +10,7 @@ use unavi_script::ScriptStatus;
 use unavi_space::{
     grid::ActiveSpace,
     membership::Space,
+    portal::ByPortal,
     travel::PendingTravel,
 };
 
@@ -26,6 +27,8 @@ use super::arrival::{
 use crate::{
     camera::veil::{
         COVER,
+        MIN_COVERED,
+        REVEAL,
         Veil,
         reveal_veil,
     },
@@ -96,6 +99,8 @@ fn setup() -> App {
             )
                 .chain(),
         );
+    // Enters limbo at the start of time, as startup does.
+    app.update();
     app
 }
 
@@ -108,10 +113,19 @@ fn cover_veil(app: &mut App) {
     app.world_mut().resource_mut::<Veil>().step(COVER);
 }
 
+/// Lets the veil hold and then lift, as the frames after an arrival would.
+fn reveal_world(app: &mut App) {
+    let mut veil = app.world_mut().resource_mut::<Veil>();
+    veil.step(MIN_COVERED);
+    veil.step(REVEAL);
+}
+
 /// Runs the frames in which a passed gate closes the veil, enters the space,
 /// and lands in `SceneState::Space`.
 fn pass_gate(app: &mut App) {
     advance(app, MIN_LIMBO_STAY);
+    // The probe marks ground only on an arrival found the frame before.
+    app.update();
     app.update();
     cover_veil(app);
     app.update();
@@ -156,6 +170,7 @@ fn enter(app: &mut App, ns: NamespaceId) -> Entity {
     advance(app, GROUND_GRACE);
     pass_gate(app);
     assert_eq!(state(app), SceneState::Space, "failed to enter start space");
+    reveal_world(app);
     space
 }
 
@@ -685,4 +700,37 @@ fn limbo_puts_the_body_down_once_and_then_leaves_it_alone() {
         !app.world().entity(agent).contains::<super::PlacedInLimbo>(),
         "the next limbo stay must place the agent again"
     );
+}
+
+#[test]
+fn a_limbo_retarget_drops_the_abandoned_space_but_not_a_portal_space() {
+    let mut app = setup();
+    let first = namespace(1);
+    let portal = namespace(3);
+    app.world_mut().resource_mut::<LimboArrival>().target = Some(first.into());
+    let abandoned = app.world_mut().spawn(Space(first.into())).id();
+    let by_portal = app.world_mut().spawn((Space(portal.into()), ByPortal)).id();
+
+    travel_to(&mut app, namespace(2));
+    app.update();
+
+    assert!(
+        app.world().get_entity(abandoned).is_err(),
+        "the space travel turned away from is still loaded"
+    );
+    assert!(app.world().get_entity(by_portal).is_ok());
+}
+
+#[test]
+fn a_space_fallen_out_of_is_dropped_once_limbo_targets_elsewhere() {
+    let mut app = setup();
+    let start = enter(&mut app, namespace(1));
+    app.world_mut().entity_mut(start).remove::<HsdLoaded>();
+    app.update();
+    app.update();
+    assert_eq!(state(&app), SceneState::Limbo);
+
+    travel_to(&mut app, namespace(2));
+    app.update();
+    assert!(app.world().get_entity(start).is_err());
 }

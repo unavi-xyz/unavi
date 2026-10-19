@@ -5,6 +5,7 @@ use unavi_space::{
         Space,
         SpaceId,
     },
+    portal::ByPortal,
     travel::PendingTravel,
 };
 
@@ -25,8 +26,10 @@ pub struct Departing(Option<SpaceId>);
 /// space entry.
 ///
 /// From a space, the veil closes first and the space is dropped only once it
-/// is hidden. From limbo, nothing is standing to drop, so the request just
-/// retargets the arrival.
+/// is hidden. From limbo, nothing is standing, so the request retargets the
+/// arrival, and every space limbo is not waiting on is dropped: a target
+/// turned away from, a space fallen out of, a home that resolved late. Portal
+/// spaces are the portal's to keep.
 ///
 /// Travelling to the space already stood in drops and re-reads its entity,
 /// which is the only way to ask for a space again after a script or peer has
@@ -37,7 +40,7 @@ pub fn drive_travel(
     time: Res<Time>,
     state: Res<State<SceneState>>,
     active: Res<ActiveSpace>,
-    spaces: Query<(Entity, &Space)>,
+    spaces: Query<(Entity, &Space, Has<ByPortal>)>,
     mut arrival: ResMut<LimboArrival>,
     mut veil: ResMut<Veil>,
     mut next: ResMut<NextState<SceneState>>,
@@ -50,12 +53,19 @@ pub fn drive_travel(
             // A departure cut short by a fall back to limbo still means to
             // go where it was going.
             let unfinished = departing.0.take();
-            let Some(target) = requested.or(unfinished) else {
+            if let Some(target) = requested.or(unfinished) {
+                arrival.retarget(target, time.elapsed());
+                if !spaces.iter().any(|(_, s, _)| s.0 == target) {
+                    commands.spawn(Space(target));
+                }
+            }
+            let Some(target) = arrival.target else {
                 return;
             };
-            arrival.retarget(target, time.elapsed());
-            if !spaces.iter().any(|(_, s)| s.0 == target) {
-                commands.spawn(Space(target));
+            for (entity, space, by_portal) in &spaces {
+                if space.0 != target && !by_portal {
+                    commands.entity(entity).despawn();
+                }
             }
         }
         SceneState::Space => {
@@ -74,12 +84,12 @@ pub fn drive_travel(
             departing.0 = None;
 
             let active_space = active.0.and_then(|e| spaces.get(e).ok());
-            let reloading = active_space.map(|(_, s)| s.0) == Some(target);
+            let reloading = active_space.map(|(_, s, _)| s.0) == Some(target);
 
-            if let Some((active_ent, _)) = active_space {
+            if let Some((active_ent, ..)) = active_space {
                 commands.entity(active_ent).despawn();
             }
-            if reloading || !spaces.iter().any(|(_, s)| s.0 == target) {
+            if reloading || !spaces.iter().any(|(_, s, _)| s.0 == target) {
                 commands.spawn(Space(target));
             }
             arrival.retarget(target, time.elapsed());

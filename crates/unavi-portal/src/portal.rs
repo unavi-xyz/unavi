@@ -10,9 +10,11 @@ use hsd::{
     id::DocId,
 };
 
+use crate::view::visual::PortalVisual;
+
 /// A plane that bodies cross and echoes/live views render through.
 #[derive(Component, Default)]
-#[require(PortalState, PortalSize, PortalFrame)]
+#[require(PortalState, PortalSize, PortalFrame, PortalVisual)]
 pub struct Portal;
 
 #[derive(Component, Clone, Copy, PartialEq)]
@@ -94,6 +96,19 @@ impl Default for PortalFrame {
             half_size:        Vec2::ZERO,
             bounding_radius:  0.0,
         }
+    }
+}
+
+impl PortalFrame {
+    /// Where `world` lies on the portal's plane, in metres from its centre,
+    /// if it is inside the overlap slab of [`PORTAL_DEPTH`].
+    #[must_use]
+    pub fn slab_point(&self, world: Vec3) -> Option<Vec2> {
+        let local = self.local_from_world.transform_point3(world);
+        (local.x.abs() <= self.half_size.x
+            && local.y.abs() <= self.half_size.y
+            && local.z.abs() <= PORTAL_DEPTH / 2.0)
+            .then(|| local.truncate())
     }
 }
 

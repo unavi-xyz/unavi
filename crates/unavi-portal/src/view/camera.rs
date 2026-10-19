@@ -44,11 +44,16 @@ impl PortalViewCameras {
     }
 }
 
+/// Any camera this crate spawns to render into a portal. Scene-wide camera
+/// effects such as bloom belong to the viewer camera, not to these.
+#[derive(Component, Default)]
+pub struct PortalCamera;
+
 /// A camera rendering a live mirrored view through `portal`, composited onto
 /// the portal's plane.
 #[derive(Component)]
 #[relationship(relationship_target = PortalViewCameras)]
-#[require(Transform)]
+#[require(Transform, PortalCamera)]
 pub struct PortalViewCamera {
     pub portal: Entity,
 }
@@ -103,7 +108,7 @@ pub fn update_view_camera_image_sizes(
             continue;
         };
 
-        let Some(texture_handle) = &portal_material.texture else {
+        let Some(texture_handle) = &portal_material.live else {
             continue;
         };
 
@@ -264,10 +269,16 @@ pub fn update_view_camera_layers(
         let next = if straddling {
             base.without(PORTAL_RENDER_LAYER)
         } else {
-            base.union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly])
-                .without(FIRST_PERSON_LAYER)
-                .without(PORTAL_RENDER_LAYER)
+            third_person_layers(&base)
         };
         layers.set_if_neq(next);
     }
+}
+
+/// `base` as a camera outside every body sees it: third-person meshes, and
+/// no portal planes.
+pub(crate) fn third_person_layers(base: &RenderLayers) -> RenderLayers {
+    base.union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly])
+        .without(FIRST_PERSON_LAYER)
+        .without(PORTAL_RENDER_LAYER)
 }

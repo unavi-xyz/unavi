@@ -11469,6 +11469,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "hsd",
+ "naga",
  "unavi-physics",
 ]
 

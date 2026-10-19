@@ -5,9 +5,14 @@
 use bevy::prelude::*;
 
 pub mod camera;
+pub mod hue;
+pub mod live;
 pub mod material;
 pub mod mesh;
+pub mod ring;
 pub mod select;
+pub mod still;
+pub mod visual;
 
 /// How many portals render a live view at once, and how close the viewer
 /// must be for one to earn a slot.
@@ -26,7 +31,6 @@ impl Default for ViewBudget {
     }
 }
 
-/// Marker for a portal currently rendered live through an RTT camera, as
-/// opposed to a static loading/open fallback material.
+/// Marker for a portal chosen to render a live view through an RTT camera.
 #[derive(Component)]
 pub struct Viewed;

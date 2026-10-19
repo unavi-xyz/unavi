@@ -2,7 +2,7 @@
 //! worth seeing.
 
 use bevy::prelude::*;
-use unavi_portal::view::camera::PortalViewCamera;
+use unavi_portal::view::camera::PortalCamera;
 
 use crate::{
     camera::veil::Veil,
@@ -26,7 +26,7 @@ pub fn release_startup(
     time: Res<Time>,
     asset_server: Res<AssetServer>,
     materials: Res<Assets<StandardMaterial>>,
-    cameras: Query<(), (With<Camera3d>, Without<PortalViewCamera>)>,
+    cameras: Query<(), (With<Camera3d>, Without<PortalCamera>)>,
     floors: Query<&MeshMaterial3d<StandardMaterial>, With<Limbo>>,
     mut veil: ResMut<Veil>,
     mut commands: Commands,

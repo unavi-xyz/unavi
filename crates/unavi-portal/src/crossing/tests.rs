@@ -1,4 +1,7 @@
-use std::f32::consts::PI;
+use std::f32::consts::{
+    FRAC_PI_2,
+    PI,
+};
 
 use bevy::{
     prelude::*,
@@ -7,6 +10,7 @@ use bevy::{
 
 use super::apply_crossings;
 use crate::{
+    arrival::Arrival,
     body::{
         PortalBody,
         PortalLatch,
@@ -141,4 +145,47 @@ fn distant_body_does_not_cross() {
         .expect("body transform")
         .translation;
     assert_eq!(pos, Vec3::new(50.0, 0.0, -0.1), "far body should not cross");
+}
+
+#[test]
+fn a_one_way_crossing_lands_at_the_arrival_facing_its_forward() {
+    let mut app = App::new();
+    app.add_plugins(TransformPlugin).add_systems(
+        PostUpdate,
+        (update_portal_frames, apply_crossings)
+            .chain()
+            .before(TransformSystems::Propagate),
+    );
+    let facing = Quat::from_rotation_y(FRAC_PI_2);
+    let root = app.world_mut().spawn(Transform::IDENTITY).id();
+    app.world_mut().spawn((
+        Portal,
+        PortalState::Open,
+        PortalSize {
+            width:  2.0,
+            height: 2.0,
+        },
+        Transform::IDENTITY,
+        GlobalTransform::IDENTITY,
+        Destination(root),
+        Arrival {
+            translation: Vec3::new(40.0, 1.0, 0.0),
+            facing,
+        },
+    ));
+    let body = spawn_body(&mut app, Transform::from_xyz(0.0, 0.0, 0.1));
+    app.update();
+
+    app.world_mut()
+        .entity_mut(body)
+        .insert(Transform::from_xyz(0.0, 0.0, -0.1));
+    app.update();
+
+    let pose = app.world().get::<Transform>(body).expect("body transform");
+    assert_eq!(pose.translation, Vec3::new(40.0, 1.0, 0.0));
+    assert!(
+        pose.forward().dot(facing * Vec3::NEG_Z) > 0.9999,
+        "walking straight in faces the arrival's forward, got {}",
+        pose.forward()
+    );
 }

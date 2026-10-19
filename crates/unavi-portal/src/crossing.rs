@@ -5,6 +5,7 @@ use avian3d::prelude::{
 use bevy::prelude::*;
 
 use crate::{
+    arrival::Arrival,
     body::{
         PortalBody,
         PortalLatch,
@@ -31,22 +32,33 @@ fn min_distance_to_segment(center: Vec3, a: Vec3, b: Vec3) -> f32 {
     (center.distance(midpoint) - half_len).max(0.0)
 }
 
-/// Whether the prev→curr segment crosses the portal plane within the
-/// opening. Tests a sign change in plane-local `z` and the crossing point
-/// against the rectangle, catching fast single-frame passes exactly at the
-/// plane.
-fn segment_crosses_portal(prev_pos: Vec3, curr_pos: Vec3, frame: &PortalFrame) -> bool {
+/// Where a segment passes through a portal's opening.
+struct Hit {
+    /// Plane-local, in metres from the portal's centre.
+    point:      Vec2,
+    /// Whether the segment starts on the side the portal's normal points to.
+    from_front: bool,
+}
+
+/// Where the prev→curr segment crosses the portal plane within the opening.
+/// Tests a sign change in plane-local `z` and the crossing point against the
+/// rectangle, catching fast single-frame passes exactly at the plane.
+fn segment_crosses_portal(prev_pos: Vec3, curr_pos: Vec3, frame: &PortalFrame) -> Option<Hit> {
     let prev_local = frame.local_from_world.transform_point3(prev_pos);
     let curr_local = frame.local_from_world.transform_point3(curr_pos);
 
-    if (prev_local.z >= 0.0) == (curr_local.z >= 0.0) {
-        return false;
+    let from_front = prev_local.z >= 0.0;
+    if from_front == (curr_local.z >= 0.0) {
+        return None;
     }
 
     let s = prev_local.z / (prev_local.z - curr_local.z);
     let hit = prev_local.lerp(curr_local, s);
 
-    hit.x.abs() <= frame.half_size.x && hit.y.abs() <= frame.half_size.y
+    (hit.x.abs() <= frame.half_size.x && hit.y.abs() <= frame.half_size.y).then_some(Hit {
+        point: hit.truncate(),
+        from_front,
+    })
 }
 
 /// Whether `pos` lies inside the portal's overlap slab.
@@ -60,7 +72,11 @@ fn point_in_slab(pos: Vec3, frame: &PortalFrame) -> bool {
 #[derive(EntityEvent)]
 pub struct Crossed {
     pub entity:              Entity,
+    /// The portal the body passed through.
+    pub portal:              Entity,
     pub destination:         Entity,
+    /// Where on `portal` the body passed, plane-local in metres.
+    pub point:               Vec2,
     pub transition_rotation: Quat,
 }
 
@@ -89,7 +105,17 @@ pub fn apply_crossings(
         ),
         (With<PortalBody>, Without<Portal>),
     >,
-    portals: Query<(&GlobalTransform, &PortalFrame, &Destination, &PortalState), With<Portal>>,
+    portals: Query<
+        (
+            Entity,
+            &GlobalTransform,
+            &PortalFrame,
+            &Destination,
+            &PortalState,
+            Option<&Arrival>,
+        ),
+        With<Portal>,
+    >,
     destinations: Query<&GlobalTransform, Without<PortalBody>>,
     portal_destinations: Query<(), With<Portal>>,
 ) {
@@ -107,7 +133,7 @@ pub fn apply_crossings(
         // Stay latched until clear of all slabs, else the landing slab
         // re-fires.
         if latch.0 {
-            let inside_any_slab = portals.iter().any(|(t, frame, _, state)| {
+            let inside_any_slab = portals.iter().any(|(_, t, frame, _, state, _)| {
                 *state == PortalState::Open
                     && curr_translation.distance_squared(t.translation())
                         <= (frame.bounding_radius + PORTAL_DEPTH).powi(2)
@@ -122,7 +148,7 @@ pub fn apply_crossings(
 
         let mut teleported = false;
 
-        for (source_transform, frame, destination, state) in &portals {
+        for (portal, source_transform, frame, destination, state, arrival) in &portals {
             if *state != PortalState::Open {
                 continue;
             }
@@ -135,29 +161,33 @@ pub fn apply_crossings(
             {
                 continue;
             }
-            if !segment_crosses_portal(prev_translation, curr_translation, frame) {
-                continue;
-            }
-
-            let Ok(dest_transform) = destinations.get(destination.0) else {
+            let Some(hit) = segment_crosses_portal(prev_translation, curr_translation, frame)
+            else {
                 continue;
             };
 
-            let dest_is_portal = portal_destinations.contains(destination.0);
-
-            let (new_translation, new_rotation, transition_rotation) = if dest_is_portal {
-                let m =
-                    portal_transfer(source_transform, dest_transform) * transform.compute_affine();
-                let (_, rotation, translation) = m.to_scale_rotation_translation();
-                let transition_rotation = rotation * transform.rotation.inverse();
-                (translation, rotation, transition_rotation)
-            } else {
-                (
-                    dest_transform.translation(),
-                    transform.rotation,
-                    Quat::IDENTITY,
-                )
-            };
+            let (new_translation, new_rotation, transition_rotation) =
+                if portal_destinations.contains(destination.0) {
+                    let Ok(dest_transform) = destinations.get(destination.0) else {
+                        continue;
+                    };
+                    let m = portal_transfer(source_transform, dest_transform)
+                        * transform.compute_affine();
+                    let (_, rotation, translation) = m.to_scale_rotation_translation();
+                    let transition_rotation = rotation * transform.rotation.inverse();
+                    (translation, rotation, transition_rotation)
+                } else {
+                    let Some(arrival) = arrival else {
+                        continue;
+                    };
+                    let transition_rotation =
+                        arrival.rotation_from(source_transform, hit.from_front);
+                    (
+                        arrival.translation,
+                        transition_rotation * transform.rotation,
+                        transition_rotation,
+                    )
+                };
 
             transform.translation = new_translation;
             transform.rotation = new_rotation;
@@ -169,7 +199,9 @@ pub fn apply_crossings(
             let dest_entity = destination.0;
             commands.entity(entity).trigger(move |entity| Crossed {
                 entity,
+                portal,
                 destination: dest_entity,
+                point: hit.point,
                 transition_rotation,
             });
 

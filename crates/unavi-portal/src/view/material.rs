@@ -9,29 +9,48 @@ use bevy::{
     },
 };
 
-use crate::portal::{
-    Portal,
-    PortalSize,
+use crate::{
+    portal::{
+        Portal,
+        PortalSize,
+    },
+    view::{
+        hue::PortalHue,
+        ring::PortalRing,
+        visual::PortalVisual,
+    },
 };
 
 pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("339faa2e-314e-45fc-b310-34b31639fcd7");
 
-#[derive(Asset, AsBindGroup, Clone, TypePath)]
+/// Every visible portal's surface. `still` is the arrival still's face atlas,
+/// laid out by [`crate::view::still::face_tile`].
+#[derive(Asset, AsBindGroup, Clone, TypePath, Default)]
 #[bind_group_data(PortalMaterialKey)]
 pub struct PortalMaterial {
     #[texture(0)]
     #[sampler(1)]
-    pub texture:   Option<Handle<Image>>,
-    pub cull_mode: Option<Face>,
+    pub live:      Option<Handle<Image>>,
     #[uniform(2)]
     pub params:    PortalParams,
+    #[texture(3)]
+    #[sampler(4)]
+    pub still:     Option<Handle<Image>>,
+    pub cull_mode: Option<Face>,
 }
 
+/// Field order matches `PortalParams` in `portal.wgsl`.
 #[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]
 pub struct PortalParams {
     pub world_from_portal: Mat4,
+    /// Linear RGB. Alpha is unused.
+    pub rim_color:         Vec4,
+    /// Plane-local centre in metres, start time in shader-time seconds, and
+    /// 1 while a ring is set.
+    pub ring:              Vec4,
     pub half_size:         Vec2,
+    pub mode:              u32,
 }
 
 impl Material for PortalMaterial {
@@ -76,16 +95,22 @@ pub fn update_portal_params(
         (
             &GlobalTransform,
             &PortalSize,
+            &PortalVisual,
+            Option<&PortalHue>,
+            Option<&PortalRing>,
             &MeshMaterial3d<PortalMaterial>,
         ),
         With<Portal>,
     >,
     mut materials: ResMut<Assets<PortalMaterial>>,
 ) {
-    for (transform, size, handle) in &portals {
+    for (transform, size, visual, hue, ring, handle) in &portals {
         let next = PortalParams {
             world_from_portal: transform.to_matrix(),
+            rim_color:         hue.map_or(PortalHue::NEUTRAL, |h| h.0).to_vec4(),
+            ring:              ring.map_or(Vec4::ZERO, |r| r.point.extend(r.start).extend(1.0)),
             half_size:         Vec2::new(size.width / 2.0, size.height / 2.0),
+            mode:              visual.mode(),
         };
         // Skip the no-op `get_mut`: it flags the asset as modified and forces a
         // GPU re-upload every frame.
@@ -98,37 +123,5 @@ pub fn update_portal_params(
         if let Some(mut material) = materials.get_mut(handle.0.id()) {
             material.params = next;
         }
-    }
-}
-
-/// Shared fallback materials for a portal's loading/open-but-not-live states,
-/// created once at startup instead of a fresh [`StandardMaterial`] asset on
-/// every state change.
-#[derive(Resource, Clone)]
-pub struct PortalFallbacks {
-    pub loading: Handle<StandardMaterial>,
-    pub open:    Handle<StandardMaterial>,
-}
-
-const LOADING_COLOR: Color = Color::srgb(0.7, 0.7, 0.7);
-const OPEN_FALLBACK_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
-
-impl FromWorld for PortalFallbacks {
-    fn from_world(world: &mut World) -> Self {
-        let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
-        Self {
-            loading: materials.add(fallback_material(LOADING_COLOR)),
-            open:    materials.add(fallback_material(OPEN_FALLBACK_COLOR)),
-        }
-    }
-}
-
-fn fallback_material(color: Color) -> StandardMaterial {
-    StandardMaterial {
-        base_color: color,
-        unlit: true,
-        double_sided: true,
-        cull_mode: None,
-        ..default()
     }
 }

@@ -18,4 +18,5 @@ hsd.path           = "../hsd"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
+naga.workspace                 = true
 unavi-physics                  = { path = "../unavi-physics" }

@@ -24,12 +24,12 @@ use crate::{
         ViewBudget,
         material::{
             PORTAL_SHADER_HANDLE,
-            PortalFallbacks,
             PortalMaterial,
         },
     },
 };
 
+pub mod arrival;
 pub mod body;
 pub mod clip;
 pub mod config;
@@ -54,16 +54,19 @@ impl Plugin for PortalPlugin {
         ))
         .init_resource::<ViewBudget>()
         .init_resource::<PortalLimits>()
-        .init_resource::<PortalFallbacks>()
         .add_systems(
             Update,
             (
                 config::admit_refused_portals,
                 destination::resolve_destinations,
+                arrival::update_arrivals,
                 view::mesh::ensure_mesh,
                 view::mesh::update_state,
                 view::select::select_viewed_portals,
-                view::mesh::apply_active_material,
+                view::hue::update_hues,
+                view::still::maintain_stills,
+                view::visual::choose_visual,
+                view::visual::apply_visual,
             )
                 .chain(),
         )
@@ -93,6 +96,7 @@ impl Plugin for PortalPlugin {
             ),
         )
         .add_observer(crossing::carry_momentum)
+        .add_observer(view::ring::start_rings)
         .add_observer(config::sync_portal_config)
         .add_observer(config::clear_portal_config);
     }

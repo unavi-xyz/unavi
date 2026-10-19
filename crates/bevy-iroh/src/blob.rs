@@ -24,7 +24,10 @@ use iroh_blobs::{
 };
 use n0_future::time::Instant;
 use thiserror::Error;
-use tokio::sync::oneshot;
+use tokio::sync::{
+    oneshot,
+    watch,
+};
 use unavi_store::Store;
 
 use crate::store::{
@@ -42,7 +45,6 @@ const ATTEMPT_TIMEOUT: Duration = Duration::from_mins(5);
 /// First retry waits this long; each attempt doubles until `MAX_RETRY_DELAY`.
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
-const MAX_ATTEMPTS: u32 = 10;
 /// Progress is logged at most once per step and once per interval, so a large
 /// transfer emits a handful of lines and a quick one emits none. The lines are
 /// there to show a stalled or slow download, not to narrate every fetch.
@@ -57,11 +59,9 @@ pub struct BlobRequest(pub Hash);
 /// A fetch in flight for this entity's [`BlobRequest`].
 #[derive(Component)]
 pub struct BlobPending {
-    rx:        async_channel::Receiver<Result<Bytes, BlobError>>,
-    /// The providers the fetch started with.
-    providers: Vec<EndpointId>,
+    rx:      async_channel::Receiver<Result<Bytes, BlobError>>,
     /// Dropping it cancels the fetch task.
-    _cancel:   oneshot::Sender<()>,
+    _cancel: oneshot::Sender<()>,
 }
 
 /// How a [`BlobRequest`] ended.
@@ -72,8 +72,6 @@ pub struct BlobResponse(pub Result<Bytes, BlobError>);
 pub enum BlobError {
     #[error("blob too large: {size} bytes")]
     TooLarge { size: u64 },
-    #[error("fetch failed after {attempts} attempts")]
-    Exhausted { attempts: u32 },
     #[error("fetch failed: {0:#}")]
     Io(Arc<anyhow::Error>),
 }
@@ -142,69 +140,75 @@ fn provider_list(targets: &SyncTargets, peers: &BlobProviders) -> Vec<EndpointId
     providers
 }
 
-/// Whether a fetch started with `snapshot` never asked a sync target, or
-/// asked nobody while providers are now known. A peer joining otherwise leaves
-/// a running fetch alone, so peer churn cannot cancel large transfers.
-fn needs_restart(snapshot: &[EndpointId], targets: &[EndpointId], current: &[EndpointId]) -> bool {
-    targets.iter().any(|id| !snapshot.contains(id)) || (snapshot.is_empty() && !current.is_empty())
+/// The live provider list every fetch reads on each attempt.
+#[derive(Resource)]
+pub(crate) struct ProviderFeed(watch::Sender<Vec<EndpointId>>);
+
+impl Default for ProviderFeed {
+    fn default() -> Self {
+        Self(watch::channel(Vec::new()).0)
+    }
 }
 
-pub(crate) fn on_blob_request_insert(
-    trigger: On<Insert, BlobRequest>,
-    requests: Query<&BlobRequest>,
-    store: Option<Res<DataStore>>,
+impl ProviderFeed {
+    fn subscribe(&self) -> watch::Receiver<Vec<EndpointId>> {
+        self.0.subscribe()
+    }
+}
+
+/// Mirrors the sync targets and peers into the [`ProviderFeed`].
+pub(crate) fn publish_providers(
     targets: Res<SyncTargets>,
     peers: Res<BlobProviders>,
+    feed: Res<ProviderFeed>,
+) {
+    let list = provider_list(&targets, &peers);
+    feed.0.send_if_modified(|current| {
+        if *current == list {
+            return false;
+        }
+        *current = list;
+        true
+    });
+}
+
+/// Requests with no fetch in flight and no answer, and requests just replaced.
+type Unstarted = Or<(
+    Changed<BlobRequest>,
+    (Without<BlobPending>, Without<BlobResponse>),
+)>;
+
+/// Starts a fetch for every request that lacks one. Runs only once the store
+/// exists; until then the requests stay unstarted and are picked up later.
+pub(crate) fn start_blob_fetches(
+    requests: Query<(Entity, &BlobRequest), Unstarted>,
+    store: Res<DataStore>,
+    feed: Res<ProviderFeed>,
     mut commands: Commands,
 ) {
-    let entity = trigger.entity;
-    let Ok(request) = requests.get(entity) else {
-        return;
-    };
-    let Some(store) = store else {
-        warn!(%entity, "cannot fetch a blob before the store exists");
-        return;
-    };
-
-    let providers = provider_list(&targets, &peers);
-    let (cancel_tx, cancel_rx) = oneshot::channel();
-    let (tx, rx) = async_channel::bounded(1);
-    let hash = request.0;
-    let store = store.0.clone();
-    let snapshot = providers.clone();
-    task::spawn(async move {
-        fetch(hash, cancel_rx, tx, store, providers).await;
-    });
-
-    // Replaces a fetch already in flight, dropping its cancel sender.
-    commands
-        .entity(entity)
-        .remove::<BlobResponse>()
-        .insert(BlobPending {
-            rx,
-            providers: snapshot,
-            _cancel: cancel_tx,
+    for (entity, request) in &requests {
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+        let (tx, rx) = async_channel::bounded(1);
+        let hash = request.0;
+        let store = store.0.clone();
+        let providers = feed.subscribe();
+        task::spawn(async move {
+            fetch(hash, cancel_rx, tx, store, providers).await;
         });
+
+        // Replaces a fetch already in flight, dropping its cancel sender.
+        commands
+            .entity(entity)
+            .remove::<BlobResponse>()
+            .insert(BlobPending {
+                rx,
+                _cancel: cancel_tx,
+            });
+    }
 }
 
 pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<BlobPending>();
-}
-
-/// Restarts fetches that began before a provider they could use was known.
-pub(crate) fn restart_stale_fetches(
-    targets: Res<SyncTargets>,
-    peers: Res<BlobProviders>,
-    pending: Query<(Entity, &BlobRequest, &BlobPending)>,
-    mut commands: Commands,
-) {
-    let current = provider_list(&targets, &peers);
-    let target_ids = targets.0.iter().map(|addr| addr.id).collect::<Vec<_>>();
-    for (entity, request, load) in &pending {
-        if needs_restart(&load.providers, &target_ids, &current) {
-            commands.entity(entity).insert(BlobRequest(request.0));
-        }
-    }
 }
 
 pub(crate) fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity, &BlobPending)>) {
@@ -231,18 +235,23 @@ async fn fetch(
     cancel: oneshot::Receiver<()>,
     tx: Sender<Result<Bytes, BlobError>>,
     store: Store,
-    providers: Vec<EndpointId>,
+    mut providers: watch::Receiver<Vec<EndpointId>>,
 ) {
     let mut cancel = std::pin::pin!(async move {
         cancel.await.ok();
     });
 
-    for attempt in 0..MAX_ATTEMPTS {
+    // Retries until the request goes away, at the capped backoff, so a
+    // provider that shows up late is still asked.
+    let mut attempt = 0_u32;
+    loop {
+        let current = providers.borrow_and_update().clone();
         let res = tokio::select! {
             () = &mut cancel => return,
+            () = providers_arrived(&mut providers, current.is_empty()) => continue,
             res = n0_future::time::timeout(
                 ATTEMPT_TIMEOUT,
-                get_blob(hash, &store, &providers),
+                get_blob(hash, &store, &current),
             ) => res,
         };
         match res {
@@ -257,14 +266,22 @@ async fn fetch(
             Ok(Err(err)) => warn!(%hash, attempt, ?err, "blob fetch failed, retrying"),
             Err(_) => warn!(%hash, attempt, "blob fetch attempt timed out"),
         }
-        n0_future::time::sleep(retry_delay(attempt)).await;
+        tokio::select! {
+            () = &mut cancel => return,
+            () = n0_future::time::sleep(retry_delay(attempt)) => {}
+        }
+        attempt = attempt.saturating_add(1);
     }
+}
 
-    tx.send(Err(BlobError::Exhausted {
-        attempts: MAX_ATTEMPTS,
-    }))
-    .await
-    .ok();
+/// Resolves once providers are known, when the attempt in progress started
+/// with none. An attempt that had providers is left alone, so peer churn
+/// cannot cancel a large transfer.
+async fn providers_arrived(providers: &mut watch::Receiver<Vec<EndpointId>>, had_none: bool) {
+    if had_none && providers.wait_for(|list| !list.is_empty()).await.is_ok() {
+        return;
+    }
+    std::future::pending::<()>().await;
 }
 
 /// Bounds the read of a fetched blob and of an already cached copy, which may
@@ -344,55 +361,137 @@ mod tests {
 
     use super::*;
 
+    /// How many requests the reconcile query selected, summed over frames.
     #[derive(Resource, Default)]
-    struct Restarts(u32);
+    struct Selected(usize);
 
     fn endpoint_id() -> EndpointId {
         SecretKey::generate().public()
-    }
-
-    fn spawn_pending_with(
-        world: &mut World,
-        rx: async_channel::Receiver<Result<Bytes, BlobError>>,
-        providers: Vec<EndpointId>,
-    ) -> Entity {
-        world
-            .spawn(BlobPending {
-                rx,
-                providers,
-                _cancel: oneshot::channel().0,
-            })
-            .id()
     }
 
     fn spawn_pending(
         world: &mut World,
         rx: async_channel::Receiver<Result<Bytes, BlobError>>,
     ) -> Entity {
-        spawn_pending_with(world, rx, Vec::new())
+        world
+            .spawn(BlobPending {
+                rx,
+                _cancel: oneshot::channel().0,
+            })
+            .id()
     }
 
-    fn restart_app(known: EndpointId) -> App {
+    fn reconcile_app() -> App {
         let mut app = App::new();
-        app.init_resource::<SyncTargets>()
-            .init_resource::<Restarts>()
-            .insert_resource(BlobProviders(vec![known]))
-            .add_observer(
-                |_: On<Insert, BlobRequest>, mut restarts: ResMut<Restarts>| {
-                    restarts.0 += 1;
-                },
-            )
-            .add_systems(Update, restart_stale_fetches);
+        app.init_resource::<Selected>().add_systems(
+            Update,
+            |requests: Query<Entity, (With<BlobRequest>, Unstarted)>,
+             mut selected: ResMut<Selected>| {
+                selected.0 += requests.iter().count();
+            },
+        );
         app
     }
 
-    fn spawn_request(app: &mut App, snapshot: Vec<EndpointId>) {
-        let (_tx, rx) = async_channel::bounded(1);
-        let entity = spawn_pending_with(app.world_mut(), rx, snapshot);
+    /// Runs one frame and returns how many requests it selected.
+    fn selected_in_frame(app: &mut App) -> usize {
+        app.world_mut().resource_mut::<Selected>().0 = 0;
+        app.update();
+        app.world().resource::<Selected>().0
+    }
+
+    fn pending_marker() -> BlobPending {
+        BlobPending {
+            rx:      async_channel::bounded(1).1,
+            _cancel: oneshot::channel().0,
+        }
+    }
+
+    #[test]
+    fn a_request_is_selected_every_frame_until_a_fetch_starts() {
+        let mut app = reconcile_app();
+        let entity = app.world_mut().spawn(BlobRequest(Hash::new(b"blob"))).id();
+
+        assert_eq!(selected_in_frame(&mut app), 1);
+        assert_eq!(
+            selected_in_frame(&mut app),
+            1,
+            "a frame that could not start it leaves it for the next"
+        );
+
+        app.world_mut().entity_mut(entity).insert(pending_marker());
+        assert_eq!(selected_in_frame(&mut app), 0, "a fetch in flight is left");
+    }
+
+    #[test]
+    fn an_answered_request_is_left_alone_until_replaced() {
+        let mut app = reconcile_app();
+        let entity = app.world_mut().spawn(BlobRequest(Hash::new(b"blob"))).id();
+        selected_in_frame(&mut app);
         app.world_mut()
             .entity_mut(entity)
-            .insert(BlobRequest(Hash::new(b"blob")));
-        app.world_mut().resource_mut::<Restarts>().0 = 0;
+            .insert(BlobResponse(Err(BlobError::TooLarge { size: 1 })));
+        assert_eq!(selected_in_frame(&mut app), 0);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(BlobRequest(Hash::new(b"other")));
+        assert_eq!(
+            selected_in_frame(&mut app),
+            1,
+            "a replaced request restarts"
+        );
+        assert_eq!(selected_in_frame(&mut app), 0, "and only once");
+    }
+
+    #[test]
+    fn a_replaced_request_restarts_a_fetch_in_flight() {
+        let mut app = reconcile_app();
+        let entity = app
+            .world_mut()
+            .spawn((BlobRequest(Hash::new(b"blob")), pending_marker()))
+            .id();
+        selected_in_frame(&mut app);
+        assert_eq!(selected_in_frame(&mut app), 0);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(BlobRequest(Hash::new(b"other")));
+
+        assert_eq!(selected_in_frame(&mut app), 1);
+    }
+
+    #[test]
+    fn publishing_providers_updates_what_a_running_fetch_reads() {
+        let (target, peer) = (endpoint_id(), endpoint_id());
+        let mut app = App::new();
+        app.init_resource::<ProviderFeed>()
+            .insert_resource(SyncTargets(vec![iroh::EndpointAddr::new(target)]))
+            .init_resource::<BlobProviders>()
+            .add_systems(Update, publish_providers);
+        let mut view = app.world().resource::<ProviderFeed>().subscribe();
+
+        app.update();
+        assert_eq!(*view.borrow_and_update(), vec![target]);
+
+        app.world_mut().resource_mut::<BlobProviders>().0.push(peer);
+        app.update();
+
+        assert!(view.has_changed().expect("feed alive"));
+        assert_eq!(
+            *view.borrow_and_update(),
+            vec![target, peer],
+            "the same receiver sees providers that appeared after it subscribed"
+        );
+    }
+
+    #[test]
+    fn an_attempt_with_no_providers_wakes_once_one_is_published() {
+        let feed = ProviderFeed::default();
+        let mut view = feed.subscribe();
+        feed.0.send_replace(vec![endpoint_id()]);
+
+        bevy::tasks::block_on(providers_arrived(&mut view, true));
     }
 
     #[test]
@@ -402,46 +501,6 @@ mod tests {
         let peers = BlobProviders(vec![b, a]);
 
         assert_eq!(provider_list(&targets, &peers), vec![a, b]);
-    }
-
-    #[test]
-    fn a_fetch_restarts_for_a_missed_target_or_from_nobody_but_not_for_a_new_peer() {
-        let (target, peer, other) = (endpoint_id(), endpoint_id(), endpoint_id());
-
-        assert!(
-            needs_restart(&[], &[], &[peer]),
-            "asked nobody, a peer is known"
-        );
-        assert!(
-            needs_restart(&[peer], &[target], &[target, peer]),
-            "missed a target"
-        );
-        assert!(
-            !needs_restart(&[target, peer], &[target], &[target, peer, other]),
-            "a new peer leaves a running fetch alone"
-        );
-        assert!(!needs_restart(&[], &[], &[]));
-    }
-
-    #[test]
-    fn a_pending_fetch_with_no_providers_restarts_once_one_is_known() {
-        let mut app = restart_app(endpoint_id());
-        spawn_request(&mut app, Vec::new());
-
-        app.update();
-
-        assert_eq!(app.world().resource::<Restarts>().0, 1);
-    }
-
-    #[test]
-    fn a_pending_fetch_that_asked_every_provider_is_left_running() {
-        let known = endpoint_id();
-        let mut app = restart_app(known);
-        spawn_request(&mut app, vec![known]);
-
-        app.update();
-
-        assert_eq!(app.world().resource::<Restarts>().0, 0);
     }
 
     #[test]
@@ -486,7 +545,6 @@ mod tests {
     fn only_io_errors_are_retryable() {
         assert!(BlobError::io(anyhow::anyhow!("network blip")).retryable());
         assert!(!BlobError::TooLarge { size: 1 }.retryable());
-        assert!(!BlobError::Exhausted { attempts: 3 }.retryable());
     }
 
     #[test]

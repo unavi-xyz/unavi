@@ -24,7 +24,7 @@ impl Plugin for IrohPlugin {
             .init_resource::<store::BlobProviders>()
             .add_observer(endpoint::on_load_endpoint)
             .add_observer(router::on_build_router)
-            .add_observer(blob::on_blob_request_insert)
+            .init_resource::<blob::ProviderFeed>()
             .add_observer(blob::on_blob_request_remove)
             .add_systems(
                 PreUpdate,
@@ -32,10 +32,14 @@ impl Plugin for IrohPlugin {
                     endpoint::receive_endpoint,
                     router::receive_router,
                     blob::recv_blob_responses,
-                    blob::restart_stale_fetches.run_if(
-                        resource_changed::<store::SyncTargets>
-                            .or_eager(resource_changed::<store::BlobProviders>),
-                    ),
+                    (
+                        blob::publish_providers.run_if(
+                            resource_changed::<store::SyncTargets>
+                                .or_eager(resource_changed::<store::BlobProviders>),
+                        ),
+                        blob::start_blob_fetches.run_if(resource_exists::<store::DataStore>),
+                    )
+                        .chain(),
                 )
                     .in_set(IrohSystems),
             );

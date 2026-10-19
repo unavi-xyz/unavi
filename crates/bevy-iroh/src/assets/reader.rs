@@ -156,10 +156,7 @@ mod tests {
 
         let (fetched, ()) = block_on(zip(reader.fetch(Path::new("model/default.vrm")), async {
             let request = rx.recv().await.expect("dispatched fetch");
-            request
-                .tx
-                .send(Err(BlobError::Exhausted { attempts: 1 }))
-                .ok();
+            request.tx.send(Err(BlobError::TooLarge { size: 1 })).ok();
         }));
 
         assert!(matches!(

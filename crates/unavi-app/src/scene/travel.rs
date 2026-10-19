@@ -1,4 +1,8 @@
 use bevy::prelude::*;
+use bevy_hsd::document::{
+    HsdDocId,
+    Minted,
+};
 use unavi_space::{
     grid::ActiveSpace,
     membership::{
@@ -13,6 +17,10 @@ use crate::{
     camera::veil::Veil,
     scene::{
         SceneState,
+        home::{
+            HomeSpace,
+            remint_home,
+        },
         limbo::arrival::LimboArrival,
     },
 };
@@ -41,11 +49,14 @@ pub fn drive_travel(
     state: Res<State<SceneState>>,
     active: Res<ActiveSpace>,
     spaces: Query<(Entity, &Space, Has<ByPortal>)>,
+    unminted: Query<(Entity, &Space), (With<HsdDocId>, Without<Minted>)>,
+    home: Option<Res<HomeSpace>>,
     mut arrival: ResMut<LimboArrival>,
     mut veil: ResMut<Veil>,
     mut next: ResMut<NextState<SceneState>>,
     mut commands: Commands,
 ) {
+    remint_home(home.as_deref(), &unminted, &mut commands);
     let requested = pending.0.take();
 
     match state.get() {

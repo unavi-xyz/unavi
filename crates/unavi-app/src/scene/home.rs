@@ -25,7 +25,10 @@ use hsd::{
 use iroh_docs::NamespaceId;
 use unavi_space::{
     identity::RootDocument,
-    membership::Space,
+    membership::{
+        Space,
+        SpaceId,
+    },
 };
 use unavi_store::{
     Document,
@@ -40,6 +43,31 @@ pub struct JoinSpace(pub Option<String>);
 /// namespace.
 #[derive(Component)]
 pub struct JoiningHome;
+
+/// The space this node minted as its home. Travel drops and re-reads spaces as
+/// bare entities, which lose the [`Minted`] claim that makes this node the
+/// author of its own home; [`remint_home`] restores it.
+#[derive(Resource)]
+pub struct HomeSpace(pub SpaceId);
+
+/// Marks a re-read home as minted by this node again once its document id is
+/// known, which [`Minted`] needs in order to record the authorship.
+///
+/// Run by `drive_travel`, the system that re-reads spaces, every tick.
+pub fn remint_home(
+    home: Option<&HomeSpace>,
+    unminted: &Query<(Entity, &Space), (With<HsdDocId>, Without<Minted>)>,
+    commands: &mut Commands,
+) {
+    let Some(home) = home else {
+        return;
+    };
+    for (entity, space) in unminted {
+        if space.0 == home.0 {
+            commands.entity(entity).insert(Minted);
+        }
+    }
+}
 
 pub fn join_startup_space(
     join: Res<JoinSpace>,
@@ -101,6 +129,7 @@ pub fn resolve_home(
                 .push(move |world: &mut World| match loaded {
                     Some((ns, doc)) => {
                         info!(%ns, "Loading saved home");
+                        world.insert_resource(HomeSpace(ns.into()));
                         world.spawn((
                             Space(ns.into()),
                             Hsd::new(HsdState::new()),
@@ -152,6 +181,7 @@ pub fn enter_home(
         .entity(trigger.entity)
         .insert(Space(ns.into()))
         .remove::<JoiningHome>();
+    commands.insert_resource(HomeSpace(ns.into()));
 
     if let (Some(root), Some(store)) = (root, store) {
         task::spawn(record_home(store.0.clone(), root.0, ns));

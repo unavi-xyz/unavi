@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use avian3d::prelude::{
     AngularVelocity,
+    Collider,
     LinearVelocity,
     Position,
     RigidBodyDisabled,
@@ -11,7 +12,14 @@ use bevy::{
     prelude::*,
     state::app::StatesPlugin,
 };
-use bevy_hsd::loaded::HsdLoaded;
+use bevy_hsd::{
+    document::{
+        HsdDocId,
+        Minted,
+    },
+    loaded::HsdLoaded,
+};
+use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use unavi_agent::{
     LocalAgent,
@@ -31,6 +39,7 @@ use unavi_space::{
 
 use super::arrival::{
     GROUND_GRACE,
+    GROUND_MAX_WAIT,
     LimboArrival,
     MIN_LIMBO_STAY,
     SPACE_LOAD_TIMEOUT,
@@ -49,6 +58,7 @@ use crate::{
     },
     scene::{
         SceneState,
+        home::HomeSpace,
         respawn::{
             Respawn,
             respawn,
@@ -469,6 +479,102 @@ fn a_space_without_ground_is_entered_after_the_grace_period() {
     pass_gate(&mut app);
     assert_eq!(state(&app), SceneState::Space);
     assert_eq!(respawned_into(&app), Some(space));
+}
+
+fn land_content(app: &mut App, space: Entity) {
+    app.world_mut()
+        .spawn((Collider::sphere(1.0), ChildOf(space)));
+}
+
+#[test]
+fn content_arriving_restarts_the_ground_grace() {
+    let mut app = setup();
+    let space = app
+        .world_mut()
+        .spawn((Space(namespace(1).into()), HsdLoaded))
+        .id();
+    spawn_script(&mut app, space).set_initialized();
+    app.update();
+    app.update();
+
+    let almost = GROUND_GRACE.saturating_sub(Duration::from_millis(1));
+    advance(&mut app, almost);
+    land_content(&mut app, space);
+    app.update();
+
+    advance(&mut app, almost);
+    app.update();
+    cover_veil(&mut app);
+    app.update();
+    app.update();
+    assert_eq!(
+        state(&app),
+        SceneState::Limbo,
+        "ground may still be on its way while content lands"
+    );
+
+    advance(&mut app, GROUND_GRACE);
+    pass_gate(&mut app);
+    assert_eq!(state(&app), SceneState::Space);
+}
+
+#[test]
+fn content_keeps_arriving_only_up_to_the_max_wait() {
+    let mut app = setup();
+    let space = app
+        .world_mut()
+        .spawn((Space(namespace(1).into()), HsdLoaded))
+        .id();
+    spawn_script(&mut app, space).set_initialized();
+    app.update();
+
+    let step = Duration::from_secs(2);
+    let mut waited = Duration::ZERO;
+    while waited + step < GROUND_MAX_WAIT {
+        advance(&mut app, step);
+        land_content(&mut app, space);
+        app.update();
+        waited += step;
+    }
+    cover_veil(&mut app);
+    app.update();
+    app.update();
+    assert_eq!(state(&app), SceneState::Limbo);
+
+    advance(&mut app, step);
+    land_content(&mut app, space);
+    app.update();
+    cover_veil(&mut app);
+    app.update();
+    app.update();
+    assert_eq!(
+        state(&app),
+        SceneState::Space,
+        "a space that never stops growing must still be entered"
+    );
+}
+
+#[test]
+fn a_re_read_home_is_minted_again() {
+    let mut app = setup();
+    let home = namespace(1);
+    let other = namespace(2);
+    app.insert_resource(HomeSpace(home.into()));
+    let spawn = |app: &mut App, ns: NamespaceId| {
+        app.world_mut()
+            .spawn((Space(ns.into()), HsdDocId(DocId(*ns.as_bytes()))))
+            .id()
+    };
+    let home_entity = spawn(&mut app, home);
+    let other_entity = spawn(&mut app, other);
+
+    app.update();
+
+    assert!(app.world().entity(home_entity).contains::<Minted>());
+    assert!(
+        !app.world().entity(other_entity).contains::<Minted>(),
+        "only the home is this node's to author"
+    );
 }
 
 #[test]

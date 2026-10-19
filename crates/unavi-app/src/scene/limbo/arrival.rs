@@ -3,10 +3,12 @@
 
 use std::time::Duration;
 
+use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_hsd::{
     hierarchy::descends_from,
     loaded::HsdLoaded,
+    prim::Prim,
 };
 use unavi_script::ScriptStatus;
 use unavi_space::{
@@ -32,6 +34,9 @@ pub(super) const SPACE_LOAD_TIMEOUT: Duration = Duration::from_secs(30);
 /// How long a loaded, settled space may go without ground before the agent is
 /// let in anyway, since a space can legitimately have no floor.
 pub(super) const GROUND_GRACE: Duration = Duration::from_secs(3);
+/// The longest a loaded, settled space is waited on for ground, however much
+/// content keeps arriving and restarting [`GROUND_GRACE`].
+pub(super) const GROUND_MAX_WAIT: Duration = Duration::from_secs(15);
 /// The shortest time limbo lasts once entered, so a space that is ready at
 /// once does not flash limbo by in a few frames.
 pub(super) const MIN_LIMBO_STAY: Duration = Duration::from_secs(3);
@@ -47,6 +52,9 @@ pub struct LimboArrival {
     /// When limbo was entered, for [`MIN_LIMBO_STAY`].
     entered_at:          Duration,
     ready:               Option<Arrival>,
+    /// The space and time scripts first settled in, kept while they flip back
+    /// to loading, so [`GROUND_MAX_WAIT`] still runs out.
+    first_settled:       Option<(Entity, Duration)>,
     /// Whether this gate has the veil closing on the way out, so only it
     /// lifts the veil again if the space stops holding.
     covering:            bool,
@@ -60,6 +68,9 @@ pub struct LimboArrival {
 struct Arrival {
     space:  Entity,
     /// When the space first held that state.
+    first:  Duration,
+    /// The last time it held that state or gained content, which the grace
+    /// runs from.
     since:  Duration,
     /// The spawn point found standing on ground, relative to the space's
     /// origin, which may move before entry.
@@ -80,6 +91,7 @@ impl LimboArrival {
     pub fn retarget(&mut self, target: SpaceId, now: Duration) {
         self.target = Some(target);
         self.ready = None;
+        self.first_settled = None;
         self.timeout = now + SPACE_LOAD_TIMEOUT;
         self.timed_out = false;
     }
@@ -103,6 +115,7 @@ pub fn arm_limbo_arrival(time: Res<Time>, mut arrival: ResMut<LimboArrival>) {
     arrival.timed_out = false;
     arrival.entered_at = time.elapsed();
     arrival.ready = None;
+    arrival.first_settled = None;
     arrival.entering = None;
     arrival.covering = false;
 }
@@ -148,6 +161,7 @@ pub fn drive_limbo_exit(
     spaces: Query<(Entity, &Space, Has<HsdLoaded>)>,
     origins: Query<&GlobalTransform, With<Space>>,
     scripts: Query<(Entity, &ScriptStatus)>,
+    content: Query<Entity, Or<(Added<Prim>, Added<Collider>)>>,
     parents: Query<&ChildOf>,
     mut arrival: ResMut<LimboArrival>,
     mut veil: ResMut<Veil>,
@@ -186,20 +200,39 @@ pub fn drive_limbo_exit(
         return;
     }
 
-    let ready = arrival
+    let first = arrival
+        .first_settled
+        .filter(|(settled, _)| *settled == space)
+        .map_or(now, |(_, at)| at);
+    arrival.first_settled = Some((space, first));
+    let mut ready = arrival
         .ready
         .take()
         .filter(|ready| ready.space == space)
         .unwrap_or(Arrival {
             space,
+            first,
             since: now,
             ground: None,
         });
-    let (ground, since) = (ready.ground, ready.since);
+    // Content still landing under the space may be the ground itself, so the
+    // grace runs from the last of it.
+    let arriving = content
+        .iter()
+        .any(|entity| descends_from(entity, space, &parents));
+    if arriving && ready.ground.is_none() {
+        ready.since = now;
+    }
+    let (ground, since, first) = (ready.ground, ready.since, ready.first);
     arrival.ready = Some(ready);
 
     let (passed, at) = ground.map_or_else(
-        || (now >= since + GROUND_GRACE, None),
+        || {
+            (
+                now >= since + GROUND_GRACE || now >= first + GROUND_MAX_WAIT,
+                None,
+            )
+        },
         |offset| {
             let at = origins
                 .get(space)

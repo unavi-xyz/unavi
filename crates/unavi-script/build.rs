@@ -8,6 +8,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed={dir}/runtime.ts");
     println!("cargo:rerun-if-changed={dir}/transpile-worker.ts");
+    println!("cargo:rerun-if-changed={dir}/transpile-options.ts");
     println!("cargo:rerun-if-changed={dir}/package.json");
     println!("cargo:rerun-if-changed={dir}/package-lock.json");
 

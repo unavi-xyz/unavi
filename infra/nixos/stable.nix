@@ -11,7 +11,7 @@
   services = {
     unavi-node = {
       enable = true;
-      package = inputs.self.packages.${pkgs.system}.unavi-node;
+      package = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.unavi-node;
     };
   };
 

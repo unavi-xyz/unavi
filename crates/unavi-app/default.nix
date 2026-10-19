@@ -41,6 +41,8 @@
           ../unavi-script/package.json
           ../unavi-script/package-lock.json
           ../unavi-script/runtime.ts
+          ../unavi-script/transpile-options.ts
+          ../unavi-script/transpile-worker.ts
           ./assets
           ./index.html
           ./initializer.mjs

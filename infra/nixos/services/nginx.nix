@@ -11,7 +11,7 @@ let
   proxyServices = lib.filterAttrs (_: c: c ? port) services;
   staticServices = lib.filterAttrs (_: c: c ? static && c.static) services;
 
-  webAppPkg = self.packages.${pkgs.system}.unavi-app-web;
+  webAppPkg = self.packages.${pkgs.stdenv.hostPlatform.system}.unavi-app-web;
 
   proxyHosts = lib.mapAttrs (_: cfg: {
     enableACME = true;

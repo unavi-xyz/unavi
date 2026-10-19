@@ -1,4 +1,5 @@
 use bevy::{
+    ecs::system::SystemParam,
     light::NotShadowCaster,
     pbr::MeshMaterial3d,
     platform::collections::HashSet,
@@ -20,9 +21,15 @@ use crate::{
         image::HsdImage,
         material::source::MaterialSource,
         shader::{
+            Sealed,
             ShaderGraphData,
             ShaderOverridesData,
-            cache::ShaderGraphCache,
+            ShellSeal,
+            cache::{
+                ProgramKey,
+                ShaderGraphCache,
+            },
+            codegen::SEAL_NEUTRAL,
             material::{
                 GraphParams,
                 ShaderGraphMaterial,
@@ -36,10 +43,21 @@ use crate::{
     },
 };
 
+/// What decides the colour `Node::Seal` draws, and which prims a change to it
+/// reaches.
+#[derive(SystemParam)]
+pub struct Seals<'w, 's> {
+    graph_prims: Query<'w, 's, (Entity, &'static PrimOf, &'static MaterialSource)>,
+    sealed:      Query<'w, 's, (), With<Sealed>>,
+    added:       Query<'w, 's, Entity, Added<Sealed>>,
+    removed:     RemovedComponents<'w, 's, Sealed>,
+    shell_seal:  Res<'w, ShellSeal>,
+}
+
 /// The cache hash a prim's material was last built from, so an overrides-only
 /// edit can look up the graph's public inputs without recompiling.
 #[derive(Component, Clone, Copy)]
-pub struct BuiltFromGraph(blake3::Hash);
+pub struct BuiltFromGraph(ProgramKey);
 
 /// Writes changed overrides straight into the existing material's uniform
 /// block, skipping decode, validation and codegen entirely.
@@ -86,6 +104,7 @@ pub fn rebuild_shader_material(
     slots: Query<&ShaderGraphData>,
     overrides: Query<&ShaderOverridesData>,
     doc_of: Query<&PrimOf>,
+    mut seals: Seals,
     relations: PrimRelations,
     images: Query<&HsdImage>,
     mut cache: ResMut<ShaderGraphCache>,
@@ -97,6 +116,22 @@ pub fn rebuild_shader_material(
     let mut dirty: HashSet<Entity> = changed.iter().collect();
     mark_binders_of_changed_graphs(&mut dirty, &changed_slots, &sources, &relations);
     mark_graphs_with_changed_textures(&mut dirty, &changed_images, &sources, &relations);
+
+    let seal_moved = seals.shell_seal.is_changed();
+    let sealed_docs: HashSet<Entity> = seals.added.iter().chain(seals.removed.read()).collect();
+    if seal_moved || !sealed_docs.is_empty() {
+        for (prim, &PrimOf(doc), source) in &seals.graph_prims {
+            let MaterialSource::Graph(source) = *source else {
+                continue;
+            };
+            let carries_seal = slots
+                .get(source)
+                .is_ok_and(|slot| !cache.is_seal_free(slot.hash));
+            if carries_seal && (seal_moved || sealed_docs.contains(&doc)) {
+                dirty.insert(prim);
+            }
+        }
+    }
 
     for prim in dirty {
         // The graph may live on another prim. `material/binding` names that
@@ -112,7 +147,14 @@ pub fn rebuild_shader_material(
             continue;
         };
 
-        let Some(cached) = cache.get_or_build(slot.hash, &slot.bytes, doc, &mut shaders) else {
+        let seal = if seals.sealed.contains(doc) {
+            seals.shell_seal.0.to_f32_array()
+        } else {
+            SEAL_NEUTRAL
+        };
+        let Some((key, cached)) =
+            cache.get_or_build(slot.hash, &slot.bytes, seal, doc, &mut shaders)
+        else {
             continue;
         };
 
@@ -147,7 +189,7 @@ pub fn rebuild_shader_material(
             transmissive: cached.transmissive,
         };
 
-        commands.entity(prim).insert(BuiltFromGraph(slot.hash));
+        commands.entity(prim).insert(BuiltFromGraph(key));
         if cached.cast_shadows {
             commands.entity(prim).remove::<NotShadowCaster>();
         } else {

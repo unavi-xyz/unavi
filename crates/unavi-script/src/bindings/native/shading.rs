@@ -207,6 +207,7 @@ const fn node(value: wit::Node) -> Node {
         wit::Node::ObjectScale => Node::ObjectScale,
         wit::Node::ViewDirection => Node::ViewDirection,
         wit::Node::ScreenUv => Node::ScreenUv,
+        wit::Node::Seal => Node::Seal,
 
         wit::Node::Add(op) => Node::Add {
             a: port(op.a),

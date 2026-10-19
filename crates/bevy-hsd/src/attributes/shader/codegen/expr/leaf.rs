@@ -1,9 +1,16 @@
-use hsd::attributes::shader::node::Node;
+use std::fmt::Result;
 
-/// The zero-arity leaves. Each reads shader-stage context directly, and each
-/// is legal in exactly one network, enforced by validation rather than here.
-/// Every arm is a fixed literal, so this never fails.
-pub(super) fn emit(out: &mut String, node: &Node) {
+use hsd::attributes::shader::{
+    node::Node,
+    value::GraphValue,
+};
+
+use super::literal;
+
+/// The zero-arity leaves. Each reads shader-stage context directly, and most
+/// are legal in exactly one network, enforced by validation rather than here.
+/// `Seal` is a literal of the colour the caller resolved for this document.
+pub(super) fn emit(out: &mut String, seal: [f32; 4], node: &Node) -> Result {
     match *node {
         Node::Uv => out.push_str("in.uv"),
         // Bound by both fragment templates, not read off `pbr_input`, which
@@ -23,6 +30,8 @@ pub(super) fn emit(out: &mut String, node: &Node) {
         Node::ObjectScale => out.push_str("graph_object_scale(world_from_local)"),
         Node::ViewDirection => out.push('V'),
         Node::ScreenUv => out.push_str("graph_screen_uv"),
+        Node::Seal => return literal(out, GraphValue::Color(seal)),
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
     }
+    Ok(())
 }

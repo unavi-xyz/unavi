@@ -99,6 +99,12 @@ interface graph {
     view-direction,
     /// Where this fragment sits on screen, `0..1` from the top left.
     screen-uv,
+    /// The local user's seal: a colour this peer chose for itself, which no
+    /// script can read. It draws only in documents the local user authors.
+    /// Anywhere else it is a neutral grey, so a surface carrying it is one the
+    /// user's own content drew, and a lookalike from a space shows grey.
+    /// Legal in either network.
+    seal,
 
     add(binary-op),
     sub(binary-op),

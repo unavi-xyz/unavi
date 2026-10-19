@@ -90,6 +90,7 @@ pub(super) fn node_expr(
     out: &mut String,
     public_inputs: &[GraphValue],
     kinds: &[ValueKind],
+    seal: [f32; 4],
     node: &Node,
 ) -> Result {
     match *node {
@@ -139,10 +140,8 @@ pub(super) fn node_expr(
         | Node::ObjectScale
         | Node::ViewDirection
         | Node::ScreenUv
-        | Node::Time => {
-            leaf::emit(out, node);
-            Ok(())
-        }
+        | Node::Seal
+        | Node::Time => leaf::emit(out, seal, node),
         Node::Fresnel { .. }
         | Node::Noise { .. }
         | Node::TextureSample { .. }

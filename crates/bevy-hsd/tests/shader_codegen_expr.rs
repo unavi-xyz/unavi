@@ -1,8 +1,11 @@
 mod common;
 
-use bevy_hsd::attributes::shader::codegen::body::{
-    generate_displacement_body,
-    generate_surface_body,
+use bevy_hsd::attributes::shader::codegen::{
+    SEAL_NEUTRAL,
+    body::{
+        generate_displacement_body,
+        generate_surface_body,
+    },
 };
 use common::{
     const_color,
@@ -39,14 +42,14 @@ fn rhs_of(body: &str, index: usize) -> String {
 fn surface_rhs(nodes: &[Node], index: usize) -> String {
     let graph = graph(nodes.to_vec());
     let validated = validate(&graph).expect("valid");
-    let body = generate_surface_body(&graph, &validated).expect("codegen");
+    let body = generate_surface_body(&graph, &validated, SEAL_NEUTRAL).expect("codegen");
     rhs_of(&body, index)
 }
 
 fn displacement_rhs(node: Node) -> String {
     let graph = displaced(vec![node], None);
     let validated = validate(&graph).expect("valid");
-    let body = generate_displacement_body(&graph, &validated)
+    let body = generate_displacement_body(&graph, &validated, SEAL_NEUTRAL)
         .expect("codegen")
         .expect("has displacement");
     rhs_of(&body, 0)

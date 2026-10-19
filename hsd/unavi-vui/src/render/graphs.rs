@@ -658,14 +658,10 @@ pub fn pane() -> ShaderGraph {
         x:    nearest,
     }));
     let edge = net.push(Node::OneMinus(inside));
+    let seal = net.push(Node::Seal);
     let line = net.push(Node::Lerp(LerpOp {
         a: frosted,
-        b: Port::Const(GraphValue::Color(Color {
-            r: 1.0,
-            g: 1.0,
-            b: 1.0,
-            a: 1.0,
-        })),
+        b: seal,
         t: edge,
     }));
 
@@ -719,6 +715,7 @@ mod tests {
         match node {
             Node::Uv
             | Node::ScreenUv
+            | Node::Seal
             | Node::WorldNormal
             | Node::WorldPosition
             | Node::VertexColor
@@ -834,6 +831,23 @@ mod tests {
             .filter(|node| matches!(node, Node::SceneColor(_)))
             .count();
         assert!((5..=9).contains(&taps), "{taps} taps");
+    }
+
+    #[test]
+    fn the_pane_border_wears_the_seal() {
+        let nodes = pane().surface.nodes;
+        let border = nodes
+            .iter()
+            .rev()
+            .find_map(|node| match node {
+                Node::Lerp(op) => Some(op.b),
+                _ => None,
+            })
+            .expect("the pane lerps its border in");
+        let Port::Node(seal) = border else {
+            panic!("the border colour is a node, not a constant");
+        };
+        assert!(matches!(nodes[usize::from(seal)], Node::Seal));
     }
 
     #[test]

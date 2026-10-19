@@ -228,6 +228,9 @@ pub enum Node {
     SceneColor {
         uv: Port,
     },
+    /// The local user's seal colour in a document they author, and a neutral
+    /// grey anywhere else. Legal in either network.
+    Seal,
 }
 
 /// Which shader stage a network compiles to.

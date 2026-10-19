@@ -32,7 +32,7 @@ embed-resource.workspace = true
 anyhow.workspace        = true
 async-channel.workspace = true
 avian3d.workspace       = true
-bevy                    = { default-features = true, features = ["experimental_pbr_pcss", "https", "jpeg"], workspace = true }
+bevy                    = { default-features = true, features = ["https", "jpeg"], workspace = true }
 bevy-async.path         = "../bevy-async"
 bevy-hsd.path           = "../bevy-hsd"
 bevy-inspector-egui     = { optional = true, workspace = true }
@@ -49,6 +49,7 @@ log                          = { features = ["max_level_debug", "release_max_lev
 n0-future.workspace          = true
 parking_lot.workspace        = true
 postcard.workspace           = true
+rand.workspace               = true
 tracing                      = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 tracing-subscriber.workspace = true
 unavi-agent.path             = "../unavi-agent"

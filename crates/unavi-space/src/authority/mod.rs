@@ -158,6 +158,21 @@ impl SpaceView {
         self.author(doc).as_ref() == Some(self.identity.identity.did())
     }
 
+    /// Whether this node authored `doc` itself: `doc` is not hosted by
+    /// another document, so no host chain lends it a stranger's or this
+    /// node's authorship.
+    #[must_use]
+    pub fn authored_by_me(&self, doc: DocId) -> bool {
+        self.policy.root(doc) == doc && self.is_mine(doc)
+    }
+
+    /// Counts changes to who authors what, so a reader can tell cheaply that
+    /// none came.
+    #[must_use]
+    pub fn author_generation(&self) -> u64 {
+        self.replicas.author_generation()
+    }
+
     /// What `doc` may call, from how far its author is trusted.
     #[must_use]
     pub fn permissions(&self, doc: DocId) -> Permissions {

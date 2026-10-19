@@ -47,6 +47,7 @@ impl Plugin for HsdPlugin {
             .init_resource::<document::DocIndex>()
             .init_asset::<package::PackageAsset>()
             .init_resource::<attributes::shader::cache::ShaderGraphCache>()
+            .init_resource::<attributes::shader::ShellSeal>()
             .register_asset_loader(package::PackageLoader)
             .add_observer(scene_events::resync_on_add)
             .add_observer(scene_events::resync_on_place)

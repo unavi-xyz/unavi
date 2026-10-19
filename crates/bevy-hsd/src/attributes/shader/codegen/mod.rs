@@ -37,6 +37,9 @@ const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wgsl");
 /// than the graph's own hash.
 const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wgsl");
 
+/// What `Node::Seal` draws wherever the local user's seal does not apply.
+pub const SEAL_NEUTRAL: [f32; 4] = [0.5, 0.5, 0.5, 1.0];
+
 fn texture_bindings() -> Result<String, fmt::Error> {
     let mut out = String::new();
     for slot in 0..MAX_TEXTURE_SAMPLES {
@@ -70,13 +73,17 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 /// for `Lit`. `Unlit` skips both and writes `out_color` straight to the
 /// fragment output.
 ///
+/// `seal` is the colour `Node::Seal` draws, [`SEAL_NEUTRAL`] unless the
+/// document is sealed.
+///
 /// Not naga-testable standalone. The `#import`s are Bevy's shader-preprocessor
 /// syntax, so the integration tests wrap the bodies in a bare harness.
 pub fn generate_fragment_shader(
     graph: &ShaderGraph,
     validated: &Validated,
+    seal: [f32; 4],
 ) -> Result<String, fmt::Error> {
-    let body = generate_surface_body(graph, validated)?;
+    let body = generate_surface_body(graph, validated, seal)?;
     let preamble = format!(
         "{uniform}\n{textures}\n{noise}\n{context}",
         uniform = uniform_block(),
@@ -110,8 +117,9 @@ pub fn generate_fragment_shader(
 pub fn generate_vertex_shader(
     graph: &ShaderGraph,
     validated: &Validated,
+    seal: [f32; 4],
 ) -> Result<Option<String>, fmt::Error> {
-    let Some(body) = generate_displacement_body(graph, validated)? else {
+    let Some(body) = generate_displacement_body(graph, validated, seal)? else {
         return Ok(None);
     };
     let preamble = format!(

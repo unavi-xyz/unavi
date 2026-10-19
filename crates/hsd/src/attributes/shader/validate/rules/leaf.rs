@@ -20,7 +20,7 @@ pub(super) fn kind(_ctx: &Ctx, node: &Node) -> ValueKind {
         | Node::ObjectPosition
         | Node::ObjectScale
         | Node::ViewDirection => ValueKind::Vec3,
-        Node::VertexColor => ValueKind::Color,
+        Node::VertexColor | Node::Seal => ValueKind::Color,
         Node::Time | Node::InstanceRandom => ValueKind::Float,
         _ => unreachable!("only the dispatch match in rules/mod.rs reaches here"),
     }

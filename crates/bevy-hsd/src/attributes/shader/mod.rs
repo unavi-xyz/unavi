@@ -15,6 +15,24 @@ use hsd::{
     },
 };
 
+/// The local user's seal colour, which `Node::Seal` draws in a [`Sealed`]
+/// document. Only the app that owns the device sets it, and no script can
+/// read it.
+#[derive(Resource, Debug, Clone, Copy, PartialEq)]
+pub struct ShellSeal(pub LinearRgba);
+
+impl Default for ShellSeal {
+    fn default() -> Self {
+        let [r, g, b, a] = codegen::SEAL_NEUTRAL;
+        Self(LinearRgba::new(r, g, b, a))
+    }
+}
+
+/// Marks a document entity the local user authors, so `Node::Seal` draws
+/// [`ShellSeal`] in its prims and grey everywhere else.
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct Sealed;
+
 #[derive(Component, Clone)]
 pub struct ShaderOverridesData(pub GraphOverridesAttr);
 

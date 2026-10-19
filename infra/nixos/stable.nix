@@ -12,6 +12,7 @@
     unavi-node = {
       enable = true;
       package = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.unavi-node;
+      assets = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.unavi-assets;
     };
   };
 

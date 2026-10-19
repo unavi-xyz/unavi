@@ -40,6 +40,10 @@ test *ARGS:
 deny:
     nix build -L .#checks.x86_64-linux.deny
 
+# Fail if the pinned deploy assets and the app's manifest disagree.
+check-assets:
+    nix build -L .#checks.x86_64-linux.unavi-assets-manifest
+
 npm-install:
     npm install --prefix crates/unavi-script
 
@@ -55,7 +59,7 @@ check-versions:
             print $"versions match: ($root)" \
         }'
 
-ci: update-wit-deps-locked npm-install check (clippy "deny") deny fmt-check check-versions
+ci: update-wit-deps-locked npm-install check (clippy "deny") deny check-assets fmt-check check-versions
 
 # Build the guest HSD components into crates/unavi-app/assets/hsd.
 hsd *ARGS:

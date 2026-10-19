@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   deployInfo,
   ...
 }:
@@ -9,6 +10,11 @@ with lib;
 
 let
   cfg = config.services.unavi-node;
+
+  # The unit passes no `--data-dir`, so the node resolves the platform data
+  # directory under its home, where its identity key already lives.
+  nodeDataDir = "${cfg.dataDir}/.local/share/unavi-node";
+  filesDir = "${nodeDataDir}/files";
 in
 {
   options.services.unavi-node = {
@@ -34,7 +40,16 @@ in
     dataDir = mkOption {
       type = types.str;
       default = "/var/lib/unavi-node";
-      description = "data directory for node state";
+      description = "home directory for the service, holding the node's data";
+    };
+
+    assets = mkOption {
+      type = types.nullOr types.package;
+      default = null;
+      description = ''
+        Directory of files to host. Seeded into the node's files directory
+        before each start and hosted under the same relative names.
+      '';
     };
 
     user = mkOption {
@@ -64,6 +79,22 @@ in
       description = "unavi node";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
+
+      # The copy set is a store path: content only changes with the unit, so a
+      # deploy that changes the assets restarts the node, and an unchanged
+      # restart leaves the directory alone.
+      preStart = mkIf (cfg.assets != null) ''
+        install -d -m755 ${filesDir}
+        cd ${cfg.assets}
+        find . -type f -print | while read -r rel; do
+          install -C -D -m444 "$rel" ${filesDir}/"$rel"
+        done
+      '';
+
+      path = [
+        pkgs.coreutils
+        pkgs.findutils
+      ];
 
       serviceConfig = {
         Type = "simple";

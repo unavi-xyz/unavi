@@ -54,6 +54,7 @@
         imports = [
           inputs.treefmt-nix.flakeModule
           ./crates/unavi-app
+          ./crates/unavi-assets
           ./launcher
           ./crates/unavi-node
         ];

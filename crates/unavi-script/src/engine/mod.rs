@@ -83,11 +83,15 @@ impl Clock {
 /// When a script's `update` and `fixed-update` last ran.
 #[derive(Component, Default)]
 pub struct TickClocks {
-    update:    Clock,
-    fixed:     Clock,
+    update:       Clock,
+    fixed:        Clock,
     /// When the next `fixed-update` is due. A call that runs late pulls the
     /// next one earlier, by up to one interval, so the rate holds on average.
-    fixed_due: Option<Duration>,
+    fixed_due:    Option<Duration>,
+    /// Whether a `fixed-update` came due and gave its frame to an `update`.
+    /// Only the web engine, which serves one call per frame, has a use for it.
+    #[cfg(any(target_family = "wasm", test))]
+    fixed_waited: bool,
 }
 
 impl TickClocks {
@@ -129,8 +133,9 @@ pub enum Schedule {
 /// now: `None` when the script is trapped, not yet due, or a call for this
 /// schedule is already in flight.
 ///
-/// Shared by both engines so native and web always agree on when a script is
-/// called.
+/// This is native's rule, asked once per schedule: its calls run concurrently
+/// on their own lanes. Web serves one call per frame and uses
+/// [`next_tick_one_call_per_frame`] instead.
 #[must_use]
 pub fn next_tick(
     schedule: Schedule,
@@ -147,6 +152,41 @@ pub fn next_tick(
         (Schedule::Fixed, true) if clocks.fixed_due(now) => Some(TickKind::FixedUpdate),
         (Schedule::Update, false) | (Schedule::Fixed, true) => None,
     }
+}
+
+/// Which lifecycle call a web frame should make of a script, if any.
+///
+/// Web serves one call per frame. A call suspended on a host import resumes on
+/// the microtask queue after the frame ends, and a second call entered before
+/// the first resumes corrupts the instance, so `update` and `fixed-update` can
+/// never both have a frame. `update` is the one the eye sees, so a
+/// `fixed-update` that comes due waits a frame and takes the next one: above
+/// the fixed rate that leaves the update the frames in between, and below it
+/// the two alternate rather than the fixed tick taking every frame and
+/// stopping the update outright.
+#[cfg(any(target_family = "wasm", test))]
+#[must_use]
+pub fn next_tick_one_call_per_frame(
+    status: &ScriptStatus,
+    clocks: &mut TickClocks,
+    now: Duration,
+) -> Option<TickKind> {
+    if status.is_trapped() {
+        return None;
+    }
+    if !status.is_initialized() {
+        clocks.fixed_waited = false;
+        return Some(TickKind::Init);
+    }
+
+    let due = clocks.fixed_due(now);
+    let kind = if due && clocks.fixed_waited {
+        TickKind::FixedUpdate
+    } else {
+        TickKind::Update
+    };
+    clocks.fixed_waited = due && matches!(kind, TickKind::Update);
+    Some(kind)
 }
 
 /// Which in-flight flag a call of `kind` holds. Native serializes calls on
@@ -234,5 +274,73 @@ mod tests {
             next_tick(Schedule::Update, &status, &clocks, Duration::ZERO),
             Some(TickKind::Update)
         );
+    }
+
+    #[test]
+    fn a_shared_frame_initializes_before_anything_else() {
+        let status = ScriptStatus::default();
+        let mut clocks = TickClocks::default();
+        assert_eq!(
+            next_tick_one_call_per_frame(&status, &mut clocks, Duration::ZERO),
+            Some(TickKind::Init)
+        );
+    }
+
+    /// One call per frame, a second of 60 fps: the fixed tick still runs its 20
+    /// times, and the update keeps the frames between them.
+    #[test]
+    fn a_shared_frame_keeps_both_rates_at_60_fps() {
+        let status = ScriptStatus::default();
+        status.set_initialized();
+        let mut clocks = TickClocks::default();
+        let ms = Duration::from_millis;
+
+        let (mut updates, mut fixed) = (0, 0);
+        let mut previous = None;
+        for frame in 1..=60u64 {
+            let now = ms(frame * 1000 / 60);
+            let kind = next_tick_one_call_per_frame(&status, &mut clocks, now).expect("owed");
+            assert!(
+                !(kind == TickKind::FixedUpdate && previous == Some(TickKind::FixedUpdate)),
+                "a fixed tick took two frames running"
+            );
+            previous = Some(kind);
+            match kind {
+                TickKind::Update => updates += 1,
+                TickKind::FixedUpdate => fixed += 1,
+                TickKind::Init => unreachable!("the script is initialized"),
+            }
+            let _ = clocks.next(kind, now);
+        }
+
+        assert!(
+            (19..=21).contains(&fixed),
+            "fixed ran {fixed} times in a second"
+        );
+        assert!(updates >= 35, "the update kept only {updates} of 60 frames");
+    }
+
+    /// Slow enough that the fixed interval falls inside one frame: the two
+    /// alternate, so the update keeps half the frames instead of stopping.
+    #[test]
+    fn a_shared_frame_alternates_below_the_fixed_rate() {
+        let status = ScriptStatus::default();
+        status.set_initialized();
+        let mut clocks = TickClocks::default();
+        let ms = Duration::from_millis;
+
+        let mut kinds = Vec::new();
+        for frame in 1..=10u64 {
+            let now = ms(frame * 60);
+            let kind = next_tick_one_call_per_frame(&status, &mut clocks, now).expect("owed");
+            kinds.push(kind);
+            let _ = clocks.next(kind, now);
+        }
+
+        let updates = kinds
+            .iter()
+            .filter(|kind| **kind == TickKind::Update)
+            .count();
+        assert!(updates >= 4, "the update stopped: {kinds:?}");
     }
 }

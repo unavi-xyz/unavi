@@ -26,7 +26,7 @@ impl Plugin for WebEnginePlugin {
             .add_systems(Startup, prewarm_transpiler)
             .add_systems(
                 Update,
-                (tick::drive::<{ tick::UPDATE }>, tick::pump)
+                (tick::drive, tick::pump)
                     .chain()
                     .in_set(crate::ScriptSystems::Tick),
             )
@@ -35,8 +35,6 @@ impl Plugin for WebEnginePlugin {
                 (
                     instantiate::instantiate_scripts,
                     instantiate::finish_instantiating,
-                    tick::drive::<{ tick::FIXED }>,
-                    tick::pump,
                 )
                     .chain(),
             );

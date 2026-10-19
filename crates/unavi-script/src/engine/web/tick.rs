@@ -1,10 +1,12 @@
-//! The lifecycle driver, sharing [`crate::engine::next_tick`] with
-//! `engine::native` so both engines agree on when a script is called.
+//! The lifecycle driver.
 //!
 //! A `jco` guest runs on the page's own thread, and a call suspended on a host
 //! import resumes on the browser's microtask queue, which drains only after the
 //! frame. A tick is polled inline so a host call it makes reaches this frame's
-//! [`pump`]; one still suspended is kept and polled again next frame.
+//! [`pump`]; one still suspended is kept and polled again next frame. That
+//! leaves a script one call per frame, which
+//! [`next_tick_one_call_per_frame`] spends on the update unless a fixed tick
+//! has just come due.
 
 use std::{
     future::Future,
@@ -40,17 +42,12 @@ use crate::{
         wit_tick,
     },
     engine::{
-        Schedule,
         Tick,
         TickClocks,
         TickKind,
-        next_tick,
+        next_tick_one_call_per_frame,
     },
 };
-
-/// The schedules [`drive`] runs in, matching `engine::native::tick`.
-pub const UPDATE: u8 = 0;
-pub const FIXED: u8 = 1;
 
 /// Time a frame spends applying the host calls its scripts made.
 const PUMP_BUDGET: Duration = Duration::from_millis(2);
@@ -67,9 +64,9 @@ unsafe impl Sync for PendingCall {}
 #[derive(Resource, Default)]
 pub struct PendingCalls(HashMap<Entity, PendingCall>);
 
-/// Polls each script's suspended call, starts the one it is due for this
-/// schedule, and leaves whatever is still suspended for the next frame.
-pub fn drive<const SCHEDULE: u8>(
+/// Polls each script's suspended call, starts the one it is due for, and
+/// leaves whatever is still suspended for the next frame.
+pub fn drive(
     time: Res<Time<Real>>,
     mut pending: ResMut<PendingCalls>,
     mut scripts: Query<(
@@ -81,11 +78,6 @@ pub fn drive<const SCHEDULE: u8>(
     )>,
 ) {
     let now = time.elapsed();
-    let schedule = if SCHEDULE == UPDATE {
-        Schedule::Update
-    } else {
-        Schedule::Fixed
-    };
 
     // A script despawned mid-call leaves its future behind.
     pending.0.retain(|entity, _| scripts.contains(*entity));
@@ -101,7 +93,7 @@ pub fn drive<const SCHEDULE: u8>(
             pending.0.remove(&entity);
         }
 
-        let Some(kind) = next_tick(schedule, status, &clocks, now) else {
+        let Some(kind) = next_tick_one_call_per_frame(status, &mut clocks, now) else {
             continue;
         };
         if !status.enter() {

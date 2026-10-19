@@ -38,6 +38,7 @@ impl Plugin for InputPlugin {
         app.insert_resource(config)
             .init_resource::<action::ActionState>()
             .init_resource::<capture::Captured>()
+            .init_resource::<source::mouse::Notches>()
             .init_resource::<pointer::backend::PointerFilter>()
             // Bevy's mouse pointer is what a person clicks an overlay with;
             // ours is aimed by a head or a hand and reports no hits for it,

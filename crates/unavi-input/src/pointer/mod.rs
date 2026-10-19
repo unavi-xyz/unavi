@@ -1,6 +1,6 @@
 use bevy::{
     camera::NormalizedRenderTarget,
-    input::mouse::AccumulatedMouseScroll,
+    input::mouse::MouseScrollUnit,
     picking::pointer::{
         Location,
         PointerAction,
@@ -25,6 +25,7 @@ use crate::{
     },
     capture::Captured,
     config::InputConfig,
+    source::mouse::Notches,
 };
 
 pub mod backend;
@@ -172,7 +173,7 @@ pub fn locate_pointers(
 pub fn emit_pointer_input(
     state: Res<ActionState>,
     pointers: Query<(&PointerAnchor, &PointerLocation)>,
-    scroll: Res<AccumulatedMouseScroll>,
+    notches: Res<Notches>,
     captured: Res<Captured>,
     mut input: MessageWriter<PointerInput>,
 ) {
@@ -203,15 +204,17 @@ pub fn emit_pointer_input(
         }
 
         // The wheel is the one input with no press to silence: it is read
-        // straight off the frame rather than out of an action.
-        if kind == PointerKind::Screen && !captured.0 && scroll.delta != Vec2::ZERO {
+        // straight off the frame rather than out of an action. Its travel is
+        // already in notches, so it is announced as lines rather than passing
+        // on whatever unit the platform sent.
+        if kind == PointerKind::Screen && !captured.0 && notches.0 != Vec2::ZERO {
             input.write(PointerInput::new(
                 kind.id(),
                 location,
                 PointerAction::Scroll {
-                    unit:  scroll.unit,
-                    x:     scroll.delta.x,
-                    y:     scroll.delta.y,
+                    unit:  MouseScrollUnit::Line,
+                    x:     notches.0.x,
+                    y:     notches.0.y,
                     phase: bevy::input::touch::TouchPhase::Moved,
                 },
             ));

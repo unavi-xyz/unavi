@@ -1,7 +1,6 @@
 //! Turns the engine's pointer events into the input events listeners hear.
 
 use bevy::{
-    input::mouse::AccumulatedMouseScroll,
     picking::{
         backend::HitData,
         events::{
@@ -38,6 +37,7 @@ use unavi_input::{
         PointerReleased,
         ray_of,
     },
+    source::mouse::Notches,
 };
 
 use crate::host::{
@@ -207,6 +207,8 @@ pub fn bridge_scroll(
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
 ) {
+    // The vector is already in notches: `unavi-input` divides the platform's
+    // unit down before the wheel reaches the pointer layer.
     deliver(
         trigger.entity,
         trigger.original_event_target(),
@@ -270,18 +272,18 @@ pub fn bridge_buttons(
 /// Scroll reaches device listeners with nothing under the pointer, which is
 /// how a shell hears the wheel while aimed at empty space.
 pub fn bridge_device_scroll(
-    scroll: Res<AccumulatedMouseScroll>,
+    notches: Res<Notches>,
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
 ) {
-    if scroll.delta == Vec2::ZERO || !listeners.is_heard(Target::Device) {
+    if notches.0 == Vec2::ZERO || !listeners.is_heard(Target::Device) {
         return;
     }
     listeners.send(
         Target::Device,
         InputEvent {
             pointer: PointerKind::Screen,
-            action:  Action::Scroll(scroll.delta),
+            action:  Action::Scroll(notches.0),
             ray:     ray_of_kind(PointerKind::Screen, &pointers),
             hit:     None,
         },

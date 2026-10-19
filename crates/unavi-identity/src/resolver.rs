@@ -21,21 +21,14 @@ use xdid::{
             ClientError,
             Config,
             MethodDidWeb,
-            target::TargetPolicy,
         },
     },
     resolver::DidResolver,
 };
 
-/// Debug builds resolve a `did:web` naming a loopback or private host over
-/// plaintext HTTP, so a development node is reachable. Release builds refuse
-/// them, where resolving a peer-supplied DID would otherwise probe this host's
-/// own network.
-const TARGET: TargetPolicy = if cfg!(debug_assertions) {
-    TargetPolicy::AllowLocal
-} else {
-    TargetPolicy::PublicOnly
-};
+/// Re-exported so a caller can choose where its `did:web` resolutions may
+/// reach without depending on `xdid` directly.
+pub use xdid::method::web::target::TargetPolicy;
 
 /// How long a resolved document is reused. A key rotation takes this long to
 /// reach a verifier.
@@ -76,9 +69,18 @@ impl Cached {
 }
 
 impl Resolver {
+    /// Resolves `did:web` against public unicast hosts over HTTPS.
     pub fn new() -> Result<Self, ClientError> {
+        Self::with_target(TargetPolicy::PublicOnly)
+    }
+
+    /// Resolves `did:web` under `target`. [`TargetPolicy::AllowLocal`] also
+    /// permits loopback, private and link-local hosts, and plaintext HTTP for
+    /// `localhost`, which reaches a development node; resolving a
+    /// peer-supplied DID under it is an SSRF vector.
+    pub fn with_target(target: TargetPolicy) -> Result<Self, ClientError> {
         let web = MethodDidWeb::with_config(Config {
-            target: TARGET,
+            target,
             ..Config::default()
         })?;
 

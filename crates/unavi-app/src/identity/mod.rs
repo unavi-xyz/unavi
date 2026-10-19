@@ -11,7 +11,10 @@ use directories::ProjectDirs;
 use unavi_identity::{
     auth::EndpointAuth,
     identity::NodeIdentity,
-    resolver::Resolver,
+    resolver::{
+        Resolver,
+        TargetPolicy,
+    },
 };
 use unavi_registry::client::Followed;
 use unavi_space::identity::LocalIdentity;
@@ -26,7 +29,10 @@ pub struct KeyStorage(pub unavi_local::DeviceStorage);
 
 #[derive(Resource, Clone, Default)]
 pub struct SyncConfig {
-    pub targets: Vec<String>,
+    pub targets:          Vec<String>,
+    /// Whether `did:web` may resolve on loopback and private hosts, and over
+    /// plaintext HTTP for `localhost`. Development only.
+    pub allow_local_dids: bool,
 }
 
 /// This device: the user key and the endpoint key.
@@ -100,7 +106,12 @@ impl Plugin for IdentityPlugin {
         };
         info!(did = %node.user().did(), "Running as");
 
-        let resolver = match Resolver::new() {
+        let target = if self.sync.allow_local_dids {
+            TargetPolicy::AllowLocal
+        } else {
+            TargetPolicy::PublicOnly
+        };
+        let resolver = match Resolver::with_target(target) {
             Ok(resolver) => Arc::new(resolver),
             Err(err) => {
                 error!(

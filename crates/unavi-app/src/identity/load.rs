@@ -207,7 +207,7 @@ async fn load(
 
     let store = builder.build().await?;
 
-    let SyncConfig { targets } = sync;
+    let SyncConfig { targets, .. } = sync;
 
     let (targets, unresolved) = resolve_batch(targets, &follower.resolver).await;
     follower.sync(&store, &targets).await;

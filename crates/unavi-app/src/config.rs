@@ -26,6 +26,7 @@ pub fn sync_config() -> SyncConfig {
             .filter(|did| !did.is_empty())
             .map(str::to_owned)
             .collect(),
+        allow_local_dids: config.unavi_allow_local_dids == "true",
     }
 }
 

@@ -70,15 +70,14 @@ pub fn derive_intents(
     intents
 }
 
-/// Offers each derived intent once per receiving document, as soon as a script
-/// of that document subscribes. A pair is forgotten once no portal raises it,
-/// so a far half that disappears is asked for again.
+/// Reconciles the intents the loaded portals raise with the scripts
+/// subscribed: each is offered until one claims it, so a late or resubscribing
+/// script still hears it, and a far half that disappears is asked for again.
 pub fn offer_link_intents(
     portals: Query<(&PortalConfig, &PrimOf)>,
     docs: Query<&HsdDocId>,
     view: Option<Res<SpaceView>>,
     intents: Res<LinkIntents>,
-    mut offered: Local<HashSet<(LinkIntent, DocId)>>,
 ) {
     let Some(view) = view else {
         return;
@@ -96,40 +95,20 @@ pub fn offer_link_intents(
             })
         })
         .collect::<Vec<_>>();
-    if linked.is_empty() {
-        offered.clear();
-        return;
-    }
 
-    let listening = intents.listening();
-    let receivers = listening
-        .iter()
+    let receivers = intents
+        .listening()
+        .into_iter()
         .filter_map(|doc| {
             Some(IntentReceiver {
-                doc:   *doc,
-                space: view.space_of(*doc)?.doc(),
+                doc,
+                space: view.space_of(doc)?.doc(),
             })
         })
         .collect::<Vec<_>>();
 
-    let derived = derive_intents(&linked, &receivers);
-    offered.retain(|(intent, doc)| derived.get(intent).is_some_and(|d| d.contains(doc)));
-
-    for (intent, targets) in derived {
-        let due = targets
-            .into_iter()
-            .filter(|doc| !offered.contains(&(intent, *doc)))
-            .collect::<Vec<_>>();
-        if due.is_empty() {
-            continue;
-        }
-        debug!(
-            source_space = ?intent.source_space,
-            link = ?intent.link,
-            targets = due.len(),
-            "portal link intent offered"
-        );
-        intents.offer(intent, &due);
-        offered.extend(due.into_iter().map(|doc| (intent, doc)));
+    let queued = intents.reconcile(&derive_intents(&linked, &receivers));
+    if queued > 0 {
+        debug!(queued, "portal link intents offered");
     }
 }

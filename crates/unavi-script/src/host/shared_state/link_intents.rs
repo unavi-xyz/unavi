@@ -1,10 +1,16 @@
 //! Scripts listening for portals that ask their space for a partner.
 
 use std::{
-    collections::HashSet,
+    collections::{
+        BTreeMap,
+        HashSet,
+    },
     sync::{
         Arc,
-        atomic::AtomicBool,
+        atomic::{
+            AtomicU64,
+            Ordering,
+        },
     },
 };
 
@@ -28,12 +34,55 @@ pub struct LinkIntent {
     pub link:         LinkId,
 }
 
-/// One intent as a subscriber receives it, with the claim every subscriber
-/// offered it in the same round shares.
+const UNCLAIMED: u64 = u64::MAX;
+
+/// Who won an intent. Every subscriber offered it shares one, so at most one
+/// script consumes it.
+pub struct Claim(AtomicU64);
+
+impl Claim {
+    const fn new() -> Self {
+        Self(AtomicU64::new(UNCLAIMED))
+    }
+
+    /// The subscription that won, if any.
+    fn holder(&self) -> Option<u64> {
+        match self.0.load(Ordering::Acquire) {
+            UNCLAIMED => None,
+            id => Some(id),
+        }
+    }
+
+    fn take(&self, subscriber: u64) -> bool {
+        self.0
+            .compare_exchange(UNCLAIMED, subscriber, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+    }
+}
+
+/// One intent as a subscriber receives it.
 #[derive(Clone)]
 pub struct Offer {
     pub intent: LinkIntent,
-    pub claim:  Arc<AtomicBool>,
+    claim:      Arc<Claim>,
+    subscriber: u64,
+}
+
+impl Offer {
+    /// Wins the intent for this subscription, unless it is already won.
+    #[must_use]
+    pub fn take(&self) -> bool {
+        self.claim.take(self.subscriber)
+    }
+}
+
+struct Subscriber {
+    doc:          DocId,
+    queue:        Arc<Queue<Offer>>,
+    /// Queue overflows already answered.
+    dropped_seen: u64,
+    /// The claim of each intent this subscription was last offered.
+    offered:      HashMap<LinkIntent, Arc<Claim>>,
 }
 
 /// Every open intent subscription, by the document of the script holding it.
@@ -43,7 +92,9 @@ pub struct LinkIntents(Arc<RwLock<Inner>>);
 #[derive(Default)]
 struct Inner {
     next:        u64,
-    subscribers: HashMap<u64, (DocId, Arc<Queue<Offer>>)>,
+    subscribers: HashMap<u64, Subscriber>,
+    /// The claim of every intent offered and still derived.
+    claims:      HashMap<LinkIntent, Arc<Claim>>,
 }
 
 impl LinkIntents {
@@ -53,7 +104,16 @@ impl LinkIntents {
         let mut inner = self.0.write();
         let id = inner.next;
         inner.next += 1;
-        inner.subscribers.insert(id, (doc, queue));
+        let dropped_seen = queue.dropped();
+        inner.subscribers.insert(
+            id,
+            Subscriber {
+                doc,
+                queue,
+                dropped_seen,
+                offered: HashMap::default(),
+            },
+        );
         id
     }
 
@@ -68,20 +128,71 @@ impl LinkIntents {
             .read()
             .subscribers
             .values()
-            .map(|(doc, _)| *doc)
+            .map(|sub| sub.doc)
             .collect()
     }
 
-    /// Offers `intent` to every subscriber of `docs`, all sharing one claim.
-    pub fn offer(&self, intent: LinkIntent, docs: &[DocId]) {
-        let claim = Arc::new(AtomicBool::new(false));
-        for (doc, queue) in self.0.read().subscribers.values() {
-            if docs.contains(doc) {
-                queue.push(Offer {
-                    intent,
-                    claim: Arc::clone(&claim),
+    /// Brings every subscription in line with `derived`, the intents now
+    /// raised and the documents each is addressed to, answering how many
+    /// offers it queued.
+    ///
+    /// A subscription is offered each unclaimed intent addressed to its
+    /// document once per claim, and again if its queue overflowed. An intent
+    /// won by an open subscription is not offered again; one won by a closed
+    /// subscription is released, and offered afresh. An intent no longer
+    /// derived is forgotten, so it is asked for again if it returns.
+    pub fn reconcile(&self, derived: &BTreeMap<LinkIntent, Vec<DocId>>) -> usize {
+        let mut inner = self.0.write();
+        let Inner {
+            subscribers,
+            claims,
+            ..
+        } = &mut *inner;
+
+        claims.retain(|intent, claim| {
+            derived.contains_key(intent)
+                && claim
+                    .holder()
+                    .is_none_or(|holder| subscribers.contains_key(&holder))
+        });
+
+        for sub in subscribers.values_mut() {
+            let dropped = sub.queue.dropped();
+            if dropped != sub.dropped_seen {
+                sub.dropped_seen = dropped;
+                sub.offered.clear();
+            }
+            let doc = sub.doc;
+            sub.offered.retain(|intent, offered| {
+                derived.get(intent).is_some_and(|docs| docs.contains(&doc))
+                    && claims
+                        .get(intent)
+                        .is_some_and(|claim| Arc::ptr_eq(claim, offered))
+            });
+        }
+
+        let mut queued = 0;
+        for (intent, docs) in derived {
+            let claim = claims
+                .entry(*intent)
+                .or_insert_with(|| Arc::new(Claim::new()));
+            if claim.holder().is_some() {
+                continue;
+            }
+            for (id, sub) in subscribers.iter_mut() {
+                if !docs.contains(&sub.doc) || sub.offered.contains_key(intent) {
+                    continue;
+                }
+                sub.queue.push(Offer {
+                    intent:     *intent,
+                    claim:      Arc::clone(claim),
+                    subscriber: *id,
                 });
+                sub.offered.insert(*intent, Arc::clone(claim));
+                queued += 1;
             }
         }
+        drop(inner);
+        queued
     }
 }

@@ -40,13 +40,10 @@ use crate::{
             Layer,
             write_fields,
         },
-        shared_state::{
-            event_bus,
-            link_intents::{
-                LinkIntent,
-                LinkIntents,
-                Offer,
-            },
+        shared_state::link_intents::{
+            LinkIntent,
+            LinkIntents,
+            Offer,
         },
     },
 };
@@ -215,7 +212,7 @@ pub fn claim(
         .iter()
         .rev()
         .find(|offer| offer.intent == intent)
-        .is_some_and(|offer| event_bus::claim(&offer.claim)))
+        .is_some_and(Offer::take))
 }
 
 pub fn close(host: &mut ScriptHost, subscription: u32) -> Result<(), ScriptError> {

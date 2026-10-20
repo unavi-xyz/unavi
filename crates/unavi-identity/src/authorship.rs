@@ -58,6 +58,8 @@ pub enum AuthorshipError {
     Malformed,
     #[error("authorship proof is for another namespace")]
     WrongNamespace,
+    #[error("authorship proof names another DID")]
+    WrongDid,
     #[error("authorship proof is not signed by the namespace key")]
     NotSignedByNamespace,
     #[error(transparent)]
@@ -141,6 +143,24 @@ impl Authorship {
         self.claim.verify_did(&did, resolver).await?;
         Ok(did)
     }
+
+    /// The namespace `did` authors, once both signatures check out and the
+    /// proof names `did`.
+    pub async fn verify_for(
+        &self,
+        did: &Did,
+        resolver: &Resolver,
+    ) -> Result<NamespaceId, AuthorshipError> {
+        let claim = self
+            .claim
+            .payload()
+            .map_err(|_| AuthorshipError::Malformed)?;
+        if &claim.did != did {
+            return Err(AuthorshipError::WrongDid);
+        }
+        self.verify(claim.ns, resolver).await?;
+        Ok(claim.ns)
+    }
 }
 
 fn namespace_bytes(claim: &Signed<AuthorshipClaim>) -> Vec<u8> {
@@ -190,6 +210,23 @@ pub async fn claim(
 /// The proof `doc` records, unverified. `None` when it records none or its
 /// content has not arrived.
 pub async fn recorded(doc: &Document) -> Result<Option<Authorship>, AuthorshipError> {
+    let Some(meta) = recorded_meta(doc).await? else {
+        return Ok(None);
+    };
+    let Some(author) = meta.author else {
+        return Ok(None);
+    };
+    if author.len() > MAX_AUTHORSHIP_BYTES {
+        return Err(AuthorshipError::Malformed);
+    }
+    postcard::from_bytes(&author)
+        .map(Some)
+        .map_err(|_| AuthorshipError::Malformed)
+}
+
+/// The meta `doc` records. `None` when it records none or its content has not
+/// arrived.
+pub async fn recorded_meta(doc: &Document) -> Result<Option<DocMeta>, AuthorshipError> {
     let Some(entry) = doc
         .entry(key::META, unavi_store::Tombstones::Exclude)
         .await?
@@ -202,14 +239,7 @@ pub async fn recorded(doc: &Document) -> Result<Option<Authorship>, AuthorshipEr
     let Some(bytes) = doc.value(&entry).await? else {
         return Ok(None);
     };
-    let meta: DocMeta = postcard::from_bytes(&bytes).map_err(|_| AuthorshipError::Malformed)?;
-    let Some(author) = meta.author else {
-        return Ok(None);
-    };
-    if author.len() > MAX_AUTHORSHIP_BYTES {
-        return Err(AuthorshipError::Malformed);
-    }
-    postcard::from_bytes(&author)
+    postcard::from_bytes(&bytes)
         .map(Some)
         .map_err(|_| AuthorshipError::Malformed)
 }
@@ -254,6 +284,30 @@ mod tests {
             .await
             .expect("both signatures verify");
         assert_eq!(&did, me.did());
+    }
+
+    #[tokio::test]
+    async fn a_proof_names_the_namespace_its_did_authors() {
+        let (ns, me) = (namespace(), identity());
+        let proof = Authorship::sign(&ns, &me).expect("sign");
+
+        let found = proof
+            .verify_for(me.did(), &Resolver::new().expect("resolver"))
+            .await
+            .expect("the proof names this DID");
+        assert_eq!(found, ns.id());
+    }
+
+    #[tokio::test]
+    async fn a_proof_does_not_answer_for_another_did() {
+        let proof = Authorship::sign(&namespace(), &identity()).expect("sign");
+
+        assert!(matches!(
+            proof
+                .verify_for(identity().did(), &Resolver::new().expect("resolver"))
+                .await,
+            Err(AuthorshipError::WrongDid)
+        ));
     }
 
     #[test]

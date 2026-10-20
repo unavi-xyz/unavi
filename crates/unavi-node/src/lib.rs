@@ -33,6 +33,11 @@ use unavi_identity::{
     },
     did_document,
     identity::NodeIdentity,
+    profile::{
+        self,
+        ProfileSecret,
+        protocol::ProfileProtocol,
+    },
     resolver::Resolver,
 };
 use unavi_local::DeviceStorage;
@@ -123,8 +128,14 @@ pub async fn run(
         }
     }
 
+    let profile = ProfileSecret::derive(node.user())?;
+    let (_profile_doc, profile_proof) = profile.open(&store, node.user()).await?;
+
     let mut rb = iroh::protocol::Router::builder(endpoint);
-    rb = store.accept(rb).accept(auth::ALPN, auth_protocol);
+    rb = store.accept(rb).accept(auth::ALPN, auth_protocol).accept(
+        profile::protocol::ALPN,
+        ProfileProtocol::new(&profile_proof)?,
+    );
 
     let _registry = if let Some(config) = opts.registry {
         let (registry, protocol) = Registry::create(
@@ -144,7 +155,8 @@ pub async fn run(
 
     let router = rb.spawn();
 
-    let document = did_document::node_document(&did, node.user().signing_key(), endpoint_id)?;
+    let document =
+        did_document::node_document(&did, node.user().signing_key(), endpoint_id, profile.id())?;
     let app = did_document_route(Bytes::from(serde_json::to_vec(&document)?));
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, opts.port));

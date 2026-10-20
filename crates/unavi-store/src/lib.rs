@@ -161,6 +161,19 @@ impl Store {
         self.wrap(doc)
     }
 
+    /// Holds `secret`'s namespace writable, importing it on first use. A
+    /// namespace held read-only is upgraded.
+    pub async fn hold_writable(&self, secret: NamespaceSecret) -> Result<Document> {
+        let _gate = self.0.gate.read().await;
+        let doc = self
+            .0
+            .docs
+            .api()
+            .import_namespace(Capability::Write(secret))
+            .await?;
+        self.wrap(doc)
+    }
+
     /// `ns` if this store already holds it. Never imports.
     pub async fn held(&self, ns: NamespaceId) -> Result<Option<Document>> {
         let _gate = self.0.gate.read().await;

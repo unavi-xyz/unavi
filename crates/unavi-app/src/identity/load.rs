@@ -28,6 +28,11 @@ use unavi_identity::{
         NodeIdentity,
         root_document,
     },
+    profile::{
+        self,
+        ProfileSecret,
+        protocol::ProfileProtocol,
+    },
     resolver::Resolver,
 };
 use unavi_registry::client::{
@@ -213,6 +218,10 @@ async fn load(
     follower.sync(&store, &targets).await;
 
     let root = root_document::open(&store, node.user()).await?.id();
+    let (_profile, profile_proof) = ProfileSecret::derive(node.user())?
+        .open(&store, node.user())
+        .await?;
+    let profile_protocol = ProfileProtocol::new(&profile_proof)?;
     let sync_targets = targets
         .iter()
         .map(|target| target.addr.clone())
@@ -225,7 +234,12 @@ async fn load(
             move |world: &mut World| {
                 if let Ok(entity) = world.get_entity_mut(entity) {
                     let accepting = store.clone();
-                    router::accept(move |builder| accepting.accept(builder)).apply(entity);
+                    router::accept(move |builder| {
+                        accepting
+                            .accept(builder)
+                            .accept(profile::protocol::ALPN, profile_protocol)
+                    })
+                    .apply(entity);
                 }
                 world.insert_resource(RootDocument(root));
                 world.insert_resource(SyncTargets(sync_targets));

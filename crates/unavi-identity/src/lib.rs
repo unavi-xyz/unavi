@@ -9,5 +9,6 @@ pub mod authorship;
 pub mod did_document;
 pub mod identity;
 pub mod jwk;
+pub mod profile;
 pub mod resolver;
 pub mod signed;

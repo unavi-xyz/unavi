@@ -91,12 +91,12 @@ impl Root {
         wear(&tools, "Tools", &glyph::TOOLS);
 
         let me = Mote::new(Kind::Group, "Self")?;
-        me.set_description("How you perceive the world.")?;
+        me.set_description("Your relation to the world.")?;
         me.set_tint(Some(palette::SELF));
         wear(&me, "Self", &glyph::SELF);
 
         let visor = Mote::new(Kind::Group, "Visor")?;
-        visor.set_description("Lenses to wear over the world.")?;
+        visor.set_description("Lenses to augment your vision.")?;
         visor.set_tint(Some(palette::SELF));
         wear(&visor, "Visor", &glyph::VISOR);
         me.add_child(&visor);

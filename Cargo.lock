@@ -11274,7 +11274,6 @@ dependencies = [
  "n0-future",
  "parking_lot",
  "postcard",
- "rand 0.9.5",
  "tracing",
  "tracing-subscriber",
  "unavi-agent",
@@ -11471,6 +11470,7 @@ dependencies = [
  "bevy_vrm",
  "hsd",
  "naga",
+ "unavi-avatar",
  "unavi-physics",
 ]
 

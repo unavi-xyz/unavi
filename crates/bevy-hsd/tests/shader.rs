@@ -11,10 +11,8 @@ use bevy::{
 use bevy_hsd::attributes::{
     image::HsdImage,
     shader::{
-        Sealed,
         ShaderGraphData,
         ShaderOverridesData,
-        ShellSeal,
         cache::MAX_SHADER_PROGRAMS,
         material::ShaderGraphMaterial,
     },
@@ -584,100 +582,4 @@ fn setting_image_data_after_the_graph_is_built_fills_the_texture_slot(
         false
     });
     handle.expect("texture slot filled after the image decoded");
-}
-
-fn seal_graph() -> ShaderGraph {
-    let mut graph = glow_graph();
-    graph.surface.nodes = vec![Node::Seal];
-    graph.surface.output = SurfaceOutput::Unlit(UnlitOutput {
-        color:                Port::Node(0),
-        alpha_clip_threshold: None,
-    });
-    graph
-}
-
-fn fragment_shader_of(ctx: &mut TestContext) -> Handle<Shader> {
-    let mut query = ctx
-        .app
-        .world_mut()
-        .query::<&MeshMaterial3d<ShaderGraphMaterial>>();
-    let world = ctx.app.world();
-    let material = query.iter(world).next().expect("graph prim has a material");
-    world
-        .resource::<Assets<ShaderGraphMaterial>>()
-        .get(&material.0)
-        .expect("material asset")
-        .fragment_shader
-        .clone()
-}
-
-/// A document gaining `Sealed` after its prims built must recompile them
-/// with the seal, not leave them grey.
-#[traced_test]
-#[rstest]
-fn a_graph_using_the_seal_rebuilds_when_its_document_is_sealed(
-    #[from(ctx_blobs)] mut ctx: TestContext,
-) {
-    ctx.app
-        .insert_resource(ShellSeal(LinearRgba::new(0.9, 0.1, 0.2, 1.0)));
-    let prim = ctx.create_prim();
-    ctx.set_shader_graph(prim, seal_graph().encode().expect("encode graph"));
-    ctx.tick_until(|world| {
-        world
-            .query::<&MeshMaterial3d<ShaderGraphMaterial>>()
-            .iter(world)
-            .count()
-            == 1
-    });
-    let grey = fragment_shader_of(&mut ctx);
-
-    let doc = ctx.doc;
-    ctx.app.world_mut().entity_mut(doc).insert(Sealed);
-    ctx.tick_until(|world| {
-        let mut query = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
-        let material = query.iter(world).next().expect("material");
-        world
-            .resource::<Assets<ShaderGraphMaterial>>()
-            .get(&material.0)
-            .is_some_and(|m| m.fragment_shader != grey)
-    });
-
-    ctx.app.world_mut().entity_mut(doc).remove::<Sealed>();
-    ctx.tick_until(|world| {
-        let mut query = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
-        let material = query.iter(world).next().expect("material");
-        world
-            .resource::<Assets<ShaderGraphMaterial>>()
-            .get(&material.0)
-            .is_some_and(|m| m.fragment_shader == grey)
-    });
-}
-
-/// A graph with no seal node is one program however its document is sealed.
-#[traced_test]
-#[rstest]
-fn a_graph_without_the_seal_is_not_duplicated_by_sealing(#[from(ctx_blobs)] mut ctx: TestContext) {
-    ctx.app
-        .insert_resource(ShellSeal(LinearRgba::new(0.9, 0.1, 0.2, 1.0)));
-    let prim = ctx.create_prim();
-    ctx.set_shader_graph(prim, glow_graph().encode().expect("encode graph"));
-    let elsewhere = ctx.spawn_document();
-    let there = elsewhere.create_prim();
-    elsewhere.set_shader_graph(there, glow_graph().encode().expect("encode graph"));
-    let doc = ctx.doc;
-    ctx.app.world_mut().entity_mut(doc).insert(Sealed);
-
-    let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
-    ctx.tick_until(|world| {
-        let mut q = world.query::<&MeshMaterial3d<ShaderGraphMaterial>>();
-        handles = q.iter(world).map(|m| m.0.clone()).collect();
-        handles.len() == 2
-    });
-
-    let assets = ctx.app.world().resource::<Assets<ShaderGraphMaterial>>();
-    let shaders: Vec<_> = handles
-        .iter()
-        .map(|h| assets.get(h).expect("material").fragment_shader.clone())
-        .collect();
-    assert_eq!(shaders[0], shaders[1]);
 }

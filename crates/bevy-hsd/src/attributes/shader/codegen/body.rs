@@ -56,7 +56,6 @@ fn emit_nodes(
     public_inputs: &[GraphValue],
     nodes: &[Node],
     kinds: &[ValueKind],
-    seal: [f32; 4],
 ) -> fmt::Result {
     for (index, node) in nodes.iter().enumerate() {
         let ty = wgsl_type(kinds[index]);
@@ -68,7 +67,7 @@ fn emit_nodes(
             )?;
         } else {
             write!(out, "    let n{index}: {ty} = ")?;
-            node_expr(out, public_inputs, kinds, seal, node)?;
+            node_expr(out, public_inputs, kinds, node)?;
             out.push_str(";\n");
         }
     }
@@ -95,7 +94,6 @@ fn emit_alpha_clip(
 pub fn generate_surface_body(
     graph: &ShaderGraph,
     validated: &Validated,
-    seal: [f32; 4],
 ) -> Result<String, fmt::Error> {
     let mut out = String::new();
     emit_nodes(
@@ -103,7 +101,6 @@ pub fn generate_surface_body(
         &graph.public_inputs,
         &graph.surface.nodes,
         validated.surface(),
-        seal,
     )?;
 
     match &graph.surface.output {
@@ -168,7 +165,6 @@ pub fn generate_surface_body(
 pub fn generate_displacement_body(
     graph: &ShaderGraph,
     validated: &Validated,
-    seal: [f32; 4],
 ) -> Result<Option<String>, fmt::Error> {
     let (Some(displacement), Some(kinds)) = (graph.displacement.as_ref(), validated.displacement())
     else {
@@ -177,7 +173,7 @@ pub fn generate_displacement_body(
     let public_inputs = &graph.public_inputs;
 
     let mut out = String::new();
-    emit_nodes(&mut out, public_inputs, &displacement.nodes, kinds, seal)?;
+    emit_nodes(&mut out, public_inputs, &displacement.nodes, kinds)?;
 
     out.push_str("    var out_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
     out.push_str("    var out_world_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");

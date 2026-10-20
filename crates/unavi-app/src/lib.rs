@@ -22,7 +22,6 @@ mod icon;
 mod identity;
 mod logging;
 mod scene;
-mod seal;
 
 pub use config::dev_build;
 
@@ -135,9 +134,6 @@ impl Plugin for UnaviPlugin {
             },
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
-            seal::SealPlugin {
-                storage: storage.clone(),
-            },
             unavi_space::SpacePlugin {
                 storage: Some(storage),
             },

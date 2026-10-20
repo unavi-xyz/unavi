@@ -75,7 +75,6 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::ObjectScale
         | Node::ViewDirection
         | Node::ScreenUv
-        | Node::Seal
         | Node::Time => Ok(leaf::kind(ctx, node)),
         Node::Fresnel { .. }
         | Node::Noise { .. }

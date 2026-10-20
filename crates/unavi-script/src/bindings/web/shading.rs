@@ -222,7 +222,6 @@ enum WireNode {
     ObjectScale,
     ViewDirection,
     ScreenUv,
-    Seal,
 
     Add(WireBinaryOp),
     Sub(WireBinaryOp),
@@ -286,7 +285,6 @@ const fn node(value: WireNode) -> Node {
         WireNode::ObjectScale => Node::ObjectScale,
         WireNode::ViewDirection => Node::ViewDirection,
         WireNode::ScreenUv => Node::ScreenUv,
-        WireNode::Seal => Node::Seal,
 
         WireNode::Add(op) => Node::Add {
             a: port(op.a),

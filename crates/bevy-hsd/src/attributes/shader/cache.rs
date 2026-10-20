@@ -12,7 +12,6 @@ use bevy::{
 use hsd::{
     attributes::shader::{
         ShaderGraph,
-        node::Node,
         validate::validate,
         value::GraphValue,
     },
@@ -21,10 +20,7 @@ use hsd::{
 
 use crate::{
     attributes::shader::{
-        codegen::{
-            self,
-            SEAL_NEUTRAL,
-        },
+        codegen,
         material::{
             alpha_mode,
             cull_mode,
@@ -57,72 +53,24 @@ pub(crate) struct CachedGraph {
 /// would otherwise mint unbounded programs.
 pub const MAX_SHADER_PROGRAMS: usize = 32;
 
-/// One compiled program: the graph, and the seal colour it was generated for.
-/// A graph with no `Node::Seal` always keys at [`SEAL_NEUTRAL`], so it is
-/// never duplicated per document.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct ProgramKey {
-    hash: blake3::Hash,
-    seal: [u32; 4],
-}
-
-fn seal_bits(seal: [f32; 4]) -> [u32; 4] {
-    seal.map(f32::to_bits)
-}
-
-fn hex_bits(seal: [f32; 4]) -> String {
-    seal_bits(seal).map(|bits| format!("{bits:08x}")).concat()
-}
-
-fn uses_seal(graph: &ShaderGraph) -> bool {
-    graph
-        .surface
-        .nodes
-        .iter()
-        .chain(graph.displacement.iter().flat_map(|d| &d.nodes))
-        .any(|node| matches!(node, Node::Seal))
-}
-
-/// Compiled graphs, keyed by the graph bytes' hash and resolved seal.
+/// Compiled graphs, keyed by the graph bytes' hash.
 /// Identical graphs across documents compile once.
 #[derive(Resource, Default)]
 pub(crate) struct ShaderGraphCache {
-    programs:  HashMap<ProgramKey, CachedGraph>,
-    /// Graphs known to contain no `Node::Seal`.
-    seal_free: HashSet<blake3::Hash>,
+    programs: HashMap<blake3::Hash, CachedGraph>,
     /// The graphs each document has charged against its cap. A program is
     /// dropped once no document still holds it.
-    charged:   HashMap<Entity, HashSet<blake3::Hash>>,
+    charged:  HashMap<Entity, HashSet<blake3::Hash>>,
 }
 
 impl ShaderGraphCache {
-    /// The key `hash` compiles under for a document whose seal resolves to
-    /// `seal`.
-    pub(crate) fn key(&self, hash: blake3::Hash, seal: [f32; 4]) -> ProgramKey {
-        let seal = if self.seal_free.contains(&hash) {
-            SEAL_NEUTRAL
-        } else {
-            seal
-        };
-        ProgramKey {
-            hash,
-            seal: seal_bits(seal),
-        }
+    pub(crate) fn get(&self, hash: blake3::Hash) -> Option<&CachedGraph> {
+        self.programs.get(&hash)
     }
 
-    /// Whether `hash` is a built graph with no `Node::Seal`, which no seal
-    /// change can affect.
-    pub(crate) fn is_seal_free(&self, hash: blake3::Hash) -> bool {
-        self.seal_free.contains(&hash)
-    }
-
-    pub(crate) fn get(&self, key: ProgramKey) -> Option<&CachedGraph> {
-        self.programs.get(&key)
-    }
-
-    /// The cached entry for `hash` under `seal` and the key it is held
-    /// under, decoding, validating and compiling `bytes` only on a miss, and
-    /// charging `doc`'s cap only for a build that succeeds.
+    /// The cached entry for `hash`, decoding, validating and compiling
+    /// `bytes` only on a miss, and charging `doc`'s cap only for a build that
+    /// succeeds.
     ///
     /// `None` when the graph is undecodable or invalid, or `doc` is at its
     /// cap of [`MAX_SHADER_PROGRAMS`] and `hash` is new to it.
@@ -130,14 +78,12 @@ impl ShaderGraphCache {
         &mut self,
         hash: blake3::Hash,
         bytes: &[u8],
-        seal: [f32; 4],
         doc: Entity,
         shaders: &mut Assets<Shader>,
-    ) -> Option<(ProgramKey, CachedGraph)> {
-        let key = self.key(hash, seal);
-        if let Some(cached) = self.get(key) {
+    ) -> Option<CachedGraph> {
+        if let Some(cached) = self.get(hash) {
             let cached = cached.clone();
-            return self.charge(doc, hash).then_some((key, cached));
+            return self.charge(doc, hash).then_some(cached);
         }
 
         let graph = ShaderGraph::decode(bytes)
@@ -146,23 +92,21 @@ impl ShaderGraphCache {
         let validated = validate(&graph)
             .inspect_err(|err| warn!(?err, "invalid shader graph"))
             .ok()?;
-        let sealed = uses_seal(&graph);
-        let seal = if sealed { seal } else { SEAL_NEUTRAL };
-        let fragment_source = codegen::generate_fragment_shader(&graph, &validated, seal)
+        let fragment_source = codegen::generate_fragment_shader(&graph, &validated)
             .inspect_err(|err| warn!(?err, "failed to generate fragment shader"))
             .ok()?;
-        let vertex_source = codegen::generate_vertex_shader(&graph, &validated, seal)
+        let vertex_source = codegen::generate_vertex_shader(&graph, &validated)
             .inspect_err(|err| warn!(?err, "failed to generate vertex shader"))
             .ok()?;
 
         let fragment = shaders.add(Shader::from_wgsl(
             fragment_source,
-            format!("generated://shader/{hash}/{}/fragment", hex_bits(seal)),
+            format!("generated://shader/{hash}/fragment"),
         ));
         let vertex = vertex_source.map(|source| {
             shaders.add(Shader::from_wgsl(
                 source,
-                format!("generated://shader/{hash}/{}/vertex", hex_bits(seal)),
+                format!("generated://shader/{hash}/vertex"),
             ))
         });
 
@@ -183,12 +127,8 @@ impl ShaderGraphCache {
             );
             return None;
         }
-        if !sealed {
-            self.seal_free.insert(hash);
-        }
-        let key = self.key(hash, seal);
-        self.programs.entry(key).or_insert(built.clone());
-        Some((key, built))
+        self.programs.entry(hash).or_insert(built.clone());
+        Some(built)
     }
 
     /// Charges `hash` against `doc`'s cap if it is not already charged.
@@ -214,10 +154,8 @@ pub(crate) fn evict_document_shaders(
     let Some(dropped) = cache.charged.remove(&trigger.entity) else {
         return;
     };
-    let ShaderGraphCache {
-        programs, charged, ..
-    } = &mut *cache;
-    programs.retain(|key, _| {
-        !dropped.contains(&key.hash) || charged.values().any(|held| held.contains(&key.hash))
+    let ShaderGraphCache { programs, charged } = &mut *cache;
+    programs.retain(|hash, _| {
+        !dropped.contains(hash) || charged.values().any(|held| held.contains(hash))
     });
 }

@@ -99,17 +99,3 @@ fn the_instance_and_object_leaves_are_legal_in_both_networks() {
         );
     }
 }
-
-#[test]
-fn the_seal_is_a_colour_in_either_network() {
-    let surface = graph(vec![Node::Seal]);
-    let validated = validate(&surface).expect("valid in the surface network");
-    assert_eq!(validated.surface(), [ValueKind::Color].as_slice());
-
-    let displacement = displaced(vec![Node::Seal], None);
-    let validated = validate(&displacement).expect("valid in the displacement network");
-    assert_eq!(
-        validated.displacement(),
-        Some([ValueKind::Color].as_slice())
-    );
-}

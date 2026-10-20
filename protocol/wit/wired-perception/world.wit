@@ -6,7 +6,7 @@
 package wired:perception;
 
 interface perception {
-  use wired:core/math.{transform};
+  use wired:core/math.{transform, color};
   use wired:core/ids.{did, document-id, prim-ref};
   use wired:core/error.{error};
 
@@ -32,6 +32,9 @@ interface perception {
     /// and no partner is one-way.
     linked:      bool,
     state:       portal-state,
+    /// The rim colour: the hue of the space it opens onto, neutral grey while
+    /// that is unknown.
+    hue:         color,
   }
 
   /// Up to 64 portals whose centre lies within `radius` meters of the local

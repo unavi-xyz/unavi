@@ -52,6 +52,7 @@ impl Host for HostCtx {
                 destination: portal.destination.map(convert::wit_doc_id),
                 linked:      portal.linked,
                 state:       wit_state(portal.state),
+                hue:         convert::wit_color(portal.hue),
             })
             .collect())
     }

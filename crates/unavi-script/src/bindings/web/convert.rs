@@ -368,6 +368,10 @@ pub struct WireColor {
     pub a: f32,
 }
 
+pub fn wit_color([r, g, b, a]: [f32; 4]) -> JsValue {
+    to_js(&WireColor { r, g, b, a })
+}
+
 pub fn vec3(value: JsValue) -> Result<bevy::math::Vec3, ScriptError> {
     let v: WireVec3 = from_js(value)?;
     Ok(bevy::math::Vec3::new(v.x, v.y, v.z))

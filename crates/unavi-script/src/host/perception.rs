@@ -38,6 +38,8 @@ pub struct Portal {
     pub destination: Option<DocId>,
     pub linked:      bool,
     pub state:       PortalState,
+    /// Linear RGBA.
+    pub hue:         [f32; 4],
 }
 
 /// What a document declares about itself.
@@ -79,6 +81,7 @@ pub fn portals(host: &ScriptHost, radius: f32) -> Result<Vec<Portal>, ScriptErro
             destination: portal.destination,
             linked:      portal.linked,
             state:       portal.state,
+            hue:         portal.hue.to_f32_array(),
         })
         .collect())
 }

@@ -25,6 +25,7 @@ use unavi_portal::{
         PortalState,
         PortalTargetDoc,
     },
+    view::hue::PortalHue,
 };
 
 /// The most portals one query answers.
@@ -42,6 +43,7 @@ pub struct PortalSnapshot {
     pub destination: Option<DocId>,
     pub linked:      bool,
     pub state:       PortalState,
+    pub hue:         LinearRgba,
 }
 
 /// Every portal in a loaded space.
@@ -80,6 +82,7 @@ pub fn snapshot_portals(
             Option<&PortalTargetDoc>,
             Option<&PortalLink>,
             Option<&Destination>,
+            Option<&PortalHue>,
         ),
         With<Portal>,
     >,
@@ -89,7 +92,7 @@ pub fn snapshot_portals(
 ) {
     let mut found: Vec<PortalSnapshot> = portals
         .iter()
-        .filter_map(|(prim, of, world, size, state, target, link, resolved)| {
+        .filter_map(|(prim, of, world, size, state, target, link, resolved, hue)| {
             Some(PortalSnapshot {
                 doc:         docs.get(of.0).ok()?.0,
                 prim:        prim.0,
@@ -105,6 +108,7 @@ pub fn snapshot_portals(
                     |destination| partners.contains(destination.0),
                 ),
                 state:       *state,
+                hue:         hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
             })
         })
         .collect();
@@ -132,6 +136,7 @@ mod tests {
             destination: None,
             linked:      false,
             state:       PortalState::Closed,
+            hue:         PortalHue::NEUTRAL,
         }
     }
 
@@ -205,6 +210,12 @@ mod tests {
         assert_eq!(found.destination, Some(target));
         assert!(!found.linked, "no link partner is stated");
         assert_eq!(found.state, PortalState::Open);
+        assert_eq!(found.hue, PortalHue::NEUTRAL, "no hue yet reads neutral");
+
+        let rim = LinearRgba::rgb(0.2, 0.4, 0.6);
+        app.world_mut().entity_mut(portal).insert(PortalHue(rim));
+        app.update();
+        assert_eq!(shared.near(Vec3::ZERO, 100.0)[0].hue, rim);
 
         app.world_mut()
             .entity_mut(portal)

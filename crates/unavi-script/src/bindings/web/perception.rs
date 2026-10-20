@@ -59,6 +59,7 @@ fn wit_portal(portal: &Portal) -> JsValue {
         ),
         ("linked", portal.linked.into()),
         ("state", state_name(portal.state).into()),
+        ("hue", convert::wit_color(portal.hue)),
     ])
 }
 

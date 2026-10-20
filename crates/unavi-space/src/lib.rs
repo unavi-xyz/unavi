@@ -34,6 +34,7 @@ pub mod moderation;
 pub mod object_sync;
 pub mod pinned;
 pub mod portal;
+pub mod profiles;
 pub mod replication;
 mod scene;
 pub mod spawn;
@@ -64,6 +65,7 @@ impl Plugin for SpacePlugin {
         if !app.is_plugin_added::<membership::MembershipPlugin>() {
             app.add_plugins(membership::MembershipPlugin);
         }
+        app.add_plugins(profiles::ProfilesPlugin);
 
         app.insert_resource(load_trust(self.storage.clone().unwrap_or_default()));
         app.init_resource::<Rules>();

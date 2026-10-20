@@ -138,14 +138,16 @@ fn install(world: &mut World, portal: Entity, visual: PortalVisual) {
     let still = world
         .get::<StillCapture>(portal)
         .filter(|_| visual == PortalVisual::Still)
-        .map(|still| still.atlas.clone());
+        .map(|still| (still.atlas.clone(), still.distance.clone()));
     let material = world
         .get::<MeshMaterial3d<PortalMaterial>>(portal)
         .map(|m| m.0.id());
     if let Some(id) = material
         && let Some(mut material) = world.resource_mut::<Assets<PortalMaterial>>().get_mut(id)
     {
-        material.still = still;
+        let (atlas, distance) = still.unzip();
+        material.still = atlas;
+        material.still_distance = distance;
     }
 
     world

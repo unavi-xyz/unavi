@@ -18,6 +18,7 @@ use bevy_vrm::first_person::{
     FirstPersonFlag,
 };
 use unavi_agent::LocalAgent;
+use unavi_avatar::render_layers::AVATAR_RENDER_LAYER;
 
 use crate::util::create_app_store;
 
@@ -97,7 +98,7 @@ fn on_agent_load(
     commands.spawn((
         PanOrbitCamera::default(),
         Transform::from_xyz(-3.0, 5.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
-        RenderLayers::from_layers(&[0])
+        RenderLayers::from_layers(&[0, AVATAR_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 

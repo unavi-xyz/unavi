@@ -14,6 +14,8 @@ struct PortalParams {
     ring:              vec4<f32>,
     half_size:         vec2<f32>,
     mode:              u32,
+    // 1 once the distance atlas is bound.
+    parallax:          u32,
 };
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(2)
@@ -24,6 +26,10 @@ var<uniform> params: PortalParams;
 var still_texture: texture_2d<f32>;
 @group(#{MATERIAL_BIND_GROUP}) @binding(4)
 var still_sampler: sampler;
+// Each texel's distance from its face's eye, in the still's layout. Read
+// unfiltered: a blend across a depth edge is a distance that is nowhere.
+@group(#{MATERIAL_BIND_GROUP}) @binding(5)
+var distance_texture: texture_2d<f32>;
 
 const MODE_LIVE: u32 = 0u;
 const MODE_STILL: u32 = 1u;
@@ -32,6 +38,18 @@ const MODE_VEIL: u32 = 3u;
 
 const ATLAS_COLUMNS: u32 = 3u;
 const ATLAS_ROWS: u32 = 2u;
+const STILL_TILES: vec2<f32> = vec2<f32>(f32(ATLAS_COLUMNS), f32(ATLAS_ROWS));
+
+// Parallax ray march through the still. Steps are spaced quadratically, fine
+// near the portal and coarse far off, where parallax is small.
+const STILL_STEPS: u32 = 32u;
+const STILL_REFINE_STEPS: u32 = 5u;
+// Metres the march reaches. A ray that hits nothing in this range shows the
+// still as infinitely far.
+const STILL_RANGE: f32 = 64.0;
+// The furthest a ray may start from the capture eye, in metres. A larger
+// portal gets less parallax rather than more stretching at disocclusions.
+const STILL_MAX_START: f32 = 1.5;
 
 // Rim core and glow widths, in metres.
 const RIM_CORE: f32 = 0.012;
@@ -77,9 +95,15 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     return out;
 }
 
+struct StillCoord {
+    // The tile in tiles, and the position in it in `[0, 1]`.
+    tile: vec2<f32>,
+    uv:   vec2<f32>,
+}
+
 // Face and uv selection is mirrored in `still/tests.rs`, which checks it
 // against the capture cameras.
-fn still_sample(d: vec3<f32>) -> vec3<f32> {
+fn still_coord(d: vec3<f32>) -> StillCoord {
     let a = abs(d);
     var face = 5u;
     if a.x >= a.y && a.x >= a.z {
@@ -107,12 +131,59 @@ fn still_sample(d: vec3<f32>) -> vec3<f32> {
 
     // Half a texel in from the tile edge so filtering never reads the next
     // tile.
-    let tiles = vec2<f32>(f32(ATLAS_COLUMNS), f32(ATLAS_ROWS));
-    let tile_texels = vec2<f32>(textureDimensions(still_texture)) / tiles;
+    let tile_texels = vec2<f32>(textureDimensions(still_texture)) / STILL_TILES;
     let half_texel = 0.5 / tile_texels;
     let uv = clamp(vec2<f32>((x + 1.0) * 0.5, (1.0 - y) * 0.5), half_texel, 1.0 - half_texel);
     let tile = vec2<f32>(f32(face % ATLAS_COLUMNS), f32(face / ATLAS_COLUMNS));
-    return textureSampleLevel(still_texture, still_sampler, (tile + uv) / tiles, 0.0).rgb;
+    return StillCoord(tile, uv);
+}
+
+// The still as seen from the capture eye along `d`.
+fn still_sample(d: vec3<f32>) -> vec3<f32> {
+    let c = still_coord(d);
+    return textureSampleLevel(still_texture, still_sampler, (c.tile + c.uv) / STILL_TILES, 0.0).rgb;
+}
+
+// The distance from the capture eye to the surface along `d`.
+fn still_distance_at(d: vec3<f32>) -> f32 {
+    let c = still_coord(d);
+    let texel = vec2<i32>((c.tile + c.uv) / STILL_TILES * vec2<f32>(textureDimensions(distance_texture)));
+    return textureLoad(distance_texture, texel, 0).r;
+}
+
+// Where a ray from `start`, a point on the portal plane in the capture eye's
+// frame, meets the surface the still recorded, as a vector from the capture
+// eye. A point is behind the surface once it is further from the eye than the
+// surface is in its direction. Nothing between the viewer and the plane is
+// hit, since the march begins at the plane. A ray that hits nothing returns
+// its direction: the still as infinitely far, as before parallax.
+fn still_march(start: vec3<f32>, dir: vec3<f32>) -> vec3<f32> {
+    var lo = 0.0;
+    var hi = -1.0;
+    for (var i = 1u; i <= STILL_STEPS; i += 1u) {
+        let f = f32(i) / f32(STILL_STEPS);
+        let t = STILL_RANGE * f * f;
+        let p = start + dir * t;
+        if length(p) >= still_distance_at(p) {
+            hi = t;
+            break;
+        }
+        lo = t;
+    }
+    if hi < 0.0 {
+        return dir;
+    }
+
+    for (var i = 0u; i < STILL_REFINE_STEPS; i += 1u) {
+        let mid = 0.5 * (lo + hi);
+        let p = start + dir * mid;
+        if length(p) >= still_distance_at(p) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    return start + dir * hi;
 }
 
 // A slow, low-contrast interference pattern in [0, 1].
@@ -190,13 +261,23 @@ fn fragment(in: VertexOutput) -> FragmentOutput {
         let screen_uv = (in.position.xy - view.viewport.xy + push * wave * RIPPLE_PX) / dims;
         color = textureSampleLevel(live_texture, live_sampler, screen_uv, 0.0).rgb;
     } else if params.mode == MODE_STILL {
-        // The view direction in the portal's frame is the direction in the
-        // arrival's frame, turned half around when seen from behind.
+        // The portal's frame is the arrival's, turned half around when seen
+        // from behind. The capture eye is at the arrival's origin, so the
+        // opening's plane passes through it, and the view ray crosses that
+        // plane at `start`.
         var d = vec3<f32>(dot(ray_dir, x_axis), dot(ray_dir, y_axis), dot(ray_dir, normal));
+        var start = vec3<f32>(local, 0.0);
         if dot(to_viewer, normal) < 0.0 {
             d = vec3<f32>(-d.x, d.y, -d.z);
+            start = vec3<f32>(-start.x, start.y, 0.0);
         }
-        let still = still_sample(d);
+        var still = vec3<f32>(0.0);
+        if params.parallax != 0u {
+            start *= min(1.0, STILL_MAX_START / max(length(start), 1.0e-4));
+            still = still_sample(still_march(start, d));
+        } else {
+            still = still_sample(d);
+        }
         let veil = mix(0.2, 0.8, smoothstep(0.5, 3.0, viewer_distance));
         let tinted = mix(still, luminance(still) * normalize(rim_color + vec3<f32>(1.0e-4)) * 1.7, 0.5 * veil);
         color = mix(tinted, veil_color, 0.5 * veil);

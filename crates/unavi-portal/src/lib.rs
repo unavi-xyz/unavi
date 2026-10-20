@@ -26,6 +26,10 @@ use crate::{
             PORTAL_SHADER_HANDLE,
             PortalMaterial,
         },
+        still::distance::{
+            STILL_DISTANCE_SHADER_HANDLE,
+            StillDistancePlugin,
+        },
     },
 };
 
@@ -51,6 +55,7 @@ impl Plugin for PortalPlugin {
             MaterialPlugin::<PortalMaterial>::default(),
             MaterialPlugin::<ClippedStandardMaterial>::default(),
             MaterialPlugin::<ClippedMtoonMaterial>::default(),
+            StillDistancePlugin,
         ))
         .init_resource::<ViewBudget>()
         .init_resource::<PortalLimits>()
@@ -107,6 +112,12 @@ fn load_shaders(app: &mut App) {
         app,
         PORTAL_SHADER_HANDLE,
         concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal.wgsl"),
+        Shader::from_wgsl
+    );
+    load_internal_asset!(
+        app,
+        STILL_DISTANCE_SHADER_HANDLE,
+        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/still_distance.wgsl"),
         Shader::from_wgsl
     );
     load_internal_asset!(

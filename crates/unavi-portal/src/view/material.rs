@@ -24,20 +24,25 @@ use crate::{
 pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("339faa2e-314e-45fc-b310-34b31639fcd7");
 
-/// Every visible portal's surface. `still` is the arrival still's face atlas,
-/// laid out by [`crate::view::still::face_tile`].
+/// Every visible portal's surface.
+///
+/// `still` is the arrival still's face atlas, laid out by
+/// [`crate::view::still::face_tile`], and `still_distance` the same layout
+/// holding each texel's distance from its face's eye.
 #[derive(Asset, AsBindGroup, Clone, TypePath, Default)]
 #[bind_group_data(PortalMaterialKey)]
 pub struct PortalMaterial {
     #[texture(0)]
     #[sampler(1)]
-    pub live:      Option<Handle<Image>>,
+    pub live:           Option<Handle<Image>>,
     #[uniform(2)]
-    pub params:    PortalParams,
+    pub params:         PortalParams,
     #[texture(3)]
     #[sampler(4)]
-    pub still:     Option<Handle<Image>>,
-    pub cull_mode: Option<Face>,
+    pub still:          Option<Handle<Image>>,
+    #[texture(5, sample_type = "float", filterable = false)]
+    pub still_distance: Option<Handle<Image>>,
+    pub cull_mode:      Option<Face>,
 }
 
 /// Field order matches `PortalParams` in `portal.wgsl`.
@@ -51,6 +56,8 @@ pub struct PortalParams {
     pub ring:              Vec4,
     pub half_size:         Vec2,
     pub mode:              u32,
+    /// 1 when `still_distance` is bound, so the still can be ray-marched.
+    pub parallax:          u32,
 }
 
 impl Material for PortalMaterial {
@@ -105,19 +112,20 @@ pub fn update_portal_params(
     mut materials: ResMut<Assets<PortalMaterial>>,
 ) {
     for (transform, size, visual, hue, ring, handle) in &portals {
+        let Some(current) = materials.get(handle.0.id()) else {
+            continue;
+        };
         let next = PortalParams {
             world_from_portal: transform.to_matrix(),
             rim_color:         hue.map_or(PortalHue::NEUTRAL, |h| h.0).to_vec4(),
             ring:              ring.map_or(Vec4::ZERO, |r| r.point.extend(r.start).extend(1.0)),
             half_size:         Vec2::new(size.width / 2.0, size.height / 2.0),
             mode:              visual.mode(),
+            parallax:          u32::from(current.still_distance.is_some()),
         };
         // Skip the no-op `get_mut`: it flags the asset as modified and forces a
         // GPU re-upload every frame.
-        if materials
-            .get(handle.0.id())
-            .is_none_or(|m| m.params == next)
-        {
+        if current.params == next {
             continue;
         }
         if let Some(mut material) = materials.get_mut(handle.0.id()) {

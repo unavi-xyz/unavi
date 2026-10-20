@@ -59,7 +59,7 @@ pub(crate) fn viewer_camera(world: &mut World) -> Option<Entity> {
 }
 
 /// A render target a portal camera draws into and the portal shader samples.
-pub(crate) fn render_image(size: UVec2, label: &'static str) -> Image {
+pub(crate) fn render_image(size: UVec2, format: TextureFormat, label: &'static str) -> Image {
     let size = Extent3d {
         width: size.x,
         height: size.y,
@@ -68,7 +68,7 @@ pub(crate) fn render_image(size: UVec2, label: &'static str) -> Image {
     let mut image = Image {
         texture_descriptor: TextureDescriptor {
             dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba16Float,
+            format,
             label: Some(label),
             mip_level_count: 1,
             sample_count: 1,
@@ -123,7 +123,7 @@ pub(crate) fn install_live(world: &mut World, portal: Entity) -> bool {
     despawn_live(world, portal);
 
     let initial_size = initial_render_size(world, viewer_camera);
-    let image = render_image(initial_size, "PortalViewImage");
+    let image = render_image(initial_size, TextureFormat::Rgba16Float, "PortalViewImage");
     let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
     if let Some(mut material) = world

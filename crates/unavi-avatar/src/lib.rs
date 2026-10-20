@@ -12,6 +12,7 @@ use unavi_assets::DEFAULT_AVATAR;
 
 pub mod animation;
 pub mod bones;
+pub mod render_layers;
 
 /// Adds VRM loading, retargeted locomotion animation, and bone tracking.
 /// Avatars animate from their own [`Transform`] and
@@ -26,6 +27,7 @@ impl Plugin for AvatarPlugin {
             .init_asset_loader::<animation::raw::RawAnimationsLoader>()
             .add_observer(on_avatar_added)
             .add_observer(bones::populate_avatar_bones)
+            .add_observer(render_layers::assign_avatar_layers)
             .add_systems(
                 Update,
                 (

@@ -19,6 +19,7 @@ use crate::config::{
 
 mod bones;
 pub mod config;
+#[cfg(not(target_family = "wasm"))] mod eye_layers;
 mod fit;
 mod local_agent;
 mod movement;
@@ -84,7 +85,8 @@ impl Plugin for AgentPlugin {
                         .chain()
                         .before(AgentMovementSet)
                         .run_if(xr_active),
-                );
+                )
+                .add_systems(Update, eye_layers::sync_eye_layers.run_if(xr_active));
         }
     }
 }

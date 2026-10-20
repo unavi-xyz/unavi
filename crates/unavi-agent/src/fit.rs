@@ -13,6 +13,7 @@ use bevy_vrm::{
 use unavi_avatar::{
     Avatar,
     bones::AvatarBones,
+    render_layers::avatar_first_person_layers,
 };
 
 use crate::{
@@ -152,7 +153,7 @@ pub fn fit_rig_to_avatar(
             .entity(avatar_ent)
             .trigger(|entity| SetupFirstPerson {
                 entity,
-                render_layers: None,
+                render_layers: Some(avatar_first_person_layers()),
             })
             .insert(RigFitted);
     }

@@ -15,7 +15,9 @@ use bevy_vrm::first_person::{
     DEFAULT_RENDER_LAYERS,
     FIRST_PERSON_LAYER,
     FirstPersonFlag,
+    THIRD_PERSON_LAYER,
 };
+use unavi_avatar::render_layers::AVATAR_RENDER_LAYER;
 
 use crate::{
     body::PortalBody,
@@ -282,3 +284,16 @@ pub(crate) fn third_person_layers(base: &RenderLayers) -> RenderLayers {
         .without(FIRST_PERSON_LAYER)
         .without(PORTAL_RENDER_LAYER)
 }
+
+/// `base` as a still sees the destination: the world alone. Avatars are left
+/// out, in either person, along with the portal planes, so a still never
+/// shows a body that has since moved on.
+pub(crate) fn still_layers(base: &RenderLayers) -> RenderLayers {
+    base.clone()
+        .without(FIRST_PERSON_LAYER)
+        .without(THIRD_PERSON_LAYER)
+        .without(AVATAR_RENDER_LAYER)
+        .without(PORTAL_RENDER_LAYER)
+}
+
+#[cfg(test)] mod tests;

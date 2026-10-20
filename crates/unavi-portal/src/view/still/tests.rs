@@ -1,6 +1,14 @@
-use bevy::prelude::*;
+use std::f32::consts::FRAC_PI_2;
 
-use super::FACES;
+use bevy::{
+    camera::CameraProjection,
+    prelude::*,
+};
+
+use super::{
+    FACES,
+    NEAR,
+};
 
 /// `still_sample`'s face and uv selection in `portal.wgsl`, line for line.
 fn shader_face_uv(d: Vec3) -> (usize, Vec2) {
@@ -47,5 +55,37 @@ fn every_still_face_camera_agrees_with_the_shader_lookup() {
                 "pixel {uv} of face {face} looked up at {got_uv}"
             );
         }
+    }
+}
+
+/// `still_distance.wgsl`'s depth-to-distance conversion, line for line.
+fn shader_distance(depth: f32, ndc: Vec2) -> f32 {
+    NEAR / depth * Vec3::new(ndc.x, ndc.y, 1.0).length()
+}
+
+#[test]
+fn the_distance_pass_recovers_distance_from_a_face_cameras_depth() {
+    let clip_from_view = PerspectiveProjection {
+        fov: FRAC_PI_2,
+        aspect_ratio: 1.0,
+        near: NEAR,
+        ..default()
+    }
+    .get_clip_from_view();
+
+    for point in [
+        Vec3::new(0.3, -0.2, -2.0),
+        Vec3::new(-5.0, 4.0, -9.0),
+        Vec3::new(0.0, 0.0, -0.5),
+        Vec3::new(40.0, -40.0, -80.0),
+    ] {
+        let clip = clip_from_view * point.extend(1.0);
+        let ndc = clip.xy() / clip.w;
+        let depth = clip.z / clip.w;
+        let got = shader_distance(depth, ndc);
+        assert!(
+            (got - point.length()).abs() < 1.0e-3 * point.length(),
+            "{point} read back as {got}"
+        );
     }
 }

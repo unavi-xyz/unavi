@@ -1,5 +1,8 @@
 //! The arrival still: six faces rendered from a one-way portal's arrival
 //! pose into one atlas, which its surface shows behind the veil.
+//!
+//! Beside the colour atlas sits a distance atlas of the same layout, so the
+//! surface can be ray-marched for parallax.
 
 use std::f32::consts::FRAC_PI_2;
 
@@ -10,6 +13,10 @@ use bevy::{
         visibility::RenderLayers,
     },
     prelude::*,
+    render::render_resource::{
+        TextureFormat,
+        TextureUsages,
+    },
 };
 use bevy_hsd::loaded::HsdLoaded;
 
@@ -23,7 +30,7 @@ use crate::{
     view::{
         camera::{
             PortalCamera,
-            third_person_layers,
+            still_layers,
         },
         live::{
             copy_viewer_camera_extras,
@@ -31,9 +38,14 @@ use crate::{
             view_tonemapping,
             viewer_camera,
         },
+        still::distance::{
+            DISTANCE_FORMAT,
+            StillFace,
+        },
     },
 };
 
+pub mod distance;
 #[cfg(test)] mod tests;
 
 /// Each face's camera forward and up, in the arrival's frame. `portal.wgsl`
@@ -48,7 +60,12 @@ pub const FACES: [(Vec3, Vec3); 6] = [
 ];
 /// Face tiles per atlas row. `portal.wgsl` lays tiles out the same way.
 const ATLAS_COLUMNS: u32 = 3;
-const FACE_SIZE: u32 = 256;
+/// Texels along a face tile's edge, in both atlases. `still_distance.wgsl`
+/// mirrors it.
+pub const FACE_SIZE: u32 = 512;
+/// The face cameras' near plane, in metres. `still_distance.wgsl` mirrors it
+/// to turn depth back into distance.
+pub const NEAR: f32 = 0.05;
 /// Eye height above the arrival pose the still is taken from, in metres.
 const EYE_HEIGHT: f32 = 1.6;
 /// How long capture cameras keep rendering once the destination is loaded,
@@ -64,10 +81,12 @@ pub const fn face_tile(face: u32) -> UVec2 {
 /// A portal's still, and the arrival it was taken from.
 #[derive(Component)]
 pub struct StillCapture {
-    pub atlas: Handle<Image>,
-    arrival:   Arrival,
+    pub atlas:    Handle<Image>,
+    /// Each pixel's distance from its face's eye, tiled like [`Self::atlas`].
+    pub distance: Handle<Image>,
+    arrival:      Arrival,
     /// Elapsed seconds at which the atlas is complete.
-    until:     f32,
+    until:        f32,
 }
 
 impl StillCapture {
@@ -171,9 +190,16 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
     let size = UVec2::new(ATLAS_COLUMNS, FACES.len() as u32 / ATLAS_COLUMNS) * FACE_SIZE;
     let atlas = world
         .resource_mut::<Assets<Image>>()
-        .add(render_image(size, "PortalStillAtlas"));
+        .add(render_image(
+            size,
+            TextureFormat::Rgba16Float,
+            "PortalStillAtlas",
+        ));
+    let distance = world
+        .resource_mut::<Assets<Image>>()
+        .add(render_image(size, DISTANCE_FORMAT, "PortalStillDistance"));
     let tonemapping = view_tonemapping(world, viewer);
-    let layers = third_person_layers(
+    let layers = still_layers(
         &world
             .get::<RenderLayers>(viewer)
             .cloned()
@@ -196,7 +222,18 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
                     ..default()
                 },
                 RenderTarget::Image(atlas.clone().into()),
-                Camera3d::default(),
+                // The distance pass reads this camera's depth, which an
+                // unresolved, single-sample texture can be bound as.
+                Camera3d {
+                    depth_texture_usages: (TextureUsages::RENDER_ATTACHMENT
+                        | TextureUsages::TEXTURE_BINDING)
+                        .into(),
+                    ..default()
+                },
+                Msaa::Off,
+                StillFace {
+                    distance: distance.clone(),
+                },
                 face_transform(&arrival, face),
             ))
             .id();
@@ -206,7 +243,7 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
             Projection::Perspective(PerspectiveProjection {
                 fov: FRAC_PI_2,
                 aspect_ratio: 1.0,
-                near: 0.05,
+                near: NEAR,
                 ..default()
             }),
             layers.clone(),
@@ -215,6 +252,7 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
 
     world.entity_mut(portal).insert(StillCapture {
         atlas,
+        distance,
         arrival,
         until: now + CAPTURE_SECS,
     });

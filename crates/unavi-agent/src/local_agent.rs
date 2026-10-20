@@ -22,6 +22,7 @@ use unavi_avatar::{
         defaults::default_character_animations,
         velocity::AverageVelocity,
     },
+    render_layers::AVATAR_RENDER_LAYER,
 };
 use unavi_input::pointer::{
     PointerAnchor,
@@ -184,7 +185,7 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
             ..default()
         }),
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER, AVATAR_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
         PortalViewer,
     ));

@@ -40,7 +40,7 @@ pub fn describe(facts: &Facts) -> Plate {
         .map(str::trim)
         .filter(|description| !description.is_empty());
     Plate {
-        kicker: facts.rung.map(|rung| rung::word(rung).to_owned()),
+        kicker: facts.rung.and_then(rung::word).map(str::to_owned),
         title:  name.map_or_else(|| did_tail(facts.user), |name| clip(name, NAME_MAX)),
         line:   name
             .and(description)

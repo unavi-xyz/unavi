@@ -79,6 +79,9 @@ interface api {
     description: func() -> option<string>;
     /// At most 1024 bytes.
     set-description: func(value: string) -> result<_, error>;
+    /// Dots drawn before the description on its placard, as a placard line's
+    /// icon is. A glyph is refused as `set-glyph` refuses one.
+    set-description-icon: func(value: option<glyph>) -> result<_, error>;
 
     /// Tells the viewer something about this mote: a short card on its body,
     /// shown for a few seconds whether or not the mote is attended, in place
@@ -325,6 +328,11 @@ interface api {
   record placard-line {
     text: string,
     tone: tone,
+    /// Drawn as dots before the line's text, at the line's text height and in
+    /// the line's tone. The text is set after it, and a line that wraps keeps
+    /// the icon on its first row. A glyph is refused as `set-glyph` refuses
+    /// one, and the cells outside its clip circle are not drawn.
+    icon: option<glyph>,
   }
 
   /// Text on a pane, standing where the script puts it rather than on a

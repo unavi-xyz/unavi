@@ -29,7 +29,10 @@ use unavi_policy::{
         StockLease,
     },
 };
-use unavi_space::membership::SpaceId;
+use unavi_space::{
+    membership::SpaceId,
+    replication::message::session::ClearedKey,
+};
 
 use crate::{
     error::ScriptError,
@@ -40,10 +43,13 @@ use crate::{
             Layer,
             write_fields,
         },
-        shared_state::link_intents::{
-            LinkIntent,
-            LinkIntents,
-            Offer,
+        shared_state::{
+            link_intents::{
+                LinkIntent,
+                LinkIntents,
+                Offer,
+            },
+            portals::LinkState,
         },
     },
 };
@@ -119,6 +125,32 @@ pub async fn pair(
         },
     )
     .await
+}
+
+/// Drops this peer's session destination on the portal of `prim`. Takes no
+/// quota, since a close is never refused.
+pub async fn close(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<(), ScriptError> {
+    host.require(HostApi::Portal)?;
+    let doc = host.writable_document(doc)?.id;
+    let space = host.view.space_of(doc).ok_or_else(|| {
+        ScriptError::invalid("the document is in no space, so it has no shared layer")
+    })?;
+    let cleared = vec![ClearedKey {
+        prim,
+        name: PortalAttr::NAME.to_string(),
+    }];
+    Ok(host.view.local().clear_session(space, doc, cleared).await?)
+}
+
+/// How the portal of `prim` resolved at the last snapshot.
+pub fn link_state(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<LinkState, ScriptError> {
+    host.require(HostApi::Portal)?;
+    let doc = host.document(doc)?.id;
+    host.shared
+        .portals
+        .get(doc, prim)
+        .map(|portal| portal.link)
+        .ok_or(ScriptError::NotReady)
 }
 
 pub async fn travel(host: &ScriptHost, target: DocId) -> Result<(), ScriptError> {
@@ -215,7 +247,7 @@ pub fn claim(
         .is_some_and(Offer::take))
 }
 
-pub fn close(host: &mut ScriptHost, subscription: u32) -> Result<(), ScriptError> {
+pub fn close_intents(host: &mut ScriptHost, subscription: u32) -> Result<(), ScriptError> {
     host.intents.remove(subscription).map(drop)
 }
 

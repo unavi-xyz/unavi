@@ -30,9 +30,12 @@ pub mod wire;
 
 /// A pose received from a peer, at full precision, in its space's frame.
 pub struct ResolvedPose {
-    pub space: SpaceId,
-    pub root:  Transform,
-    pub bones: HashMap<BoneName, Transform>,
+    pub space:    SpaceId,
+    pub root:     Transform,
+    pub bones:    HashMap<BoneName, Transform>,
+    /// Whether the sender was standing on something. Drives the remote
+    /// avatar's falling animation, which no tracked transform can convey.
+    pub grounded: bool,
 }
 
 impl ResolvedPose {
@@ -70,6 +73,7 @@ impl Indexed for RemoteAgent {
 pub struct OutgoingPose {
     pub space:    SpaceId,
     pub pose:     Pose<Keyframe>,
+    pub grounded: bool,
     /// The agent's latest crossing, carried until a newer one replaces it.
     pub crossing: Option<NumberedCrossing>,
 }

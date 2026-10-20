@@ -385,6 +385,8 @@ function buildImports(wasi: WASIShim, rt: any) {
       IntentSubscription: classes.IntentSubscriptionHandle,
       open: rt.open.bind(rt),
       pair: rt.pair.bind(rt),
+      close: rt.close.bind(rt),
+      linkState: rt.linkState.bind(rt),
       travel: rt.travel.bind(rt),
       currentSpace: rt.currentSpace.bind(rt),
       intents: rt.intents.bind(rt),

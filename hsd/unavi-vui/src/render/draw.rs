@@ -98,6 +98,25 @@ pub const fn beam(color: Color, glow: f32) -> Material {
     }
 }
 
+/// Flat ink fading with `alpha`: the dots of a placard's icon, which wear the
+/// colour of the text beside them and do not glow.
+pub const fn ink(color: Color, alpha: f32) -> Material {
+    Material {
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Blend),
+        base_color:   Some(with_alpha(color, alpha)),
+        double_sided: Some(true),
+        emissive:     Some(Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }),
+        metallic:     None,
+        roughness:    None,
+    }
+}
+
 /// A container pip is see-through, like the mote it stands for.
 pub const fn pip(style: Style, nested: bool) -> Material {
     Material {

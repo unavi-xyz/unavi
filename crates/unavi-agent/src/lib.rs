@@ -54,6 +54,7 @@ impl Plugin for AgentPlugin {
                 fit::fit_rig_to_avatar,
                 movement::apply_head_input
                     .run_if(in_state(CursorGrabState::Locked).and_then(not(xr_active))),
+                movement::follow_animated_head.run_if(not(xr_active)),
                 bones::apply_head_tracking,
             )
                 .chain()

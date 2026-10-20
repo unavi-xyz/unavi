@@ -66,6 +66,15 @@ impl GuestMote for MoteRes {
         Ok(())
     }
 
+    fn set_description_icon(&self, value: Option<GlyphRecord>) -> Result<(), Error> {
+        let icon = value
+            .map(|record| Glyph::new(record.size, &record.bits))
+            .transpose()
+            .map_err(|refused| Error::InvalidArgument(refused.to_string()))?;
+        self.0.set_description_icon(icon);
+        Ok(())
+    }
+
     /// Timed on the surfaces' own clock, which starts at 0 with the first
     /// surface: a notice posted before any exists is timed from there. Only
     /// one notice shows at a time, the first drawn slot's.

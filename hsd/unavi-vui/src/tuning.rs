@@ -53,6 +53,9 @@ pub struct Tuning {
     pub tether_width:     f32,
     /// Radius of the dot a tether ends in.
     pub tether_dot:       f32,
+    /// How fast a standing placard eases toward where its script puts it, per
+    /// second.
+    pub stand_speed:      f32,
 
     /// Seconds a notice stays on its mote.
     pub notice_duration: f32,
@@ -166,6 +169,7 @@ impl Tuning {
         stand_scale:      3.5,
         tether_width:     0.004,
         tether_dot:       0.0125,
+        stand_speed:      18.0,
 
         notice_duration: 3.0,
 

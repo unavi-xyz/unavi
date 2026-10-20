@@ -38,30 +38,26 @@ pub struct Facts<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Content {
     /// The head of the destination's id, over the title.
-    pub kicker:  String,
-    pub title:   String,
-    /// Who is there and whose it is, in one line, once either is known.
-    pub facts:   Option<String>,
+    pub kicker:    String,
+    pub title:     String,
+    /// People in it, once the registries have been read.
+    pub occupants: Option<u32>,
+    /// How far the local user trusts whoever authored it, once known.
+    pub rung:      Option<String>,
     /// Whether there is no way back, said as a warning.
-    pub one_way: bool,
+    pub one_way:   bool,
 }
 
 /// Names the portal's destination, then says who is there, whose it is and
 /// whether it comes back.
 #[must_use]
 pub fn describe(facts: &Facts) -> Content {
-    let known: Vec<String> = [
-        facts.occupants.map(here),
-        facts.author.map(|rung| rung::word(rung).to_owned()),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
     Content {
-        kicker:  kicker(facts.destination),
-        title:   title(facts),
-        facts:   (!known.is_empty()).then(|| known.join(" · ")),
-        one_way: !facts.linked,
+        kicker:    kicker(facts.destination),
+        title:     title(facts),
+        occupants: facts.occupants,
+        rung:      facts.author.and_then(rung::word).map(str::to_owned),
+        one_way:   !facts.linked,
     }
 }
 
@@ -95,13 +91,6 @@ fn clip(title: &str) -> String {
     let mut clipped: String = title.chars().take(TITLE_MAX - 1).collect();
     clipped.push('…');
     clipped
-}
-
-fn here(count: u32) -> String {
-    match count {
-        0 => "Empty".to_owned(),
-        count => format!("{count} here"),
-    }
 }
 
 #[cfg(test)]
@@ -165,28 +154,39 @@ mod tests {
     }
 
     #[test]
-    fn what_is_known_reads_as_one_line() {
+    fn the_head_count_and_the_rung_are_kept_apart() {
         let content = describe(&Facts {
             occupants: Some(3),
             author: Some(TrustRung::Trusted),
             ..facts()
         });
-        assert_eq!(content.facts.as_deref(), Some("3 here · Trusted"));
+        assert_eq!(content.occupants, Some(3));
+        assert_eq!(content.rung.as_deref(), Some("Trusted"));
     }
 
     #[test]
-    fn an_empty_space_says_so() {
+    fn a_space_the_user_authored_shows_no_rung() {
+        let content = describe(&Facts {
+            author: Some(TrustRung::Myself),
+            ..facts()
+        });
+        assert_eq!(content.rung, None);
+    }
+
+    #[test]
+    fn an_empty_space_counts_zero() {
         let content = describe(&Facts {
             occupants: Some(0),
             ..facts()
         });
-        assert_eq!(content.facts.as_deref(), Some("Empty"));
+        assert_eq!(content.occupants, Some(0));
     }
 
     #[test]
     fn nothing_known_says_nothing() {
         let content = describe(&facts());
-        assert_eq!(content.facts, None);
+        assert_eq!(content.occupants, None);
+        assert_eq!(content.rung, None);
         assert!(!content.one_way);
     }
 

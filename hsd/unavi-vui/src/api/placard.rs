@@ -1,5 +1,6 @@
 //! The `placard` resource: text on a pane standing where the script puts it.
 
+use smol_str::SmolStr;
 use wired_guest::math::{
     Color,
     Vec2,
@@ -16,7 +17,9 @@ use crate::{
         PlacardLine,
         Tone as ScriptTone,
     },
+    glyph::Glyph,
     placard::{
+        Paragraph,
         Placard,
         Tone,
     },
@@ -42,8 +45,19 @@ impl GuestPlacard for PlacardRes {
     ) -> Result<(), Error> {
         let lines = lines
             .into_iter()
-            .map(|line| (line.text, tone(line.tone)))
-            .collect::<Vec<_>>();
+            .map(|line| {
+                let icon = line
+                    .icon
+                    .map(|record| Glyph::new(record.size, &record.bits))
+                    .transpose()
+                    .map_err(|refused| Error::InvalidArgument(refused.to_string()))?;
+                Ok(Paragraph {
+                    text: SmolStr::new(line.text),
+                    tone: tone(line.tone),
+                    icon,
+                })
+            })
+            .collect::<Result<Vec<_>, Error>>()?;
         let text = Placard::from_script(&title, kicker.as_deref(), &lines)
             .map_err(|refused| Error::InvalidArgument(refused.to_string()))?;
         drive(|vui| {

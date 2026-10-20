@@ -14,6 +14,7 @@ use super::{
             Host,
             HostIntentSubscription,
             LinkIntent,
+            LinkStatus as WitLinkState,
         },
     },
 };
@@ -25,7 +26,10 @@ use crate::{
             IntentSubscription,
         },
         scene::DocumentRes,
-        shared_state::link_intents,
+        shared_state::{
+            link_intents,
+            portals::LinkState,
+        },
     },
 };
 
@@ -33,6 +37,16 @@ fn intent(intent: LinkIntent) -> link_intents::LinkIntent {
     link_intents::LinkIntent {
         source_space: convert::doc_id(intent.source_space),
         link:         convert::link_id(intent.link),
+    }
+}
+
+const fn wit_link_state(state: LinkState) -> WitLinkState {
+    match state {
+        LinkState::None => WitLinkState::None,
+        LinkState::OneWay => WitLinkState::OneWay,
+        LinkState::Pending => WitLinkState::Pending,
+        LinkState::Unpaired => WitLinkState::Unpaired,
+        LinkState::Paired => WitLinkState::Paired,
     }
 }
 
@@ -59,6 +73,18 @@ impl Host for HostCtx {
         link: LinkIntent,
     ) -> Result<(), ScriptError> {
         portal::pair(&self.host, doc.rep(), convert::prim_id(prim), intent(link)).await
+    }
+
+    async fn close(&mut self, doc: Resource<DocumentRes>, prim: PrimId) -> Result<(), ScriptError> {
+        portal::close(&self.host, doc.rep(), convert::prim_id(prim)).await
+    }
+
+    fn link_state(
+        &mut self,
+        doc: Resource<DocumentRes>,
+        prim: PrimId,
+    ) -> Result<WitLinkState, ScriptError> {
+        portal::link_state(&self.host, doc.rep(), convert::prim_id(prim)).map(wit_link_state)
     }
 
     async fn travel(&mut self, target_space: DocumentId) -> Result<(), ScriptError> {
@@ -102,6 +128,6 @@ impl HostIntentSubscription for HostCtx {
     }
 
     fn drop(&mut self, subscription: Resource<IntentSubscription>) -> wasmtime::Result<()> {
-        Ok(portal::close(&mut self.host, subscription.rep())?)
+        Ok(portal::close_intents(&mut self.host, subscription.rep())?)
     }
 }

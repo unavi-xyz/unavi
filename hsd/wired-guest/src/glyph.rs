@@ -55,6 +55,13 @@ pub fn centred(rows: &[&str]) -> bool {
     bounds.is_none_or(|(low, high)| low.0 + high.0 == size - 1 && low.1 + high.1 == size - 1)
 }
 
+/// A person, head over shoulders, seven dots to a side: the mark for how
+/// many people are somewhere. Every lit dot lies inside the circle a glyph is
+/// clipped to.
+pub const PERSON: [&str; 7] = [
+    "..###..", "..###..", "..###..", ".......", ".#####.", ".#####.", "..###..",
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,6 +94,21 @@ mod tests {
         let (size, bits) = pack(&["........."; 9]);
         assert_eq!(size, 9);
         assert_eq!(bits.len(), 11, "81 cells need 11 bytes");
+    }
+
+    #[test]
+    fn the_person_sits_centred_and_inside_the_clip() {
+        assert!(centred(&PERSON));
+        let reach = (PERSON.len() as f32 - 1.0) / 2.0 + 0.6;
+        for (row, line) in PERSON.iter().enumerate() {
+            for (column, cell) in line.bytes().enumerate() {
+                let apart = (column as f32 - 3.0).hypot(row as f32 - 3.0);
+                assert!(
+                    cell != b'#' || apart <= reach,
+                    "dot {column},{row} is clipped"
+                );
+            }
+        }
     }
 
     #[test]

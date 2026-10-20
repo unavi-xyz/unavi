@@ -80,41 +80,42 @@ struct Notice {
 pub struct Mote(Rc<RefCell<Data>>);
 
 struct Data {
-    kind:        Kind,
-    label:       SmolStr,
-    description: Option<SmolStr>,
+    kind:             Kind,
+    label:            SmolStr,
+    description:      Option<SmolStr>,
+    description_icon: Option<Glyph>,
     /// What the mote is, drawn inside its shell: a prim in the document VUI
     /// draws into. A plain id rather than a handle, so holding one costs
     /// nothing and a surface can keep drawing it after the consumer's own
     /// handle is gone.
-    icon:        Option<PrimId>,
+    icon:             Option<PrimId>,
     /// The icon's measured fit, cleared whenever `icon` is set. Measuring
     /// reads every piece's stream back over the interface, which is cheap
     /// once and not something to repeat every frame.
-    fit:         Cell<Option<Fit>>,
+    fit:              Cell<Option<Fit>>,
     /// The dot grid drawn on its face in place of the icon. Shared so that a
     /// frame's spec copies a pointer rather than the grid.
-    glyph:       Option<Rc<Glyph>>,
+    glyph:            Option<Rc<Glyph>>,
     /// Whether this mote stands for the one of its thing rather than for a
     /// source of them. Meaningless on anything but an item.
-    unique:      bool,
+    unique:           bool,
     /// The shape this mote's own level takes. Meaningless on anything that
     /// holds no children.
-    arrange:     Arrange,
+    arrange:          Arrange,
     /// The hue its glass carries. Identity, where every other colour a
     /// surface uses is state.
-    tint:        Option<Color>,
+    tint:             Option<Color>,
     /// How much iridescent film the shell wears, `0` none to `1` the full
     /// bubble. Subtle by default so the hue stays legible.
-    film:        f32,
+    film:             f32,
     /// How much the shell's rim is frosted, `0` for clear glass.
-    frost:       f32,
+    frost:            f32,
     /// Whether the mote is on: a toggle, not a pulse.
-    active:      bool,
+    active:           bool,
     /// What the mote last told the viewer, and when.
-    notice:      Option<Notice>,
-    parent:      Weak<RefCell<Self>>,
-    children:    Vec<Mote>,
+    notice:           Option<Notice>,
+    parent:           Weak<RefCell<Self>>,
+    children:         Vec<Mote>,
 }
 
 impl Mote {
@@ -124,6 +125,7 @@ impl Mote {
             kind,
             label: SmolStr::new(label),
             description: None,
+            description_icon: None,
             icon: None,
             fit: Cell::new(None),
             glyph: None,
@@ -169,6 +171,10 @@ impl Mote {
 
     pub fn describe(&self, text: &str) {
         self.0.borrow_mut().description = Some(SmolStr::new(text));
+    }
+
+    pub fn set_description_icon(&self, icon: Option<Glyph>) {
+        self.0.borrow_mut().description_icon = icon;
     }
 
     #[must_use]
@@ -334,7 +340,7 @@ impl Mote {
     pub fn spec(&self) -> MoteSpec {
         let data = self.0.borrow();
         MoteSpec {
-            role:        match data.kind {
+            role:             match data.kind {
                 Kind::Action => Role::Action,
                 Kind::Toggle => Role::Toggle,
                 Kind::Item => Role::Item {
@@ -351,17 +357,18 @@ impl Mote {
                     arrange:  data.arrange,
                 },
             },
-            label:       data.label.clone(),
-            description: data.description.clone(),
-            active:      data.active,
-            icon:        data.icon.is_some() || data.glyph.is_some(),
-            glyph:       data.glyph.clone(),
-            tint:        data.tint,
-            film:        data.film,
-            frost:       data.frost,
+            label:            data.label.clone(),
+            description:      data.description.clone(),
+            description_icon: data.description_icon.clone(),
+            active:           data.active,
+            icon:             data.icon.is_some() || data.glyph.is_some(),
+            glyph:            data.glyph.clone(),
+            tint:             data.tint,
+            film:             data.film,
+            frost:            data.frost,
             // A notice has a clock, which only a surface keeps: it fills this
             // in when it draws.
-            notice:      None,
+            notice:           None,
         }
     }
 
@@ -491,16 +498,17 @@ impl Tree {
     /// way in to it.
     fn back(&mut self, depth: usize) -> MoteSpec {
         MoteSpec {
-            role:        Role::Parent { depth },
-            label:       SmolStr::new_static("Back"),
-            description: Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
-            active:      false,
-            icon:        false,
-            glyph:       None,
-            tint:        None,
-            film:        crate::palette::FILM,
-            frost:       0.0,
-            notice:      None,
+            role:             Role::Parent { depth },
+            label:            SmolStr::new_static("Back"),
+            description:      Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
+            description_icon: None,
+            active:           false,
+            icon:             false,
+            glyph:            None,
+            tint:             None,
+            film:             crate::palette::FILM,
+            frost:            0.0,
+            notice:           None,
         }
     }
 

@@ -23,6 +23,7 @@ use crate::{
         AgentConfig,
         RigDimensions,
     },
+    movement::HeadFollow,
 };
 
 /// Marks an avatar whose rig has already been sized. Set once validation
@@ -147,6 +148,17 @@ pub fn fit_rig_to_avatar(
             } else {
                 warn!("Failed to update rig transform for {rig_entity:?}");
             }
+
+            // The eye point is measured against the head bone's rest pose so
+            // the camera can follow the head's animated lean without losing
+            // the eye height measured above.
+            if let Some(head) = head {
+                let head_rest = head_in_rig_space(rig_entity, head, &globals, &bones);
+                commands.entity(entities.tracked_head).insert(HeadFollow {
+                    rest:   head_rest,
+                    offset: Vec3::new(0.0, head_y_in_rig, 0.0) - head_rest,
+                });
+            }
         }
 
         commands
@@ -157,6 +169,21 @@ pub fn fit_rig_to_avatar(
             })
             .insert(RigFitted);
     }
+}
+
+/// A bone's position in rig space.
+fn head_in_rig_space(
+    rig_entity: Entity,
+    head: Entity,
+    globals: &Query<&GlobalTransform>,
+    bones: &Query<&GlobalTransform, With<BoneName>>,
+) -> Vec3 {
+    globals.get(rig_entity).map_or(Vec3::ZERO, |rig| {
+        let head = bones
+            .get(head)
+            .map_or(Vec3::ZERO, GlobalTransform::translation);
+        rig.affine().inverse().transform_point3(head)
+    })
 }
 
 fn swap_rig_shapes(

@@ -72,6 +72,11 @@ impl<S> Intake<S> {
     }
 
     /// The trusted messages heard since the last call.
+    /// The user's document the intake has settled on hearing.
+    pub fn pinned(&self) -> Option<DocumentId> {
+        self.pinned.as_ref().map(|pinned| pinned.document)
+    }
+
     pub fn poll<H: Host<Subscription = S>>(&mut self, host: &H) -> Vec<Heard> {
         self.verdicts.tick();
         self.recheck(host);

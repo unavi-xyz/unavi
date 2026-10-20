@@ -21,12 +21,12 @@
                 ),
                 (
                     attributes: (
-                        name: "receptor",
+                        name: "socket",
                         xform: (
                             translation: [
-                                -1.618034,
-                                0.809017,
-                                0.0,
+                                -1.319017,
+                                0.9975,
+                                0.12,
                             ],
                         ),
                     ),

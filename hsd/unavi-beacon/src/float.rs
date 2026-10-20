@@ -78,6 +78,12 @@ impl Float {
         false
     }
 
+    /// Ends the hover early, as a socket drawing the beacon in does.
+    pub const fn end(&mut self) {
+        self.elapsed = FLOAT_SECS;
+        self.over = true;
+    }
+
     /// The pose offset at this point of the hover. Zero at the start, so a
     /// beacon does not jump when it begins to float.
     pub fn offset(self) -> Offset {

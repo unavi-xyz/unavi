@@ -29,6 +29,30 @@ interface portals {
   /// Answers `intent` with the portal on `prim`, as a `shared` write.
   pair: func(document: borrow<document>, prim: prim-id, intent: link-intent) -> result<_, error>;
 
+  /// Drops this peer's own session destination on the portal of `prim`, so
+  /// the layers beneath show through. Closing a portal this peer never
+  /// opened changes nothing it shows. Never takes quota.
+  close: func(document: borrow<document>, prim: prim-id) -> result<_, error>;
+
+  /// How a portal's destination resolved this frame.
+  enum link-status {
+    /// It leads nowhere.
+    none,
+    /// It leads into a space with no link, so there is no way back.
+    one-way,
+    /// It bears a link, and its destination has not resolved yet.
+    pending,
+    /// It bears a link, and the destination space holds no portal answering
+    /// it.
+    unpaired,
+    /// It is glued to the portal answering its link.
+    paired,
+  }
+
+  /// How the portal on `prim` resolved this frame. Fails with `not-ready`
+  /// while the prim has no placed portal.
+  link-state: func(document: borrow<document>, prim: prim-id) -> result<link-status, error>;
+
   /// Moves the local user into `target-space`, loading it if needed.
   travel: func(target-space: document-id) -> result<_, error>;
 

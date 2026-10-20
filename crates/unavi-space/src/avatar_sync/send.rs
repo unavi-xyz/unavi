@@ -15,7 +15,10 @@ use unavi_agent::{
     LocalAgentEntities,
     config::InputMode,
 };
-use unavi_avatar::bones::AvatarBones;
+use unavi_avatar::{
+    Grounded,
+    bones::AvatarBones,
+};
 
 use crate::{
     avatar_sync::{
@@ -63,20 +66,36 @@ const NETWORKED_BONES: [BoneName; 11] = [
 
 const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
 
+/// Desktop tracks nothing but the look pitch, which the animation system does
+/// not touch; the limbs are reproduced by the receiver's own locomotion
+/// animation.
+const DESKTOP_BONES: [BoneName; 1] = [BoneName::Head];
+
+/// The bones this agent streams: its whole tracked pose in VR, just the head on
+/// desktop.
+const fn streamed_bones(is_xr: bool) -> &'static [BoneName] {
+    if is_xr {
+        &NETWORKED_BONES
+    } else {
+        &DESKTOP_BONES
+    }
+}
+
 pub fn send_agent_pose(
     time: Res<Time>,
     active: Res<ActiveSpace>,
     last_crossing: Res<LastCrossing>,
     xr: Option<Res<InputMode>>,
     spaces: Query<&Space>,
-    agent: Query<&AgentAvatar, With<LocalAgent>>,
+    agent: Query<(&AgentAvatar, &LocalAgentEntities), With<LocalAgent>>,
     avatars: Query<&AvatarBones>,
     globals: Query<&GlobalTransform>,
     locals: Query<&Transform>,
+    grounded: Query<&Grounded>,
     mut streams: Query<(Entity, &AgentSender, &SendInterval, &mut LastSent)>,
     commands: ParallelCommands,
 ) {
-    let Ok(avatar) = agent.single() else {
+    let Ok((avatar, entities)) = agent.single() else {
         return;
     };
 
@@ -96,15 +115,16 @@ pub fn send_agent_pose(
         return;
     };
 
-    // Bone tracking is only meaningful in VR, where limbs are driven by real
-    // pose data; on desktop peers reconstruct limbs from locomotion animation.
-    let bones = if xr.is_some_and(|mode| mode.is_xr()) {
-        avatars
-            .get(avatar.0)
-            .map_or_default(|bones| gather_bones(bones, &locals))
-    } else {
-        HashMap::default()
-    };
+    // A sender's airborne state is the one input to the avatar's animation
+    // that no transform carries; peers replay the jump from it. Missing state
+    // reads as standing, so a peer is never stuck falling.
+    let is_grounded = grounded
+        .get(entities.body)
+        .map_or(true, |grounded| grounded.0);
+    let is_xr = xr.is_some_and(|mode| mode.is_xr());
+    let bones = avatars
+        .get(avatar.0)
+        .map_or_default(|bones| gather_bones(bones, &locals, streamed_bones(is_xr)));
 
     let outgoing = OutgoingPose {
         space:    space.id(),
@@ -112,6 +132,7 @@ pub fn send_agent_pose(
             root: (&root).into(),
             bones,
         },
+        grounded: is_grounded,
         crossing: last_crossing.latest(),
     };
 
@@ -143,8 +164,9 @@ pub fn send_agent_pose(
 fn gather_bones(
     bones: &AvatarBones,
     locals: &Query<&Transform>,
+    names: &[BoneName],
 ) -> HashMap<BoneName, RigidTransform<F16Vec3>> {
-    NETWORKED_BONES
+    names
         .iter()
         .filter_map(|name| {
             let entity = *bones.get(name)?;

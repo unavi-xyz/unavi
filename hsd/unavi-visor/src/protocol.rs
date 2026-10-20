@@ -91,6 +91,11 @@ impl Channel {
         requests
     }
 
+    /// The user's shell document the requests come from, once it is known.
+    pub fn shell(&self) -> Option<DocumentId> {
+        self.intake.pinned()
+    }
+
     /// Tells everyone listening which lenses there are and which are worn.
     pub fn announce(lenses: &[Lens]) {
         let bytes = match unavi_lens::encode_lenses(lenses) {

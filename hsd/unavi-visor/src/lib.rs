@@ -26,6 +26,7 @@ use crate::{
 };
 
 mod attention;
+mod clearance;
 mod lens;
 mod protocol;
 mod rung;
@@ -56,6 +57,7 @@ impl ScriptBehavior for Script {
     }
 
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
+        self.travel.set_shell(self.channel.shell());
         for request in self.channel.poll() {
             match request {
                 Request::Ask => Channel::announce(self.registry.lenses()),
@@ -77,6 +79,7 @@ impl ScriptBehavior for Script {
     }
 
     fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
+        self.travel.update(camera_pose().as_ref());
         self.social.update();
         api::update(tick.dt)?;
         Ok(())

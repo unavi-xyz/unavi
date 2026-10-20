@@ -126,6 +126,7 @@ pub fn apply_remote_poses(
     agent_index: Res<Index<RemoteAgent>>,
     mut peers: Query<&mut LastSeenIn, With<Peer>>,
     mut remotes: Query<(&ChildOf, &mut PoseLerp), With<RemoteAgent>>,
+    mut groundeds: Query<&mut Grounded>,
     link: Option<Res<PeerLink>>,
     mut commands: Commands,
 ) {
@@ -163,7 +164,7 @@ pub fn apply_remote_poses(
                 RemoteAgent(peer),
                 Avatar,
                 EchoBody,
-                Grounded(true),
+                Grounded(resolved.grounded),
                 default_character_animations(&asset_server),
                 resolved.root,
                 PoseLerp::snapped(&resolved, recv),
@@ -181,6 +182,12 @@ pub fn apply_remote_poses(
             // jump.
             commands.entity(agent).insert(ChildOf(space));
             *lerp = PoseLerp::snapped(&resolved, recv);
+        }
+
+        // Airborne is a state, not a pose: jump straight to it, since the
+        // falling animation is what the peer is waiting to see.
+        if let Ok(mut grounded) = groundeds.get_mut(agent) {
+            grounded.0 = resolved.grounded;
         }
     }
 }

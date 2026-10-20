@@ -5,7 +5,14 @@
                 name: "beacon",
                 script: "./Cargo.toml",
             ),
-            children: [],
+            children: [
+                (
+                    attributes: (
+                        name: "gate",
+                    ),
+                    children: [],
+                ),
+            ],
         ),
     ],
 )

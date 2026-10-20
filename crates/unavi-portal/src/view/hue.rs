@@ -1,11 +1,9 @@
-//! A portal's rim colour: the hue of the space it opens onto.
+//! A portal's rim colour: the identity hue of the space it opens onto.
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    attributes::sky::Sky,
     document::HsdDocId,
     hierarchy::ancestors,
-    prim::PrimOf,
 };
 use hsd::id::DocId;
 
@@ -16,8 +14,6 @@ use crate::{
 
 const RIM_LIGHTNESS: f32 = 0.78;
 const RIM_CHROMA: f32 = 0.10;
-/// Below this a sky reads as grey and has no hue worth keeping.
-const ACHROMATIC: f32 = 0.004;
 
 /// The rim colour of a portal, in linear RGB.
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
@@ -26,17 +22,12 @@ pub struct PortalHue(pub LinearRgba);
 impl PortalHue {
     pub const NEUTRAL: LinearRgba = LinearRgba::rgb(0.7, 0.7, 0.7);
 
-    /// The sky's hue, else the space's identity hue, at the rim's own
-    /// lightness and chroma. A sky's chroma is capped low, so taking it as
-    /// given would leave every rim grey.
+    /// The space's identity hue at the rim's own lightness and chroma.
+    /// Neutral when the space is unknown.
     #[must_use]
-    pub fn of_space(sky: Option<Color>, space: Option<DocId>) -> Self {
-        let hue = sky
-            .map(Oklcha::from)
-            .filter(|lch| lch.chroma >= ACHROMATIC)
-            .or_else(|| space.map(|id| Oklcha::from(identity_color(id))))
-            .map(|lch| lch.hue);
-        hue.map_or(Self(Self::NEUTRAL), |hue| {
+    pub fn of_space(space: Option<DocId>) -> Self {
+        space.map_or(Self(Self::NEUTRAL), |id| {
+            let hue = Oklcha::from(identity_color(id)).hue;
             Self(Oklcha::new(RIM_LIGHTNESS, RIM_CHROMA, hue, 1.0).into())
         })
     }
@@ -56,11 +47,10 @@ fn identity_color(space: DocId) -> Color {
     Color::hsv(turn * 360.0, 0.8, 0.9)
 }
 
-/// Sets each portal's [`PortalHue`] from the space its destination stands in:
-/// the [`Sky`] on its root document, else its id.
+/// Sets each portal's [`PortalHue`] from the id of the space its destination
+/// stands in.
 pub fn update_hues(
     mut portals: Query<(Entity, &Destination, Option<&mut PortalHue>), With<Portal>>,
-    skies: Query<(&Sky, &PrimOf)>,
     docs: Query<&HsdDocId>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
@@ -70,13 +60,7 @@ pub fn update_hues(
             .filter(|e| docs.contains(*e))
             .last();
         let id = space.and_then(|space| docs.get(space).ok()).map(|id| id.0);
-        let sky = space.and_then(|space| {
-            skies
-                .iter()
-                .find(|(_, prim_of)| prim_of.0 == space)
-                .map(|(sky, _)| sky.0)
-        });
-        let next = PortalHue::of_space(sky, id);
+        let next = PortalHue::of_space(id);
         match current {
             Some(mut current) => {
                 current.set_if_neq(next);
@@ -93,31 +77,20 @@ mod tests {
     use bevy::prelude::*;
     use hsd::id::DocId;
 
-    use super::PortalHue;
+    use super::{
+        PortalHue,
+        RIM_CHROMA,
+        identity_color,
+    };
 
     #[test]
-    fn a_rim_keeps_the_sky_hue_and_ignores_its_chroma() {
-        let faint = Oklcha::new(0.4, 0.03, 200.0, 1.0);
-        let strong = Oklcha::new(0.7, 0.2, 200.0, 1.0);
+    fn a_rim_wears_its_spaces_identity_hue_at_a_fixed_chroma() {
+        let rim = PortalHue::of_space(Some(DocId([7; 32])));
+        let identity = Oklcha::from(identity_color(DocId([7; 32])));
+        let lch = Oklcha::from(rim.0);
 
-        let a = Oklcha::from(PortalHue::of_space(Some(faint.into()), None).0);
-        let b = Oklcha::from(PortalHue::of_space(Some(strong.into()), None).0);
-
-        assert!((a.hue - 200.0).abs() < 1.0, "hue drifted to {}", a.hue);
-        assert!((a.chroma - b.chroma).abs() < 1.0e-3);
-        assert!((a.lightness - b.lightness).abs() < 1.0e-3);
-    }
-
-    #[test]
-    fn a_space_without_a_hued_sky_takes_its_identity_hue() {
-        let grey = Color::srgb(0.5, 0.5, 0.5);
-        let space = DocId([7; 32]);
-        let skyless = PortalHue::of_space(None, Some(space));
-        assert_eq!(PortalHue::of_space(Some(grey), Some(space)), skyless);
-        assert!(
-            Oklcha::from(skyless.0).chroma > 0.05,
-            "identity rim is saturated"
-        );
-        assert_eq!(PortalHue::of_space(Some(grey), None).0, PortalHue::NEUTRAL);
+        assert!((lch.hue - identity.hue).abs() < 1.0, "hue drifted to {}", lch.hue);
+        assert!((lch.chroma - RIM_CHROMA).abs() < 1.0e-2);
+        assert_eq!(PortalHue::of_space(None).0, PortalHue::NEUTRAL);
     }
 }

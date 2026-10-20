@@ -538,6 +538,7 @@ version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
+ "glam",
  "wired-guest",
  "wit-bindgen",
 ]
@@ -692,6 +693,7 @@ dependencies = [
  "anyhow",
  "blake3",
  "glam",
+ "postcard",
  "serde",
  "wired-state-macro",
 ]

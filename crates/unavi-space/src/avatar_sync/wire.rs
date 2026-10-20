@@ -62,14 +62,16 @@ use crate::{
 #[derive(Serialize, Deserialize, MaxSize)]
 enum AgentMsg {
     Keyframe {
-        id:    u32,
-        space: SpaceId,
-        pose:  Pose<Keyframe>,
+        id:       u32,
+        space:    SpaceId,
+        pose:     Pose<Keyframe>,
+        grounded: bool,
     },
     Delta {
         keyframe: u32,
         space:    SpaceId,
         pose:     Pose<Delta>,
+        grounded: bool,
     },
     /// The sender's agent passed through a portal.
     Crossed {
@@ -106,6 +108,7 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
     while let Ok(OutgoingPose {
         space,
         pose,
+        grounded,
         crossing,
     }) = pose_rx.recv().await
     {
@@ -115,11 +118,12 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
             write_msg(&mut tx, &mut buf, &AgentMsg::Crossed { from, to }).await?;
         }
 
-        // A delta is only valid against a keyframe in the same space,
-        // so a space change forces a fresh keyframe.
+        // A delta is only valid against a keyframe in the same space and set
+        // of bones, so a change to either forces a fresh keyframe.
         let new_keyframe = last_keyframe_time
             .is_none_or(|last| now.duration_since(last) >= KEYFRAME_INTERVAL)
-            || Some(space) != last_space;
+            || Some(space) != last_space
+            || !same_bone_set(&pose, &last_keyframe);
 
         let msg = if new_keyframe {
             keyframe_id += 1;
@@ -130,12 +134,14 @@ pub async fn send_agent_stream(link: &PeerLink, connection: &Connection) -> anyh
                 id: keyframe_id,
                 space,
                 pose,
+                grounded,
             }
         } else {
             AgentMsg::Delta {
                 keyframe: keyframe_id,
                 space,
                 pose: delta_pose(pose, &last_keyframe),
+                grounded,
             }
         };
 
@@ -155,6 +161,14 @@ async fn write_msg(
     tx.write_u8(len as u8).await?;
     tx.write_all(out).await?;
     Ok(())
+}
+
+/// Whether two poses carry the same bones. A delta names only bones its
+/// keyframe baseline has, so a bone appearing or vanishing (a VRM loading in,
+/// a rig gaining a bone) has to start a new keyframe rather than be diffed
+/// against a zero baseline.
+fn same_bone_set(a: &Pose<Keyframe>, b: &Pose<Keyframe>) -> bool {
+    a.bones.len() == b.bones.len() && a.bones.keys().all(|name| b.bones.contains_key(name))
 }
 
 fn delta_pose(pose: Pose<Keyframe>, last: &Pose<Keyframe>) -> Pose<Delta> {
@@ -182,7 +196,12 @@ struct Baseline {
 /// that is not finite or leaves its space's cell.
 fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<ResolvedPose> {
     match msg {
-        AgentMsg::Keyframe { id, space, pose } => {
+        AgentMsg::Keyframe {
+            id,
+            space,
+            pose,
+            grounded,
+        } => {
             let root = pose.root.clone().into();
             let bones = pose
                 .bones
@@ -194,12 +213,19 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 root: pose.root,
                 bones: pose.bones,
             });
-            ResolvedPose { space, root, bones }.checked()
+            ResolvedPose {
+                space,
+                root,
+                bones,
+                grounded,
+            }
+            .checked()
         }
         AgentMsg::Delta {
             keyframe,
             space,
             pose,
+            grounded,
         } => {
             let baseline = baseline.as_ref()?;
             if baseline.id != keyframe {
@@ -229,6 +255,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                     ..Default::default()
                 },
                 bones,
+                grounded,
             }
             .checked()
         }
@@ -315,6 +342,7 @@ mod tests {
             keyframe: 1,
             space:    SPACE,
             pose:     Pose::default(),
+            grounded: false,
         };
         assert!(resolve_msg(msg, &mut baseline).is_none());
     }
@@ -325,9 +353,10 @@ mod tests {
         let pos = Vec3::new(1.0, 2.0, 3.0);
         let resolved = resolve_msg(
             AgentMsg::Keyframe {
-                id:    1,
-                space: SPACE,
-                pose:  keyframe_pose(pos),
+                id:       1,
+                space:    SPACE,
+                pose:     keyframe_pose(pos),
+                grounded: true,
             },
             &mut baseline,
         )
@@ -344,9 +373,10 @@ mod tests {
         let base = Vec3::new(1.0, 2.0, 3.0);
         resolve_msg(
             AgentMsg::Keyframe {
-                id:    1,
-                space: SPACE,
-                pose:  keyframe_pose(base),
+                id:       1,
+                space:    SPACE,
+                pose:     keyframe_pose(base),
+                grounded: true,
             },
             &mut baseline,
         );
@@ -358,6 +388,7 @@ mod tests {
                 keyframe: 1,
                 space:    SPACE,
                 pose:     delta,
+                grounded: true,
             },
             &mut baseline,
         )
@@ -376,9 +407,10 @@ mod tests {
         };
         let resolved = resolve_msg(
             AgentMsg::Keyframe {
-                id:    1,
-                space: SPACE,
-                pose:  keyframe_pose_with_bone(Vec3::ZERO, BoneName::LeftUpperArm, bone_local),
+                id:       1,
+                space:    SPACE,
+                pose:     keyframe_pose_with_bone(Vec3::ZERO, BoneName::LeftUpperArm, bone_local),
+                grounded: true,
             },
             &mut baseline,
         )
@@ -399,9 +431,10 @@ mod tests {
         };
         resolve_msg(
             AgentMsg::Keyframe {
-                id:    1,
-                space: SPACE,
-                pose:  keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+                id:       1,
+                space:    SPACE,
+                pose:     keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+                grounded: true,
             },
             &mut baseline,
         );
@@ -420,6 +453,7 @@ mod tests {
                 keyframe: 1,
                 space:    SPACE,
                 pose:     delta,
+                grounded: true,
             },
             &mut baseline,
         )
@@ -435,9 +469,10 @@ mod tests {
         let mut baseline = None;
         resolve_msg(
             AgentMsg::Keyframe {
-                id:    2,
-                space: SPACE,
-                pose:  keyframe_pose(Vec3::ZERO),
+                id:       2,
+                space:    SPACE,
+                pose:     keyframe_pose(Vec3::ZERO),
+                grounded: true,
             },
             &mut baseline,
         );
@@ -446,7 +481,55 @@ mod tests {
             keyframe: 1,
             space:    SPACE,
             pose:     Pose::default(),
+            grounded: false,
         };
         assert!(resolve_msg(stale, &mut baseline).is_none());
+    }
+
+    /// Airborne travels with every message, keyframe or delta, since a jump is
+    /// shorter than the keyframe interval.
+    #[test]
+    fn grounded_survives_both_message_kinds() {
+        let mut baseline = None;
+        let keyframe = resolve_msg(
+            AgentMsg::Keyframe {
+                id:       1,
+                space:    SPACE,
+                pose:     keyframe_pose(Vec3::ZERO),
+                grounded: false,
+            },
+            &mut baseline,
+        )
+        .expect("resolved keyframe");
+        assert!(!keyframe.grounded);
+
+        let delta = resolve_msg(
+            AgentMsg::Delta {
+                keyframe: 1,
+                space:    SPACE,
+                pose:     delta_pose(keyframe_pose(Vec3::ZERO), &keyframe_pose(Vec3::ZERO)),
+                grounded: true,
+            },
+            &mut baseline,
+        )
+        .expect("resolved delta");
+        assert!(delta.grounded);
+    }
+
+    #[test]
+    fn a_bone_appearing_or_vanishing_needs_a_new_keyframe() {
+        let empty = keyframe_pose(Vec3::ZERO);
+        let with_head = keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, Transform::default());
+        let with_head_and_hand = {
+            let mut pose = with_head.clone();
+            pose.bones
+                .insert(BoneName::RightHand, RigidTransform::default());
+            pose
+        };
+
+        assert!(same_bone_set(&empty, &keyframe_pose(Vec3::ZERO)));
+        assert!(same_bone_set(&with_head, &with_head));
+        assert!(!same_bone_set(&with_head, &empty));
+        assert!(!same_bone_set(&with_head_and_hand, &with_head));
     }
 }

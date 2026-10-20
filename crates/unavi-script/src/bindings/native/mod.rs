@@ -55,6 +55,7 @@ pub mod generated {
             "wired:agent/local.attach": async | trappable,
             "wired:portal/portals.open": async | trappable,
             "wired:portal/portals.pair": async | trappable,
+            "wired:portal/portals.close": async | trappable,
             "wired:portal/portals.travel": async | trappable,
             "wired:perception/perception.meta": async | trappable,
             "unavi:host/node-storage.get": async | trappable,

@@ -27,6 +27,7 @@ const ASYNC_IMPORTS = [
   "wired:physics/simulation#set-force",
   "wired:agent/local#attach",
   "wired:portal/portals#open",
+  "wired:portal/portals#close",
   "wired:portal/portals#pair",
   "wired:portal/portals#travel",
   "wired:perception/perception#meta",

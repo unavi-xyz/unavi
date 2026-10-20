@@ -15,7 +15,10 @@ use crate::{
     error::ScriptError,
     host::{
         portal,
-        shared_state::link_intents::LinkIntent,
+        shared_state::{
+            link_intents::LinkIntent,
+            portals::LinkState,
+        },
     },
 };
 
@@ -29,7 +32,7 @@ pub struct IntentSubscriptionHandle {
 
 impl Drop for IntentSubscriptionHandle {
     fn drop(&mut self) {
-        let _ = portal::close(&mut self.host.borrow_mut(), self.rep);
+        let _ = portal::close_intents(&mut self.host.borrow_mut(), self.rep);
     }
 }
 
@@ -57,6 +60,16 @@ fn wit_link_intent(intent: LinkIntent) -> JsValue {
     .ok();
     js_sys::Reflect::set(&obj, &"link".into(), &convert::wit_link_id(intent.link)).ok();
     obj.into()
+}
+
+const fn link_state_name(state: LinkState) -> &'static str {
+    match state {
+        LinkState::None => "none",
+        LinkState::OneWay => "one-way",
+        LinkState::Pending => "pending",
+        LinkState::Unpaired => "unpaired",
+        LinkState::Paired => "paired",
+    }
 }
 
 #[wasm_bindgen]
@@ -107,6 +120,30 @@ impl Runtime {
                 .map(|()| JsValue::UNDEFINED)
                 .map_err(convert::raise)
         })
+    }
+
+    pub fn close(&self, document: &DocumentHandle, prim: JsValue) -> js_sys::Promise {
+        let host = Rc::clone(&self.host);
+        let doc = document.rep();
+        let prim = match convert::prim_id(prim) {
+            Ok(prim) => prim,
+            Err(err) => return js_sys::Promise::reject(&convert::raise(err)),
+        };
+        future_to_promise(async move {
+            let host = host.borrow();
+            portal::close(&host, doc, prim)
+                .await
+                .map(|()| JsValue::UNDEFINED)
+                .map_err(convert::raise)
+        })
+    }
+
+    #[wasm_bindgen(js_name = "linkState")]
+    pub fn link_state(&self, document: &DocumentHandle, prim: JsValue) -> Result<JsValue, JsValue> {
+        let prim = convert::prim_id(prim).map_err(convert::raise)?;
+        portal::link_state(&self.host.borrow(), document.rep(), prim)
+            .map(|state| link_state_name(state).into())
+            .map_err(convert::raise)
     }
 
     pub fn travel(&self, target_space: JsValue) -> js_sys::Promise {

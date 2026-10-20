@@ -13,12 +13,15 @@ use wired_guest::math::{
 };
 
 use crate::{
+    glyph::Glyph,
     mesh,
     palette::Palette,
     placard::{
         Emphasis,
+        ICON_EM,
         MAX_LINES,
         PlacardView,
+        icon_advance,
     },
     render::{
         draw,
@@ -46,6 +49,10 @@ pub struct PlacardPrims {
     root:     (u64, u64),
     panel:    (u64, u64),
     lines:    Vec<(u64, u64)>,
+    /// One dot surface per line, drawn only while its line has an icon.
+    icons:    Vec<(u64, u64)>,
+    /// The icon each surface's mesh was last built from.
+    shapes:   Vec<Shadow<Option<Glyph>>>,
     /// Whether anything is currently drawn, so [`PlacardPrims::hide`] writes at
     /// most once per time the placard actually goes away.
     shown:    Cell<bool>,
@@ -80,12 +87,20 @@ impl PlacardPrims {
             batch = batch.set(prim, Property::Transform(draw::hidden()));
             lines.push(prim);
         }
+        let mut icons = Vec::with_capacity(MAX_LINES);
+        for _ in 0..MAX_LINES {
+            let prim = doc.create_prim(Layer::Local, Some(root))?;
+            batch = batch.set(prim, Property::Transform(draw::hidden()));
+            icons.push(prim);
+        }
         batch.flush()?;
 
         Ok(Self {
             root,
             panel,
             lines,
+            shapes: icons.iter().map(|_| Shadow::new()).collect(),
+            icons,
             shown: Cell::new(false),
             progress: Cell::new(0.0),
             view: RefCell::new(None),
@@ -213,6 +228,40 @@ impl PlacardPrims {
         }
         for prim in self.lines.iter().skip(view.lines.len()) {
             batch = batch.set(*prim, Property::Transform(draw::hidden()));
+        }
+        for (index, (prim, shape)) in self.icons.iter().zip(&self.shapes).enumerate() {
+            let line = view.lines.get(index);
+            let glyph = line.and_then(|line| line.icon.as_ref());
+            if let Some(changed) = shape.diff(glyph.cloned()) {
+                batch = match changed {
+                    Some(glyph) => draw::mesh(&mesh::dots(&glyph))
+                        .into_iter()
+                        .fold(batch, |batch, property| batch.set(*prim, property)),
+                    None => batch.set(*prim, Property::Transform(draw::hidden())),
+                };
+            }
+            let Some((line, _)) = line.zip(glyph) else {
+                continue;
+            };
+            let side = line.size * ICON_EM;
+            let left = line.offset.x - icon_advance(line.size);
+            batch = batch
+                .set(
+                    *prim,
+                    Property::Transform(Transform {
+                        translation: Vec3::new(
+                            left + side / 2.0,
+                            line.offset.y + side / 2.0,
+                            TEXT_LIFT,
+                        ),
+                        rotation:    Quat::IDENTITY,
+                        scale:       Vec3::splat(side),
+                    }),
+                )
+                .set(
+                    *prim,
+                    Property::Material(draw::ink(tint(palette, line.emphasis), progress)),
+                );
         }
         batch.flush()?;
         Ok(())

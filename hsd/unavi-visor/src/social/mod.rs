@@ -99,6 +99,7 @@ fn plate_lines(plate: &Plate) -> Vec<PlacardLine> {
         .map(|text| PlacardLine {
             text: text.clone(),
             tone: Tone::Muted,
+            icon: None,
         })
         .collect()
 }

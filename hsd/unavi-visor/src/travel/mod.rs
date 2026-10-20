@@ -1,11 +1,15 @@
 //! The Travel lens: a tag beside each portal the viewer is looking at, tied
-//! to the portal by a tether in its rim colour.
+//! to the portal by a tether in its rim colour, and a tag beside each loose
+//! beacon looked at.
 //!
 //! Three tags are made once and handed from portal to portal as attention
 //! moves, so looking about never builds or frees a surface.
 
+mod beacons;
+mod beside;
 mod content;
 mod frame;
+mod lines;
 mod listing;
 
 use unavi_lens::DocumentId;
@@ -17,6 +21,7 @@ use wired_guest::math::{
 };
 
 use self::{
+    beacons::Beacons,
     content::{
         Content,
         Facts,
@@ -26,6 +31,7 @@ use self::{
         Placement,
         Side,
     },
+    lines::tag_lines,
     listing::Listings,
 };
 use crate::{
@@ -33,12 +39,9 @@ use crate::{
         self,
         Candidate,
     },
+    clearance::Clearance,
     slots,
-    unavi::vui::api::{
-        Placard,
-        PlacardLine,
-        Tone,
-    },
+    unavi::vui::api::Placard,
     wired::{
         peer::authority,
         perception::perception::{
@@ -64,21 +67,8 @@ const NOMINAL: Vec2 = Vec2::new(0.84, 0.3);
 /// A portal, by its prim.
 type Key = (DocumentId, (u64, u64));
 
-/// The lines under a tag's title: its facts, muted, and a warning when there
-/// is no way back.
-fn tag_lines(text: &Content) -> Vec<PlacardLine> {
-    let facts = text.facts.iter().map(|facts| PlacardLine {
-        text: facts.clone(),
-        tone: Tone::Muted,
-    });
-    let one_way = text.one_way.then(|| PlacardLine {
-        text: String::from("One way"),
-        tone: Tone::Warning,
-    });
-    facts.chain(one_way).collect()
-}
-
 /// A portal worth a placard.
+#[derive(Clone, Copy)]
 struct Found {
     key:         Key,
     destination: DocumentId,
@@ -117,10 +107,11 @@ impl Slot {
     }
 
     /// Stands it by `portal` as seen from `eye`, sending only what moved.
-    fn stand(&mut self, portal: &Found, eye: Vec3) {
+    fn stand(&mut self, portal: &Found, eye: Vec3, clearance: &mut Clearance) {
         let side = portal.frame.side(eye, self.side);
         self.side = Some(side);
-        let placed = portal.frame.place(eye, side, self.size);
+        let mut placed = portal.frame.place(eye, side, self.size);
+        placed.at = clearance.clear(eye, placed.at, self.size, &[]);
         if self.at != Some(placed) {
             self.placard.set_position(placed.at);
             self.placard.set_tether(placed.tether);
@@ -142,11 +133,16 @@ impl Slot {
 }
 
 pub struct Travel {
-    slots:    Vec<Slot>,
-    listings: Listings,
-    facts_in: u32,
+    slots:     Vec<Slot>,
+    beacons:   Beacons,
+    listings:  Listings,
+    clearance: Clearance,
+    /// The portals in range as last read, so their tags can follow the eye
+    /// every frame rather than step at the fixed rate.
+    found:     Vec<Found>,
+    facts_in:  u32,
     /// Whether a failed read has been reported, so a broken host is said once.
-    warned:   bool,
+    warned:    bool,
 }
 
 impl Travel {
@@ -168,7 +164,10 @@ impl Travel {
             .collect::<anyhow::Result<_>>()?;
         Ok(Self {
             slots,
+            beacons: Beacons::new()?,
             listings: Listings::default(),
+            clearance: Clearance::new()?,
+            found: Vec::new(),
             facts_in: 0,
             warned: false,
         })
@@ -177,6 +176,12 @@ impl Travel {
     /// Moves attention to what the viewer is looking at, while the lens is
     /// worn. Unworn, or with no eye, nothing is attended and every placard is
     /// put away.
+    /// Leaves the user's shell out of what a tag is pulled clear of.
+    pub const fn set_shell(&mut self, shell: Option<DocumentId>) {
+        self.clearance.set_shell(shell);
+        self.beacons.set_shell(shell);
+    }
+
     pub fn fixed_update(&mut self, worn: bool, eye: Option<&Transform>) {
         let eye = eye.filter(|_| worn);
         let found = if eye.is_some() {
@@ -185,6 +190,8 @@ impl Travel {
         } else {
             Vec::new()
         };
+        self.found.clone_from(&found);
+        self.beacons.fixed_update(eye, &self.listings);
         let held: Vec<_> = self.slots.iter().filter_map(|slot| slot.key).collect();
         let attended = eye.map_or_else(Vec::new, |eye| {
             let candidates: Vec<_> = found
@@ -253,12 +260,31 @@ impl Travel {
                     }
                 }
             }
-            slot.stand(portal, eye.translation);
+            slot.stand(portal, eye.translation, &mut self.clearance);
             if slot.text.is_some() && !slot.shown {
                 slot.placard.set_shown(true);
                 slot.shown = true;
             }
         }
+    }
+
+    /// Keeps every tag by its body every frame. Attention moves on fixed
+    /// ticks, but the eye and the bodies it looks at move between them, so a
+    /// tag stood only then steps across the view.
+    pub fn update(&mut self, eye: Option<&Transform>) {
+        let Some(eye) = eye else {
+            return;
+        };
+        for slot in &mut self.slots {
+            let Some(portal) = slot
+                .key
+                .and_then(|key| self.found.iter().find(|portal| portal.key == key))
+            else {
+                continue;
+            };
+            slot.stand(portal, eye.translation, &mut self.clearance);
+        }
+        self.beacons.update(Some(eye));
     }
 
     /// The portals in range that go somewhere.

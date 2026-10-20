@@ -2,12 +2,13 @@
 
 use crate::wired::perception::perception::TrustRung;
 
-pub const fn word(rung: TrustRung) -> &'static str {
+/// The rung's word, or `None` for the local user, who needs none.
+pub const fn word(rung: TrustRung) -> Option<&'static str> {
     match rung {
-        TrustRung::Blocked => "Blocked",
-        TrustRung::Anonymous => "Anonymous",
-        TrustRung::Guest => "Guest",
-        TrustRung::Trusted => "Trusted",
-        TrustRung::Myself => "Yours",
+        TrustRung::Blocked => Some("Blocked"),
+        TrustRung::Anonymous => Some("Anonymous"),
+        TrustRung::Guest => Some("Guest"),
+        TrustRung::Trusted => Some("Trusted"),
+        TrustRung::Myself => None,
     }
 }

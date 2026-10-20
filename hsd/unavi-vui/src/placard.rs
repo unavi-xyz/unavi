@@ -9,6 +9,7 @@ use wired_guest::math::{
 };
 
 use crate::{
+    glyph::Glyph,
     mote::MoteSpec,
     tuning::Tuning,
 };
@@ -35,12 +36,26 @@ pub enum Tone {
     Warning,
 }
 
+/// Height and width of a paragraph's icon, in the paragraph's text sizes.
+pub const ICON_EM: f32 = 0.8;
+/// Space between an icon and the text after it, in the paragraph's text
+/// sizes.
+const ICON_GAP_EM: f32 = 0.35;
+
 /// One paragraph under the title.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Paragraph {
     /// Prose, without line breaks; [`view`] wraps it.
     pub text: SmolStr,
     pub tone: Tone,
+    /// Dots drawn before the first line of the text.
+    pub icon: Option<Glyph>,
+}
+
+/// The width an icon takes before text set at `size`, gap included.
+#[must_use]
+pub fn icon_advance(size: f32) -> f32 {
+    size * (ICON_EM + ICON_GAP_EM)
 }
 
 /// Why a script's text was refused.
@@ -81,7 +96,7 @@ impl std::fmt::Display for Refused {
 }
 
 /// Mounted text: a title and what there is to say under it.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Placard {
     /// A small muted line above the title: an id, a category.
     pub kicker:  Option<SmolStr>,
@@ -119,11 +134,18 @@ impl Placard {
 
     /// [`Placard::line`], set in `tone`.
     #[must_use]
-    pub fn toned(mut self, line: impl Into<SmolStr>, tone: Tone) -> Self {
-        let _ = self.body.try_push(Paragraph {
+    pub fn toned(self, line: impl Into<SmolStr>, tone: Tone) -> Self {
+        self.paragraph(Paragraph {
             text: line.into(),
             tone,
-        });
+            icon: None,
+        })
+    }
+
+    /// Dropped past [`MAX_LINES`], like [`Placard::line`].
+    #[must_use]
+    pub fn paragraph(mut self, paragraph: Paragraph) -> Self {
+        let _ = self.body.try_push(paragraph);
         self
     }
 
@@ -137,7 +159,7 @@ impl Placard {
     pub fn from_script(
         title: &str,
         kicker: Option<&str>,
-        lines: &[(String, Tone)],
+        lines: &[Paragraph],
     ) -> Result<Self, Refused> {
         if title.len() > MAX_TITLE_BYTES {
             return Err(Refused::Title(title.len()));
@@ -150,16 +172,14 @@ impl Placard {
         }
         if let Some(long) = lines
             .iter()
-            .map(|(text, _)| text.len())
+            .map(|line| line.text.len())
             .find(|&len| len > MAX_PARAGRAPH_BYTES)
         {
             return Err(Refused::Paragraph(long));
         }
-        let placard = lines
-            .iter()
-            .fold(Self::new(title), |placard, (text, tone)| {
-                placard.toned(text.as_str(), *tone)
-            });
+        let placard = lines.iter().fold(Self::new(title), |placard, line| {
+            placard.paragraph(line.clone())
+        });
         Ok(match kicker {
             Some(kicker) => placard.kicker(kicker),
             None => placard,
@@ -170,9 +190,14 @@ impl Placard {
     #[must_use]
     pub fn describing(spec: &MoteSpec) -> Self {
         let placard = Self::new(spec.label.clone());
-        match &spec.description {
-            Some(description) => placard.line(description.clone()),
-            None => placard,
+        match (&spec.description, &spec.description_icon) {
+            (Some(description), Some(icon)) => placard.paragraph(Paragraph {
+                text: description.clone(),
+                tone: Tone::Body,
+                icon: Some(icon.clone()),
+            }),
+            (Some(description), None) => placard.line(description.clone()),
+            (None, _) => placard,
         }
     }
 }
@@ -197,6 +222,10 @@ pub struct PlacardLine {
     pub offset:   Vec2,
     pub size:     f32,
     pub emphasis: Emphasis,
+    /// Dots drawn before the text: a square [`ICON_EM`] times `size` across,
+    /// its bottom edge on the baseline and its right edge a gap before
+    /// `offset.x`.
+    pub icon:     Option<Glyph>,
 }
 
 /// Everything a renderer needs to draw one placard.
@@ -352,6 +381,7 @@ fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, M
                 offset: Vec2::new(-inner / 2.0, y),
                 size: tuning.placard_kicker,
                 emphasis: Emphasis::Kicker,
+                icon: None,
             });
         }
     }
@@ -374,29 +404,35 @@ fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, M
                 } else {
                     Emphasis::Title
                 },
+                icon: None,
             });
         }
     }
 
     let step = tuning.placard_row * tuning.placard_line;
     for paragraph in &placard.body {
+        let indent = paragraph
+            .icon
+            .as_ref()
+            .map_or(0.0, |_| icon_advance(tuning.placard_row));
         let mut wrapped = ArrayVec::new();
         wrap(
             &paragraph.text,
-            budget(inner, tuning.placard_row, tuning),
+            budget(inner - indent, tuning.placard_row, tuning),
             &mut wrapped,
         );
-        for text in wrapped {
+        for (index, text) in wrapped.into_iter().enumerate() {
             y -= step;
             let _ = lines.try_push(PlacardLine {
                 text,
-                offset: Vec2::new(-inner / 2.0, y),
+                offset: Vec2::new(-inner / 2.0 + indent, y),
                 size: tuning.placard_row,
                 emphasis: match paragraph.tone {
                     Tone::Body => Emphasis::Body,
                     Tone::Muted => Emphasis::Muted,
                     Tone::Warning => Emphasis::Warning,
                 },
+                icon: paragraph.icon.clone().filter(|_| index == 0),
             });
         }
     }
@@ -424,6 +460,7 @@ mod tests {
             role,
             label: SmolStr::new_static("Citrus"),
             description: Some(SmolStr::new_static("Sharp and bright")),
+            description_icon: None,
             active: false,
             icon: false,
             glyph: None,
@@ -444,6 +481,14 @@ mod tests {
 
     fn view_of(placard: &Placard) -> PlacardView {
         view(placard, Vec3::ZERO, 0.03, &tuning())
+    }
+
+    fn script(text: &str, tone: Tone) -> Paragraph {
+        Paragraph {
+            text: SmolStr::new(text),
+            tone,
+            icon: None,
+        }
     }
 
     fn texts(view: &PlacardView) -> Vec<&str> {
@@ -576,7 +621,7 @@ mod tests {
         let placard = Placard::from_script(
             "t",
             Some("k"),
-            &vec![(String::from("x"), Tone::Body); MAX_PARAGRAPHS],
+            &vec![script("x", Tone::Body); MAX_PARAGRAPHS],
         )
         .unwrap();
         assert_eq!(view_of(&placard).lines.len(), MAX_LINES);
@@ -584,7 +629,7 @@ mod tests {
 
     #[test]
     fn script_text_at_the_limits_is_taken() {
-        let lines = vec![("x".repeat(MAX_PARAGRAPH_BYTES), Tone::Muted); MAX_PARAGRAPHS];
+        let lines = vec![script(&"x".repeat(MAX_PARAGRAPH_BYTES), Tone::Muted); MAX_PARAGRAPHS];
         let placard = Placard::from_script(
             &"t".repeat(MAX_TITLE_BYTES),
             Some(&"k".repeat(MAX_KICKER_BYTES)),
@@ -601,7 +646,7 @@ mod tests {
 
     #[test]
     fn script_text_over_a_limit_is_refused() {
-        let one = vec![(String::from("x"), Tone::Body)];
+        let one = vec![script("x", Tone::Body)];
         assert_eq!(
             Placard::from_script(&"t".repeat(MAX_TITLE_BYTES + 1), None, &one),
             Err(Refused::Title(MAX_TITLE_BYTES + 1))
@@ -611,18 +656,14 @@ mod tests {
             Err(Refused::Kicker(MAX_KICKER_BYTES + 1))
         );
         assert_eq!(
-            Placard::from_script(
-                "t",
-                None,
-                &vec![(String::new(), Tone::Body); MAX_PARAGRAPHS + 1]
-            ),
+            Placard::from_script("t", None, &vec![script("", Tone::Body); MAX_PARAGRAPHS + 1]),
             Err(Refused::Paragraphs(MAX_PARAGRAPHS + 1))
         );
         assert_eq!(
             Placard::from_script(
                 "t",
                 None,
-                &[("x".repeat(MAX_PARAGRAPH_BYTES + 1), Tone::Body)]
+                &[script(&"x".repeat(MAX_PARAGRAPH_BYTES + 1), Tone::Body)]
             ),
             Err(Refused::Paragraph(MAX_PARAGRAPH_BYTES + 1))
         );
@@ -659,6 +700,7 @@ mod tests {
     fn a_mote_with_nothing_to_add_is_just_its_name() {
         let view = view_of(&Placard::describing(&MoteSpec {
             description: None,
+            description_icon: None,
             ..spec(Role::Action)
         }));
         assert_eq!(texts(&view), vec!["Citrus"]);
@@ -765,6 +807,29 @@ mod tests {
         }
         assert_eq!(placard.body.len(), MAX_LINES);
         assert!(view_of(&placard).lines.len() <= MAX_LINES);
+    }
+
+    #[test]
+    fn an_icon_takes_room_before_the_text_and_rides_the_first_line_only() {
+        let icon = Glyph::new(3, &[0b0000_0010, 0]).expect("a three grid");
+        let tuning = tuning();
+        let placard = Placard::new("t").paragraph(Paragraph {
+            text: SmolStr::new("word ".repeat(12)),
+            tone: Tone::Body,
+            icon: Some(icon.clone()),
+        });
+        let view = view_of(&placard);
+        let body = &view.lines[1..];
+        assert!(body.len() > 1, "long enough to wrap");
+        assert_eq!(body[0].icon, Some(icon));
+        assert!(body[1..].iter().all(|line| line.icon.is_none()));
+        let left = -tuning.placard_pad.mul_add(-2.0, tuning.placard_width) / 2.0;
+        for line in body {
+            assert!(
+                (line.offset.x - left - icon_advance(tuning.placard_row)).abs() < 1.0e-6,
+                "every wrapped line clears the icon"
+            );
+        }
     }
 
     #[test]

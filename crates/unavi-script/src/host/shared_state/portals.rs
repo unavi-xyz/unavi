@@ -30,6 +30,43 @@ use unavi_portal::{
 
 use crate::host::shared_state::near::nearest;
 
+/// How a portal's destination resolved.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkState {
+    /// It leads nowhere.
+    None,
+    /// It leads into a space with no link.
+    OneWay,
+    /// It bears a link and its destination has not resolved.
+    Pending,
+    /// It bears a link, and its destination is not a portal.
+    Unpaired,
+    /// Its destination is the portal answering its link.
+    Paired,
+}
+
+impl LinkState {
+    fn of(
+        target: Option<&PortalTargetDoc>,
+        link: Option<&PortalLink>,
+        resolved: Option<&Destination>,
+        partners: &Query<(), With<Portal>>,
+    ) -> Self {
+        match (target, link, resolved) {
+            (None, ..) => Self::None,
+            (Some(_), None, _) => Self::OneWay,
+            (Some(_), Some(_), None) => Self::Pending,
+            (Some(_), Some(_), Some(destination)) => {
+                if partners.contains(destination.0) {
+                    Self::Paired
+                } else {
+                    Self::Unpaired
+                }
+            }
+        }
+    }
+}
+
 /// A portal as the engine placed it this frame.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PortalSnapshot {
@@ -41,7 +78,8 @@ pub struct PortalSnapshot {
     pub height:      f32,
     pub destination: Option<DocId>,
     pub linked:      bool,
-    pub state:       PortalState,
+    pub link:        LinkState,
+    pub state:      PortalState,
     pub hue:         LinearRgba,
 }
 
@@ -50,6 +88,16 @@ pub struct PortalSnapshot {
 pub struct Portals(Arc<RwLock<Vec<PortalSnapshot>>>);
 
 impl Portals {
+    /// The portal on `prim` of `doc`.
+    #[must_use]
+    pub fn get(&self, doc: DocId, prim: PrimId) -> Option<PortalSnapshot> {
+        self.0
+            .read()
+            .iter()
+            .find(|portal| portal.doc == doc && portal.prim == prim)
+            .copied()
+    }
+
     /// Up to [`super::near::MAX_NEAR`] portals whose centre lies within
     /// `radius` of `centre` in the engine world, nearest first.
     #[must_use]
@@ -98,8 +146,9 @@ pub fn snapshot_portals(
                         || link.is_some(),
                         |destination| partners.contains(destination.0),
                     ),
+                    link:        LinkState::of(target, link, resolved, &partners),
                     state:       *state,
-                    hue:         hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
+                    hue:        hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
                 })
             },
         )
@@ -152,6 +201,7 @@ mod tests {
         assert_eq!((found.width, found.height), (2.0, 3.0));
         assert_eq!(found.destination, Some(target));
         assert!(!found.linked, "no link partner is stated");
+        assert_eq!(found.link, LinkState::OneWay);
         assert_eq!(found.state, PortalState::Open);
         assert_eq!(found.hue, PortalHue::NEUTRAL, "no hue yet reads neutral");
 
@@ -168,6 +218,7 @@ mod tests {
             shared.near(Vec3::ZERO, 100.0)[0].linked,
             "a stated link counts before it resolves"
         );
+        assert_eq!(shared.near(Vec3::ZERO, 100.0)[0].link, LinkState::Pending);
 
         app.world_mut().entity_mut(portal).insert(Destination(doc));
         app.update();
@@ -175,6 +226,7 @@ mod tests {
             !shared.near(Vec3::ZERO, 100.0)[0].linked,
             "a document root is no partner"
         );
+        assert_eq!(shared.near(Vec3::ZERO, 100.0)[0].link, LinkState::Unpaired);
 
         let other = app.world_mut().spawn(Portal).id();
         app.world_mut()
@@ -185,6 +237,7 @@ mod tests {
             shared.near(Vec3::ZERO, 100.0)[0].linked,
             "a portal is a partner"
         );
+        assert_eq!(shared.near(Vec3::ZERO, 100.0)[0].link, LinkState::Paired);
 
         app.world_mut().entity_mut(portal).despawn();
         app.update();

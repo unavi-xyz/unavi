@@ -86,6 +86,19 @@ impl Glyph {
         self.size
     }
 
+    /// Whether the dot at `column`, `row` is lit. A cell outside the grid, or
+    /// clipped away, is not.
+    #[must_use]
+    pub const fn lit(&self, column: usize, row: usize) -> bool {
+        if column >= self.size || row >= self.size {
+            return false;
+        }
+        let cell = row * self.size + column;
+        let lane = cell / LANE_BITS;
+        let bits = self.lanes[lane / 3][lane % 3] as u32;
+        (bits >> (cell % LANE_BITS)) & 1 == 1
+    }
+
     /// The bits spread over the shader's lanes, 24 to a float.
     #[must_use]
     pub const fn lanes(&self) -> &Lanes {
@@ -189,6 +202,16 @@ mod tests {
         assert!(!read(glyph.lanes(), 0));
         assert!(read(glyph.lanes(), 4 * 9 + 4));
         assert_eq!(glyph, lighting(9, &[(4, 4)]), "equal by what is drawn");
+    }
+
+    #[test]
+    fn a_cell_reads_back_lit_only_if_it_was_set_and_drawn() {
+        let glyph = lighting(9, &[(0, 0), (4, 4), (2, 7)]);
+        assert!(glyph.lit(4, 4));
+        assert!(glyph.lit(2, 7));
+        assert!(!glyph.lit(0, 0), "clipped");
+        assert!(!glyph.lit(3, 3), "unset");
+        assert!(!glyph.lit(9, 4), "off the grid");
     }
 
     #[test]

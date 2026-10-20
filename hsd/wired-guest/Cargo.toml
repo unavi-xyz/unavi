@@ -13,5 +13,6 @@ workspace = true
 anyhow.workspace       = true
 blake3.workspace       = true
 glam                   = { features = ["serde"], workspace = true }
+postcard.workspace     = true
 serde                  = { features = ["derive"], workspace = true }
 wired-state-macro.path = "../wired-state-macro"

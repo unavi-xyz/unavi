@@ -1,5 +1,10 @@
 //! Placards a script stands where it likes, rather than on a mote.
 
+use std::f32::consts::{
+    PI,
+    TAU,
+};
+
 use wired_guest::math::{
     Color,
     Quat,
@@ -41,6 +46,16 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandId(usize);
 
+/// Metres and radians a drawn pose must be from its target to snap onto it,
+/// so a settled placard stops writing its pose.
+const SETTLE_DISTANCE: f32 = 5.0e-4;
+const SETTLE_TURN: f32 = 5.0e-4;
+/// A target further than this, or turned this much, is a different place
+/// rather than a move: a slot handed to another body appears there instead of
+/// flying across the view.
+const SNAP_DISTANCE: f32 = 0.4;
+const SNAP_TURN: f32 = PI / 4.0;
+
 /// One placard: a root prim that carries its position and turn, and the prims
 /// that draw it.
 struct Standing {
@@ -54,6 +69,8 @@ struct Standing {
     /// Where the tether ends, in the document frame.
     to:     Option<Vec3>,
     shown:  bool,
+    /// The pose last drawn, eased toward the one the script puts it at.
+    drawn:  Option<Transform>,
     pose:   Shadow<Transform>,
 }
 
@@ -79,6 +96,7 @@ impl Stands {
             accent: None,
             to: None,
             shown: false,
+            drawn: None,
             pose: Shadow::new(),
         };
         if let Some(index) = self.free.pop() {
@@ -147,41 +165,50 @@ impl Stands {
         }
     }
 
-    /// Turns each placard toward `eye`, steps its pop, and lays its tether
-    /// from wherever the pane has turned to.
+    /// Turns each placard toward `eye`, eases it toward where its script puts
+    /// it, steps its pop, and lays its tether from wherever the pane has got
+    /// to.
     pub fn update(
-        &self,
+        &mut self,
         doc: &Document,
         eye: &Transform,
         palette: &Palette,
         tuning: &Tuning,
         delta: f32,
     ) -> anyhow::Result<()> {
-        for standing in self.slots.iter().flatten() {
-            let wanted = standing.view.as_ref().filter(|_| standing.shown);
+        for standing in self.slots.iter_mut().flatten() {
             let rotation = turned_toward(standing.at, eye);
-            if wanted.is_some()
-                && let Some(pose) = standing.pose.diff(Transform {
-                    translation: standing.at,
-                    rotation,
-                    scale: Vec3::ONE,
-                })
-            {
-                doc.local()
-                    .set(standing.root, Property::Transform(pose))
-                    .flush()?;
+            let target = Transform {
+                translation: standing.at,
+                rotation,
+                scale: Vec3::ONE,
+            };
+            if standing.shown && standing.view.is_some() {
+                let drawn = eased(standing.drawn, target, tuning.stand_speed, delta);
+                standing.drawn = Some(drawn);
+                if let Some(pose) = standing.pose.diff(drawn) {
+                    doc.local()
+                        .set(standing.root, Property::Transform(pose))
+                        .flush()?;
+                }
             }
-            standing.prims.update(doc, wanted, palette, delta)?;
+            standing.prims.update(
+                doc,
+                standing.view.as_ref().filter(|_| standing.shown),
+                palette,
+                delta,
+            )?;
 
             // The tether pops with the pane: it reaches the pane's edge as the
             // pane grows from its centre, and goes when the pane has shrunk
             // away rather than when it starts to.
             let progress = standing.prims.progress();
-            let drawn = standing.view.as_ref().filter(|_| progress > 0.0);
-            let tether = drawn.zip(standing.to).map(|(view, to)| {
+            let view = standing.view.as_ref().filter(|_| progress > 0.0);
+            let drawn = standing.drawn.unwrap_or(target);
+            let tether = view.zip(standing.to).map(|(view, to)| {
                 let pane = Pane {
-                    centre: standing.at + Vec3::new(0.0, view.size.y / 2.0, 0.0),
-                    rotation,
+                    centre:     drawn.translation + Vec3::new(0.0, view.size.y / 2.0, 0.0),
+                    rotation:   drawn.rotation,
                     half_width: view.size.x / 2.0 * pop::scale(progress),
                 };
                 tether::tether(&pane, to, tuning)
@@ -197,6 +224,41 @@ impl Stands {
     fn get_mut(&mut self, id: StandId) -> Option<&mut Standing> {
         self.slots.get_mut(id.0)?.as_mut()
     }
+}
+
+/// Eases a drawn pose toward the one the script puts it at, so a placard
+/// follows the eye between fixed ticks rather than stepping across the view.
+/// The first pose is taken as it is, since arriving is not a move.
+fn eased(from: Option<Transform>, to: Transform, speed: f32, delta: f32) -> Transform {
+    let Some(from) = from else {
+        return to;
+    };
+    let step = (speed * delta).clamp(0.0, 1.0);
+    let translation = from.translation.lerp(to.translation, step);
+    let start = yaw(from.rotation);
+    let goal = yaw(to.rotation);
+    let turn = (goal - start + PI).rem_euclid(TAU) - PI;
+    if from.translation.distance(to.translation) > SNAP_DISTANCE || turn.abs() > SNAP_TURN {
+        return to;
+    }
+    let settled =
+        translation.distance(to.translation) <= SETTLE_DISTANCE && turn.abs() <= SETTLE_TURN;
+    if settled {
+        return Transform {
+            rotation: Quat::from_rotation_y(goal),
+            ..to
+        };
+    }
+    Transform {
+        translation,
+        rotation: Quat::from_rotation_y(turn.mul_add(step, start).rem_euclid(TAU)),
+        scale: Vec3::ONE,
+    }
+}
+
+/// The turn of a yaw-only quaternion, in radians.
+fn yaw(rotation: Quat) -> f32 {
+    2.0 * rotation.y.atan2(rotation.w)
 }
 
 /// Turns about the vertical axis so a pane at `at` has its front to `eye`; the
@@ -263,5 +325,58 @@ mod tests {
         };
         let rotation = turned_toward(Vec3::new(2.0, 4.0, 2.0), &eye);
         assert!(near(looks(rotation), Vec3::new(1.0, 0.0, 0.0)));
+    }
+
+    fn pose(translation: Vec3, turn: f32) -> Transform {
+        Transform {
+            translation,
+            rotation: Quat::from_rotation_y(turn),
+            scale: Vec3::ONE,
+        }
+    }
+
+    #[test]
+    fn a_new_placard_is_drawn_where_it_stands() {
+        let target = pose(Vec3::new(1.0, 2.0, 3.0), 0.5);
+        assert_eq!(eased(None, target, 18.0, 1.0 / 60.0), target);
+    }
+
+    #[test]
+    fn a_moved_placard_eases_without_overshooting() {
+        let target = pose(Vec3::new(1.0, 2.0, 3.0), 0.5);
+        let mut drawn = pose(Vec3::new(0.7, 2.0, 3.0), 0.45);
+        let mut last = drawn.translation.distance(target.translation);
+        for _ in 0..120 {
+            let next = eased(Some(drawn), target, 18.0, 1.0 / 60.0);
+            let now = next.translation.distance(target.translation);
+            assert!(now <= last + 1.0e-6, "eased away from the target");
+            last = now;
+            drawn = next;
+        }
+        assert!(
+            near(drawn.translation, target.translation),
+            "did not settle"
+        );
+        assert!(
+            near(looks(drawn.rotation), looks(target.rotation)),
+            "wrong turn"
+        );
+    }
+
+    #[test]
+    fn a_far_hop_snaps_rather_than_flying_across_the_view() {
+        let target = pose(Vec3::new(5.0, 2.0, 3.0), 1.0);
+        let from = pose(Vec3::ZERO, 0.0);
+        assert_eq!(eased(Some(from), target, 18.0, 1.0 / 60.0), target);
+    }
+
+    #[test]
+    fn a_settled_placard_snaps_exactly_onto_its_target() {
+        let target = pose(Vec3::new(1.0, 2.0, 3.0), 0.5);
+        let almost = Transform {
+            translation: target.translation + Vec3::splat(SETTLE_DISTANCE / 2.0),
+            ..target
+        };
+        assert_eq!(eased(Some(almost), target, 18.0, 1.0 / 60.0), target);
     }
 }

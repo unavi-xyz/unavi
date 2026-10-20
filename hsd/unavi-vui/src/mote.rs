@@ -75,30 +75,32 @@ impl Role {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MoteSpec {
-    pub role:        Role,
+    pub role:             Role,
     /// The name, drawn under the body at all times.
-    pub label:       SmolStr,
+    pub label:            SmolStr,
     /// What it does, shown on the placard once attention has been held.
-    pub description: Option<SmolStr>,
+    pub description:      Option<SmolStr>,
+    /// Dots drawn before the description.
+    pub description_icon: Option<Glyph>,
     /// Whether the mote is on: a toggle, held until something clears it,
     /// rather than the pulse an activation is.
-    pub active:      bool,
+    pub active:           bool,
     /// Whether the mote wears a body of its own, an icon or a glyph, which is
     /// drawn where a group's contents would otherwise be previewed.
-    pub icon:        bool,
+    pub icon:             bool,
     /// The dot grid drawn on its face instead of an icon.
-    pub glyph:       Option<Rc<Glyph>>,
+    pub glyph:            Option<Rc<Glyph>>,
     /// The hue its glass carries, or none for the neutral one. Identity,
     /// where every other colour here is state.
-    pub tint:        Option<Color>,
+    pub tint:             Option<Color>,
     /// How much iridescent film the shell wears, `0` none to `1` the full
     /// bubble. Subtle by default so the identity hue stays legible.
-    pub film:        f32,
+    pub film:             f32,
     /// How much the shell's rim is frosted, `0` for clear glass.
-    pub frost:       f32,
+    pub frost:            f32,
     /// What the mote is telling the viewer right now, if its notice has not
     /// run out. Drawn on its body in place of the placard.
-    pub notice:      Option<SmolStr>,
+    pub notice:           Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -255,6 +257,7 @@ mod tests {
             role,
             label: SmolStr::new_static("test"),
             description: None,
+            description_icon: None,
             active: false,
             icon: false,
             glyph: None,

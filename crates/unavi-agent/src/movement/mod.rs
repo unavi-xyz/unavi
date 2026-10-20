@@ -9,6 +9,8 @@ use bevy_tnua::prelude::{
     TnuaBuiltinWalk,
     TnuaController,
 };
+use bevy_vrm::BoneName;
+use unavi_avatar::bones::AvatarBones;
 use unavi_input::{
     action::{
         Action,
@@ -18,9 +20,11 @@ use unavi_input::{
 };
 
 use crate::{
+    AgentAvatar,
     AgentRig,
     ControlScheme,
     LocalAgentEntities,
+    TrackedHead,
     config::{
         AgentConfig,
         InputMode,
@@ -54,6 +58,75 @@ const LOOK_SMOOTHING_TAU: f32 = 0.033;
 /// Time constant for body-movement smoothing, chosen to feel like the
 /// previous frame-locked `lerp(0.2)` did at 60 Hz.
 const MOVE_SMOOTHING_TAU: f32 = 0.075;
+
+/// The eye point's position relative to the avatar's head bone, measured once
+/// when the rig is fitted to the avatar.
+#[derive(Component)]
+pub struct HeadFollow {
+    /// The head bone in rig space, as measured at fit time.
+    pub rest:   Vec3,
+    /// The eye point minus the head bone, both in rig space.
+    pub offset: Vec3,
+}
+
+/// How far the animated head may carry the eye point, so a broken or hostile
+/// avatar cannot yank the camera across the room.
+const HEAD_FOLLOW_LIMIT: f32 = 0.2;
+
+/// Time constant for the eye riding the animated head. Long enough that the
+/// gait's torso sway reads as weight rather than as shake.
+const HEAD_FOLLOW_TAU: f32 = 0.1;
+
+/// Where the eye should sit for a head bone at `head_in_rig`.
+#[must_use]
+fn follow_target(follow: &HeadFollow, head_in_rig: Vec3) -> Vec3 {
+    let lean = (head_in_rig - follow.rest).clamp_length_max(HEAD_FOLLOW_LIMIT);
+    follow.rest + follow.offset + lean
+}
+
+/// Rides the first person camera on the avatar's animated head, so the body the
+/// player can see and the view they see through lean together instead of
+/// drifting apart (a jump's falling pose leans the head forward, away from a
+/// fixed eye point).
+///
+/// Only the animation's rotation chain moves the head, so this adds lean, not
+/// vertical bob. In VR the headset owns the camera's position; there is
+/// nothing to follow.
+pub fn follow_animated_head(
+    time: Res<Time>,
+    agents: Query<(&LocalAgentEntities, &AgentAvatar)>,
+    avatars: Query<&AvatarBones>,
+    followers: Query<&HeadFollow>,
+    bones: Query<&GlobalTransform>,
+    rigs: Query<&GlobalTransform, With<AgentRig>>,
+    mut eyes: Query<&mut Transform, With<TrackedHead>>,
+) {
+    let alpha = smoothing_alpha(time.delta_secs(), HEAD_FOLLOW_TAU);
+
+    for (entities, avatar) in agents.iter() {
+        let (Ok(avatar_bones), Ok(rig), Ok(follow)) = (
+            avatars.get(avatar.0),
+            rigs.get(entities.body),
+            followers.get(entities.tracked_head),
+        ) else {
+            continue;
+        };
+
+        let Some(&head_bone) = avatar_bones.get(&BoneName::Head) else {
+            continue;
+        };
+        let (Ok(head), Ok(mut eye)) = (bones.get(head_bone), eyes.get_mut(entities.tracked_head))
+        else {
+            continue;
+        };
+
+        let head_in_rig = rig.affine().inverse().transform_point3(head.translation());
+
+        eye.translation = eye
+            .translation
+            .lerp(follow_target(follow, head_in_rig), alpha);
+    }
+}
 
 /// The fraction of the distance to a moving target covered in `dt` seconds
 /// of exponential smoothing with time constant `tau`. Unlike a fixed
@@ -165,7 +238,44 @@ pub fn apply_body_input(
 
 #[cfg(test)]
 mod tests {
-    use super::smoothing_alpha;
+    use bevy::prelude::Vec3;
+
+    use super::{
+        HEAD_FOLLOW_LIMIT,
+        HeadFollow,
+        follow_target,
+        smoothing_alpha,
+    };
+
+    fn follow() -> HeadFollow {
+        HeadFollow {
+            rest:   Vec3::new(0.0, 1.6, 0.0),
+            offset: Vec3::new(0.0, -0.04, 0.0),
+        }
+    }
+
+    #[test]
+    fn the_eye_sits_on_the_head_while_it_is_at_rest() {
+        let follow = follow();
+        let target = follow_target(&follow, follow.rest);
+        assert!((target - Vec3::new(0.0, 1.56, 0.0)).length() < 1.0e-5);
+    }
+
+    #[test]
+    fn a_lean_carries_the_eye_with_the_head() {
+        let follow = follow();
+        let lean = Vec3::new(0.0, 0.0, -0.1);
+        let target = follow_target(&follow, follow.rest + lean);
+        assert!((target - (Vec3::new(0.0, 1.56, 0.0) + lean)).length() < 1.0e-5);
+    }
+
+    #[test]
+    fn a_wild_head_pose_cannot_drag_the_eye_further_than_the_limit() {
+        let follow = follow();
+        let far = follow.rest + Vec3::new(0.0, 0.0, -50.0);
+        let drift = follow_target(&follow, far) - (follow.rest + follow.offset);
+        assert!((drift.length() - HEAD_FOLLOW_LIMIT).abs() < 1.0e-4);
+    }
 
     /// Two half-steps of smoothing must land in the same place as one full
     /// step, so the rig turns and accelerates at the same rate regardless of

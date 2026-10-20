@@ -91,12 +91,26 @@ pub const LENS_TRAVEL: Rows = [
     ".........",
 ];
 
+/// The social lens: a person.
+pub const LENS_SOCIAL: Rows = [
+    ".........",
+    "...###...",
+    "..#####..",
+    "...###...",
+    ".........",
+    "..#####..",
+    ".#######.",
+    ".#######.",
+    ".........",
+];
+
 /// The mark of the lens named `id`; a lens this halo has no mark for wears the
 /// visor.
 #[must_use]
 pub fn lens(id: &str) -> &'static Rows {
     match id {
         unavi_lens::TRAVEL => &LENS_TRAVEL,
+        unavi_lens::SOCIAL => &LENS_SOCIAL,
         _ => &VISOR,
     }
 }

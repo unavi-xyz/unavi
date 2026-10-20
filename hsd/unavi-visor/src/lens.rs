@@ -5,6 +5,7 @@
 
 use unavi_lens::{
     Lens,
+    SOCIAL,
     TRAVEL,
     Wear,
 };
@@ -16,14 +17,20 @@ pub struct Registry {
 impl Default for Registry {
     fn default() -> Self {
         Self {
-            lenses: vec![Lens {
-                id:          TRAVEL.to_owned(),
-                name:        "Travel".to_owned(),
-                description: "Portal placards: where a portal goes, who is there, and whether it \
-                              comes back."
-                    .to_owned(),
-                worn:        true,
-            }],
+            lenses: vec![
+                Lens {
+                    id:          TRAVEL.to_owned(),
+                    name:        "Travel".to_owned(),
+                    description: "Placards beside the portals you look at.".to_owned(),
+                    worn:        true,
+                },
+                Lens {
+                    id:          SOCIAL.to_owned(),
+                    name:        "Social".to_owned(),
+                    description: "Nameplates over the people you look at.".to_owned(),
+                    worn:        true,
+                },
+            ],
         }
     }
 }

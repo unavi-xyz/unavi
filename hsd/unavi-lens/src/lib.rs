@@ -17,6 +17,8 @@ pub type DocumentId = (u64, u64, u64, u64);
 
 /// The id of the travel lens.
 pub const TRAVEL: &str = "travel";
+/// The id of the social lens.
+pub const SOCIAL: &str = "social";
 
 /// Visor to everyone: every lens it has, as a [`Vec<Lens>`]. Sent at start,
 /// after every change, and in answer to [`ASK`].

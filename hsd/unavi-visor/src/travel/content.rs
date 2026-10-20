@@ -3,7 +3,10 @@
 use unavi_lens::DocumentId;
 use wired_guest::color::document_seed;
 
-use crate::wired::perception::perception::TrustRung;
+use crate::{
+    rung,
+    wired::perception::perception::TrustRung,
+};
 
 /// Characters of a title kept before it is cut with an ellipsis.
 const TITLE_MAX: usize = 48;
@@ -49,7 +52,7 @@ pub struct Content {
 pub fn describe(facts: &Facts) -> Content {
     let known: Vec<String> = [
         facts.occupants.map(here),
-        facts.author.map(|rung| rung_word(rung).to_owned()),
+        facts.author.map(|rung| rung::word(rung).to_owned()),
     ]
     .into_iter()
     .flatten()
@@ -98,16 +101,6 @@ fn here(count: u32) -> String {
     match count {
         0 => "Empty".to_owned(),
         count => format!("{count} here"),
-    }
-}
-
-const fn rung_word(rung: TrustRung) -> &'static str {
-    match rung {
-        TrustRung::Blocked => "Blocked",
-        TrustRung::Anonymous => "Anonymous",
-        TrustRung::Guest => "Guest",
-        TrustRung::Trusted => "Trusted",
-        TrustRung::Myself => "Yours",
     }
 }
 

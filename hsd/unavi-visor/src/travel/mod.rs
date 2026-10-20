@@ -4,11 +4,9 @@
 //! Three tags are made once and handed from portal to portal as attention
 //! moves, so looking about never builds or frees a surface.
 
-mod attention;
 mod content;
 mod frame;
 mod listing;
-mod slots;
 
 use unavi_lens::DocumentId;
 use wired_guest::math::{
@@ -19,7 +17,6 @@ use wired_guest::math::{
 };
 
 use self::{
-    attention::Candidate,
     content::{
         Content,
         Facts,
@@ -32,6 +29,11 @@ use self::{
     listing::Listings,
 };
 use crate::{
+    attention::{
+        self,
+        Candidate,
+    },
+    slots,
     unavi::vui::api::{
         Placard,
         PlacardLine,
@@ -200,7 +202,7 @@ impl Travel {
                     }
                 })
                 .collect();
-            attention::attend(
+            attention::PORTALS.attend(
                 eye.translation,
                 eye.rotation * Vec3::NEG_Z,
                 &candidates,

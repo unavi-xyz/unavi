@@ -1,11 +1,11 @@
-//! Which placard stands over which portal.
+//! Which placard stands over which attended thing.
 
 /// What a pass over the slots changed.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Changes {
-    /// Slots whose portal is no longer attended.
+    /// Slots whose key is no longer attended.
     pub released: Vec<usize>,
-    /// Slots given a portal they did not have.
+    /// Slots given a key they did not have.
     pub claimed:  Vec<usize>,
 }
 

@@ -26,11 +26,21 @@ pub struct Palette {
     /// A notice's title, and the one saturated colour on a placard. A red
     /// orange rather than the accent: the accent means a mote is held, so a
     /// warning wearing it would read as selection, and a warning has to be
-    /// distinct from every state a mote can be in.
+    /// distinct from every state a mote can be in. Deep, since it is set on
+    /// the pane like any other type.
     pub warning:      Color,
     /// Type set on a placard's frosted panel: near-black, since the panel
     /// is light.
     pub ink:          Color,
+    /// Quieter type on the same panel: a placard's kicker and its muted
+    /// lines. Held dark enough to stay readable on the palest-to-darkest the
+    /// pane can be.
+    pub muted_ink:    Color,
+    /// A tether with no accent to wear: light grey.
+    pub tether:       Color,
+    /// How far past its colour a tether and its dot burn, so they read as
+    /// lit rather than as painted.
+    pub tether_glow:  f32,
     /// Every glyph's dots, whatever the mote wears. Colour is spent on the
     /// shell, so what it holds stays one cool off-white and reads against
     /// any hue.
@@ -65,8 +75,11 @@ impl Palette {
         accent:       rgb(0.60, 0.84, 1.00),
         dim:          shade(0.42),
         mute:         0.55,
-        warning:      rgb(0.90, 0.22, 0.04),
+        warning:      rgb(0.52, 0.04, 0.0),
         ink:          rgb(0.04, 0.05, 0.07),
+        muted_ink:    rgb(0.13, 0.14, 0.17),
+        tether:       shade(0.78),
+        tether_glow:  1.6,
         glyph:        shade(0.97),
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,

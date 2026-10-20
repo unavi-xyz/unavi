@@ -7,6 +7,7 @@
 
 use wired_guest::{
     math::{
+        Color,
         Transform,
         Vec2,
         Vec3,
@@ -57,6 +58,7 @@ mod pop;
 pub mod shadow;
 mod site;
 pub mod stand;
+mod tether;
 mod viewer;
 
 /// Events a panel holds for a consumer that has not asked. Past this the
@@ -305,7 +307,7 @@ impl Vui {
             self.report(index, events);
         }
         self.stands
-            .update(&self.doc, &gaze.eye, &self.palette, delta)?;
+            .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         Ok(())
     }
 
@@ -319,8 +321,22 @@ impl Vui {
         self.stands.set_text(id, text, &self.tuning);
     }
 
+    /// The laid-out pane, width by height in metres, as it will stand.
+    #[must_use]
+    pub fn stand_size(&self, id: StandId) -> Vec2 {
+        self.stands.size(id)
+    }
+
     pub fn stand_at(&mut self, id: StandId, at: Vec3) {
         self.stands.set_position(id, at);
+    }
+
+    pub fn stand_accent(&mut self, id: StandId, accent: Option<Color>) {
+        self.stands.set_accent(id, accent);
+    }
+
+    pub fn stand_tether(&mut self, id: StandId, to: Option<Vec3>) {
+        self.stands.set_tether(id, to);
     }
 
     pub fn stand_shown(&mut self, id: StandId, shown: bool) {

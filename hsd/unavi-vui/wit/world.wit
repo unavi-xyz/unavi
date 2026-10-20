@@ -312,21 +312,57 @@ interface api {
     held: func() -> bool;
   }
 
+  /// How a line of a placard is set.
+  enum tone {
+    /// Plain ink.
+    body,
+    /// Ink at reduced contrast, still readable on the pane.
+    muted,
+    /// The warning colour.
+    warning,
+  }
+
+  record placard-line {
+    text: string,
+    tone: tone,
+  }
+
   /// Text on a pane, standing where the script puts it rather than on a
   /// mote: a label for something in the world. The same pane, type and pop
-  /// as a mote's placard.
+  /// as a mote's placard, laid out larger because it is read from metres
+  /// away rather than at arm's length.
   resource placard {
     /// Nothing shows until it has text and is shown.
     constructor() -> result<placard, error>;
 
-    /// `title` is at most 256 bytes, and there are at most 7 `lines` of at
-    /// most 1024 bytes each. Over either is `invalid-argument`, and the
-    /// previous text is kept. Lines wrap to the pane's width.
-    set-text: func(title: string, lines: list<string>) -> result<_, error>;
+    /// `kicker` is a small muted line above the title (an id, a category).
+    /// `title` and `kicker` are at most 256 bytes each, and there are at most
+    /// 7 `lines` of at most 1024 bytes each. Over any of them is
+    /// `invalid-argument`, and the previous text is kept. Lines wrap to the
+    /// pane's width.
+    set-text: func(
+      title: string,
+      kicker: option<string>,
+      lines: list<placard-line>,
+    ) -> result<_, error>;
 
-    /// Where its top centre stands, in the calling script's document frame.
-    /// It turns about the vertical axis to face the viewer on its own.
+    /// The laid-out pane, width by height in metres, as it will stand. Zero
+    /// before any text. Set text first, then read this to place it.
+    size: func() -> vec2;
+
+    /// Where its bottom centre stands, in the calling script's document
+    /// frame, so it stands on that point however tall its text lays out. It
+    /// turns about the vertical axis to face the viewer on its own.
     set-position: func(at: vec3);
+
+    /// Colours the corner tab and the tether. `none` draws neither in colour
+    /// (no tab; a neutral tether).
+    set-accent: func(color: option<color>);
+
+    /// A line from the pane's side nearer `to`, at the pane's vertical
+    /// middle, to `to`, ending in a small dot at `to`. `none` removes it. In
+    /// the calling script's document frame.
+    set-tether: func(to: option<vec3>);
 
     /// Eases it in or out.
     set-shown: func(value: bool);

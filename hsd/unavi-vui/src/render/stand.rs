@@ -1,8 +1,10 @@
 //! Placards a script stands where it likes, rather than on a mote.
 
 use wired_guest::math::{
+    Color,
     Quat,
     Transform,
+    Vec2,
     Vec3,
 };
 
@@ -16,8 +18,14 @@ use crate::{
     render::{
         draw,
         placard::PlacardPrims,
+        pop,
         shadow::Shadow,
+        tether::TetherPrims,
         viewer,
+    },
+    tether::{
+        self,
+        Pane,
     },
     tuning::Tuning,
     wired::scene::{
@@ -36,12 +44,17 @@ pub struct StandId(usize);
 /// One placard: a root prim that carries its position and turn, and the prims
 /// that draw it.
 struct Standing {
-    root:  (u64, u64),
-    prims: PlacardPrims,
-    view:  Option<PlacardView>,
-    at:    Vec3,
-    shown: bool,
-    pose:  Shadow<Transform>,
+    root:   (u64, u64),
+    prims:  PlacardPrims,
+    tether: TetherPrims,
+    view:   Option<PlacardView>,
+    at:     Vec3,
+    /// Colours the pane's corner tab and the tether.
+    accent: Option<Color>,
+    /// Where the tether ends, in the document frame.
+    to:     Option<Vec3>,
+    shown:  bool,
+    pose:   Shadow<Transform>,
 }
 
 /// Every standing placard a script holds, as a free list like the panels.
@@ -60,8 +73,11 @@ impl Stands {
         let standing = Standing {
             root,
             prims: PlacardPrims::new(doc, root)?,
+            tether: TetherPrims::new(doc)?,
             view: None,
             at: Vec3::ZERO,
+            accent: None,
+            to: None,
             shown: false,
             pose: Shadow::new(),
         };
@@ -78,19 +94,50 @@ impl Stands {
             return Ok(());
         };
         self.free.push(id.0);
-        doc.local().remove(standing.root).flush()?;
-        Ok(())
+        // Both go whichever fails, so a failed root does not strand the
+        // tether.
+        let root = doc.local().remove(standing.root).flush();
+        let tether = standing.tether.remove(doc);
+        root?;
+        tether
     }
 
     pub fn set_text(&mut self, id: StandId, text: &Placard, tuning: &Tuning) {
         if let Some(standing) = self.get_mut(id) {
-            standing.view = Some(placard::standing(text, tuning));
+            let mut view = placard::standing(text, tuning);
+            view.accent = standing.accent;
+            standing.view = Some(view);
         }
+    }
+
+    /// The pane as it will stand, or nothing before it has text.
+    #[must_use]
+    pub fn size(&self, id: StandId) -> Vec2 {
+        self.slots
+            .get(id.0)
+            .and_then(Option::as_ref)
+            .and_then(|standing| standing.view.as_ref())
+            .map_or(Vec2::ZERO, |view| view.size)
     }
 
     pub fn set_position(&mut self, id: StandId, at: Vec3) {
         if let Some(standing) = self.get_mut(id) {
             standing.at = at;
+        }
+    }
+
+    pub fn set_accent(&mut self, id: StandId, accent: Option<Color>) {
+        if let Some(standing) = self.get_mut(id) {
+            standing.accent = accent;
+            if let Some(view) = &mut standing.view {
+                view.accent = accent;
+            }
+        }
+    }
+
+    pub fn set_tether(&mut self, id: StandId, to: Option<Vec3>) {
+        if let Some(standing) = self.get_mut(id) {
+            standing.to = to;
         }
     }
 
@@ -100,21 +147,24 @@ impl Stands {
         }
     }
 
-    /// Turns each placard toward `eye` and steps its pop.
+    /// Turns each placard toward `eye`, steps its pop, and lays its tether
+    /// from wherever the pane has turned to.
     pub fn update(
         &self,
         doc: &Document,
         eye: &Transform,
         palette: &Palette,
+        tuning: &Tuning,
         delta: f32,
     ) -> anyhow::Result<()> {
         for standing in self.slots.iter().flatten() {
             let wanted = standing.view.as_ref().filter(|_| standing.shown);
+            let rotation = turned_toward(standing.at, eye);
             if wanted.is_some()
                 && let Some(pose) = standing.pose.diff(Transform {
                     translation: standing.at,
-                    rotation:    turned_toward(standing.at, eye),
-                    scale:       Vec3::ONE,
+                    rotation,
+                    scale: Vec3::ONE,
                 })
             {
                 doc.local()
@@ -122,6 +172,24 @@ impl Stands {
                     .flush()?;
             }
             standing.prims.update(doc, wanted, palette, delta)?;
+
+            // The tether pops with the pane: it reaches the pane's edge as the
+            // pane grows from its centre, and goes when the pane has shrunk
+            // away rather than when it starts to.
+            let progress = standing.prims.progress();
+            let drawn = standing.view.as_ref().filter(|_| progress > 0.0);
+            let tether = drawn.zip(standing.to).map(|(view, to)| {
+                let pane = Pane {
+                    centre: standing.at + Vec3::new(0.0, view.size.y / 2.0, 0.0),
+                    rotation,
+                    half_width: view.size.x / 2.0 * pop::scale(progress),
+                };
+                tether::tether(&pane, to, tuning)
+            });
+            let color = standing.accent.unwrap_or(palette.tether);
+            standing
+                .tether
+                .update(doc, tether, color, palette.tether_glow)?;
         }
         Ok(())
     }

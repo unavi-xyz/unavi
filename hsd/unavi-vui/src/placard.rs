@@ -3,6 +3,7 @@
 use arrayvec::ArrayVec;
 use smol_str::SmolStr;
 use wired_guest::math::{
+    Color,
     Vec2,
     Vec3,
 };
@@ -12,20 +13,41 @@ use crate::{
     tuning::Tuning,
 };
 
-/// Lines a placard may draw, title included.
-pub const MAX_LINES: usize = 8;
+/// Lines a placard may draw, kicker and title included.
+pub const MAX_LINES: usize = 9;
 
 /// Longest title a script may set on a standing placard.
 pub const MAX_TITLE_BYTES: usize = 256;
+/// Longest kicker a script may set on a standing placard.
+pub const MAX_KICKER_BYTES: usize = 256;
 /// Most paragraphs a script may set under the title.
-pub const MAX_PARAGRAPHS: usize = MAX_LINES - 1;
+pub const MAX_PARAGRAPHS: usize = 7;
 /// Longest paragraph a script may set on a standing placard.
 pub const MAX_PARAGRAPH_BYTES: usize = 1024;
+
+/// How a paragraph is set.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Tone {
+    #[default]
+    Body,
+    /// Ink at reduced contrast.
+    Muted,
+    Warning,
+}
+
+/// One paragraph under the title.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Paragraph {
+    /// Prose, without line breaks; [`view`] wraps it.
+    pub text: SmolStr,
+    pub tone: Tone,
+}
 
 /// Why a script's text was refused.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Refused {
     Title(usize),
+    Kicker(usize),
     Paragraphs(usize),
     Paragraph(usize),
 }
@@ -37,6 +59,12 @@ impl std::fmt::Display for Refused {
                 write!(
                     f,
                     "title is {len} bytes, over the limit of {MAX_TITLE_BYTES}"
+                )
+            }
+            Self::Kicker(len) => {
+                write!(
+                    f,
+                    "kicker is {len} bytes, over the limit of {MAX_KICKER_BYTES}"
                 )
             }
             Self::Paragraphs(count) => {
@@ -55,9 +83,10 @@ impl std::fmt::Display for Refused {
 /// Mounted text: a title and what there is to say under it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Placard {
+    /// A small muted line above the title: an id, a category.
+    pub kicker:  Option<SmolStr>,
     pub title:   SmolStr,
-    /// Prose, without line breaks; [`view`] wraps it.
-    pub body:    ArrayVec<SmolStr, MAX_LINES>,
+    pub body:    ArrayVec<Paragraph, MAX_LINES>,
     /// Whether this is a notice, which sets its title as a warning.
     pub warning: bool,
 }
@@ -66,6 +95,7 @@ impl Placard {
     #[must_use]
     pub fn new(title: impl Into<SmolStr>) -> Self {
         Self {
+            kicker:  None,
             title:   title.into(),
             body:    ArrayVec::new(),
             warning: false,
@@ -83,29 +113,57 @@ impl Placard {
 
     /// Paragraphs past [`MAX_LINES`] are dropped rather than panicking.
     #[must_use]
-    pub fn line(mut self, line: impl Into<SmolStr>) -> Self {
-        let _ = self.body.try_push(line.into());
+    pub fn line(self, line: impl Into<SmolStr>) -> Self {
+        self.toned(line, Tone::Body)
+    }
+
+    /// [`Placard::line`], set in `tone`.
+    #[must_use]
+    pub fn toned(mut self, line: impl Into<SmolStr>, tone: Tone) -> Self {
+        let _ = self.body.try_push(Paragraph {
+            text: line.into(),
+            tone,
+        });
+        self
+    }
+
+    #[must_use]
+    pub fn kicker(mut self, kicker: impl Into<SmolStr>) -> Self {
+        self.kicker = Some(kicker.into());
         self
     }
 
     /// A script's text, held to the limits a standing placard has.
-    pub fn from_script(title: &str, lines: &[String]) -> Result<Self, Refused> {
+    pub fn from_script(
+        title: &str,
+        kicker: Option<&str>,
+        lines: &[(String, Tone)],
+    ) -> Result<Self, Refused> {
         if title.len() > MAX_TITLE_BYTES {
             return Err(Refused::Title(title.len()));
+        }
+        if let Some(kicker) = kicker.filter(|kicker| kicker.len() > MAX_KICKER_BYTES) {
+            return Err(Refused::Kicker(kicker.len()));
         }
         if lines.len() > MAX_PARAGRAPHS {
             return Err(Refused::Paragraphs(lines.len()));
         }
         if let Some(long) = lines
             .iter()
-            .map(String::len)
+            .map(|(text, _)| text.len())
             .find(|&len| len > MAX_PARAGRAPH_BYTES)
         {
             return Err(Refused::Paragraph(long));
         }
-        Ok(lines.iter().fold(Self::new(title), |placard, line| {
-            placard.line(line.as_str())
-        }))
+        let placard = lines
+            .iter()
+            .fold(Self::new(title), |placard, (text, tone)| {
+                placard.toned(text.as_str(), *tone)
+            });
+        Ok(match kicker {
+            Some(kicker) => placard.kicker(kicker),
+            None => placard,
+        })
     }
 
     /// The standard placard for a mote: its name and its description.
@@ -123,9 +181,13 @@ impl Placard {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Emphasis {
     Title,
-    /// A notice's message, which wears a colour of its own.
+    /// The small line above the title.
+    Kicker,
+    /// A notice's message, or a warning line, which wears a colour of its own.
     Warning,
     Body,
+    /// A line set in ink at reduced contrast.
+    Muted,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +207,11 @@ pub struct PlacardView {
     /// Backing panel extents, sized to the laid-out lines.
     pub size:     Vec2,
     pub lines:    ArrayVec<PlacardLine, MAX_LINES>,
+    /// What the pane's corner tab is drawn in, if it has one.
+    pub accent:   Option<Color>,
+    /// How many times larger than a mote's this is laid out, which the pane's
+    /// shape follows.
+    pub unit:     f32,
 }
 
 /// Whether attention has been held long enough to earn a placard. How it
@@ -233,18 +300,32 @@ pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> Plac
         position: mount(mote, radius, size.y, tuning),
         size,
         lines,
+        accent: None,
+        unit: 1.0,
     }
 }
 
-/// Lays a placard out with its top centre at the origin, for one that stands
-/// where it is put rather than on a mote.
+/// Lays a placard out standing on the origin by its bottom centre, for one
+/// that stands where it is put rather than on a mote.
+///
+/// Laid out as a mote's is and then scaled as a whole by
+/// [`Tuning::stand_scale`], so the wrapping and the proportions are the
+/// same and only the reading distance differs.
 #[must_use]
 pub fn standing(placard: &Placard, tuning: &Tuning) -> PlacardView {
-    let (size, lines) = lay_out(placard, tuning);
+    let (size, mut lines) = lay_out(placard, tuning);
+    let scale = tuning.stand_scale;
+    for line in &mut lines {
+        line.offset *= scale;
+        line.size *= scale;
+    }
+    let size = size * scale;
     PlacardView {
-        position: Vec3::ZERO,
+        position: Vec3::new(0.0, size.y, 0.0),
         size,
         lines,
+        accent: None,
+        unit: scale,
     }
 }
 
@@ -252,6 +333,28 @@ fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, M
     let mut lines = ArrayVec::new();
     let inner = tuning.placard_pad.mul_add(-2.0, tuning.placard_width);
     let mut y = -tuning.placard_pad;
+
+    if let Some(kicker) = placard
+        .kicker
+        .as_deref()
+        .filter(|kicker| !kicker.is_empty())
+    {
+        let mut wrapped = ArrayVec::new();
+        wrap(
+            kicker,
+            budget(inner, tuning.placard_kicker, tuning),
+            &mut wrapped,
+        );
+        for text in wrapped {
+            y -= tuning.placard_kicker;
+            let _ = lines.try_push(PlacardLine {
+                text,
+                offset: Vec2::new(-inner / 2.0, y),
+                size: tuning.placard_kicker,
+                emphasis: Emphasis::Kicker,
+            });
+        }
+    }
 
     if !placard.title.is_empty() {
         let mut wrapped = ArrayVec::new();
@@ -279,7 +382,7 @@ fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, M
     for paragraph in &placard.body {
         let mut wrapped = ArrayVec::new();
         wrap(
-            paragraph,
+            &paragraph.text,
             budget(inner, tuning.placard_row, tuning),
             &mut wrapped,
         );
@@ -289,7 +392,11 @@ fn lay_out(placard: &Placard, tuning: &Tuning) -> (Vec2, ArrayVec<PlacardLine, M
                 text,
                 offset: Vec2::new(-inner / 2.0, y),
                 size: tuning.placard_row,
-                emphasis: Emphasis::Body,
+                emphasis: match paragraph.tone {
+                    Tone::Body => Emphasis::Body,
+                    Tone::Muted => Emphasis::Muted,
+                    Tone::Warning => Emphasis::Warning,
+                },
             });
         }
     }
@@ -380,37 +487,143 @@ mod tests {
         );
     }
 
-    #[test]
-    fn a_standing_placard_hangs_from_the_origin_and_lays_out_like_a_mote_s() {
-        let placard = Placard::describing(&group());
-        let standing = standing(&placard, &tuning());
-        let on_mote = view_of(&placard);
+    fn near(a: f32, b: f32) -> bool {
+        (a - b).abs() < 1.0e-5
+    }
 
-        assert_eq!(standing.position, Vec3::ZERO);
-        assert_eq!(standing.size, on_mote.size);
-        assert_eq!(standing.lines, on_mote.lines);
+    #[test]
+    fn a_standing_placard_stands_on_the_origin_and_lays_out_like_a_mote_s_but_larger() {
+        let tuning = tuning();
+        let placard = Placard::describing(&group());
+        let standing = standing(&placard, &tuning);
+        let on_mote = view_of(&placard);
+        let scale = tuning.stand_scale;
+
+        assert_eq!(standing.position, Vec3::new(0.0, standing.size.y, 0.0));
+        assert!(near(standing.size.x, on_mote.size.x * scale));
+        assert!(near(standing.size.y, on_mote.size.y * scale));
+        assert_eq!(standing.lines.len(), on_mote.lines.len());
+        for (large, small) in standing.lines.iter().zip(&on_mote.lines) {
+            assert_eq!(large.text, small.text, "wrapped the same");
+            assert_eq!(large.emphasis, small.emphasis);
+            assert!(near(large.size, small.size * scale));
+            assert!(near(large.offset.x, small.offset.x * scale));
+            assert!(near(large.offset.y, small.offset.y * scale));
+        }
+        assert!(near(standing.unit, scale), "the pane's shape scales too");
+        assert!(near(on_mote.unit, 1.0));
+    }
+
+    #[test]
+    fn a_standing_title_reads_at_the_size_the_plan_asks_for() {
+        let title = standing(&Placard::new("t"), &tuning()).lines[0].size;
+        assert!((0.05..0.06).contains(&title), "{title} m");
+    }
+
+    #[test]
+    fn a_standing_placard_starts_with_no_accent() {
+        assert_eq!(standing(&Placard::new("t"), &tuning()).accent, None);
+    }
+
+    #[test]
+    fn the_kicker_is_a_smaller_muted_line_above_the_title() {
+        let view = view_of(&Placard::new("Title").kicker("A3F9").line("body"));
+        assert_eq!(texts(&view), vec!["A3F9", "Title", "body"]);
+        assert_eq!(view.lines[0].emphasis, Emphasis::Kicker);
+        assert!(view.lines[0].size < view.lines[2].size);
+        assert!(view.lines[0].size < view.lines[1].size);
+    }
+
+    #[test]
+    fn a_kicker_earns_panel_height_and_none_costs_nothing() {
+        let bare = view_of(&Placard::new("Title"));
+        let kicked = view_of(&Placard::new("Title").kicker("A3F9"));
+        assert!(kicked.size.y > bare.size.y);
+        assert_eq!(bare, view_of(&Placard::new("Title")));
+        assert_eq!(
+            view_of(&Placard::new("Title").kicker("")).size,
+            bare.size,
+            "an empty kicker is no line"
+        );
+    }
+
+    #[test]
+    fn each_line_is_set_in_its_own_tone() {
+        let view = view_of(
+            &Placard::new("Title")
+                .line("plain")
+                .toned("quiet", Tone::Muted)
+                .toned("careful", Tone::Warning),
+        );
+        let emphasis = view
+            .lines
+            .iter()
+            .map(|line| line.emphasis)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            emphasis,
+            vec![
+                Emphasis::Title,
+                Emphasis::Body,
+                Emphasis::Muted,
+                Emphasis::Warning
+            ]
+        );
+    }
+
+    #[test]
+    fn a_kicker_and_a_full_body_still_fit_the_line_budget() {
+        let placard = Placard::from_script(
+            "t",
+            Some("k"),
+            &vec![(String::from("x"), Tone::Body); MAX_PARAGRAPHS],
+        )
+        .unwrap();
+        assert_eq!(view_of(&placard).lines.len(), MAX_LINES);
     }
 
     #[test]
     fn script_text_at_the_limits_is_taken() {
-        let lines = vec!["x".repeat(MAX_PARAGRAPH_BYTES); MAX_PARAGRAPHS];
-        let placard = Placard::from_script(&"t".repeat(MAX_TITLE_BYTES), &lines).unwrap();
+        let lines = vec![("x".repeat(MAX_PARAGRAPH_BYTES), Tone::Muted); MAX_PARAGRAPHS];
+        let placard = Placard::from_script(
+            &"t".repeat(MAX_TITLE_BYTES),
+            Some(&"k".repeat(MAX_KICKER_BYTES)),
+            &lines,
+        )
+        .unwrap();
         assert_eq!(placard.body.len(), MAX_PARAGRAPHS);
+        assert_eq!(placard.body[0].tone, Tone::Muted);
+        assert_eq!(
+            placard.kicker.map(|kicker| kicker.len()),
+            Some(MAX_KICKER_BYTES)
+        );
     }
 
     #[test]
     fn script_text_over_a_limit_is_refused() {
-        let one = vec![String::from("x")];
+        let one = vec![(String::from("x"), Tone::Body)];
         assert_eq!(
-            Placard::from_script(&"t".repeat(MAX_TITLE_BYTES + 1), &one),
+            Placard::from_script(&"t".repeat(MAX_TITLE_BYTES + 1), None, &one),
             Err(Refused::Title(MAX_TITLE_BYTES + 1))
         );
         assert_eq!(
-            Placard::from_script("t", &vec![String::new(); MAX_PARAGRAPHS + 1]),
+            Placard::from_script("t", Some(&"k".repeat(MAX_KICKER_BYTES + 1)), &one),
+            Err(Refused::Kicker(MAX_KICKER_BYTES + 1))
+        );
+        assert_eq!(
+            Placard::from_script(
+                "t",
+                None,
+                &vec![(String::new(), Tone::Body); MAX_PARAGRAPHS + 1]
+            ),
             Err(Refused::Paragraphs(MAX_PARAGRAPHS + 1))
         );
         assert_eq!(
-            Placard::from_script("t", &["x".repeat(MAX_PARAGRAPH_BYTES + 1)]),
+            Placard::from_script(
+                "t",
+                None,
+                &[("x".repeat(MAX_PARAGRAPH_BYTES + 1), Tone::Body)]
+            ),
             Err(Refused::Paragraph(MAX_PARAGRAPH_BYTES + 1))
         );
     }

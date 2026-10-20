@@ -6,6 +6,7 @@ use std::cell::{
 };
 
 use wired_guest::math::{
+    Color,
     Quat,
     Transform,
     Vec3,
@@ -55,6 +56,8 @@ pub struct PlacardPrims {
     view:     RefCell<Option<PlacardView>>,
     /// Last view and progress drawn; an identical pair costs no write at all.
     last:     Shadow<(PlacardView, f32)>,
+    /// Last accent and unit written to the pane's graph inputs.
+    look:     Shadow<(Option<Color>, f32)>,
 }
 
 impl PlacardPrims {
@@ -87,6 +90,7 @@ impl PlacardPrims {
             progress: Cell::new(0.0),
             view: RefCell::new(None),
             last: Shadow::new(),
+            look: Shadow::new(),
         })
     }
 
@@ -118,6 +122,11 @@ impl PlacardPrims {
         }
     }
 
+    /// How far the pop has run, 0 gone and 1 settled.
+    pub const fn progress(&self) -> f32 {
+        self.progress.get()
+    }
+
     fn hide(&self, doc: &Document) -> anyhow::Result<()> {
         self.last.clear();
         if self.shown.replace(false) {
@@ -139,6 +148,10 @@ impl PlacardPrims {
             return Ok(());
         };
         self.shown.set(true);
+
+        if let Some((accent, unit)) = self.look.diff((view.accent, view.unit)) {
+            graphs::set_pane_look(doc, self.panel, accent, unit)?;
+        }
 
         // The root sits at the pane's top centre and the pane hangs down from
         // it, so scaling the root alone would grow the placard from that edge.
@@ -206,12 +219,13 @@ impl PlacardPrims {
     }
 }
 
-/// Body type is the same ink as the title: on a frosted pane a softened grey
-/// sinks into whatever the glass shows through, and the title already
-/// outweighs it by size.
+/// Body type is the same ink as the title: the title already outweighs it by
+/// size. Only a line that asks to be quiet is set lighter, and the palette
+/// keeps that ink readable on the lifted pane.
 const fn tint(palette: &Palette, emphasis: Emphasis) -> wired_guest::math::Color {
     match emphasis {
         Emphasis::Title | Emphasis::Body => palette.ink,
+        Emphasis::Kicker | Emphasis::Muted => palette.muted_ink,
         Emphasis::Warning => palette.warning,
     }
 }

@@ -24,6 +24,7 @@ mod pointer;
 mod render;
 mod reveal;
 mod surface;
+mod tether;
 mod tree;
 mod tuning;
 mod view;

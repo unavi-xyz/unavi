@@ -1,4 +1,4 @@
-//! What a portal's placard says.
+//! What a portal's tag says.
 
 use unavi_lens::DocumentId;
 use wired_guest::color::document_seed;
@@ -8,8 +8,13 @@ use crate::wired::perception::perception::TrustRung;
 /// Characters of a title kept before it is cut with an ellipsis.
 const TITLE_MAX: usize = 48;
 
-/// Hex digits of the destination shown when nothing else names it.
-const HEAD_LEN: usize = 8;
+/// Hex digits of the destination's id the kicker shows.
+const ID_DIGITS: usize = 12;
+/// Hex digits between the kicker's separators.
+const ID_GROUP: usize = 4;
+
+/// The title of a destination nothing names.
+const UNNAMED: &str = "Unnamed space";
 
 /// Everything known about the far side of a portal.
 pub struct Facts<'a> {
@@ -26,49 +31,58 @@ pub struct Facts<'a> {
     pub author:       Option<TrustRung>,
 }
 
-/// A placard's text.
+/// A tag's text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Content {
-    pub title: String,
-    pub lines: Vec<String>,
+    /// The head of the destination's id, over the title.
+    pub kicker:  String,
+    pub title:   String,
+    /// Who is there and whose it is, in one line, once either is known.
+    pub facts:   Option<String>,
+    /// Whether there is no way back, said as a warning.
+    pub one_way: bool,
 }
 
-/// Names the portal's destination, then says who is there, whether it comes
-/// back, and whose it is.
+/// Names the portal's destination, then says who is there, whose it is and
+/// whether it comes back.
 #[must_use]
 pub fn describe(facts: &Facts) -> Content {
-    let mut lines = Vec::new();
-    if let Some(occupants) = facts.occupants {
-        lines.push(people(occupants));
-    }
-    if !facts.linked {
-        lines.push("One way".to_owned());
-    }
-    if let Some(rung) = facts.author {
-        lines.push(format!("{} space", rung_word(rung)));
-    }
+    let known: Vec<String> = [
+        facts.occupants.map(here),
+        facts.author.map(|rung| rung_word(rung).to_owned()),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
     Content {
-        title: title(facts),
-        lines,
+        kicker:  kicker(facts.destination),
+        title:   title(facts),
+        facts:   (!known.is_empty()).then(|| known.join(" · ")),
+        one_way: !facts.linked,
     }
 }
 
-/// The listing title, else the space's own name, else the head of its id.
+/// The listing title, else the space's own name.
 fn title(facts: &Facts) -> String {
     [facts.listed_title, facts.meta_name]
         .into_iter()
         .flatten()
         .map(str::trim)
         .find(|title| !title.is_empty())
-        .map_or_else(|| head(facts.destination), clip)
+        .map_or_else(|| UNNAMED.to_owned(), clip)
 }
 
-fn head(destination: DocumentId) -> String {
-    document_seed(destination)
-        .to_hex()
-        .chars()
-        .take(HEAD_LEN)
-        .collect()
+/// The id's head in upper-case groups, `A3F9·0C21·7BE4`.
+fn kicker(destination: DocumentId) -> String {
+    let hex = document_seed(destination).to_hex();
+    let mut kicker = String::with_capacity(ID_DIGITS + ID_DIGITS / ID_GROUP * 2);
+    for (index, digit) in hex.chars().take(ID_DIGITS).enumerate() {
+        if index > 0 && index % ID_GROUP == 0 {
+            kicker.push('·');
+        }
+        kicker.push(digit.to_ascii_uppercase());
+    }
+    kicker
 }
 
 fn clip(title: &str) -> String {
@@ -80,11 +94,10 @@ fn clip(title: &str) -> String {
     clipped
 }
 
-fn people(count: u32) -> String {
+fn here(count: u32) -> String {
     match count {
         0 => "Empty".to_owned(),
-        1 => "1 person".to_owned(),
-        count => format!("{count} people"),
+        count => format!("{count} here"),
     }
 }
 
@@ -94,7 +107,7 @@ const fn rung_word(rung: TrustRung) -> &'static str {
         TrustRung::Anonymous => "Anonymous",
         TrustRung::Guest => "Guest",
         TrustRung::Trusted => "Trusted",
-        TrustRung::Myself => "Your own",
+        TrustRung::Myself => "Yours",
     }
 }
 
@@ -136,10 +149,15 @@ mod tests {
     }
 
     #[test]
-    fn with_no_name_at_all_the_title_is_the_head_of_the_id() {
-        let expected: String = document_seed(DEST).to_hex().chars().take(8).collect();
-        assert_eq!(describe(&facts()).title, expected);
-        assert_eq!(expected.len(), 8);
+    fn the_kicker_is_the_head_of_the_id_in_groups() {
+        let hex: String = document_seed(DEST)
+            .to_hex()
+            .chars()
+            .take(ID_DIGITS)
+            .collect::<String>()
+            .to_ascii_uppercase();
+        let expected = format!("{}·{}·{}", &hex[0..4], &hex[4..8], &hex[8..12]);
+        assert_eq!(describe(&facts()).kicker, expected);
     }
 
     #[test]
@@ -154,19 +172,29 @@ mod tests {
     }
 
     #[test]
-    fn occupancy_reads_as_a_count() {
-        for (count, line) in [(0, "Empty"), (1, "1 person"), (5, "5 people")] {
-            let content = describe(&Facts {
-                occupants: Some(count),
-                ..facts()
-            });
-            assert_eq!(content.lines, [line]);
-        }
+    fn what_is_known_reads_as_one_line() {
+        let content = describe(&Facts {
+            occupants: Some(3),
+            author: Some(TrustRung::Trusted),
+            ..facts()
+        });
+        assert_eq!(content.facts.as_deref(), Some("3 here · Trusted"));
     }
 
     #[test]
-    fn unknown_occupancy_says_nothing() {
-        assert!(describe(&facts()).lines.is_empty());
+    fn an_empty_space_says_so() {
+        let content = describe(&Facts {
+            occupants: Some(0),
+            ..facts()
+        });
+        assert_eq!(content.facts.as_deref(), Some("Empty"));
+    }
+
+    #[test]
+    fn nothing_known_says_nothing() {
+        let content = describe(&facts());
+        assert_eq!(content.facts, None);
+        assert!(!content.one_way);
     }
 
     #[test]
@@ -175,26 +203,6 @@ mod tests {
             linked: false,
             ..facts()
         });
-        assert_eq!(content.lines, ["One way"]);
-    }
-
-    #[test]
-    fn the_author_rung_is_named() {
-        let content = describe(&Facts {
-            author: Some(TrustRung::Guest),
-            ..facts()
-        });
-        assert_eq!(content.lines, ["Guest space"]);
-    }
-
-    #[test]
-    fn lines_keep_their_order() {
-        let content = describe(&Facts {
-            occupants: Some(2),
-            linked: false,
-            author: Some(TrustRung::Trusted),
-            ..facts()
-        });
-        assert_eq!(content.lines, ["2 people", "One way", "Trusted space"]);
+        assert!(content.one_way);
     }
 }

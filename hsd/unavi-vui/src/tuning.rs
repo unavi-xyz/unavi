@@ -37,6 +37,8 @@ pub struct Tuning {
     /// How far in front of its mote the placard stands.
     pub placard_lift:     f32,
     pub placard_title:    f32,
+    /// Em height of the small line above a placard's title.
+    pub placard_kicker:   f32,
     pub placard_row:      f32,
     /// Baseline-to-baseline spacing, as a multiple of the row size.
     pub placard_line:     f32,
@@ -44,6 +46,13 @@ pub struct Tuning {
     pub placard_width:    f32,
     /// Average glyph width, in ems, that placard wrapping assumes.
     pub advance_estimate: f32,
+    /// How many times larger than a mote's a standing placard is laid out,
+    /// since it is read from metres away rather than at arm's length.
+    pub stand_scale:      f32,
+    /// Thickness of the bar tethering a standing placard to what it labels.
+    pub tether_width:     f32,
+    /// Radius of the dot a tether ends in.
+    pub tether_dot:       f32,
 
     /// Seconds a notice stays on its mote.
     pub notice_duration: f32,
@@ -148,11 +157,15 @@ impl Tuning {
         placard_gap:      0.018,
         placard_lift:     0.012,
         placard_title:    0.016,
+        placard_kicker:   0.0095,
         placard_row:      0.0125,
         placard_line:     1.5,
         placard_pad:      0.013,
         placard_width:    0.24,
         advance_estimate: 0.62,
+        stand_scale:      3.5,
+        tether_width:     0.004,
+        tether_dot:       0.0125,
 
         notice_duration: 3.0,
 
@@ -252,5 +265,6 @@ mod tests {
         let tuning = Tuning::DEFAULT;
         assert!(tuning.label_size < tuning.placard_title);
         assert!(tuning.placard_row < tuning.placard_title);
+        assert!(tuning.placard_kicker < tuning.placard_row);
     }
 }

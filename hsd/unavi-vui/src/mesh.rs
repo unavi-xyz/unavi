@@ -140,6 +140,14 @@ pub fn toggle_bar() -> MeshData {
     prism(&outline, &[[0, 1, 2], [0, 2, 3]], HALF_DEPTH)
 }
 
+/// A unit box centred on the origin: a tether's bar, scaled to its width and
+/// its length along Z.
+#[must_use]
+pub fn bar() -> MeshData {
+    let outline = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]];
+    prism(&outline, &[[0, 1, 2], [0, 2, 3]], 0.5)
+}
+
 /// Where a cast's resting ring stands, as fractions of its body's radius: just
 /// outside the shell, and inside the ring a cast site draws once it fills.
 pub const CAST_RING_INNER: f32 = 1.055;

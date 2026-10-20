@@ -84,6 +84,20 @@ pub const fn scaled(color: Color, factor: f32) -> Color {
     }
 }
 
+/// A tether's bar and dot: solid, and burning past their own colour so they
+/// read as lit.
+pub const fn beam(color: Color, glow: f32) -> Material {
+    Material {
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Opaque),
+        base_color:   Some(with_alpha(color, 1.0)),
+        double_sided: Some(false),
+        emissive:     Some(scaled(color, glow)),
+        metallic:     None,
+        roughness:    None,
+    }
+}
+
 /// A container pip is see-through, like the mote it stands for.
 pub const fn pip(style: Style, nested: bool) -> Material {
     Material {

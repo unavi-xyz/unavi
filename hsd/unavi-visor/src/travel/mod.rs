@@ -1,16 +1,20 @@
-//! The Travel lens: a placard over each portal the viewer is looking at.
+//! The Travel lens: a tag beside each portal the viewer is looking at, tied
+//! to the portal by a tether in its rim colour.
 //!
-//! Three placards are made once and handed from portal to portal as attention
+//! Three tags are made once and handed from portal to portal as attention
 //! moves, so looking about never builds or frees a surface.
 
 mod attention;
 mod content;
+mod frame;
 mod listing;
 mod slots;
 
 use unavi_lens::DocumentId;
 use wired_guest::math::{
+    Color,
     Transform,
+    Vec2,
     Vec3,
 };
 
@@ -20,10 +24,19 @@ use self::{
         Content,
         Facts,
     },
+    frame::{
+        Frame,
+        Placement,
+        Side,
+    },
     listing::Listings,
 };
 use crate::{
-    unavi::vui::api::Placard,
+    unavi::vui::api::{
+        Placard,
+        PlacardLine,
+        Tone,
+    },
     wired::{
         peer::authority,
         perception::perception::{
@@ -39,22 +52,37 @@ use crate::{
 /// Metres around the viewer searched for portals.
 const RADIUS: f32 = 16.0;
 
-/// Metres above a portal's top edge its placard stands.
-const LIFT: f32 = 0.08;
-
 /// Fixed ticks between rereads of what a placard says, about half a second.
 const FACTS_TICKS: u32 = 32;
 
+/// The size a tag is taken to be before it has text, so attention can measure
+/// to where one would stand.
+const NOMINAL: Vec2 = Vec2::new(0.84, 0.3);
+
 /// A portal, by its prim.
 type Key = (DocumentId, (u64, u64));
+
+/// The lines under a tag's title: its facts, muted, and a warning when there
+/// is no way back.
+fn tag_lines(text: &Content) -> Vec<PlacardLine> {
+    let facts = text.facts.iter().map(|facts| PlacardLine {
+        text: facts.clone(),
+        tone: Tone::Muted,
+    });
+    let one_way = text.one_way.then(|| PlacardLine {
+        text: String::from("One way"),
+        tone: Tone::Warning,
+    });
+    facts.chain(one_way).collect()
+}
 
 /// A portal worth a placard.
 struct Found {
     key:         Key,
     destination: DocumentId,
     linked:      bool,
-    anchor:      Vec3,
-    centre:      Vec3,
+    frame:       Frame,
+    hue:         Color,
 }
 
 struct Slot {
@@ -66,7 +94,13 @@ struct Slot {
     /// since the facts were last reread, so a refused text is not retried and
     /// logged every tick.
     tried:   bool,
-    at:      Option<Vec3>,
+    /// Where it stands and what its tether reaches for, as last sent.
+    at:      Option<Placement>,
+    /// Which post of its portal it stands by, once it has stood by one.
+    side:    Option<Side>,
+    /// Its laid-out size, read back once its text is set.
+    size:    Vec2,
+    accent:  Option<Color>,
     shown:   bool,
 }
 
@@ -75,6 +109,25 @@ impl Slot {
         self.key = key;
         self.text = None;
         self.tried = false;
+        self.side = None;
+        self.at = None;
+        self.size = NOMINAL;
+    }
+
+    /// Stands it by `portal` as seen from `eye`, sending only what moved.
+    fn stand(&mut self, portal: &Found, eye: Vec3) {
+        let side = portal.frame.side(eye, self.side);
+        self.side = Some(side);
+        let placed = portal.frame.place(eye, side, self.size);
+        if self.at != Some(placed) {
+            self.placard.set_position(placed.at);
+            self.placard.set_tether(placed.tether);
+            self.at = Some(placed);
+        }
+        if self.accent != Some(portal.hue) {
+            self.placard.set_accent(Some(portal.hue));
+            self.accent = Some(portal.hue);
+        }
     }
 
     fn hide(&mut self) {
@@ -104,6 +157,9 @@ impl Travel {
                     text:    None,
                     tried:   false,
                     at:      None,
+                    side:    None,
+                    size:    NOMINAL,
+                    accent:  None,
                     shown:   false,
                 })
             })
@@ -131,10 +187,17 @@ impl Travel {
         let attended = eye.map_or_else(Vec::new, |eye| {
             let candidates: Vec<_> = found
                 .iter()
-                .map(|portal| Candidate {
-                    key:    portal.key,
-                    centre: portal.centre,
-                    anchor: portal.anchor,
+                .map(|portal| {
+                    let held = self.slots.iter().find(|slot| slot.key == Some(portal.key));
+                    let size = held.map_or(NOMINAL, |slot| slot.size);
+                    let post = portal
+                        .frame
+                        .side(eye.translation, held.and_then(|slot| slot.side));
+                    Candidate {
+                        key:    portal.key,
+                        centre: portal.frame.centre(),
+                        anchor: portal.frame.place(eye.translation, post, size).middle(size),
+                    }
                 })
                 .collect();
             attention::attend(
@@ -160,6 +223,9 @@ impl Travel {
         } else {
             self.facts_in - 1
         };
+        let Some(eye) = eye else {
+            return;
+        };
         for index in 0..self.slots.len() {
             let Some(portal) = self.slots[index]
                 .key
@@ -168,20 +234,24 @@ impl Travel {
                 continue;
             };
             let slot = &mut self.slots[index];
-            if slot.at != Some(portal.anchor) {
-                slot.placard.set_position(portal.anchor);
-                slot.at = Some(portal.anchor);
-            }
             if reread || !slot.tried {
                 slot.tried = true;
                 let text = describe(&self.listings, portal);
                 if slot.text.as_ref() != Some(&text) {
-                    match slot.placard.set_text(&text.title, &text.lines) {
-                        Ok(()) => slot.text = Some(text),
+                    let lines = tag_lines(&text);
+                    match slot
+                        .placard
+                        .set_text(&text.title, Some(&text.kicker), &lines)
+                    {
+                        Ok(()) => {
+                            slot.text = Some(text);
+                            slot.size = slot.placard.size();
+                        }
                         Err(err) => eprintln!("visor: placard text: {err:?}"),
                     }
                 }
             }
+            slot.stand(portal, eye.translation);
             if slot.text.is_some() && !slot.shown {
                 slot.placard.set_shown(true);
                 slot.shown = true;
@@ -209,14 +279,12 @@ fn found(portal: &Portal) -> Option<Found> {
     if matches!(portal.state, PortalState::Closed) {
         return None;
     }
-    let at = &portal.transform;
-    let top = Vec3::new(0.0, portal.height / 2.0, 0.0);
     Some(Found {
         key: (portal.prim.document, portal.prim.prim),
         destination,
         linked: portal.linked,
-        anchor: at.translation + at.rotation * (at.scale * top) + Vec3::Y * LIFT,
-        centre: at.translation,
+        frame: Frame::new(&portal.transform, portal.width, portal.height),
+        hue: portal.hue,
     })
 }
 

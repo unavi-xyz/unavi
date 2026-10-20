@@ -391,6 +391,8 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:perception/perception": {
       portals: rt.perceptionPortals.bind(rt),
+      agents: rt.perceptionAgents.bind(rt),
+      profile: rt.perceptionProfile.bind(rt),
       meta: rt.perceptionMeta.bind(rt),
       rung: rt.perceptionRung.bind(rt),
     },

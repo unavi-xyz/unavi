@@ -41,6 +41,35 @@ interface perception {
   /// user's camera, nearest first. Empty before the camera exists.
   portals: func(radius: f32) -> result<list<portal>, error>;
 
+  /// Another user's agent in a loaded space.
+  record agent {
+    user: did,
+    /// Where their body stands this frame, in the calling script's own
+    /// document frame.
+    body: transform,
+    /// Their head this frame, in the same frame. `none` until their avatar has
+    /// loaded.
+    head: option<transform>,
+  }
+
+  /// Up to 64 agents of other users whose body lies within `radius` meters of
+  /// the local user's camera, nearest first. An agent whose user has proven
+  /// no DID, or whom the local user blocks, is left out. Empty before the
+  /// camera exists.
+  agents: func(radius: f32) -> result<list<agent>, error>;
+
+  /// What a user declares about themselves. Self-asserted.
+  record user-profile {
+    name:        option<string>,
+    description: option<string>,
+  }
+
+  /// The profile of `user`, `none` until it has arrived on this peer and for
+  /// a user the local user blocks. Profiles arrive only for users whose agent
+  /// is in a loaded space.
+  /// `invalid-argument` for a string that is not a DID.
+  profile: func(user: did) -> result<option<user-profile>, error>;
+
   /// What a document declares about itself. Self-asserted: anyone who can
   /// write the document can say anything here.
   record document-meta {

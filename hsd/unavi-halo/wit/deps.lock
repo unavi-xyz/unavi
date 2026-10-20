@@ -45,8 +45,8 @@ sha512 = "c5753497b8c7a64ae68b60264078b57b905b6907e456c6a587f5e0fc63c304d116597d
 
 [wired-perception]
 path = "../../../protocol/wit/wired-perception"
-sha256 = "7c453d2549e246767507bf80c830cbca61317f5c25feeb61d98b38fa3b8858b2"
-sha512 = "a8f8c81c6acdd81e87fd59ad27556d0d08caeaf216516b88ca179a4caa139cc3f004733e9e79b6d8cbb2e75a943f1dbb02f0761820e0df60352ae4510780e106"
+sha256 = "5c477755b4b9770d9d1b492d0bd6b30f65f12609e0ea9fc32784be03d33e1527"
+sha512 = "5dd3fd761a63693e408eb58c9d91a57ed9c8edc183caffadc7847a101aa2ca41eefec6aa7b12c061eeb38db5a3cb4efbd47684ffaef93284e57811eb5a5e06d9"
 
 [wired-physics]
 path = "../../../protocol/wit/wired-physics"

@@ -28,8 +28,7 @@ use unavi_portal::{
     view::hue::PortalHue,
 };
 
-/// The most portals one query answers.
-pub const MAX_NEAR: usize = 64;
+use crate::host::shared_state::near::nearest;
 
 /// A portal as the engine placed it this frame.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -51,23 +50,14 @@ pub struct PortalSnapshot {
 pub struct Portals(Arc<RwLock<Vec<PortalSnapshot>>>);
 
 impl Portals {
-    /// Up to [`MAX_NEAR`] portals whose centre lies within `radius` of
-    /// `centre` in the engine world, nearest first.
+    /// Up to [`super::near::MAX_NEAR`] portals whose centre lies within
+    /// `radius` of `centre` in the engine world, nearest first.
     #[must_use]
     pub fn near(&self, centre: Vec3, radius: f32) -> Vec<PortalSnapshot> {
-        nearest(&self.0.read(), centre, radius)
+        nearest(&self.0.read(), centre, radius, |portal| {
+            portal.world.translation()
+        })
     }
-}
-
-fn nearest(portals: &[PortalSnapshot], centre: Vec3, radius: f32) -> Vec<PortalSnapshot> {
-    let mut found: Vec<(f32, PortalSnapshot)> = portals
-        .iter()
-        .map(|portal| (portal.world.translation().distance(centre), *portal))
-        .filter(|(distance, _)| *distance <= radius)
-        .collect();
-    found.sort_by(|a, b| a.0.total_cmp(&b.0));
-    found.truncate(MAX_NEAR);
-    found.into_iter().map(|(_, portal)| portal).collect()
 }
 
 /// Copies every portal out of the world.
@@ -92,25 +82,27 @@ pub fn snapshot_portals(
 ) {
     let mut found: Vec<PortalSnapshot> = portals
         .iter()
-        .filter_map(|(prim, of, world, size, state, target, link, resolved, hue)| {
-            Some(PortalSnapshot {
-                doc:         docs.get(of.0).ok()?.0,
-                prim:        prim.0,
-                world:       *world,
-                width:       size.width,
-                height:      size.height,
-                destination: target.map(|target| target.0),
-                // A portal opening onto another portal is half of a pair;
-                // until the destination resolves, a stated link is the best
-                // answer.
-                linked:      resolved.map_or_else(
-                    || link.is_some(),
-                    |destination| partners.contains(destination.0),
-                ),
-                state:       *state,
-                hue:         hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
-            })
-        })
+        .filter_map(
+            |(prim, of, world, size, state, target, link, resolved, hue)| {
+                Some(PortalSnapshot {
+                    doc:         docs.get(of.0).ok()?.0,
+                    prim:        prim.0,
+                    world:       *world,
+                    width:       size.width,
+                    height:      size.height,
+                    destination: target.map(|target| target.0),
+                    // A portal opening onto another portal is half of a pair;
+                    // until the destination resolves, a stated link is the best
+                    // answer.
+                    linked:      resolved.map_or_else(
+                        || link.is_some(),
+                        |destination| partners.contains(destination.0),
+                    ),
+                    state:       *state,
+                    hue:         hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
+                })
+            },
+        )
         .collect();
     // A stable order, so an unchanged scene compares equal and writes
     // nothing.
@@ -125,55 +117,6 @@ mod tests {
     use hsd::attributes::portal::LinkId;
 
     use super::*;
-
-    fn portal_at(x: f32) -> PortalSnapshot {
-        PortalSnapshot {
-            doc:         DocId([0; 32]),
-            prim:        PrimId([x as u8; 16]),
-            world:       GlobalTransform::from_xyz(x, 0.0, 0.0),
-            width:       1.0,
-            height:      2.0,
-            destination: None,
-            linked:      false,
-            state:       PortalState::Closed,
-            hue:         PortalHue::NEUTRAL,
-        }
-    }
-
-    fn xs(portals: &[PortalSnapshot]) -> Vec<f32> {
-        portals
-            .iter()
-            .map(|portal| portal.world.translation().x)
-            .collect()
-    }
-
-    #[test]
-    fn near_keeps_what_is_in_range_nearest_first() {
-        let all = [
-            portal_at(5.0),
-            portal_at(1.0),
-            portal_at(20.0),
-            portal_at(3.0),
-        ];
-        let found = nearest(&all, Vec3::ZERO, 5.0);
-        assert_eq!(xs(&found), [1.0, 3.0, 5.0], "the edge is in range");
-    }
-
-    #[test]
-    fn near_is_measured_from_the_centre_given() {
-        let all = [portal_at(5.0), portal_at(1.0)];
-        let found = nearest(&all, Vec3::new(6.0, 0.0, 0.0), 2.0);
-        assert_eq!(xs(&found), [5.0]);
-    }
-
-    #[test]
-    fn near_stops_at_the_cap_keeping_the_nearest() {
-        let all: Vec<_> = (0..100).rev().map(|i| portal_at(i as f32)).collect();
-        let found = nearest(&all, Vec3::ZERO, 1000.0);
-        assert_eq!(found.len(), MAX_NEAR);
-        assert_eq!(found[0].world.translation().x, 0.0);
-        assert_eq!(found[MAX_NEAR - 1].world.translation().x, 63.0);
-    }
 
     #[test]
     fn a_portal_in_a_loaded_document_is_snapshotted() {

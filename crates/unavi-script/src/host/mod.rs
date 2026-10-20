@@ -27,7 +27,10 @@ use unavi_policy::{
     permissions::HostApi,
     quota::Quota,
 };
-use unavi_space::authority::SpaceView;
+use unavi_space::{
+    authority::SpaceView,
+    profiles::Profiles,
+};
 
 use crate::{
     ScriptSystems,
@@ -46,6 +49,7 @@ use crate::{
             link_intents::LinkIntents,
             pointers::Pointers,
             portals::Portals,
+            remote_agents::RemoteAgents,
             transforms::TransformSnapshots,
         },
         storage::{
@@ -78,6 +82,8 @@ pub struct SharedState {
     pub current_space:   CurrentSpace,
     pub pointers:        Pointers,
     pub portals:         Portals,
+    pub remote_agents:   RemoteAgents,
+    pub profiles:        Profiles,
     pub transforms:      TransformSnapshots,
     pub event_bus:       EventBus,
     pub input_listeners: InputListeners,
@@ -91,6 +97,8 @@ pub struct SharedResources<'w> {
     current_space:   Res<'w, CurrentSpace>,
     pointers:        Res<'w, Pointers>,
     portals:         Res<'w, Portals>,
+    remote_agents:   Res<'w, RemoteAgents>,
+    profiles:        Res<'w, Profiles>,
     transforms:      Res<'w, TransformSnapshots>,
     event_bus:       Res<'w, EventBus>,
     input_listeners: Res<'w, InputListeners>,
@@ -105,6 +113,8 @@ impl SharedResources<'_> {
             current_space:   self.current_space.clone(),
             pointers:        self.pointers.clone(),
             portals:         self.portals.clone(),
+            remote_agents:   self.remote_agents.clone(),
+            profiles:        self.profiles.clone(),
             transforms:      self.transforms.clone(),
             event_bus:       self.event_bus.clone(),
             input_listeners: self.input_listeners.clone(),
@@ -301,6 +311,8 @@ impl Plugin for HostPlugin {
             .init_resource::<LinkIntents>()
             .init_resource::<Pointers>()
             .init_resource::<Portals>()
+            .init_resource::<Profiles>()
+            .init_resource::<RemoteAgents>()
             .init_resource::<TransformSnapshots>()
             .add_observer(input::bridge::bridge_press)
             .add_observer(input::bridge::bridge_enter)
@@ -334,6 +346,7 @@ impl Plugin for HostPlugin {
                     shared_state::transforms::snapshot_transforms,
                     shared_state::transforms::snapshot_doc_roots,
                     shared_state::portals::snapshot_portals,
+                    shared_state::remote_agents::snapshot_remote_agents,
                 )
                     .chain()
                     .in_set(ScriptSystems::Snapshot),
@@ -344,6 +357,7 @@ impl Plugin for HostPlugin {
                     shared_state::transforms::snapshot_transforms,
                     shared_state::transforms::snapshot_doc_roots,
                     shared_state::portals::snapshot_portals,
+                    shared_state::remote_agents::snapshot_remote_agents,
                 )
                     .after(bevy::transform::TransformSystems::Propagate),
             )

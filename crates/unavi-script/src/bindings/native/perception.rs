@@ -9,11 +9,13 @@ use super::{
     generated::wired::{
         core::ids::DocumentId,
         perception::perception::{
+            Agent,
             DocumentMeta,
             Host,
             Portal,
             PortalState as WitPortalState,
             TrustRung,
+            UserProfile,
         },
     },
 };
@@ -55,6 +57,26 @@ impl Host for HostCtx {
                 hue:         convert::wit_color(portal.hue),
             })
             .collect())
+    }
+
+    fn agents(&mut self, radius: f32) -> Result<Vec<Agent>, ScriptError> {
+        Ok(perception::agents(&self.host, radius)?
+            .into_iter()
+            .map(|agent| Agent {
+                user: agent.user.to_string(),
+                body: convert::wit_transform(agent.body),
+                head: agent.head.map(convert::wit_transform),
+            })
+            .collect())
+    }
+
+    fn profile(&mut self, user: String) -> Result<Option<UserProfile>, ScriptError> {
+        Ok(
+            perception::profile(&self.host, &user)?.map(|profile| UserProfile {
+                name:        profile.name.map(String::from),
+                description: profile.description.map(String::from),
+            }),
+        )
     }
 
     async fn meta(&mut self, document: DocumentId) -> Result<Option<DocumentMeta>, ScriptError> {

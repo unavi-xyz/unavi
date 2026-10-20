@@ -16,6 +16,7 @@ use super::{
 };
 use crate::host::perception::{
     self,
+    Agent,
     Portal,
 };
 
@@ -63,8 +64,21 @@ fn wit_portal(portal: &Portal) -> JsValue {
     ])
 }
 
-fn optional_string(value: Option<String>) -> JsValue {
-    value.map_or(JsValue::UNDEFINED, JsValue::from)
+fn wit_agent(agent: &Agent) -> JsValue {
+    record(&[
+        ("user", agent.user.to_string().into()),
+        ("body", convert::wit_transform(agent.body)),
+        (
+            "head",
+            agent
+                .head
+                .map_or(JsValue::UNDEFINED, convert::wit_transform),
+        ),
+    ])
+}
+
+fn optional_string(value: Option<impl Into<String>>) -> JsValue {
+    value.map_or(JsValue::UNDEFINED, |value| JsValue::from(value.into()))
 }
 
 #[wasm_bindgen]
@@ -73,6 +87,27 @@ impl Runtime {
     pub fn perception_portals(&self, radius: f32) -> Result<Vec<JsValue>, JsValue> {
         perception::portals(&self.host.borrow(), radius)
             .map(|portals| portals.iter().map(wit_portal).collect())
+            .map_err(convert::raise)
+    }
+
+    #[wasm_bindgen(js_name = "perceptionAgents")]
+    pub fn perception_agents(&self, radius: f32) -> Result<Vec<JsValue>, JsValue> {
+        perception::agents(&self.host.borrow(), radius)
+            .map(|agents| agents.iter().map(wit_agent).collect())
+            .map_err(convert::raise)
+    }
+
+    #[wasm_bindgen(js_name = "perceptionProfile")]
+    pub fn perception_profile(&self, user: &str) -> Result<JsValue, JsValue> {
+        perception::profile(&self.host.borrow(), user)
+            .map(|profile| {
+                profile.map_or(JsValue::UNDEFINED, |profile| {
+                    record(&[
+                        ("name", optional_string(profile.name)),
+                        ("description", optional_string(profile.description)),
+                    ])
+                })
+            })
             .map_err(convert::raise)
     }
 

@@ -48,16 +48,21 @@ pub fn describe(facts: &Facts) -> Plate {
     }
 }
 
-/// The end of `did`, cut at the start to fit the title's one line. Every key
-/// of one type shares the head, so the tail is what tells two apart.
+/// `did` cut to the title's one line as its method, `did:key:…`, then as much
+/// of its tail as fits. Every key of one type shares the head of its id, so
+/// the tail is what tells two apart.
 fn did_tail(did: &str) -> String {
-    let count = did.chars().count();
-    if count <= TITLE_WIDTH {
+    if did.chars().count() <= TITLE_WIDTH {
         return did.to_owned();
     }
-    let mut tail = String::from('…');
-    tail.extend(did.chars().skip(count - (TITLE_WIDTH - 1)));
-    tail
+    let Some((method, id)) = did.rsplit_once(':') else {
+        return clip(did, TITLE_WIDTH);
+    };
+    let mut cut = format!("{method}:…");
+    let keep = TITLE_WIDTH.saturating_sub(cut.chars().count());
+    let count = id.chars().count();
+    cut.extend(id.chars().skip(count.saturating_sub(keep)));
+    cut
 }
 
 fn clip(text: &str, max: usize) -> String {
@@ -97,7 +102,7 @@ mod tests {
     #[test]
     fn an_unnamed_user_is_titled_by_the_end_of_their_did() {
         let plate = describe(&facts());
-        assert_eq!(plate.title, "…cmeYN6w1WJh9v1A2B3C4");
+        assert_eq!(plate.title, "did:key:…WJh9v1A2B3C4");
         assert_eq!(plate.title.chars().count(), TITLE_WIDTH);
         assert_eq!(plate.line, None, "nothing under an unnamed title");
     }
@@ -118,7 +123,7 @@ mod tests {
             description: Some("ignored without a name"),
             ..facts()
         });
-        assert_eq!(plate.title, "…cmeYN6w1WJh9v1A2B3C4");
+        assert_eq!(plate.title, "did:key:…WJh9v1A2B3C4");
         assert_eq!(plate.line, None);
     }
 

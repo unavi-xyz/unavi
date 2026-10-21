@@ -106,10 +106,10 @@ pub fn send_object_poses(
             }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = *held.entry(doc).or_insert_with(|| {
-                // The presence space is what `holder` is keyed on, so it is
-                // the one that decides who may drive the document.
-                view.replicas()
-                    .space_of(doc)
+                // The document's registered space, which a reference instance
+                // reaches through its host, is the one a hold names, so it is
+                // what decides who may drive the document.
+                view.space_of(doc)
                     .filter(|space| view.replicas().is_holder(*space, doc, me))
             });
             let space = space?;
@@ -200,8 +200,7 @@ pub fn apply_remote_objects(
         // never be driven.
         let holder = *holders.entry((resolved.space, doc)).or_insert_with(|| {
             view.replicas().holder(resolved.space, doc).or_else(|| {
-                view.replicas()
-                    .space_of(doc)
+                view.space_of(doc)
                     .and_then(|space| view.replicas().holder(space, doc))
             })
         });
@@ -319,7 +318,7 @@ pub fn reconcile_object_holds(
             continue;
         };
         let remote_controlled = *remote.entry(doc).or_insert_with(|| {
-            view.replicas().space_of(doc).is_some_and(|space| {
+            view.space_of(doc).is_some_and(|space| {
                 let holder = view.replicas().holder(space, doc);
                 holder.is_some() && holder != Some(view.me())
             })

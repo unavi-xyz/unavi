@@ -233,6 +233,54 @@ fn a_hold_heard_before_the_pin_counts_once_the_document_is_present() {
     assert_eq!(replicas.holder(space, doc), Some(author_device));
 }
 
+/// A document instanced at a reference site is never pinned into its space, so
+/// nothing gives it presence; the host that composed it stands for it.
+#[test]
+fn an_instanced_document_resolves_the_holders_its_host_does() {
+    let replicas = replicas();
+    let alice = identity();
+    let (host, proof) = authored(5, &alice);
+    let here = space(b"instanced-hold");
+    let (author_device, grabber) = (peer(1), peer(2));
+    let site = DocId::site(host, PrimId::new());
+    replicas
+        .attribution()
+        .policy()
+        .update(site, |record| record.host = Some(host));
+
+    replicas
+        .add_pin(
+            author_device,
+            Some(alice.did()),
+            Proven {
+                author: alice.did().clone(),
+                proof,
+            },
+            pin_record(host, here, 1),
+        )
+        .expect("pin");
+    assert_eq!(
+        replicas.holder(here, site),
+        Some(author_device),
+        "the host's author drives an instance nothing grabs"
+    );
+
+    assert!(replicas.add_hold(
+        grabber,
+        HoldClaim {
+            doc: site,
+            space: here,
+            at: 5,
+        }
+    ));
+    assert_eq!(replicas.holder(here, site), Some(grabber));
+    assert_eq!(
+        replicas.holder(space(b"elsewhere"), site),
+        None,
+        "a hold names the one space it was claimed in"
+    );
+}
+
 #[test]
 fn a_peer_holds_a_bounded_number_of_documents() {
     let replicas = replicas();

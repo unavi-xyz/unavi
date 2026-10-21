@@ -17,6 +17,7 @@ use bevy_hsd::{
         Prim,
         PrimOf,
     },
+    reference::ReferenceInstance,
     stack,
 };
 use hsd::{
@@ -399,26 +400,29 @@ pub async fn commit(
     }
 }
 
-/// Its own key, else the key of the document referencing it; anything else
-/// is `forbidden`. One hop by construction: an override names a prim of a
+/// The key of the document referencing it, else its own; anything else is
+/// `forbidden`. One hop by construction: an override names a prim of a
 /// document the overriding one references directly.
 async fn landing(host: &ScriptHost, doc: DocId) -> Result<Landing, ScriptError> {
+    // A document a reference places takes the edit as an override on that
+    // site first: every placement of one document shares its content, so
+    // writing the document itself would change every other placement too.
+    let site = host
+        .world_call(move |world| reference_site(world, doc))
+        .await?;
+    if let Some((site, reference, state)) = site
+        && holds_write_key(host, reference).await?
+    {
+        return Ok(Landing::Override {
+            site,
+            reference,
+            state,
+        });
+    }
     if holds_write_key(host, doc).await? {
         return Ok(Landing::Document);
     }
-    let site = host
-        .world_call(move |world| reference_site(world, doc))
-        .await?
-        .ok_or(ScriptError::Forbidden)?;
-    let (site, reference, state) = site;
-    if !holds_write_key(host, reference).await? {
-        return Err(ScriptError::Forbidden);
-    }
-    Ok(Landing::Override {
-        site,
-        reference,
-        state,
-    })
+    Err(ScriptError::Forbidden)
 }
 
 async fn holds_write_key(host: &ScriptHost, doc: DocId) -> Result<bool, ScriptError> {
@@ -441,10 +445,13 @@ async fn holds_write_key(host: &ScriptHost, doc: DocId) -> Result<bool, ScriptEr
 }
 
 /// The prim a reference in the scene hangs from, and the document holding it.
-/// A reference is spawned as a child of the prim naming it.
+/// The prim a reference in the scene hangs from, and the document holding it.
+///
+/// Only a [`ReferenceInstance`] answers: a document placed under a prim some
+/// other way is a child of its own, not an override of the host.
 fn reference_site(world: &World, doc: DocId) -> Option<(PrimId, DocId, Arc<Mutex<HsdState>>)> {
     let entity = world.get_resource::<DocIndex>()?.get(doc)?;
-    let prim_ent = world.get::<ChildOf>(entity)?.0;
+    let prim_ent = world.get::<ReferenceInstance>(entity)?.prim;
     let site = world.get::<Prim>(prim_ent)?.0;
     let host = world.get::<PrimOf>(prim_ent)?.0;
     Some((
@@ -476,7 +483,11 @@ mod tests {
         world.spawn((
             Hsd::new(HsdState::new()),
             HsdDocId(child),
-            ChildOf(prim_ent),
+            ReferenceInstance {
+                prim:   prim_ent,
+                target: doc(3),
+                depth:  1,
+            },
         ));
         (site, host, child)
     }
@@ -501,6 +512,28 @@ mod tests {
         world.spawn((Hsd::new(HsdState::new()), HsdDocId(placed)));
 
         assert!(reference_site(&world, placed).is_none());
+    }
+
+    #[test]
+    fn a_document_placed_under_a_prim_without_a_reference_has_no_site() {
+        let mut world = World::new();
+        let (site, host, _) = scene_reference(&mut world);
+        let prim_ent = world
+            .query::<(Entity, &Prim)>()
+            .iter(&world)
+            .find(|(_, prim)| prim.0 == site)
+            .map(|(entity, _)| entity)
+            .expect("the site prim");
+        let placed = doc(4);
+        world.spawn((
+            Hsd::new(HsdState::new()),
+            HsdDocId(placed),
+            ChildOf(prim_ent),
+        ));
+        assert!(
+            reference_site(&world, placed).is_none(),
+            "a document anchored to a prim of {host:?} is not an override of it"
+        );
     }
 
     #[test]

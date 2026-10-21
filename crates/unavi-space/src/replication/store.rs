@@ -324,13 +324,28 @@ impl Inner {
 
     /// The highest-ranked hold, else the author endpoint, so an author drives
     /// its objects until someone grabs them.
+    ///
+    /// A document instanced at a reference site is never pinned into its space,
+    /// so it has no presence: the host that composed it supplies both the
+    /// space and the author's endpoint, and a hold on the instance names the
+    /// space it was claimed in.
     fn holder(&self, space: SpaceId, doc: DocId) -> Option<EndpointId> {
-        if self.docs.get(&doc).is_none_or(|p| p.space != space) {
+        let present = self.docs.get(&doc).map_or_else(
+            || self.attribution.policy().get(doc).host.is_some(),
+            |presence| presence.space == space,
+        );
+        if !present {
             return None;
         }
-        self.holds
-            .holder(doc, space)
-            .or_else(|| self.author_endpoint(space, doc))
+        let authored = self.author_endpoint(space, doc).or_else(|| {
+            let root = self.attribution.policy().root(doc);
+            if root == doc {
+                None
+            } else {
+                self.author_endpoint(space, root)
+            }
+        });
+        self.holds.holder(doc, space).or(authored)
     }
 
     /// The budget `device`'s layer on `doc` is charged to, and whether it may

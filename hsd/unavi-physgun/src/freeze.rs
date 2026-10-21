@@ -47,14 +47,20 @@ pub fn freeze(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     let edit = Edit::new("Freeze")?;
     edit.track(
         doc,
-        &[(prim, PropertyKey::RigidBody), (prim, PropertyKey::Transform)],
+        &[
+            (prim, PropertyKey::RigidBody),
+            (prim, PropertyKey::Transform),
+        ],
     );
     // A kinematic body still moves by its velocity, so a body frozen
     // mid-throw would otherwise drift off at it.
     set_velocity(doc, prim, Some(Vec3::ZERO), Some(Vec3::ZERO))
         .map_err(|err| anyhow::anyhow!("stopping the body: {err:?}"))?;
     doc.shared()
-        .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Kinematic)))
+        .set(
+            prim,
+            Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Kinematic)),
+        )
         .set(prim, Property::Transform(local))
         .flush()?;
     keep(&edit);
@@ -66,7 +72,10 @@ pub fn thaw(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     let edit = Edit::new("Unfreeze")?;
     edit.track(doc, &[(prim, PropertyKey::RigidBody)]);
     doc.shared()
-        .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Dynamic)))
+        .set(
+            prim,
+            Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Dynamic)),
+        )
         .flush()?;
     keep(&edit);
     Ok(())

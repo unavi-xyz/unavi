@@ -1,9 +1,13 @@
 //! Drops a cube on whatever the player is pointing at.
 //!
-//! The cube is a document of its own, since it is a body others can hold. In
-//! a space the user can write, it is kept: a reference site in the space
-//! document places it, committed through an undoable edit. Anywhere else it
-//! is placed directly and lasts while someone present holds it.
+//! A cube is a body, so it is a document of its own. In a space the user can
+//! write it is kept: a reference site in the space document places it,
+//! committed through an undoable edit. Every kept cube of one colour
+//! transcludes the same template document, and each site still opens its own
+//! instance with its own body. Anywhere else a cube is minted and placed
+//! directly, and lasts while someone present holds it.
+
+use std::cell::RefCell;
 
 use wired_guest::math::{
     Color,
@@ -51,8 +55,34 @@ const REACH: f32 = 6.0;
 /// drop one inside the player.
 const MIN_DIST: f32 = 1.2;
 
+/// The template cube documents kept cubes transclude, one per colour, minted
+/// on first use in a run.
+#[derive(Default)]
+pub struct Templates(RefCell<Vec<(Color, DocumentId)>>);
+
+impl Templates {
+    fn get_or_build(&self, color: Color) -> anyhow::Result<DocumentId> {
+        let known = self
+            .0
+            .borrow()
+            .iter()
+            .find(|(c, _)| *c == color)
+            .map(|(_, id)| *id);
+        if let Some(id) = known
+            && open_document(id)?.is_some()
+        {
+            return Ok(id);
+        }
+        let id = build(color, Transform::IDENTITY)?.id();
+        let mut templates = self.0.borrow_mut();
+        templates.retain(|(c, _)| *c != color);
+        templates.push((color, id));
+        Ok(id)
+    }
+}
+
 /// Puts a cube of `color` where `aim` points.
-pub fn spawn(color: Color, aim: &Transform) -> anyhow::Result<()> {
+pub fn spawn(templates: &Templates, color: Color, aim: &Transform) -> anyhow::Result<()> {
     let pose = Transform {
         translation: landing(aim),
         rotation:    aim.rotation,
@@ -60,7 +90,7 @@ pub fn spawn(color: Color, aim: &Transform) -> anyhow::Result<()> {
     };
     writable_space()?.map_or_else(
         || drop_loose(color, &pose),
-        |space| keep(color, &pose, &space),
+        |space| keep(templates, color, &pose, &space),
     )
 }
 
@@ -72,9 +102,14 @@ fn writable_space() -> anyhow::Result<Option<Document>> {
     Ok(open_document(id)?.filter(Document::may_write))
 }
 
-/// Builds the cube unplaced and keeps it in `space` under a reference site.
-fn keep(color: Color, pose: &Transform, space: &Document) -> anyhow::Result<()> {
-    let cube = build(color, Transform::IDENTITY)?;
+/// Keeps a cube of `color` in `space` under a reference site.
+fn keep(
+    templates: &Templates,
+    color: Color,
+    pose: &Transform,
+    space: &Document,
+) -> anyhow::Result<()> {
+    let cube = templates.get_or_build(color)?;
 
     let to_space = script_document()?
         .offset_to(space)
@@ -84,7 +119,7 @@ fn keep(color: Color, pose: &Transform, space: &Document) -> anyhow::Result<()> 
     space
         .local()
         .set(site, Property::Name("cube".to_owned()))
-        .set(site, Property::Reference(cube.id()))
+        .set(site, Property::Reference(cube))
         .set(site, Property::Transform(to_space * *pose))
         .flush()?;
 

@@ -73,30 +73,30 @@ mod summon;
 wired_guest::generate_script!(Script);
 
 struct Script {
-    root:     Root,
-    hand:     Toolbelt,
-    home:     Home,
-    nav:      Nav,
+    root:      Root,
+    hand:      Toolbelt,
+    home:      Home,
+    nav:       Nav,
     /// The visor script's lenses, mirrored as toggles.
-    visor:    Visor,
-    summon:   Summon,
+    visor:     Visor,
+    summon:    Summon,
     /// Attaches the halo's document to the user's body.
-    body:     Body,
+    body:      Body,
     /// The space last tick, so a respawn, travel or home can close the halo.
-    space:    Residence,
+    space:     Residence,
     /// The time on the root's face.
-    clock:    Clock,
+    clock:     Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
-    artifact: Artifact,
+    artifact:  Artifact,
     /// The menu button, and the buttons halo forwards to the tool in hand.
     /// Presses on a surface belong to it, and VUI's surfaces have their own
     /// listeners.
-    input:    InputSubscription,
+    input:     InputSubscription,
     /// The pointer that last pressed a button: the hand a tool chosen now
     /// goes into.
-    aim:      PointerKind,
+    aim:       PointerKind,
     /// Every edit the local user's tools kept, to undo and redo.
-    history:  History,
+    history:   History,
     shortcuts: Shortcuts,
 }
 
@@ -258,19 +258,19 @@ impl Script {
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         let mut script = Self {
-            root:     Root::new()?,
-            hand:     Toolbelt::new(),
-            home:     Home::default(),
-            nav:      Nav::default(),
-            visor:    Visor::default(),
-            summon:   Summon::default(),
-            body:     Body::default(),
-            space:    Residence::default(),
-            clock:    Clock::default(),
-            artifact: Artifact::new()?,
-            input:    device::listen()?,
-            aim:      PointerKind::Screen,
-            history:  History::new(),
+            root:      Root::new()?,
+            hand:      Toolbelt::new(),
+            home:      Home::default(),
+            nav:       Nav::default(),
+            visor:     Visor::default(),
+            summon:    Summon::default(),
+            body:      Body::default(),
+            space:     Residence::default(),
+            clock:     Clock::default(),
+            artifact:  Artifact::new()?,
+            input:     device::listen()?,
+            aim:       PointerKind::Screen,
+            history:   History::new(),
             shortcuts: Shortcuts::default(),
         };
         // Listening before asking, so the answer cannot arrive unheard.

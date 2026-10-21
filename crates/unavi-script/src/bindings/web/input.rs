@@ -121,9 +121,7 @@ fn wit_action(action: input::Action) -> JsValue {
         input::Action::Scroll(delta) => tagged("scroll", convert::wit_vec2(delta)),
         input::Action::Entered => tagged("entered", JsValue::UNDEFINED),
         input::Action::Left => tagged("left", JsValue::UNDEFINED),
-        input::Action::KeyPressed(key) => {
-            tagged("key-pressed", JsValue::from_str(key.wit_name()))
-        }
+        input::Action::KeyPressed(key) => tagged("key-pressed", JsValue::from_str(key.wit_name())),
         input::Action::KeyReleased(key) => {
             tagged("key-released", JsValue::from_str(key.wit_name()))
         }
@@ -225,8 +223,8 @@ impl Runtime {
     ) -> Result<ClaimHandle, JsValue> {
         let kind = pointer_kind(&pointer).map_err(convert::raise)?;
         let control = control(&wit_control).map_err(convert::raise)?;
-        let rep = input::claim(&mut self.host.borrow_mut(), kind, control)
-            .map_err(convert::raise)?;
+        let rep =
+            input::claim(&mut self.host.borrow_mut(), kind, control).map_err(convert::raise)?;
         Ok(ClaimHandle {
             rep,
             host: Rc::clone(&self.host),

@@ -13,14 +13,14 @@ use crate::{
     },
     protocol::{
         self,
+        ActivatePayload,
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
-        CH_REGISTER,
         CH_PRESS,
+        CH_REGISTER,
         CH_SCROLL,
         CH_SET_STATE,
-        ActivatePayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
         PressPayload,
@@ -106,7 +106,11 @@ impl GuestToolRegistry for ToolRegistry {
     }
 
     fn activate(&self, document: (u64, u64, u64, u64), hand: PointerKind) {
-        emit_to(document, CH_ACTIVATE, &ActivatePayload { hand: hand.into() });
+        emit_to(
+            document,
+            CH_ACTIVATE,
+            &ActivatePayload { hand: hand.into() },
+        );
     }
 
     fn deactivate(&self, document: (u64, u64, u64, u64)) {

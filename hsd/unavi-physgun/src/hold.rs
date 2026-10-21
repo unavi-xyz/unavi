@@ -222,7 +222,8 @@ impl Held {
     /// Turns the held body `radians` about the world's up axis.
     pub fn spin(&mut self, aim: &Transform, radians: f32) {
         let frame = reference(aim, self.wrist);
-        self.offset_rot = frame.inverse() * Quat::from_rotation_y(radians) * frame * self.offset_rot;
+        self.offset_rot =
+            frame.inverse() * Quat::from_rotation_y(radians) * frame * self.offset_rot;
     }
 
     pub fn nudge_distance(&mut self, delta: f32) {
@@ -292,7 +293,12 @@ mod tests {
     fn aim(yaw: f32, pitch: f32, roll: f32) -> Transform {
         Transform::new(
             Vec3::ZERO,
-            Quat::from(glam::Quat::from_euler(glam::EulerRot::YXZ, yaw, pitch, roll)),
+            Quat::from(glam::Quat::from_euler(
+                glam::EulerRot::YXZ,
+                yaw,
+                pitch,
+                roll,
+            )),
             Vec3::ONE,
         )
     }

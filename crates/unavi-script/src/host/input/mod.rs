@@ -245,7 +245,11 @@ pub fn pointers(host: &ScriptHost) -> Result<Vec<Pointer>, ScriptError> {
 }
 
 /// Takes `control` of `kind` from the host until the claim is released.
-pub fn claim(host: &mut ScriptHost, kind: PointerKind, control: Control) -> Result<u32, ScriptError> {
+pub fn claim(
+    host: &mut ScriptHost,
+    kind: PointerKind,
+    control: Control,
+) -> Result<u32, ScriptError> {
     host.require(HostApi::InputContext)?;
     let claim = host.shared.claims.take(kind, control);
     Ok(host.claims.insert(claim, &host.quota)?)

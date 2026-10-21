@@ -384,10 +384,7 @@ impl Script {
                 return;
             }
         };
-        let step = self
-            .grid()
-            .map_or(Vec3::X, |grid| grid.rotation * Vec3::X)
-            * GRID;
+        let step = self.grid().map_or(Vec3::X, |grid| grid.rotation * Vec3::X) * GRID;
         let kept = element.pose().and_then(|pose| {
             let at = Transform {
                 translation: pose.translation + step,

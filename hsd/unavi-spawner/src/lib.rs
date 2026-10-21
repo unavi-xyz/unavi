@@ -27,28 +27,30 @@ wired_guest::generate_script!(Script);
 const ART_SPEED: f32 = 5.0;
 
 struct Script {
-    tool:    Tool,
-    preview: Preview,
-    active:  Cell<bool>,
+    tool:      Tool,
+    preview:   Preview,
+    active:    Cell<bool>,
     /// The pointer it aims with while in hand.
-    hand:    Cell<PointerKind>,
-    color:   Cell<Color>,
-    art_t:   Cell<f32>,
+    hand:      Cell<PointerKind>,
+    color:     Cell<Color>,
+    art_t:     Cell<f32>,
+    templates: spawn::Templates,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
-            tool:    Tool::new(
+            tool:      Tool::new(
                 "Spawner",
                 "Puts a cube down on whatever you point at.",
                 Some(&glyph::mark()),
             )?,
-            preview: Preview::new(ARTIFACT_OFFSET)?,
-            active:  Cell::new(false),
-            hand:    Cell::new(PointerKind::Screen),
-            color:   Cell::new(palette::DEFAULT),
-            art_t:   Cell::new(0.0),
+            preview:   Preview::new(ARTIFACT_OFFSET)?,
+            active:    Cell::new(false),
+            hand:      Cell::new(PointerKind::Screen),
+            color:     Cell::new(palette::DEFAULT),
+            art_t:     Cell::new(0.0),
+            templates: spawn::Templates::default(),
         })
     }
 
@@ -64,7 +66,7 @@ impl ScriptBehavior for Script {
                 ToolEvent::Pressed(ToolButton::Primary) => {
                     if self.active.get()
                         && let Some(aim) = pointer_pose(self.hand.get()).or_else(camera_pose)
-                        && let Err(err) = spawn::spawn(self.color.get(), &aim)
+                        && let Err(err) = spawn::spawn(&self.templates, self.color.get(), &aim)
                     {
                         eprintln!("spawner: spawn failed: {err:?}");
                     }

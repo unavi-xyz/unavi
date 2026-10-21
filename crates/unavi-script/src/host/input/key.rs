@@ -45,8 +45,7 @@ macro_rules! keys {
     };
 }
 
-#[cfg(not(target_family = "wasm"))]
-pub(crate) use keys;
+#[cfg(not(target_family = "wasm"))] pub(crate) use keys;
 
 macro_rules! define {
     ($(($name:ident, $wit:literal, $code:ident)),* $(,)?) => {

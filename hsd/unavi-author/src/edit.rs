@@ -41,9 +41,9 @@ use crate::{
 /// What an edit has read so far, by document.
 #[derive(Default)]
 struct Tracked {
-    sets:     Vec<(PrimId, PropertyKey, Option<Property>)>,
-    created:  Vec<PrimId>,
-    removed:  Vec<Snapshot>,
+    sets:    Vec<(PrimId, PropertyKey, Option<Property>)>,
+    created: Vec<PrimId>,
+    removed: Vec<Snapshot>,
 }
 
 pub struct Recorder {
@@ -157,7 +157,11 @@ fn commit_document(doc: &Document, tracked: Tracked) -> Result<Vec<Change>, Erro
             });
         }
     }
-    changes.extend(created.into_iter().map(|prims| Change::Create { doc: id, prims }));
+    changes.extend(
+        created
+            .into_iter()
+            .map(|prims| Change::Create { doc: id, prims }),
+    );
     changes.extend(
         tracked
             .removed

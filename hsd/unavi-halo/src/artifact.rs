@@ -1,10 +1,10 @@
 //! The body of whatever is in hand: a glowing core with orbiters, wearing the
 //! held tool's own colour, shown only while something is held.
 //!
-//! It rides at [`wired_guest::xform::tool_pose`], ahead of the tool hand in VR and in front of
-//! the viewer on desktop. A tool fires from the same pose — the physgun's
-//! muzzle *is* this body — so without it a beam starts in empty air and
-//! nothing says a tool is running at all.
+//! It rides at [`wired_guest::xform::tool_pose`], ahead of the tool hand in VR
+//! and in front of the viewer on desktop. A tool fires from the same pose — the
+//! physgun's muzzle *is* this body — so without it a beam starts in empty air
+//! and nothing says a tool is running at all.
 
 use std::f32::consts::TAU;
 

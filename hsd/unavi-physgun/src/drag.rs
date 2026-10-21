@@ -78,7 +78,9 @@ impl Drag {
             layer,
             grab_local: (body.rotation.inverse() * (point - body.translation))
                 / body.scale.max(Vec3::splat(MIN_SCALE)),
-            distance: (point - aim.translation).length().clamp(MIN_DISTANCE, MAX_DISTANCE),
+            distance: (point - aim.translation)
+                .length()
+                .clamp(MIN_DISTANCE, MAX_DISTANCE),
             rotation: body.rotation,
             scale: body.scale,
             turns: 0,
@@ -134,7 +136,9 @@ impl Drag {
             Layer::Shared => self.element.doc.shared(),
             Layer::Local => self.element.doc.local(),
         };
-        batch.set(self.element.prim, Property::Transform(local)).flush()?;
+        batch
+            .set(self.element.prim, Property::Transform(local))
+            .flush()?;
         Ok(())
     }
 

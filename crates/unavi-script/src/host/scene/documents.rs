@@ -38,10 +38,7 @@ use unavi_policy::{
 };
 use unavi_space::{
     grid::ActiveSpace,
-    membership::{
-        Space,
-        SpaceId,
-    },
+    membership::Space,
 };
 use unavi_store::{
     Document,
@@ -219,8 +216,9 @@ async fn mint(host: &mut ScriptHost, entries: Vec<Entry>) -> Result<u32, ScriptE
         .insert(DocumentRes { id, state }, &host.quota)?)
 }
 
-/// Seeds the document's policy record, serves and spawns it, and pins it into
-/// its space.
+/// Seeds the document's policy record, serves and spawns it. It is pinned
+/// into its space when first placed (see `place`), so a document only a
+/// reference site places is never pinned and renders once, under the site.
 async fn spawn_minted(
     host: &ScriptHost,
     id: DocId,
@@ -254,10 +252,6 @@ async fn spawn_minted(
         ));
     })
     .await?;
-
-    if let Err(err) = host.view.local().pin(SpaceId::of_doc(space), id).await {
-        warn!(?err, %id, "failed to pin a script-minted document");
-    }
     Ok(())
 }
 

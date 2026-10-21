@@ -10,7 +10,10 @@ use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use unavi_avatar::Grounded;
-use unavi_input::cursor_lock::CursorGrabState;
+use unavi_input::{
+    claim::Claims,
+    cursor_lock::CursorGrabState,
+};
 
 use crate::config::{
     AgentConfig,
@@ -46,6 +49,7 @@ impl Plugin for AgentPlugin {
             TnuaAvian3dPlugin::new(FixedUpdate),
         ))
         .init_resource::<InputMode>()
+        .init_resource::<Claims>()
         .add_observer(movement::teleport::handle_agent_teleport)
         .add_observer(local_agent::spawn_local_agent)
         .add_systems(

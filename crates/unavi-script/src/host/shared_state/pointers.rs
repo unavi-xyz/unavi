@@ -63,6 +63,7 @@ pub fn snapshot_pointers(
         snapshot[kind.index()] = Some(Pointer {
             kind,
             active: true,
+            pose: transform.compute_transform(),
             ray: ray_of(transform).into(),
             trigger: state.value(Action::Trigger(kind)),
             grip: state.value(Action::Grip(kind)),

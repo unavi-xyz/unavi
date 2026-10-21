@@ -1,6 +1,10 @@
 //! Turns the engine's pointer events into the input events listeners hear.
 
 use bevy::{
+    input::{
+        ButtonState,
+        keyboard::KeyboardInput,
+    },
     picking::{
         backend::HitData,
         events::{
@@ -48,6 +52,7 @@ use crate::host::{
         InputEvent,
         PrimTargets,
         Ray,
+        key::Key,
     },
     shared_state::input_listeners::{
         InputListeners,
@@ -311,6 +316,36 @@ pub fn bridge_menu(
                 pointer: kind,
                 action,
                 ray: ray_of_kind(kind, &pointers),
+                hit: None,
+            },
+        );
+    }
+}
+
+/// Physical keys reach device listeners with the screen pointer's ray and no
+/// hit. A held key's repeats are dropped.
+pub fn bridge_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    pointers: Query<(&PointerAnchor, &GlobalTransform)>,
+    listeners: Res<InputListeners>,
+) {
+    for input in keys.read() {
+        if input.repeat || !listeners.is_heard(Target::Device) {
+            continue;
+        }
+        let Some(key) = Key::from_code(input.key_code) else {
+            continue;
+        };
+        let action = match input.state {
+            ButtonState::Pressed => Action::KeyPressed(key),
+            ButtonState::Released => Action::KeyReleased(key),
+        };
+        listeners.send(
+            Target::Device,
+            InputEvent {
+                pointer: PointerKind::Screen,
+                action,
+                ray: ray_of_kind(PointerKind::Screen, &pointers),
                 hit: None,
             },
         );

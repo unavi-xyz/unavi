@@ -6,7 +6,10 @@ use bevy_hsd::{
         self,
         DocAnchor,
     },
-    document::DocIndex,
+    document::{
+        DocIndex,
+        Unplaced,
+    },
     prim::PrimIndex,
 };
 use hsd::{
@@ -17,6 +20,7 @@ use hsd::{
     },
 };
 use unavi_physics::finite;
+use unavi_space::membership::SpaceId;
 
 use crate::{
     error::ScriptError,
@@ -33,6 +37,9 @@ pub enum Anchor {
 }
 
 /// Puts a document the script may write into the scene, or moves it.
+///
+/// A document the script minted is pinned into its space the first time it
+/// is placed, so peers fetch it from then on.
 pub async fn place(
     host: &ScriptHost,
     doc: u32,
@@ -41,8 +48,18 @@ pub async fn place(
 ) -> Result<(), ScriptError> {
     let id = host.writable_document(doc)?.id;
     let offset = checked(offset)?;
-    host.world_call(move |world| place_in(world, id, anchor, offset))
-        .await?
+    let first = host
+        .world_call(move |world| place_in(world, id, anchor, offset))
+        .await??;
+
+    if first
+        && host.minted.contains(&id)
+        && let Some(space) = host.view.policy().registered_space(id)
+        && let Err(err) = host.view.local().pin(SpaceId::of_doc(space), id).await
+    {
+        warn!(?err, %id, "failed to pin a script-minted document");
+    }
+    Ok(())
 }
 
 /// The smallest scale an offset may have on any axis.
@@ -70,12 +87,13 @@ fn checked(offset: XformAttr) -> Result<Transform, ScriptError> {
     }
 }
 
+/// Answers whether the document was unplaced until now.
 fn place_in(
     world: &mut World,
     id: DocId,
     anchor: Anchor,
     offset: Transform,
-) -> Result<(), ScriptError> {
+) -> Result<bool, ScriptError> {
     let index = world
         .get_resource::<DocIndex>()
         .ok_or(ScriptError::NotFound)?;
@@ -93,8 +111,9 @@ fn place_in(
         }
         Anchor::Entity(entity) => Some(entity),
     };
+    let first = world.get::<Unplaced>(doc).is_some();
     anchor::place(&mut world.entity_mut(doc), DocAnchor { target, offset });
-    Ok(())
+    Ok(first)
 }
 
 #[cfg(test)]

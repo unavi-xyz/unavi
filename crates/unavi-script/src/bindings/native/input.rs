@@ -1,6 +1,12 @@
 //! `wired:input`.
 
-use unavi_input::pointer::PointerKind;
+use unavi_input::{
+    claim::{
+        Claim,
+        Control,
+    },
+    pointer::PointerKind,
+};
 use wasmtime::component::Resource;
 
 use super::{
@@ -9,7 +15,11 @@ use super::{
     generated::wired::{
         core::ids::PrimId,
         input::{
-            device,
+            device::{
+                self,
+                Control as WitControl,
+                HostClaim,
+            },
             targeted,
             types::{
                 self,
@@ -30,6 +40,10 @@ use crate::{
         input::{
             self,
             InputSubscription,
+            key::{
+                Key,
+                keys,
+            },
         },
         scene::DocumentRes,
     },
@@ -51,6 +65,33 @@ const fn button(button: input::Button) -> Button {
     }
 }
 
+const fn wit_pointer_kind_to_host(kind: WitPointerKind) -> PointerKind {
+    match kind {
+        WitPointerKind::Screen => PointerKind::Screen,
+        WitPointerKind::LeftHand => PointerKind::LeftHand,
+        WitPointerKind::RightHand => PointerKind::RightHand,
+    }
+}
+
+const fn control(control: WitControl) -> Control {
+    match control {
+        WitControl::Grip => Control::Grip,
+        WitControl::Stick => Control::Stick,
+    }
+}
+
+macro_rules! wit_key {
+    ($(($name:ident, $wit:literal, $code:ident)),* $(,)?) => {
+        const fn key(key: Key) -> types::Key {
+            match key {
+                $(Key::$name => types::Key::$name),*
+            }
+        }
+    };
+}
+
+keys!(wit_key);
+
 fn hit(hit: input::Hit) -> Hit {
     Hit {
         target:   hit.target.map(convert::wit_prim_ref),
@@ -69,6 +110,8 @@ fn event(event: input::InputEvent) -> InputEvent {
             input::Action::Scroll(delta) => Action::Scroll(convert::wit_vec2(delta)),
             input::Action::Entered => Action::Entered,
             input::Action::Left => Action::Left,
+            input::Action::KeyPressed(k) => Action::KeyPressed(key(k)),
+            input::Action::KeyReleased(k) => Action::KeyReleased(key(k)),
         },
         ray:     convert::wit_ray(event.ray.origin, event.ray.direction),
         hit:     event.hit.map(hit),
@@ -98,6 +141,12 @@ impl HostInputSubscription for HostCtx {
     }
 }
 
+impl HostClaim for HostCtx {
+    fn drop(&mut self, claim: Resource<Claim>) -> wasmtime::Result<()> {
+        Ok(input::release(&mut self.host, claim.rep())?)
+    }
+}
+
 impl targeted::Host for HostCtx {
     fn listen(
         &mut self,
@@ -120,6 +169,7 @@ impl device::Host for HostCtx {
             .map(|pointer| Pointer {
                 kind:    pointer_kind(pointer.kind),
                 active:  pointer.active,
+                pose:    convert::wit_transform(pointer.pose),
                 ray:     convert::wit_ray(pointer.ray.origin, pointer.ray.direction),
                 trigger: pointer.trigger,
                 grip:    pointer.grip,
@@ -127,5 +177,18 @@ impl device::Host for HostCtx {
                 hit:     pointer.hit.map(hit),
             })
             .collect())
+    }
+
+    fn take_control(
+        &mut self,
+        pointer: WitPointerKind,
+        wit_control: WitControl,
+    ) -> Result<Resource<Claim>, ScriptError> {
+        input::claim(
+            &mut self.host,
+            wit_pointer_kind_to_host(pointer),
+            control(wit_control),
+        )
+        .map(Resource::new_own)
     }
 }

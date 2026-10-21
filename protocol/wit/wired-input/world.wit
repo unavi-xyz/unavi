@@ -6,7 +6,7 @@
 package wired:input;
 
 interface types {
-  use wired:core/math.{vec2, vec3, ray};
+  use wired:core/math.{vec2, vec3, ray, transform};
   use wired:core/ids.{prim-ref};
 
   enum pointer-kind {
@@ -32,6 +32,23 @@ interface types {
     distance: f32,
   }
 
+  /// A physical key, named for its place on a US layout whatever the layout
+  /// prints on it. Characters typed are not keys.
+  enum key {
+    a, b, c, d, e, f, g, h, i, j, k, l, m,
+    n, o, p, q, r, s, t, u, v, w, x, y, z,
+    digit0, digit1, digit2, digit3, digit4,
+    digit5, digit6, digit7, digit8, digit9,
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12,
+    space, enter, escape, tab, backspace, delete, insert,
+    home, end, page-up, page-down,
+    arrow-up, arrow-down, arrow-left, arrow-right,
+    shift-left, shift-right, control-left, control-right,
+    alt-left, alt-right, super-left, super-right,
+    minus, equal, bracket-left, bracket-right, backslash,
+    semicolon, quote, backquote, comma, period, slash,
+  }
+
   /// What reaches which listener:
   ///
   /// | action               | targeted | device |
@@ -40,6 +57,7 @@ interface types {
   /// | menu                 | no       | yes    |
   /// | scroll               | yes      | yes    |
   /// | entered, left        | yes      | no     |
+  /// | key                  | no       | yes    |
   variant action {
     pressed(button),
     /// A targeted listener hears the release of every press it heard,
@@ -49,6 +67,10 @@ interface types {
     scroll(vec2),
     entered,
     left,
+    /// A key went down. A held key does not repeat. The event carries the
+    /// screen pointer's ray and no hit.
+    key-pressed(key),
+    key-released(key),
   }
 
   /// The ray and hit are in the calling script's own document frame.
@@ -66,6 +88,9 @@ interface types {
     /// Whether it is tracked and usable this frame. An inactive pointer's
     /// other fields are zero.
     active:  bool,
+    /// Where it is and which way it faces, roll included. The ray starts at
+    /// its translation and runs along its forward.
+    pose:    transform,
     ray:     ray,
     /// How far the trigger is pulled, 0 to 1.
     trigger: f32,
@@ -98,9 +123,25 @@ interface targeted {
 /// Every input of the local user's devices.
 interface device {
   use wired:core/error.{error};
-  use types.{input-subscription, pointer};
+  use types.{input-subscription, pointer, pointer-kind};
+
+  /// A control the host acts on by itself.
+  enum control {
+    /// Squeezing picks up what the pointer is on.
+    grip,
+    /// A hand's stick moves or turns the user.
+    stick,
+  }
+
+  /// One pointer's control, taken from the host while this is held. The
+  /// host does not act on a claimed control; listeners and `pointers` still
+  /// report it. Dropping the claim hands the control back, once every claim
+  /// on it is dropped.
+  resource claim;
 
   listen:   func() -> result<input-subscription, error>;
   /// Every pointer kind, active or not.
   pointers: func() -> result<list<pointer>, error>;
+  /// Takes `control` of `pointer` from the host until the claim is dropped.
+  take-control: func(pointer: pointer-kind, control: control) -> result<claim, error>;
 }

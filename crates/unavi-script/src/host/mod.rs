@@ -23,6 +23,10 @@ use hsd::{
     state::HsdState,
 };
 use iroh_docs::NamespaceId;
+use unavi_input::claim::{
+    Claim,
+    Claims,
+};
 use unavi_policy::{
     permissions::HostApi,
     quota::Quota,
@@ -50,6 +54,7 @@ use crate::{
             pointers::Pointers,
             portals::Portals,
             remote_agents::RemoteAgents,
+            sites::Sites,
             transforms::TransformSnapshots,
         },
         storage::{
@@ -88,6 +93,8 @@ pub struct SharedState {
     pub event_bus:       EventBus,
     pub input_listeners: InputListeners,
     pub link_intents:    LinkIntents,
+    pub claims:          Claims,
+    pub sites:           Sites,
 }
 
 /// Reads the [`SharedState`] resources.
@@ -103,6 +110,8 @@ pub struct SharedResources<'w> {
     event_bus:       Res<'w, EventBus>,
     input_listeners: Res<'w, InputListeners>,
     link_intents:    Res<'w, LinkIntents>,
+    claims:          Res<'w, Claims>,
+    sites:           Res<'w, Sites>,
 }
 
 impl SharedResources<'_> {
@@ -119,6 +128,8 @@ impl SharedResources<'_> {
             event_bus:       self.event_bus.clone(),
             input_listeners: self.input_listeners.clone(),
             link_intents:    self.link_intents.clone(),
+            claims:          self.claims.clone(),
+            sites:           self.sites.clone(),
         }
     }
 }
@@ -151,6 +162,7 @@ pub struct ScriptHost {
     pub(crate) documents:       HandleTable<DocumentRes>,
     pub(crate) messages:        HandleTable<MessageSubscription>,
     pub(crate) inputs:          HandleTable<InputSubscription>,
+    pub(crate) claims:          HandleTable<Claim>,
     pub(crate) intents:         HandleTable<IntentSubscription>,
     pub(crate) pending_values:  HandleTable<PendingValue>,
     pub(crate) pending_entries: HandleTable<PendingEntries>,
@@ -175,6 +187,7 @@ impl ScriptHost {
             documents: HandleTable::default(),
             messages: HandleTable::default(),
             inputs: HandleTable::default(),
+            claims: HandleTable::default(),
             intents: HandleTable::default(),
             pending_values: HandleTable::default(),
             pending_entries: HandleTable::default(),
@@ -305,6 +318,7 @@ impl Plugin for HostPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<input::bridge::Pressing>()
             .init_resource::<LocalAgentNodes>()
+            .init_resource::<Claims>()
             .init_resource::<CurrentSpace>()
             .init_resource::<EventBus>()
             .init_resource::<InputListeners>()
@@ -313,12 +327,15 @@ impl Plugin for HostPlugin {
             .init_resource::<Portals>()
             .init_resource::<Profiles>()
             .init_resource::<RemoteAgents>()
+            .init_resource::<Sites>()
             .init_resource::<TransformSnapshots>()
             .add_observer(input::bridge::bridge_press)
             .add_observer(input::bridge::bridge_enter)
             .add_observer(input::bridge::bridge_leave)
             .add_observer(input::bridge::bridge_scroll)
             .add_observer(shared_state::agents::forget_local_agent)
+            .add_observer(shared_state::sites::register_site)
+            .add_observer(shared_state::sites::deregister_site)
             .add_observer(shared_state::transforms::register_nodes)
             .add_observer(shared_state::transforms::deregister_transforms)
             .add_observer(shared_state::transforms::deregister_doc_root)
@@ -332,6 +349,7 @@ impl Plugin for HostPlugin {
                     input::bridge::bridge_device_scroll
                         .run_if(unavi_input::capture::scene_has_input),
                     input::bridge::bridge_menu,
+                    input::bridge::bridge_keys.run_if(unavi_input::capture::scene_has_input),
                 ),
             )
             .add_systems(

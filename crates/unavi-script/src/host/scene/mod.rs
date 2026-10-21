@@ -218,6 +218,12 @@ pub fn world_frame(host: &ScriptHost) -> Result<Option<Transform>, ScriptError> 
     Ok(host.frame_to_world())
 }
 
+/// The reference site that places `doc`, `None` when no reference does.
+pub fn site(host: &ScriptHost, doc: u32) -> Result<Option<(DocId, PrimId)>, ScriptError> {
+    host.require(HostApi::Scene)?;
+    Ok(host.shared.sites.get(&host.document(doc)?.id))
+}
+
 /// The transform from `doc`'s root to `other`'s, `None` when either is not
 /// placed.
 pub fn offset_to(

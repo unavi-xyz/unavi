@@ -2,7 +2,11 @@
 
 use std::rc::Rc;
 
-use unavi_input::pointer::PointerKind;
+use bevy::log::warn;
+use unavi_input::{
+    claim::Control,
+    pointer::PointerKind,
+};
 use wasm_bindgen::prelude::*;
 
 use super::{
@@ -11,9 +15,12 @@ use super::{
     convert,
     scene::DocumentHandle,
 };
-use crate::host::input::{
-    self,
-    Button,
+use crate::{
+    error::ScriptError,
+    host::input::{
+        self,
+        Button,
+    },
 };
 
 /// A guest's open input subscription. See `MessageSubscriptionHandle` in
@@ -35,6 +42,43 @@ const fn wit_pointer_kind(kind: PointerKind) -> &'static str {
         PointerKind::Screen => "screen",
         PointerKind::LeftHand => "left-hand",
         PointerKind::RightHand => "right-hand",
+    }
+}
+
+/// A claim on one of the user's controls. Dropping it hands the control
+/// back.
+#[wasm_bindgen]
+pub struct ClaimHandle {
+    rep:  u32,
+    host: HostHandle,
+}
+
+impl Drop for ClaimHandle {
+    fn drop(&mut self) {
+        if let Err(err) = input::release(&mut self.host.borrow_mut(), self.rep) {
+            warn!("release input claim: {err}");
+        }
+    }
+}
+
+fn pointer_kind(value: &str) -> Result<PointerKind, ScriptError> {
+    match value {
+        "screen" => Ok(PointerKind::Screen),
+        "left-hand" => Ok(PointerKind::LeftHand),
+        "right-hand" => Ok(PointerKind::RightHand),
+        other => Err(ScriptError::InvalidArgument(
+            format!("no pointer kind {other:?}").into(),
+        )),
+    }
+}
+
+fn control(value: &str) -> Result<Control, ScriptError> {
+    match value {
+        "grip" => Ok(Control::Grip),
+        "stick" => Ok(Control::Stick),
+        other => Err(ScriptError::InvalidArgument(
+            format!("no control {other:?}").into(),
+        )),
     }
 }
 
@@ -77,6 +121,12 @@ fn wit_action(action: input::Action) -> JsValue {
         input::Action::Scroll(delta) => tagged("scroll", convert::wit_vec2(delta)),
         input::Action::Entered => tagged("entered", JsValue::UNDEFINED),
         input::Action::Left => tagged("left", JsValue::UNDEFINED),
+        input::Action::KeyPressed(key) => {
+            tagged("key-pressed", JsValue::from_str(key.wit_name()))
+        }
+        input::Action::KeyReleased(key) => {
+            tagged("key-released", JsValue::from_str(key.wit_name()))
+        }
     }
 }
 
@@ -105,6 +155,7 @@ fn wit_pointer(pointer: input::Pointer) -> JsValue {
     };
     set("kind", &JsValue::from_str(wit_pointer_kind(pointer.kind)));
     set("active", &JsValue::from_bool(pointer.active));
+    set("pose", &convert::wit_transform(pointer.pose));
     set(
         "ray",
         &convert::wit_ray(pointer.ray.origin, pointer.ray.direction),
@@ -163,5 +214,22 @@ impl Runtime {
         input::pointers(&self.host.borrow())
             .map(|pointers| pointers.into_iter().map(wit_pointer).collect())
             .map_err(convert::raise)
+    }
+
+    /// `wired:input/device.take-control`.
+    #[wasm_bindgen(js_name = "inputDeviceTakeControl")]
+    pub fn input_device_take_control(
+        &self,
+        pointer: String,
+        wit_control: String,
+    ) -> Result<ClaimHandle, JsValue> {
+        let kind = pointer_kind(&pointer).map_err(convert::raise)?;
+        let control = control(&wit_control).map_err(convert::raise)?;
+        let rep = input::claim(&mut self.host.borrow_mut(), kind, control)
+            .map_err(convert::raise)?;
+        Ok(ClaimHandle {
+            rep,
+            host: Rc::clone(&self.host),
+        })
     }
 }

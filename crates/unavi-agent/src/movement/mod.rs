@@ -16,7 +16,12 @@ use unavi_input::{
         Action,
         ActionState,
     },
+    claim::{
+        Claims,
+        Control,
+    },
     config::InputConfig,
+    pointer::PointerKind,
 };
 
 use crate::{
@@ -139,6 +144,7 @@ fn smoothing_alpha(dt: f32, tau: f32) -> f32 {
 
 pub fn apply_head_input(
     input: Res<ActionState>,
+    claims: Res<Claims>,
     config: Res<InputConfig>,
     time: Res<Time>,
     agents: Query<&LocalAgentEntities>,
@@ -146,8 +152,11 @@ pub fn apply_head_input(
     mut transforms: Query<&mut Transform>,
 ) {
     let tuning = &config.tuning;
-    let stick =
-        input.axis(Action::Look) * tuning.look_degrees_per_second.to_radians() * time.delta_secs();
+    let stick = if claims.is_claimed(PointerKind::RightHand, Control::Stick) {
+        Vec2::ZERO
+    } else {
+        input.axis(Action::Look) * tuning.look_degrees_per_second.to_radians() * time.delta_secs()
+    };
     let mouse = input.delta(Action::Look) * tuning.look_sensitivity;
     let alpha = smoothing_alpha(time.delta_secs(), LOOK_SMOOTHING_TAU);
 
@@ -174,6 +183,7 @@ pub fn apply_head_input(
 pub fn apply_body_input(
     agents: Query<(&LocalAgentEntities, &AgentConfig)>,
     input: Res<ActionState>,
+    claims: Res<Claims>,
     input_config: Res<InputConfig>,
     time: Res<Time>,
     xr: Res<InputMode>,
@@ -189,7 +199,11 @@ pub fn apply_body_input(
 ) {
     let alpha = smoothing_alpha(time.delta_secs(), MOVE_SMOOTHING_TAU);
 
-    let raw = input.axis(Action::Move);
+    let raw = if claims.is_claimed(PointerKind::LeftHand, Control::Stick) {
+        Vec2::ZERO
+    } else {
+        input.axis(Action::Move)
+    };
     let walk = if raw.length() < input_config.tuning.move_threshold {
         Vec2::ZERO
     } else {

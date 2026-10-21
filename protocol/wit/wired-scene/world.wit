@@ -393,6 +393,9 @@ interface document {
     /// frame-relative transform into one another document can hold. Only for
     /// placing into a document that is not this one.
     world-frame: func() -> option<transform>;
+    /// The reference site that places this document: the referencing
+    /// document and its prim, or `none` when no reference does.
+    site: func() -> option<prim-ref>;
 
     /// Adds a prim under `parent`, or as a root, and answers its id.
     create-prim: func(layer: layer, parent: option<prim-id>) -> result<prim-id, error>;

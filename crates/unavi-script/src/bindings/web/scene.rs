@@ -168,6 +168,12 @@ impl DocumentHandle {
             .map_err(convert::into_trap)
     }
 
+    pub fn site(&self) -> Result<JsValue, JsValue> {
+        scene::site(&self.host.borrow(), self.rep)
+            .map(|site| site.map_or(JsValue::UNDEFINED, convert::wit_prim_ref))
+            .map_err(convert::into_trap)
+    }
+
     #[wasm_bindgen(js_name = "createPrim")]
     pub fn create_prim(&self, layer: String, parent: JsValue) -> js_sys::Promise {
         let host = Rc::clone(&self.host);

@@ -356,8 +356,10 @@ function buildImports(wasi: WASIShim, rt: any) {
       listen: rt.inputTargetedListen.bind(rt),
     },
     "wired:input/device": {
+      Claim: classes.ClaimHandle,
       listen: rt.inputDeviceListen.bind(rt),
       pointers: rt.inputDevicePointers.bind(rt),
+      takeControl: rt.inputDeviceTakeControl.bind(rt),
     },
     "wired:physics/simulation": {
       raycast: rt.raycast.bind(rt),

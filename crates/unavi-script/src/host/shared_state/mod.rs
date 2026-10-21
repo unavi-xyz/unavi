@@ -10,4 +10,5 @@ pub mod near;
 pub mod pointers;
 pub mod portals;
 pub mod remote_agents;
+pub mod sites;
 pub mod transforms;

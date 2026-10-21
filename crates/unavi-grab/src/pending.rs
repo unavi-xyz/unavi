@@ -6,6 +6,10 @@ use std::time::Duration;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use unavi_input::{
+    claim::{
+        Claims,
+        Control,
+    },
     crosshair::Grabbable,
     pointer::{
         GripPressed,
@@ -48,12 +52,16 @@ struct PendingGrab {
 
 pub fn on_press(
     mut presses: MessageReader<GripPressed>,
+    claims: Res<Claims>,
     targets: GrabTargets,
     time: Res<Time>,
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
     for press in presses.read() {
+        if claims.is_claimed(press.kind, Control::Grip) {
+            continue;
+        }
         let target = press.hit.map(|hit| hit.entity);
         // A replica a peer holds is grabbable too: the grab takes its hold
         // over, which makes it dynamic here.

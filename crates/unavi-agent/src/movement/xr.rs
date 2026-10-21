@@ -15,7 +15,12 @@ use unavi_input::{
         Action,
         ActionState,
     },
+    claim::{
+        Claims,
+        Control,
+    },
     config::InputConfig,
+    pointer::PointerKind,
 };
 
 use crate::{
@@ -83,12 +88,16 @@ const SNAP_RECENTRE: f32 = 0.2;
 
 pub fn apply_xr_turn(
     input: Res<ActionState>,
+    claims: Res<Claims>,
     config: Res<InputConfig>,
     mut snap_ready: ResMut<SnapTurnReady>,
     pose: Res<HmdWorldPose>,
     time: Res<Time>,
     mut rot_writer: MessageWriter<SnapToRotation>,
 ) {
+    if claims.is_claimed(PointerKind::RightHand, Control::Stick) {
+        return;
+    }
     let tuning = &config.tuning;
     let x = input.axis(Action::Look).x;
 

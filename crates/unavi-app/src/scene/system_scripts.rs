@@ -3,7 +3,11 @@ use bevy_hsd::package::ImportPackage;
 use unavi_script::QuotaExempt;
 
 const SHELL_HSDS: &[&str] = &["hsd/unavi_halo.hsdz", "hsd/unavi_visor.hsdz"];
-const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"];
+const TOOL_HSDS: &[&str] = &[
+    "hsd/unavi_spawner.hsdz",
+    "hsd/unavi_physgun.hsdz",
+    "hsd/unavi_build.hsdz",
+];
 
 /// Loads the shell (the halo and the visor) and the tools it ships with.
 ///

@@ -11,12 +11,14 @@ pub mod held;
 mod pending;
 
 use bevy::prelude::*;
+use unavi_input::claim::Claims;
 
 pub struct GrabPlugin;
 
 impl Plugin for GrabPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<pending::PendingGrabs>()
+            .init_resource::<Claims>()
             .add_observer(held::on_held_removed)
             .add_systems(
                 Update,

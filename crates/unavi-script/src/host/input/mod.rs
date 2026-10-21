@@ -17,9 +17,12 @@ use hsd::id::{
     DocId,
     PrimId,
 };
-use unavi_input::pointer::{
-    PointerHit,
-    PointerKind,
+use unavi_input::{
+    claim::Control,
+    pointer::{
+        PointerHit,
+        PointerKind,
+    },
 };
 use unavi_policy::{
     permissions::HostApi,
@@ -29,6 +32,7 @@ use unavi_policy::{
     },
 };
 
+use self::key::Key;
 use crate::{
     error::ScriptError,
     host::{
@@ -43,6 +47,7 @@ use crate::{
 };
 
 pub mod bridge;
+pub mod key;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ray {
@@ -82,6 +87,8 @@ pub enum Action {
     Scroll(Vec2),
     Entered,
     Left,
+    KeyPressed(Key),
+    KeyReleased(Key),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -96,6 +103,7 @@ pub struct InputEvent {
 pub struct Pointer {
     pub kind:    PointerKind,
     pub active:  bool,
+    pub pose:    Transform,
     pub ray:     Ray,
     pub trigger: f32,
     pub grip:    f32,
@@ -111,6 +119,7 @@ impl Pointer {
         Self {
             kind,
             active: false,
+            pose: Transform::IDENTITY,
             ray: Ray {
                 origin:    Vec3::ZERO,
                 direction: Vec3::NEG_Z,
@@ -227,11 +236,23 @@ pub fn pointers(host: &ScriptHost) -> Result<Vec<Pointer>, ScriptError> {
         .all()
         .into_iter()
         .map(|pointer| Pointer {
+            pose: frame.transform_to_frame(GlobalTransform::from(pointer.pose)),
             ray: ray_in_frame(frame, pointer.ray),
             hit: pointer.hit.map(|h| hit_in_frame(frame, h)),
             ..pointer
         })
         .collect())
+}
+
+/// Takes `control` of `kind` from the host until the claim is released.
+pub fn claim(host: &mut ScriptHost, kind: PointerKind, control: Control) -> Result<u32, ScriptError> {
+    host.require(HostApi::InputContext)?;
+    let claim = host.shared.claims.take(kind, control);
+    Ok(host.claims.insert(claim, &host.quota)?)
+}
+
+pub fn release(host: &mut ScriptHost, claim: u32) -> Result<(), ScriptError> {
+    host.claims.remove(claim).map(drop)
 }
 
 pub fn drain(

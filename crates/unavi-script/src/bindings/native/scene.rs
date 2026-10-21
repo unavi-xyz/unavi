@@ -10,6 +10,7 @@ use super::{
             ids::{
                 DocumentId,
                 PrimId,
+                PrimRef,
             },
             math::Transform,
         },
@@ -164,6 +165,10 @@ impl HostDocument for HostCtx {
 
     fn world_frame(&mut self, _doc: Resource<DocumentRes>) -> wasmtime::Result<Option<Transform>> {
         Ok(scene::world_frame(&self.host)?.map(convert::wit_transform))
+    }
+
+    fn site(&mut self, doc: Resource<DocumentRes>) -> wasmtime::Result<Option<PrimRef>> {
+        Ok(scene::site(&self.host, doc.rep())?.map(convert::wit_prim_ref))
     }
 
     async fn create_prim(

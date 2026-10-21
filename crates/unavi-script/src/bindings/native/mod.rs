@@ -70,6 +70,7 @@ pub mod generated {
             "wired:scene/document.document": crate::host::scene::DocumentRes,
             "wired:event/messaging.message-subscription": crate::host::event::MessageSubscription,
             "wired:input/types.input-subscription": crate::host::input::InputSubscription,
+            "wired:input/device.claim": unavi_input::claim::Claim,
             "wired:portal/portals.intent-subscription": crate::host::portal::IntentSubscription,
             "unavi:host/node-storage.pending-value": crate::host::storage::PendingValue,
             "unavi:host/node-storage.pending-entries": crate::host::storage::PendingEntries,

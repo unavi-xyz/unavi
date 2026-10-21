@@ -14,6 +14,7 @@ use bevy::{
 pub mod action;
 #[cfg(target_family = "wasm")] mod browser_keys;
 pub mod capture;
+pub mod claim;
 pub mod config;
 pub mod crosshair;
 pub mod cursor_lock;
@@ -38,6 +39,7 @@ impl Plugin for InputPlugin {
         app.insert_resource(config)
             .init_resource::<action::ActionState>()
             .init_resource::<capture::Captured>()
+            .init_resource::<claim::Claims>()
             .init_resource::<source::mouse::Notches>()
             .init_resource::<pointer::backend::PointerFilter>()
             // Bevy's mouse pointer is what a person clicks an overlay with;

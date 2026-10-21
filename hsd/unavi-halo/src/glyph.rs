@@ -168,6 +168,32 @@ pub const TOOL: Rows = [
     "....#....",
 ];
 
+/// An arrow curling back to the left: take the last change back.
+pub const UNDO: Rows = [
+    ".........",
+    "...#.....",
+    "..##.....",
+    ".######..",
+    "..##...#.",
+    "...#...#.",
+    ".......#.",
+    "..#####..",
+    ".........",
+];
+
+/// [`UNDO`] mirrored: put the last change taken back again.
+pub const REDO: Rows = [
+    ".........",
+    ".....#...",
+    ".....##..",
+    "..######.",
+    ".#...##..",
+    ".#...#...",
+    ".#.......",
+    "..#####..",
+    ".........",
+];
+
 /// `rows` as the record `unavi:vui` reads.
 #[must_use]
 pub fn from_rows(rows: &[&str]) -> Glyph {
@@ -217,6 +243,8 @@ mod tests {
             ("HERE", HERE),
             ("TRAVEL", TRAVEL),
             ("TOOL", TOOL),
+            ("UNDO", UNDO),
+            ("REDO", REDO),
         ] {
             assert!(centred(&rows), "{name} slides to one side of its orb");
         }

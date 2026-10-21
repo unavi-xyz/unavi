@@ -55,6 +55,9 @@ pub struct Root {
     pub nav:   Mote,
     /// What can be at hand.
     pub tools: Mote,
+    /// Under Tools, before the tools: take back and put back the last edit.
+    pub undo:  Mote,
+    pub redo:  Mote,
     /// Who you are to the world: holds the visor.
     pub me:    Mote,
     /// The lenses worn over the world, one toggle each.
@@ -90,6 +93,16 @@ impl Root {
         tools.set_tint(Some(palette::TOOLS));
         wear(&tools, "Tools", &glyph::TOOLS);
 
+        let undo = Mote::new(Kind::Action, "Undo")?;
+        undo.set_description("Takes back the last change you made.")?;
+        wear(&undo, "Undo", &glyph::UNDO);
+        let redo = Mote::new(Kind::Action, "Redo")?;
+        redo.set_description("Puts back the last change you took back.")?;
+        wear(&redo, "Redo", &glyph::REDO);
+        // First under Tools, so they keep their place as tools arrive after.
+        tools.add_child(&undo);
+        tools.add_child(&redo);
+
         let me = Mote::new(Kind::Group, "Self")?;
         me.set_description("Your relation to the world.")?;
         me.set_tint(Some(palette::SELF));
@@ -115,6 +128,8 @@ impl Root {
             home,
             nav,
             tools,
+            undo,
+            redo,
             me,
             visor,
             orbit,

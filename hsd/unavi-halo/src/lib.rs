@@ -193,6 +193,22 @@ impl Script {
         if self.visor.wear(mote) {
             return Ok(());
         }
+        // Undo and redo leave the halo up, so several steps are one visit.
+        let way = if mote.is(&self.root.undo) {
+            Some(Way::Undo)
+        } else if mote.is(&self.root.redo) {
+            Some(Way::Redo)
+        } else {
+            None
+        };
+        if let Some(way) = way {
+            let label = match way {
+                Way::Undo => self.history.undo(),
+                Way::Redo => self.history.redo(),
+            };
+            self.notice.step(&Step { way, label });
+            return Ok(());
+        }
         if !self.hand.equip(mote, self.aim) {
             return Ok(());
         }

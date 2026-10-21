@@ -376,6 +376,73 @@ interface api {
     set-shown: func(value: bool);
   }
 
+  /// A number on a slate, changed by pressing on it and dragging sideways.
+  record number {
+    value:     f32,
+    /// How much `value` changes per metre the pointer travels across the
+    /// pane. Negative runs the other way.
+    per-metre: f32,
+  }
+
+  /// What a slate row shows, and what pressing it does.
+  variant row-kind {
+    /// A heading over the rows beneath it. Pressing does nothing.
+    header,
+    /// A value to read, at most 128 bytes. Pressing does nothing.
+    field(string),
+    /// Pressing and dragging sideways reports `scrubbed`.
+    number(number),
+    /// Pressing reports `toggled` with the other state.
+    toggle(bool),
+    /// Pressing reports `pressed`.
+    action,
+  }
+
+  record row {
+    /// The consumer's own name for the row, which events report. Keep it
+    /// stable across `set-rows` so a drag in progress follows its row.
+    id:    u32,
+    /// At most 64 bytes.
+    label: string,
+    kind:  row-kind,
+  }
+
+  /// What a slate's rows did.
+  variant slate-event {
+    /// An action row was pressed.
+    pressed(u32),
+    /// A toggle row was pressed, asking for this state. The slate draws the
+    /// state the consumer sets, not this one.
+    toggled(tuple<u32, bool>),
+    /// A number row was dragged sideways by this much of its value since the
+    /// last report. The slate draws the value the consumer sets.
+    scrubbed(tuple<u32, f32>),
+    /// The drag on a number row ended: the place to keep the value.
+    released(u32),
+  }
+
+  /// A pane of labelled rows standing where the script puts it, read and
+  /// worked with any pointer: for the information that is a list of values
+  /// rather than a thing to hold, such as a prim's attributes.
+  resource slate {
+    /// Nothing shows until it has rows and is shown.
+    constructor() -> result<slate, error>;
+    /// At most 24 rows; more, or a label or field over its limit, is
+    /// `invalid-argument` and the previous rows are kept.
+    set-rows: func(rows: list<row>) -> result<_, error>;
+    /// The pane, width by height in metres.
+    size: func() -> vec2;
+    /// Where its top centre stands, in the calling script's document frame.
+    /// It turns about the vertical axis to face the viewer on its own.
+    set-position: func(at: vec3);
+    /// Colours the row a pointer is over. `none` uses the shell's accent.
+    set-accent: func(color: option<color>);
+    /// Eases it in or out.
+    set-shown: func(value: bool);
+    /// Everything its rows did since the last call.
+    events: func() -> list<slate-event>;
+  }
+
   /// Reads input and resolves what it did, for every surface at once. Call
   /// from the script's `fixed-update`, where state belongs.
   fixed-update: func() -> result<_, error>;

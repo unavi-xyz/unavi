@@ -36,6 +36,11 @@ use crate::{
         mount::Mount,
         panel::Panel,
         site::Site,
+        slate::{
+            SlateEvent,
+            SlateId,
+            Slates,
+        },
         stand::{
             StandId,
             Stands,
@@ -57,6 +62,7 @@ mod placard;
 mod pop;
 pub mod shadow;
 mod site;
+pub mod slate;
 pub mod stand;
 mod tether;
 mod viewer;
@@ -92,6 +98,8 @@ pub struct Vui {
     free:    Vec<usize>,
     /// Placards standing where a script put them.
     stands:  Stands,
+    /// Panes of rows standing where a script put them.
+    slates:  Slates,
     /// Seconds of updates so far, which notices are timed against.
     now:     f64,
     /// The previous fixed tick's eye, which a respawn is told apart by.
@@ -107,6 +115,7 @@ impl Vui {
             slots:   Vec::new(),
             free:    Vec::new(),
             stands:  Stands::default(),
+            slates:  Slates::default(),
             now:     0.0,
             jumps:   Watch::default(),
         })
@@ -258,6 +267,7 @@ impl Vui {
             self.carry(&by)?;
         }
         let gaze = Gaze::read(&eye);
+        self.slates.fixed_update(&self.doc);
 
         for index in 0..self.slots.len() {
             let Some(slot) = &self.slots[index] else {
@@ -308,7 +318,42 @@ impl Vui {
         }
         self.stands
             .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
+        self.slates
+            .update(&self.doc, &gaze.eye, &self.palette, delta)?;
         Ok(())
+    }
+
+    pub fn slate(&mut self) -> anyhow::Result<SlateId> {
+        self.slates.add(&self.doc)
+    }
+
+    pub fn slate_rows(&mut self, id: SlateId, rows: Vec<crate::slate::Row>) {
+        self.slates.set_rows(id, rows);
+    }
+
+    #[must_use]
+    pub fn slate_size(&self, id: SlateId) -> Vec2 {
+        self.slates.size(id)
+    }
+
+    pub fn slate_at(&mut self, id: SlateId, at: Vec3) {
+        self.slates.set_position(id, at);
+    }
+
+    pub fn slate_accent(&mut self, id: SlateId, accent: Option<Color>) {
+        self.slates.set_accent(id, accent);
+    }
+
+    pub fn slate_shown(&mut self, id: SlateId, shown: bool) {
+        self.slates.set_shown(id, shown);
+    }
+
+    pub fn slate_drain(&mut self, id: SlateId) -> Vec<SlateEvent> {
+        self.slates.drain(id)
+    }
+
+    pub fn slate_remove(&mut self, id: SlateId) -> anyhow::Result<()> {
+        self.slates.remove(&self.doc, id)
     }
 
     /// Makes a placard that stands where a script puts it. Nothing shows

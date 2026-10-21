@@ -23,6 +23,7 @@ mod placard;
 mod pointer;
 mod render;
 mod reveal;
+mod slate;
 mod surface;
 mod tether;
 mod tree;

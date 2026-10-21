@@ -122,10 +122,16 @@ impl Inspection {
             field(row::KIND, "Is", self.kind()),
         ];
         if self.hit_doc.may_write() {
-            rows.push(Row {
-                id:    row::LOCKED,
-                label: "Locked".to_owned(),
-                kind:  RowKind::Toggle(self.locked()),
+            let here = self.locked_here();
+            rows.push(if !here && self.locked() {
+                // Only the prim that states a lock can lift it.
+                field(row::LOCKED, "Locked", "by a prim above")
+            } else {
+                Row {
+                    id:    row::LOCKED,
+                    label: "Locked".to_owned(),
+                    kind:  RowKind::Toggle(here),
+                }
             });
         }
 
@@ -266,6 +272,18 @@ impl Inspection {
     /// it be.
     fn locked(&self) -> bool {
         is_locked(&self.at(self.hit_prim))
+    }
+
+    /// Whether this prim states a lock itself, rather than taking one from
+    /// above.
+    fn locked_here(&self) -> bool {
+        matches!(
+            self.hit_doc.get(
+                self.hit_prim,
+                &PropertyKey::Custom(wired_guest::LOCKED.to_owned()),
+            ),
+            Some(Property::Custom((_, value))) if value.first() == Some(&1)
+        )
     }
 
     /// Locks or unlocks this prim and everything beneath it, undoably.

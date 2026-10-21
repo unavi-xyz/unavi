@@ -60,10 +60,7 @@
         ];
       };
 
-      npmDeps = pkgs.fetchNpmDeps {
-        src = npmSrc;
-        hash = "sha256-B0+9gqmxqZNCblIq7pVdO5rbI0D2o5ieFFtjIg5ySI0=";
-      };
+      npmDeps = pkgs.importNpmLock { npmRoot = npmSrc; };
 
       cargoArgs = rec {
         inherit pname;
@@ -171,7 +168,7 @@
           pkgs.imagemagick
           pkgs.makeWrapper
           pkgs.nodejs
-          pkgs.npmHooks.npmConfigHook
+          pkgs.importNpmLock.npmConfigHook
           pkgs.nushell
           pkgs.patchelf
         ];
@@ -213,7 +210,7 @@
             pkgs.brotli
             pkgs.just
             pkgs.nodejs
-            pkgs.npmHooks.npmConfigHook
+            pkgs.importNpmLock.npmConfigHook
             pkgs.nushell
           ];
           inherit wasm-bindgen-cli;

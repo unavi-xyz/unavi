@@ -45,7 +45,7 @@ use crate::{
 };
 
 /// Most attribute and child rows, so the rest of the slate always fits.
-const MAX_ATTRIBUTES: usize = 5;
+const MAX_ATTRIBUTES: usize = 4;
 const MAX_CHILDREN: usize = 3;
 /// The smallest scale the Scale row brings an element down to.
 const MIN_SCALE: f32 = 0.01;
@@ -69,6 +69,7 @@ mod row {
     pub const ATTRIBUTES: u32 = 20;
     /// Attribute rows count up from here.
     pub const ATTRIBUTE: u32 = 21;
+    pub const DELETE: u32 = 48;
     pub const MAKE_LOCAL: u32 = 49;
     pub const CLOSE: u32 = 50;
 }
@@ -178,6 +179,9 @@ impl Inspection {
         if self.site.is_some() && self.placed_in.may_write() {
             rows.push(action(row::MAKE_LOCAL, "Make local"));
         }
+        if self.hit_doc.may_write() && !self.locked() {
+            rows.push(action(row::DELETE, "Delete"));
+        }
         rows.push(Row {
             id:    row::CLOSE,
             label: "Close".to_owned(),
@@ -193,6 +197,12 @@ impl Inspection {
             SlateEvent::Pressed(row::CLOSE) => return Asked::Close,
             // The site opens the copy in place of what it showed, so this
             // inspection's document is gone.
+            SlateEvent::Pressed(row::DELETE) => {
+                if let Err(err) = self.delete() {
+                    eprintln!("inspector: delete: {err}");
+                }
+                return Asked::Close;
+            }
             SlateEvent::Pressed(row::MAKE_LOCAL) => {
                 match self.make_local() {
                     Ok(()) => println!("inspector: made local"),
@@ -227,6 +237,29 @@ impl Inspection {
             SlateEvent::Pressed(_) | SlateEvent::Toggled(_) => {}
         }
         Asked::Nothing
+    }
+
+    /// Removes this prim and everything beneath it, undoably, deepest first
+    /// so no descendant is left stated in the document.
+    fn delete(&self) -> anyhow::Result<()> {
+        if self.locked() {
+            anyhow::bail!("it is locked");
+        }
+        let edit = Edit::new("Delete")?;
+        edit.track_removal(&self.hit_doc, self.hit_prim)?;
+        let mut prims = vec![self.hit_prim];
+        let mut next = 0;
+        while let Some(&prim) = prims.get(next) {
+            prims.extend(self.hit_doc.children(prim));
+            next += 1;
+        }
+        let mut batch = self.hit_doc.local();
+        for prim in prims.into_iter().rev() {
+            batch = batch.remove(prim);
+        }
+        batch.flush()?;
+        edit.commit()?;
+        Ok(())
     }
 
     /// Whether this prim is locked, here or above it, so editing tools leave

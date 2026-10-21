@@ -35,6 +35,7 @@ use crate::{
         },
     },
     wired::{
+        core::ids::PrimRef,
         input::types::PointerKind,
         physics::simulation::{
             RayFilter,
@@ -99,18 +100,25 @@ impl Script {
         if script_document().is_ok_and(|own| own.id() == hit.target.document) {
             return;
         }
-        let Some(inspection) = Inspection::of(hit.target) else {
+        let toward = (aim.translation - hit.point) * Vec3::new(1.0, 0.0, 1.0);
+        let at = hit.point + toward.normalize_or_zero() * TOWARD + Vec3::Y * ABOVE;
+        self.open(hit.target, Some(at));
+    }
+
+    /// Inspects `target`, standing the slate at `at`, else leaving it where
+    /// it stands.
+    fn open(&self, target: PrimRef, at: Option<Vec3>) {
+        let Some(inspection) = Inspection::of(target) else {
             return;
         };
-
         // Ends a drag still running on the slate, so it cannot carry on into
         // the element inspected next.
         self.slate.set_shown(false);
         self.step_slate();
 
-        let toward = (aim.translation - hit.point) * Vec3::new(1.0, 0.0, 1.0);
-        let at = hit.point + toward.normalize_or_zero() * TOWARD + Vec3::Y * ABOVE;
-        self.slate.set_position(at);
+        if let Some(at) = at {
+            self.slate.set_position(at);
+        }
         if let Err(err) = self.slate.set_rows(&inspection.rows()) {
             eprintln!("inspector: rows: {err:?}");
         }
@@ -134,11 +142,14 @@ impl Script {
     fn step_slate(&self) {
         let events = self.slate.events();
         let mut closing = false;
+        let mut next = None;
         let mut changed = !events.is_empty();
         if let Some(inspection) = &mut *self.inspection.borrow_mut() {
             for event in &events {
-                if matches!(inspection.apply(event), Asked::Close) {
-                    closing = true;
+                match inspection.apply(event) {
+                    Asked::Nothing => {}
+                    Asked::Close => closing = true,
+                    Asked::Inspect(target) => next = Some(target),
                 }
             }
             let ticks = self.ticks.get() + 1;
@@ -153,6 +164,8 @@ impl Script {
         }
         if closing {
             self.close();
+        } else if let Some(target) = next {
+            self.open(target, None);
         }
     }
 }

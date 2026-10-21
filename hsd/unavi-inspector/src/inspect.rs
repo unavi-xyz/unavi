@@ -1,9 +1,8 @@
-//! One inspected element: what the slate says about it, and the edits its
-//! rows make.
-//!
-//! The element is what a hit stands for as a whole (a referenced document's
-//! site, a prim of the space, a loose document's root), and its transform is
-//! what the number rows edit. The attributes listed are the hit prim's own.
+//! One inspected prim: what the slate says about it, and the edits its rows
+//! make. The rows edit the prim itself, its transform among them; how the
+//! element it belongs to is placed is read from what it stands for as a whole
+//! (a referenced document's site, a prim of the space, a loose document's
+//! root).
 
 use std::fmt::Write;
 
@@ -42,8 +41,9 @@ use crate::{
     },
 };
 
-/// Most attribute rows, so the rest of the slate always fits.
-const MAX_ATTRIBUTES: usize = 10;
+/// Most attribute and child rows, so the rest of the slate always fits.
+const MAX_ATTRIBUTES: usize = 6;
+const MAX_CHILDREN: usize = 4;
 /// The smallest scale the Scale row brings an element down to.
 const MIN_SCALE: f32 = 0.01;
 
@@ -58,6 +58,10 @@ mod row {
     pub const Z: u32 = 13;
     pub const YAW: u32 = 14;
     pub const SCALE: u32 = 15;
+    pub const TREE: u32 = 30;
+    pub const PARENT: u32 = 31;
+    /// Child rows count up from here.
+    pub const CHILD: u32 = 32;
     pub const ATTRIBUTES: u32 = 20;
     /// Attribute rows count up from here.
     pub const ATTRIBUTE: u32 = 21;
@@ -68,16 +72,18 @@ mod row {
 pub enum Asked {
     Nothing,
     Close,
+    /// Inspect this prim instead: a parent or a child chosen from the rows.
+    Inspect(PrimRef),
 }
 
 pub struct Inspection {
-    doc:      Document,
-    prim:     (u64, u64),
-    loose:    bool,
-    hit_doc:  Document,
-    hit_prim: (u64, u64),
+    /// The document holding the prim the hit stands for as a whole.
+    placed_in: Document,
+    loose:     bool,
+    hit_doc:   Document,
+    hit_prim:  (u64, u64),
     /// The transform edit a drag on a number row has open.
-    edit:     Option<Edit>,
+    edit:      Option<Edit>,
 }
 
 impl Inspection {
@@ -86,10 +92,9 @@ impl Inspection {
     #[must_use]
     pub fn of(target: PrimRef) -> Option<Self> {
         let hit_doc = open_document(target.document).ok()??;
-        let (doc, prim, loose) = element_of(target)?;
+        let (placed_in, _, loose) = element_of(target)?;
         Some(Self {
-            doc,
-            prim,
+            placed_in,
             loose,
             hit_doc,
             hit_prim: target.prim,
@@ -100,16 +105,16 @@ impl Inspection {
     #[must_use]
     pub fn rows(&self) -> Vec<Row> {
         let mut rows = vec![
-            header(row::NAME, &name(&self.doc, self.prim)),
-            field(row::DOCUMENT, "Document", &document_name(&self.doc)),
-            field(row::AUTHOR, "Author", &author_of(&self.doc)),
+            header(row::NAME, &name(&self.hit_doc, self.hit_prim)),
+            field(row::DOCUMENT, "Document", &document_name(&self.hit_doc)),
+            field(row::AUTHOR, "Author", &author_of(&self.hit_doc)),
             field(row::KIND, "Is", self.kind()),
         ];
 
         if let Some(Property::Transform(transform)) =
-            self.doc.get(self.prim, &PropertyKey::Transform)
+            self.hit_doc.get(self.hit_prim, &PropertyKey::Transform)
         {
-            let editable = self.doc.may_write();
+            let editable = self.hit_doc.may_write();
             let yaw = transform.rotation.yaw();
             rows.push(header(row::TRANSFORM, "Transform"));
             rows.push(number(row::X, "X", transform.translation.x, 1.0, editable));
@@ -124,6 +129,8 @@ impl Inspection {
                 editable,
             ));
         }
+
+        rows.extend(self.tree_rows());
 
         let keys = self.hit_doc.keys(self.hit_prim);
         rows.push(header(
@@ -155,6 +162,19 @@ impl Inspection {
     pub fn apply(&mut self, event: &SlateEvent) -> Asked {
         match *event {
             SlateEvent::Pressed(row::CLOSE) => return Asked::Close,
+            SlateEvent::Pressed(row::PARENT) => {
+                if let Some(parent) = self.parent() {
+                    return Asked::Inspect(self.at(parent));
+                }
+            }
+            SlateEvent::Pressed(id)
+                if (row::CHILD..row::CHILD + MAX_CHILDREN as u32).contains(&id) =>
+            {
+                let index = (id - row::CHILD) as usize;
+                if let Some(child) = self.hit_doc.children(self.hit_prim).get(index) {
+                    return Asked::Inspect(self.at(*child));
+                }
+            }
             SlateEvent::Scrubbed((row, by)) => {
                 if let Err(err) = self.scrub(row, by) {
                     eprintln!("inspector: edit: {err}");
@@ -164,6 +184,47 @@ impl Inspection {
             SlateEvent::Pressed(_) | SlateEvent::Toggled(_) => {}
         }
         Asked::Nothing
+    }
+
+    /// The hit prim's parent and first children, each a row that inspects it.
+    fn tree_rows(&self) -> Vec<Row> {
+        let parent = self.parent();
+        let children = self.hit_doc.children(self.hit_prim);
+        if parent.is_none() && children.is_empty() {
+            return Vec::new();
+        }
+        let mut rows = vec![header(
+            row::TREE,
+            &format!("Tree ({} beneath)", children.len()),
+        )];
+        if let Some(parent) = parent {
+            rows.push(action(
+                row::PARENT,
+                &format!("Up to {}", name(&self.hit_doc, parent)),
+            ));
+        }
+        for (index, child) in children.iter().take(MAX_CHILDREN).enumerate() {
+            rows.push(action(
+                row::CHILD + index as u32,
+                &format!("Into {}", name(&self.hit_doc, *child)),
+            ));
+        }
+        rows
+    }
+
+    fn parent(&self) -> Option<(u64, u64)> {
+        match self.hit_doc.get(self.hit_prim, &PropertyKey::Parent) {
+            Some(Property::Parent(parent)) => parent,
+            _ => None,
+        }
+    }
+
+    /// `prim` of the inspected document, as a hit on it would name it.
+    fn at(&self, prim: (u64, u64)) -> PrimRef {
+        PrimRef {
+            document: self.hit_doc.id(),
+            prim,
+        }
     }
 
     /// Keeps the transform edit a drag left open, so ending an inspection
@@ -179,7 +240,7 @@ impl Inspection {
     fn kind(&self) -> &'static str {
         if self.loose {
             "loose: here while someone holds it"
-        } else if self.doc.id() == self.hit_doc.id() {
+        } else if self.placed_in.id() == self.hit_doc.id() {
             "a prim of this space"
         } else {
             "placed by a reference"
@@ -188,13 +249,13 @@ impl Inspection {
 
     fn scrub(&mut self, row: u32, by: f32) -> anyhow::Result<()> {
         let Some(Property::Transform(mut transform)) =
-            self.doc.get(self.prim, &PropertyKey::Transform)
+            self.hit_doc.get(self.hit_prim, &PropertyKey::Transform)
         else {
             return Ok(());
         };
         if self.edit.is_none() {
             let edit = Edit::new("Edit transform")?;
-            edit.track(&self.doc, &[(self.prim, PropertyKey::Transform)]);
+            edit.track(&self.hit_doc, &[(self.hit_prim, PropertyKey::Transform)]);
             self.edit = Some(edit);
         }
         match row {
@@ -215,9 +276,14 @@ impl Inspection {
             _ => return Ok(()),
         }
         let set = Property::Transform(transform);
-        if let Err(err) = self.doc.shared().set(self.prim, set.clone()).flush() {
+        if let Err(err) = self
+            .hit_doc
+            .shared()
+            .set(self.hit_prim, set.clone())
+            .flush()
+        {
             eprintln!("inspector: editing for this peer only: {err:?}");
-            self.doc.local().set(self.prim, set).flush()?;
+            self.hit_doc.local().set(self.hit_prim, set).flush()?;
         }
         Ok(())
     }
@@ -228,6 +294,14 @@ fn header(id: u32, label: &str) -> Row {
         id,
         label: clip(label, 64),
         kind: RowKind::Header,
+    }
+}
+
+fn action(id: u32, label: &str) -> Row {
+    Row {
+        id,
+        label: clip(label, 64),
+        kind: RowKind::Action,
     }
 }
 

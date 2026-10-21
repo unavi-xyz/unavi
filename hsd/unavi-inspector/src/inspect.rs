@@ -519,12 +519,35 @@ fn author_of(doc: &Document) -> String {
 
 /// The key's name as a person reads it.
 fn key_label(key: &PropertyKey) -> String {
-    let mut label = String::new();
+    let mut debug = String::new();
     // A key's `Debug` form is its variant, which is what the WIT names it.
-    if write!(label, "{key:?}").is_err() {
+    if write!(debug, "{key:?}").is_err() {
         return "attribute".to_owned();
     }
-    label
+    words(&debug)
+}
+
+/// `MeshVertices(Position)` as `mesh vertices (position)`. Quoted text, a
+/// custom key's name, is kept as written.
+fn words(debug: &str) -> String {
+    let mut out = String::with_capacity(debug.len() + 4);
+    let mut quoted = false;
+    let mut previous = ' ';
+    for c in debug.chars() {
+        match c {
+            '"' => quoted = !quoted,
+            '(' if !quoted => out.push_str(" ("),
+            c if !quoted && c.is_ascii_uppercase() => {
+                if previous.is_ascii_lowercase() {
+                    out.push(' ');
+                }
+                out.push(c.to_ascii_lowercase());
+            }
+            c => out.push(c),
+        }
+        previous = c;
+    }
+    out
 }
 
 /// A short reading of a value, empty for one that is bytes to the eye.
@@ -552,5 +575,17 @@ fn summary(property: &Property) -> String {
         Property::MeshIndices(indices) => format!("{} indices", indices.len()),
         Property::MeshVertices(stream) => format!("{} floats", stream.values.len()),
         _ => String::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_key_reads_as_words() {
+        assert_eq!(words("MeshVertices(Position)"), "mesh vertices (position)");
+        assert_eq!(words("RigidBody"), "rigid body");
+        assert_eq!(words("Custom(\"edit/locked\")"), "custom (edit/locked)");
     }
 }

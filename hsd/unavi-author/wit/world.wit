@@ -38,13 +38,25 @@ interface api {
     commit: func() -> result<_, error>;
   }
 
+  enum way {
+    undo,
+    redo,
+  }
+
+  /// An undo or redo the history took on request.
+  record step {
+    way:   way,
+    /// The change's label, or `none` when there was nothing to take.
+    label: option<string>,
+  }
+
   /// The local user's history of edits, from every tool. Held by the shell;
   /// it hears only edits filed by documents the local user authors.
   resource history {
     constructor();
     /// Files edits committed since the last call, and acts on undo and redo
-    /// requests. Call every tick.
-    poll: func();
+    /// requests, answering each step it took. Call every tick.
+    poll: func() -> list<step>;
     /// Takes back the newest change, answering its label, or `none` when
     /// there is nothing to undo. A key someone changed since is left as it
     /// is.

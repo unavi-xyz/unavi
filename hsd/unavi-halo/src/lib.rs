@@ -28,6 +28,7 @@ use crate::{
         visor::Visor,
     },
     clock::Clock,
+    notice::Notice,
     root::Root,
     shortcuts::{
         Shortcut,
@@ -39,7 +40,11 @@ use crate::{
         Summon,
     },
     unavi::{
-        author::api::History,
+        author::api::{
+            History,
+            Step,
+            Way,
+        },
         vui::api::{
             self,
             Event,
@@ -65,6 +70,7 @@ mod body;
 mod branch;
 mod clock;
 mod glyph;
+mod notice;
 mod palette;
 mod root;
 mod shortcuts;
@@ -98,6 +104,8 @@ struct Script {
     /// Every edit the local user's tools kept, to undo and redo.
     history:   History,
     shortcuts: Shortcuts,
+    /// Says what an undo or redo did.
+    notice:    Notice,
 }
 
 impl Script {
@@ -236,16 +244,19 @@ impl Script {
         }
     }
 
-    fn shortcut(&self, shortcut: Option<Shortcut>) {
-        let (verb, label) = match shortcut {
-            Some(Shortcut::Undo) => ("undo", self.history.undo()),
-            Some(Shortcut::Redo) => ("redo", self.history.redo()),
+    fn shortcut(&mut self, shortcut: Option<Shortcut>) {
+        let step = match shortcut {
+            Some(Shortcut::Undo) => Step {
+                way:   Way::Undo,
+                label: self.history.undo(),
+            },
+            Some(Shortcut::Redo) => Step {
+                way:   Way::Redo,
+                label: self.history.redo(),
+            },
             None => return,
         };
-        match label {
-            Some(label) => println!("halo: {verb} '{label}'"),
-            None => println!("halo: nothing to {verb}"),
-        }
+        self.notice.step(&step);
     }
 
     fn forward(&self, to_hand: impl FnOnce(&Toolbelt)) {
@@ -272,6 +283,7 @@ impl ScriptBehavior for Script {
             aim:       PointerKind::Screen,
             history:   History::new(),
             shortcuts: Shortcuts::default(),
+            notice:    Notice::new()?,
         };
         // Listening before asking, so the answer cannot arrive unheard.
         script.visor.start();
@@ -282,7 +294,9 @@ impl ScriptBehavior for Script {
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         self.body.step()?;
         api::fixed_update()?;
-        self.history.poll();
+        for step in self.history.poll() {
+            self.notice.step(&step);
+        }
         if self.home.fixed_update(&self.root.home) {
             self.put_away()?;
         }
@@ -319,6 +333,7 @@ impl ScriptBehavior for Script {
         for event in self.root.orbit.events() {
             self.route(&event)?;
         }
+        self.notice.update(&eye, tick.dt);
         let pose = self
             .hand
             .hand()

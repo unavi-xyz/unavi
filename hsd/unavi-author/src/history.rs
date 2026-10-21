@@ -6,7 +6,11 @@ use std::{
 };
 
 use crate::{
-    exports::unavi::author::api::GuestHistory,
+    exports::unavi::author::api::{
+        GuestHistory,
+        Step,
+        Way,
+    },
     protocol::{
         CH_FILE,
         CH_REDO,
@@ -52,13 +56,6 @@ struct Entry {
     changes: Vec<Change>,
 }
 
-/// Which way a change is replayed.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Way {
-    Undo,
-    Redo,
-}
-
 #[derive(Default)]
 struct Stacks {
     done:   Vec<Entry>,
@@ -88,10 +85,11 @@ impl GuestHistory for History {
         }
     }
 
-    fn poll(&self) {
+    fn poll(&self) -> Vec<Step> {
         let Some(rx) = &self.rx else {
-            return;
+            return Vec::new();
         };
+        let mut steps = Vec::new();
         for message in rx.drain(DRAIN_MAX) {
             // Anything replayed here is written with the shell's authority,
             // so only the local user's own scripts are heard.
@@ -103,11 +101,18 @@ impl GuestHistory for History {
                     Ok(filed) => self.push(filed),
                     Err(err) => eprintln!("history: malformed edit: {err}"),
                 },
-                CH_UNDO => report(Way::Undo, self.undo()),
-                CH_REDO => report(Way::Redo, self.redo()),
+                CH_UNDO => steps.push(Step {
+                    way:   Way::Undo,
+                    label: self.undo(),
+                }),
+                CH_REDO => steps.push(Step {
+                    way:   Way::Redo,
+                    label: self.redo(),
+                }),
                 _ => {}
             }
         }
+        steps
     }
 
     fn undo(&self) -> Option<String> {
@@ -155,17 +160,6 @@ impl History {
             Way::Redo => stacks.done.push(entry),
         }
         Some(label)
-    }
-}
-
-fn report(way: Way, label: Option<String>) {
-    let verb = match way {
-        Way::Undo => "undo",
-        Way::Redo => "redo",
-    };
-    match label {
-        Some(label) => println!("history: {verb} '{label}'"),
-        None => println!("history: nothing to {verb}"),
     }
 }
 

@@ -21,6 +21,7 @@ use tokio::sync::{
     mpsc,
     oneshot,
 };
+use xdid::core::did::Did;
 
 pub use crate::auth::{
     bindings::Bindings,
@@ -43,9 +44,19 @@ mod protocol;
 
 pub const ALPN: &[u8] = b"wired/auth";
 
-/// Bounds a handshake in either direction: a dial waits on it, and an inbound
-/// one holds a task.
+/// Bounds the handshake itself, in either direction.
 const PROOF_DEADLINE: Duration = Duration::from_secs(20);
+
+/// Bounds reaching a peer whose addresses are not known here yet. The first
+/// dial to a peer waits on relay and holepunch discovery, which is not the
+/// handshake running late and must not be charged to it.
+const DIAL_DEADLINE: Duration = Duration::from_secs(120);
+
+/// How long a dial waits for its peer's proof before going ahead unbound.
+/// Every dial triggers one, and a caller that needs the DID asks for it
+/// directly, so a cold peer must not hold the dial.
+const BIND_WAIT: Duration = Duration::from_secs(3);
+
 const CLOSE_REFUSED: u32 = 403;
 
 /// How long the accepting end holds a proven connection open for the peer to
@@ -54,9 +65,24 @@ const CLOSE_REFUSED: u32 = 403;
 const CLOSE_GRACE: Duration = Duration::from_secs(5);
 
 pub(crate) enum Message {
-    Prove(EndpointId, oneshot::Sender<()>),
-    /// A handshake finished; `true` if the remote proved a DID.
-    Proved(EndpointId, bool),
+    /// Prove `peer`, answering with the DID it proved once the attempt settles.
+    /// A peer already bound answers from the binding.
+    Prove(EndpointId, oneshot::Sender<Option<Did>>),
+    /// A handshake finished.
+    Proved(EndpointId, Proof),
+}
+
+/// How an outgoing proof ended.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Proof {
+    /// The peer answered and proved a DID.
+    Proved,
+    /// The peer answered and its proof did not hold. Retrying it at once is
+    /// pointless, so the attempt is remembered for a while.
+    Refused,
+    /// The peer could not be reached. Nothing is known about it, so the next
+    /// dial tries again.
+    Unreachable,
 }
 
 /// The `wired/auth` wiring for one endpoint.
@@ -91,6 +117,19 @@ impl EndpointAuth {
     #[must_use]
     pub const fn bindings(&self) -> &Arc<Bindings> {
         &self.bindings
+    }
+
+    /// Proves `peer` and answers the DID it proved, reusing a live binding.
+    ///
+    /// `None` means it proved nothing before `deadline`: unreachable, or its
+    /// proof did not hold. Reads are open to anyone, so that is anonymity
+    /// rather than an error, and the next attempt starts afresh. Callers that
+    /// judge a peer by its DID ask here rather than read [`Bindings`], whose
+    /// entries end with the peer's last connection.
+    pub async fn prove(&self, peer: EndpointId, deadline: Duration) -> Option<Did> {
+        let (tx, rx) = oneshot::channel();
+        self.tx.send(Message::Prove(peer, tx)).await.ok()?;
+        n0_future::time::timeout(deadline, rx).await.ok()?.ok()?
     }
 
     /// Installs the hooks that dial `wired/auth` ahead of an outgoing

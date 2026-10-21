@@ -16,9 +16,11 @@ use tokio::sync::{
     mpsc,
     oneshot,
 };
+use tracing::debug;
 
 use crate::auth::{
     ALPN,
+    BIND_WAIT,
     Message,
     bindings::Bindings,
 };
@@ -41,15 +43,20 @@ impl EndpointHooks for Hooks {
 
         // Accepted whether or not the proof succeeds. Reads are open to
         // anyone, so a peer that proves nothing is anonymous rather than
-        // refused. Awaited so the dial behind it sees the binding.
+        // refused. Waited on only briefly: the first dial to a cold peer
+        // spends its time on relay and holepunch discovery, and holding the
+        // caller there postpones the very connection the proof runs on. A
+        // caller that needs the DID asks for one instead of reading the
+        // binding.
         let (tx, rx) = oneshot::channel();
         if self
             .tx
             .send(Message::Prove(remote_addr.id, tx))
             .await
             .is_ok()
+            && n0_future::time::timeout(BIND_WAIT, rx).await.is_err()
         {
-            rx.await.ok();
+            debug!(remote = %remote_addr.id.fmt_short(), "dial went ahead unproven");
         }
 
         BeforeConnectOutcome::Accept

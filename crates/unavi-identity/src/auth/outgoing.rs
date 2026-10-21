@@ -21,12 +21,16 @@ use tokio::sync::{
     oneshot,
 };
 use tracing::debug;
+use xdid::core::did::Did;
 
 use crate::{
     auth::{
         ALPN,
+        CLOSE_REFUSED,
+        DIAL_DEADLINE,
         Message,
         PROOF_DEADLINE,
+        Proof,
         bindings::Bindings,
         handshake::Handshake,
     },
@@ -34,10 +38,32 @@ use crate::{
     resolver::Resolver,
 };
 
-/// How long a remote that proved nothing is dialed without retrying the proof,
-/// so a peer that does not speak `wired/auth` costs one deadline, not one per
-/// dial.
+/// How long a remote that refused a proof is left alone, so a peer that does
+/// not speak `wired/auth` costs one deadline, not one per dial. Only a refusal
+/// is remembered: an unreachable peer is retried on the next dial.
 const FAILURE_MEMORY: Duration = Duration::from_mins(1);
+
+/// Peers that answered and refused a proof, for [`FAILURE_MEMORY`]. A peer
+/// that could not be reached is not one of them: nothing was learned about it.
+#[derive(Default)]
+struct Refusals(HashMap<EndpointId, Instant>);
+
+impl Refusals {
+    fn remembered(&self, peer: EndpointId) -> bool {
+        self.0
+            .get(&peer)
+            .is_some_and(|at| at.elapsed() < FAILURE_MEMORY)
+    }
+
+    fn record(&mut self, peer: EndpointId, proof: Proof) {
+        if proof == Proof::Refused {
+            self.0.retain(|_, at| at.elapsed() < FAILURE_MEMORY);
+            self.0.insert(peer, Instant::now());
+        } else {
+            self.0.remove(&peer);
+        }
+    }
+}
 
 /// Hooks are installed on the endpoint builder, before the endpoint exists, so
 /// they cannot hold it themselves; this task does the dialing for them.
@@ -51,20 +77,16 @@ pub struct Outgoing {
 
 impl Outgoing {
     pub async fn run(self, mut rx: mpsc::Receiver<Message>) {
-        let mut waiting = HashMap::<EndpointId, Vec<oneshot::Sender<()>>>::new();
-        let mut failed = HashMap::<EndpointId, Instant>::new();
+        let mut waiting = HashMap::<EndpointId, Vec<oneshot::Sender<Option<Did>>>>::new();
+        let mut refused = Refusals::default();
 
         while let Some(message) = rx.recv().await {
             match message {
                 Message::Prove(remote, reply) if self.bindings.is_bound(remote) => {
-                    reply.send(()).ok();
+                    reply.send(self.bindings.did_of(remote)).ok();
                 }
-                Message::Prove(remote, reply)
-                    if failed
-                        .get(&remote)
-                        .is_some_and(|at| at.elapsed() < FAILURE_MEMORY) =>
-                {
-                    reply.send(()).ok();
+                Message::Prove(remote, reply) if refused.remembered(remote) => {
+                    reply.send(None).ok();
                 }
                 Message::Prove(remote, reply) => match waiting.entry(remote) {
                     Entry::Occupied(mut entry) => entry.get_mut().push(reply),
@@ -73,15 +95,11 @@ impl Outgoing {
                         self.spawn_proof(remote);
                     }
                 },
-                Message::Proved(remote, proved) => {
-                    if proved {
-                        failed.remove(&remote);
-                    } else {
-                        failed.retain(|_, at| at.elapsed() < FAILURE_MEMORY);
-                        failed.insert(remote, Instant::now());
-                    }
+                Message::Proved(remote, proof) => {
+                    refused.record(remote, proof);
+                    let did = self.bindings.did_of(remote);
                     for reply in waiting.remove(&remote).into_iter().flatten() {
-                        reply.send(()).ok();
+                        reply.send(did.clone()).ok();
                     }
                 }
             }
@@ -96,45 +114,88 @@ impl Outgoing {
         let resolver = Arc::clone(&self.resolver);
 
         n0_future::task::spawn(async move {
-            let proof = exchange(&endpoint, remote, &bindings, &identity, &resolver);
-
-            let proved = match n0_future::time::timeout(PROOF_DEADLINE, proof).await {
-                Ok(Ok(())) => true,
-                Ok(Err(err)) => {
-                    debug!(?err, %remote, "peer proved no identity");
-                    false
-                }
-                Err(_) => {
-                    debug!(%remote, "identity proof timed out");
-                    false
-                }
-            };
-
-            tx.send(Message::Proved(remote, proved)).await.ok();
+            let proof = prove(&endpoint, remote, &bindings, &identity, &resolver).await;
+            tx.send(Message::Proved(remote, proof)).await.ok();
         });
     }
 }
 
-async fn exchange(
+/// Proves `remote` to itself and to us, bounding the dial and the handshake
+/// separately: reaching a peer never dialed before is discovery, not proof.
+async fn prove(
     endpoint: &Endpoint,
     remote: EndpointId,
     bindings: &Bindings,
     identity: &Identity,
     resolver: &Resolver,
-) -> anyhow::Result<()> {
-    let connection = endpoint.connect(remote, ALPN).await?;
-    let (mut tx, mut rx) = connection.open_bi().await?;
+) -> Proof {
+    let connection =
+        match n0_future::time::timeout(DIAL_DEADLINE, endpoint.connect(remote, ALPN)).await {
+            Ok(Ok(connection)) => connection,
+            Ok(Err(err)) => {
+                debug!(?err, %remote, "peer not reachable");
+                return Proof::Unreachable;
+            }
+            Err(_) => {
+                debug!(%remote, "dial timed out");
+                return Proof::Unreachable;
+            }
+        };
 
-    let handshake = Handshake {
-        identity,
-        resolver,
-        local: endpoint.id(),
-        remote,
+    let exchange = async {
+        let (mut tx, mut rx) = connection.open_bi().await?;
+        let handshake = Handshake {
+            identity,
+            resolver,
+            local: endpoint.id(),
+            remote,
+        };
+
+        handshake.dial(&mut tx, &mut rx).await
     };
 
-    let did = handshake.dial(&mut tx, &mut rx).await?;
-    bindings.bind(remote, did);
+    match n0_future::time::timeout(PROOF_DEADLINE, exchange).await {
+        Ok(Ok(did)) => {
+            bindings.bind(remote, did.clone());
+            debug!(%did, %remote, "peer identified");
+            connection.close(VarInt::from_u32(0), b"done");
+            Proof::Proved
+        }
+        Ok(Err(err)) => {
+            debug!(?err, %remote, "peer proved no identity");
+            connection.close(VarInt::from_u32(CLOSE_REFUSED), b"proof refused");
+            Proof::Refused
+        }
+        Err(_) => {
+            debug!(%remote, "identity proof timed out");
+            connection.close(VarInt::from_u32(CLOSE_REFUSED), b"proof timed out");
+            Proof::Refused
+        }
+    }
+}
 
-    connection.close(VarInt::from_u32(0), b"done");
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use iroh::SecretKey;
+
+    use super::*;
+
+    /// A peer that never answered says nothing about its DID, so a later dial
+    /// must still prove it. Only a peer that answered and refused is left
+    /// alone, and only for a while.
+    #[test]
+    fn only_a_refusal_is_remembered() {
+        let mut refusals = Refusals::default();
+        let unreachable = SecretKey::generate().public();
+        let refusing = SecretKey::generate().public();
+
+        refusals.record(unreachable, Proof::Unreachable);
+        refusals.record(refusing, Proof::Refused);
+
+        assert!(!refusals.remembered(unreachable));
+        assert!(refusals.remembered(refusing));
+
+        refusals.record(refusing, Proof::Proved);
+        assert!(!refusals.remembered(refusing));
+    }
 }

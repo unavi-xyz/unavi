@@ -214,6 +214,7 @@ mod tests {
         let pointer = |kind, grip, x: f32| Pointer {
             kind,
             active: true,
+            pose: Transform::IDENTITY,
             ray: Ray {
                 origin:    Vec3::new(x, 0.0, 0.0),
                 direction: Vec3::new(0.0, 0.0, -1.0),
@@ -237,6 +238,7 @@ mod tests {
         let mut screen = Pointer {
             kind:    PointerKind::Screen,
             active:  false,
+            pose:    Transform::IDENTITY,
             ray:     ray(),
             trigger: 0.0,
             grip:    1.0,

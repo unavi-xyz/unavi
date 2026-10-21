@@ -1,0 +1,60 @@
+package unavi:author;
+
+world guest {
+  include wired:prelude/imports;
+  export api;
+}
+
+/// Undoable editing. Every edit a tool keeps goes through an `edit`, so the
+/// local user has one history across every tool, held by the shell.
+interface api {
+  use wired:core/ids.{prim-id};
+  use wired:core/error.{error};
+  use wired:scene/document.{document};
+  use wired:scene/properties.{property-key};
+
+  /// One undoable change, which may span several documents.
+  ///
+  /// Built when the change begins: `track` reads what each key holds before
+  /// the tool writes its preview. `commit` makes every tracked key durable
+  /// and files the change. Dropping an edit without committing files nothing
+  /// and leaves the tool's preview writes for the tool to undo.
+  resource edit {
+    /// `label` names the change in the history, at most 64 bytes; longer is
+    /// `invalid-argument`.
+    constructor(label: string) -> result<edit, error>;
+    /// Records what `keys` of `document` hold now. A key tracked twice keeps
+    /// the first reading.
+    track: func(document: borrow<document>, keys: list<tuple<prim-id, property-key>>);
+    /// Records that `prim` and everything beneath it is new: undoing removes
+    /// it. Call once the prim is built, before `commit`.
+    track-creation: func(document: borrow<document>, prim: prim-id) -> result<_, error>;
+    /// Records `prim` and everything beneath it, which the tool is about to
+    /// remove: undoing builds it again, under new prim ids. Call before the
+    /// remove.
+    track-removal: func(document: borrow<document>, prim: prim-id) -> result<_, error>;
+    /// Makes every tracked key durable and files the change. A change too
+    /// large to file is still kept, and is not undoable.
+    commit: func() -> result<_, error>;
+  }
+
+  /// The local user's history of edits, from every tool. Held by the shell;
+  /// it hears only edits filed by documents the local user authors.
+  resource history {
+    constructor();
+    /// Files edits committed since the last call, and acts on undo and redo
+    /// requests. Call every tick.
+    poll: func();
+    /// Takes back the newest change, answering its label, or `none` when
+    /// there is nothing to undo. A key someone changed since is left as it
+    /// is.
+    undo: func() -> option<string>;
+    /// Puts back the newest change undone, answering its label.
+    redo: func() -> option<string>;
+  }
+
+  /// Asks the history to undo, for a script that does not hold it.
+  request-undo: func();
+  /// Asks the history to redo.
+  request-redo: func();
+}

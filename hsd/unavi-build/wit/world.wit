@@ -1,0 +1,7 @@
+package unavi:build;
+
+world guest {
+  import unavi:author/api;
+  import unavi:tool/api;
+  include wired:prelude/script;
+}

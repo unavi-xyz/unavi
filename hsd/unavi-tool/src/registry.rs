@@ -8,6 +8,7 @@ use crate::{
         Glyph,
         GuestToolRegistry,
         RegisteredTool,
+        ToolButton,
         ToolState,
     },
     protocol::{
@@ -16,20 +17,24 @@ use crate::{
         CH_DEACTIVATE,
         CH_DISCOVER,
         CH_REGISTER,
+        CH_PRESS,
         CH_SCROLL,
         CH_SET_STATE,
-        CH_TRIGGER,
+        ActivatePayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
+        PressPayload,
         RegisterPayload,
         ScrollPayload,
         ToolStatePayload,
-        TriggerPayload,
     },
-    wired::event::messaging::{
-        self,
-        MessageSubscription,
-        Scope,
+    wired::{
+        event::messaging::{
+            self,
+            MessageSubscription,
+            Scope,
+        },
+        input::types::PointerKind,
     },
 };
 
@@ -100,10 +105,8 @@ impl GuestToolRegistry for ToolRegistry {
             .collect()
     }
 
-    fn activate(&self, document: (u64, u64, u64, u64)) {
-        if let Err(err) = messaging::emit(CH_ACTIVATE, &[], Some(&[document]), Scope::Global) {
-            eprintln!("tool-registry: emit activate: {err:?}");
-        }
+    fn activate(&self, document: (u64, u64, u64, u64), hand: PointerKind) {
+        emit_to(document, CH_ACTIVATE, &ActivatePayload { hand: hand.into() });
     }
 
     fn deactivate(&self, document: (u64, u64, u64, u64)) {
@@ -120,8 +123,15 @@ impl GuestToolRegistry for ToolRegistry {
         );
     }
 
-    fn trigger(&self, document: (u64, u64, u64, u64), pressed: bool) {
-        emit_to(document, CH_TRIGGER, &TriggerPayload { pressed });
+    fn press(&self, document: (u64, u64, u64, u64), button: ToolButton, pressed: bool) {
+        emit_to(
+            document,
+            CH_PRESS,
+            &PressPayload {
+                button: button.into(),
+                pressed,
+            },
+        );
     }
 
     fn scroll(&self, document: (u64, u64, u64, u64), delta: f32) {

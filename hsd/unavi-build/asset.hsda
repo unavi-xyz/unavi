@@ -1,0 +1,14 @@
+(
+    meta: (
+        name: "Build",
+    ),
+    prims: [
+        (
+            attributes: (
+                name: "build",
+                script: "./Cargo.toml",
+            ),
+            children: [],
+        ),
+    ],
+)

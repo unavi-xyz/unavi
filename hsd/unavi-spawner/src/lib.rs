@@ -11,8 +11,10 @@ use crate::{
     preview::Preview,
     unavi::tool::api::{
         Tool,
+        ToolButton,
         ToolEvent,
     },
+    wired::input::types::PointerKind,
 };
 
 mod glyph;
@@ -28,8 +30,9 @@ struct Script {
     tool:    Tool,
     preview: Preview,
     active:  Cell<bool>,
+    /// The pointer it aims with while in hand.
+    hand:    Cell<PointerKind>,
     color:   Cell<Color>,
-    pressed: Cell<bool>,
     art_t:   Cell<f32>,
 }
 
@@ -43,8 +46,8 @@ impl ScriptBehavior for Script {
             )?,
             preview: Preview::new(ARTIFACT_OFFSET)?,
             active:  Cell::new(false),
+            hand:    Cell::new(PointerKind::Screen),
             color:   Cell::new(palette::DEFAULT),
-            pressed: Cell::new(false),
             art_t:   Cell::new(0.0),
         })
     }
@@ -52,24 +55,21 @@ impl ScriptBehavior for Script {
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
-                ToolEvent::Activate => self.active.set(true),
-                ToolEvent::Deactivate => {
-                    self.active.set(false);
-                    self.pressed.set(false);
+                ToolEvent::Activate(hand) => {
+                    self.active.set(true);
+                    self.hand.set(hand);
                 }
+                ToolEvent::Deactivate => self.active.set(false),
                 ToolEvent::SetState(state) => self.color.set(state.color),
-                ToolEvent::Scroll(_) => {}
-                ToolEvent::Trigger(pressed) => {
-                    if pressed
-                        && !self.pressed.get()
-                        && self.active.get()
-                        && let Some(cam) = camera_pose()
-                        && let Err(err) = spawn::spawn(self.color.get(), &cam)
+                ToolEvent::Pressed(ToolButton::Primary) => {
+                    if self.active.get()
+                        && let Some(aim) = pointer_pose(self.hand.get()).or_else(camera_pose)
+                        && let Err(err) = spawn::spawn(self.color.get(), &aim)
                     {
                         eprintln!("spawner: spawn failed: {err:?}");
                     }
-                    self.pressed.set(pressed);
                 }
+                ToolEvent::Pressed(_) | ToolEvent::Released(_) | ToolEvent::Scroll(_) => {}
             }
         }
         Ok(())

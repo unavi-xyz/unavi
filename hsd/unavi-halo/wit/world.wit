@@ -1,6 +1,7 @@
 package unavi:halo;
 
 world guest {
+  import unavi:author/api;
   import unavi:host/node-storage;
   import unavi:shapes/api;
   import unavi:tool/api;

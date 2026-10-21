@@ -148,6 +148,16 @@ impl Transform {
     pub fn transform_point(&self, point: Vec3) -> Vec3 {
         self.translation + self.rotation * (self.scale * point)
     }
+
+    /// The transform that undoes this one. Exact for a uniform scale; a
+    /// non-uniform one has no inverse of this shape and keeps only its
+    /// per-axis reciprocal.
+    #[must_use]
+    pub fn inverse(&self) -> Self {
+        let rotation = self.rotation.inverse();
+        let scale = self.scale.recip();
+        Self::new(-(rotation * (self.translation * scale)), rotation, scale)
+    }
 }
 
 impl Mul for Transform {
@@ -179,6 +189,18 @@ mod tests {
                 .length()
                 < 1.0e-5
         );
+    }
+
+    #[test]
+    fn a_transform_composed_with_its_inverse_moves_nothing() {
+        let transform = Transform::new(
+            Vec3::new(1.0, -2.0, 3.0),
+            Quat::from(glam::Quat::from_euler(glam::EulerRot::YXZ, 0.4, -0.9, 0.2)),
+            Vec3::splat(2.5),
+        );
+        let point = Vec3::new(-0.3, 4.0, 7.0);
+        let back = (transform.inverse() * transform).transform_point(point);
+        assert!((back - point).length() < 1.0e-4, "{back} is not {point}");
     }
 }
 

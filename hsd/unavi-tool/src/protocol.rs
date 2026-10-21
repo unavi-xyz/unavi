@@ -7,12 +7,17 @@ use serde::{
 };
 use wired_guest::math::Color;
 
+use crate::{
+    exports::unavi::tool::api::ToolButton,
+    wired::input::types::PointerKind,
+};
+
 pub const CH_DISCOVER: &str = "unavi:tool/discover";
 pub const CH_REGISTER: &str = "unavi:tool/register";
 pub const CH_ACTIVATE: &str = "unavi:tool/activate";
 pub const CH_DEACTIVATE: &str = "unavi:tool/deactivate";
 pub const CH_SET_STATE: &str = "unavi:tool/set-state";
-pub const CH_TRIGGER: &str = "unavi:tool/trigger";
+pub const CH_PRESS: &str = "unavi:tool/press";
 pub const CH_SCROLL: &str = "unavi:tool/scroll";
 
 /// Longest `tool` name, matching the bound documented on
@@ -80,8 +85,70 @@ pub struct ToolStatePayload {
     pub color: Color,
 }
 
+/// Mirrors `wired:input/types.pointer-kind`, which has no serde form.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum HandPayload {
+    Screen,
+    LeftHand,
+    RightHand,
+}
+
+impl From<PointerKind> for HandPayload {
+    fn from(kind: PointerKind) -> Self {
+        match kind {
+            PointerKind::Screen => Self::Screen,
+            PointerKind::LeftHand => Self::LeftHand,
+            PointerKind::RightHand => Self::RightHand,
+        }
+    }
+}
+
+impl From<HandPayload> for PointerKind {
+    fn from(hand: HandPayload) -> Self {
+        match hand {
+            HandPayload::Screen => Self::Screen,
+            HandPayload::LeftHand => Self::LeftHand,
+            HandPayload::RightHand => Self::RightHand,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct TriggerPayload {
+pub struct ActivatePayload {
+    pub hand: HandPayload,
+}
+
+/// Mirrors `tool-button`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ButtonPayload {
+    Primary,
+    Secondary,
+    Modifier,
+}
+
+impl From<ToolButton> for ButtonPayload {
+    fn from(button: ToolButton) -> Self {
+        match button {
+            ToolButton::Primary => Self::Primary,
+            ToolButton::Secondary => Self::Secondary,
+            ToolButton::Modifier => Self::Modifier,
+        }
+    }
+}
+
+impl From<ButtonPayload> for ToolButton {
+    fn from(button: ButtonPayload) -> Self {
+        match button {
+            ButtonPayload::Primary => Self::Primary,
+            ButtonPayload::Secondary => Self::Secondary,
+            ButtonPayload::Modifier => Self::Modifier,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PressPayload {
+    pub button:  ButtonPayload,
     pub pressed: bool,
 }
 

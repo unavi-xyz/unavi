@@ -16,3 +16,6 @@ crate-type = ["cdylib"]
 anyhow.workspace      = true
 wired-guest.path      = "../wired-guest"
 wit-bindgen.workspace = true
+
+[dev-dependencies]
+glam.workspace = true

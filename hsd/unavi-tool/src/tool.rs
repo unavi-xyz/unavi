@@ -19,16 +19,17 @@ use crate::{
         CH_DEACTIVATE,
         CH_DISCOVER,
         CH_REGISTER,
+        CH_PRESS,
         CH_SCROLL,
         CH_SET_STATE,
-        CH_TRIGGER,
+        ActivatePayload,
         GlyphPayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
+        PressPayload,
         RegisterPayload,
         ScrollPayload,
         ToolStatePayload,
-        TriggerPayload,
     },
     wired::{
         core::error::Error,
@@ -75,7 +76,7 @@ impl GuestTool for Tool {
                 CH_ACTIVATE.to_owned(),
                 CH_DEACTIVATE.to_owned(),
                 CH_SET_STATE.to_owned(),
-                CH_TRIGGER.to_owned(),
+                CH_PRESS.to_owned(),
                 CH_SCROLL.to_owned(),
             ],
             None,
@@ -123,14 +124,22 @@ impl GuestTool for Tool {
         let mut pending = self.pending.borrow_mut();
         for message in self.control_rx.drain(DRAIN_MAX) {
             let event = match message.channel.as_str() {
-                CH_ACTIVATE => Some(ToolEvent::Activate),
+                CH_ACTIVATE => postcard::from_bytes::<ActivatePayload>(&message.payload)
+                    .ok()
+                    .map(|p| ToolEvent::Activate(p.hand.into())),
                 CH_DEACTIVATE => Some(ToolEvent::Deactivate),
                 CH_SET_STATE => postcard::from_bytes::<ToolStatePayload>(&message.payload)
                     .ok()
                     .map(|p| ToolEvent::SetState(ToolState { color: p.color })),
-                CH_TRIGGER => postcard::from_bytes::<TriggerPayload>(&message.payload)
+                CH_PRESS => postcard::from_bytes::<PressPayload>(&message.payload)
                     .ok()
-                    .map(|p| ToolEvent::Trigger(p.pressed)),
+                    .map(|p| {
+                        if p.pressed {
+                            ToolEvent::Pressed(p.button.into())
+                        } else {
+                            ToolEvent::Released(p.button.into())
+                        }
+                    }),
                 CH_SCROLL => postcard::from_bytes::<ScrollPayload>(&message.payload)
                     .ok()
                     .map(|p| ToolEvent::Scroll(p.delta)),

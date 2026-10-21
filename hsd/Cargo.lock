@@ -533,12 +533,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-author"
+version = "0.0.17"
+dependencies = [
+ "postcard",
+ "serde",
+ "wired-guest",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "unavi-beacon"
 version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
  "glam",
+ "wired-guest",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "unavi-build"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
  "wired-guest",
  "wit-bindgen",
 ]
@@ -586,6 +605,7 @@ name = "unavi-physgun"
 version = "0.0.17"
 dependencies = [
  "anyhow",
+ "glam",
  "wired-guest",
  "wit-bindgen",
 ]

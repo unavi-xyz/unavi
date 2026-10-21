@@ -10,7 +10,10 @@
 //! knowing about — the glyphs inside its motes, and the body of whatever tool
 //! is in hand.
 
-use wired_guest::math::Transform;
+use wired_guest::{
+    math::Transform,
+    xform::tool_pose,
+};
 
 use crate::{
     artifact::Artifact,
@@ -26,15 +29,22 @@ use crate::{
     },
     clock::Clock,
     root::Root,
+    shortcuts::{
+        Shortcut,
+        Shortcuts,
+    },
     summon::{
         Command,
         Residence,
         Summon,
     },
-    unavi::vui::api::{
-        self,
-        Event,
-        Mote,
+    unavi::{
+        author::api::History,
+        vui::api::{
+            self,
+            Event,
+            Mote,
+        },
     },
     wired::{
         input::{
@@ -43,6 +53,7 @@ use crate::{
                 Action,
                 Button,
                 InputSubscription,
+                PointerKind,
             },
         },
         portal::portals::current_space,
@@ -56,6 +67,7 @@ mod clock;
 mod glyph;
 mod palette;
 mod root;
+mod shortcuts;
 mod summon;
 
 wired_guest::generate_script!(Script);
@@ -76,10 +88,16 @@ struct Script {
     clock:    Clock,
     /// The body of whatever is in hand, and the physgun's muzzle.
     artifact: Artifact,
-    /// The menu button, which is the one thing halo takes globally. Grabs
-    /// belong to whichever surface was pressed, and VUI's surfaces have their
-    /// own listeners.
+    /// The menu button, and the buttons halo forwards to the tool in hand.
+    /// Presses on a surface belong to it, and VUI's surfaces have their own
+    /// listeners.
     input:    InputSubscription,
+    /// The pointer that last pressed a button: the hand a tool chosen now
+    /// goes into.
+    aim:      PointerKind,
+    /// Every edit the local user's tools kept, to undo and redo.
+    history:  History,
+    shortcuts: Shortcuts,
 }
 
 impl Script {
@@ -167,7 +185,7 @@ impl Script {
         if self.visor.wear(mote) {
             return Ok(());
         }
-        if !self.hand.equip(mote) {
+        if !self.hand.equip(mote, self.aim) {
             return Ok(());
         }
         if let Some(color) = self.hand.held_color() {
@@ -176,7 +194,7 @@ impl Script {
         self.put_away()
     }
 
-    /// The menu button, and the primary action while the halo is down.
+    /// The menu button, and every button and key while the halo is down.
     ///
     /// A failed summon is reported rather than returned: the events drained
     /// with it are gone from the queue, and dropping the menu's release would
@@ -191,21 +209,42 @@ impl Script {
                     }
                 }
                 Action::Released(Button::Menu) => self.summon.release(),
-                // Forwarded only while the halo is down. With it up, a press
-                // belongs to whichever surface was pressed, and VUI's own
-                // listener is what hears it.
-                Action::Pressed(Button::Trigger) => self.forward(|hand| hand.trigger(true)),
-                Action::Released(Button::Trigger) => self.forward(|hand| hand.trigger(false)),
+                // The hand that pressed last is the hand that chose a tool, so
+                // it is noted whether or not the halo is up.
+                Action::Pressed(button) => {
+                    self.aim = event.pointer;
+                    self.forward(|hand| hand.button(event.pointer, button, true));
+                }
+                // With the halo up a press belongs to whichever surface was
+                // pressed, and VUI's own listener is what hears it.
+                Action::Released(button) => {
+                    self.forward(|hand| hand.button(event.pointer, button, false));
+                }
+                Action::KeyPressed(key) => {
+                    self.hand.key(key, true, !self.summon.is_up());
+                    let shortcut = self.shortcuts.key(key, true);
+                    self.shortcut(shortcut);
+                }
+                Action::KeyReleased(key) => {
+                    self.hand.key(key, false, !self.summon.is_up());
+                    self.shortcuts.key(key, false);
+                }
                 Action::Scroll(delta) => self.forward(|hand| hand.scroll(delta.y)),
-                // The grip is the host's, for carrying things about: a tool is
-                // worked with its trigger, so an equipped one hears nothing of
-                // it and the two never answer the same press. Hover is
-                // per-prim, so a global listener never sees that either.
-                Action::Pressed(Button::Grip)
-                | Action::Released(Button::Grip)
-                | Action::Entered
-                | Action::Left => {}
+                // Hover is per-prim, so a global listener never sees it.
+                Action::Entered | Action::Left => {}
             }
+        }
+    }
+
+    fn shortcut(&self, shortcut: Option<Shortcut>) {
+        let (verb, label) = match shortcut {
+            Some(Shortcut::Undo) => ("undo", self.history.undo()),
+            Some(Shortcut::Redo) => ("redo", self.history.redo()),
+            None => return,
+        };
+        match label {
+            Some(label) => println!("halo: {verb} '{label}'"),
+            None => println!("halo: nothing to {verb}"),
         }
     }
 
@@ -230,6 +269,9 @@ impl ScriptBehavior for Script {
             clock:    Clock::default(),
             artifact: Artifact::new()?,
             input:    device::listen()?,
+            aim:      PointerKind::Screen,
+            history:  History::new(),
+            shortcuts: Shortcuts::default(),
         };
         // Listening before asking, so the answer cannot arrive unheard.
         script.visor.start();
@@ -240,6 +282,7 @@ impl ScriptBehavior for Script {
     fn fixed_update(&mut self, _tick: Tick) -> anyhow::Result<()> {
         self.body.step()?;
         api::fixed_update()?;
+        self.history.poll();
         if self.home.fixed_update(&self.root.home) {
             self.put_away()?;
         }
@@ -276,6 +319,11 @@ impl ScriptBehavior for Script {
         for event in self.root.orbit.events() {
             self.route(&event)?;
         }
-        self.artifact.update(&eye, self.hand.is_holding(), tick.dt)
+        let pose = self
+            .hand
+            .hand()
+            .and_then(held_tool_pose)
+            .unwrap_or_else(|| tool_pose(&eye, None));
+        self.artifact.update(&pose, self.hand.is_holding(), tick.dt)
     }
 }

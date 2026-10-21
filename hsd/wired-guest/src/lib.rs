@@ -134,6 +134,53 @@ macro_rules! generate {
             wired::agent::local::camera_transform().ok()
         }
 
+        /// Where pointer `kind` is this frame, or `None` while it is not
+        /// tracked.
+        #[must_use]
+        pub fn pointer_pose(
+            kind: wired::input::types::PointerKind,
+        ) -> ::core::option::Option<::wired_guest::math::Transform> {
+            wired::input::device::pointers()
+                .ok()?
+                .into_iter()
+                .find(|pointer| pointer.kind == kind && pointer.active)
+                .map(|pointer| pointer.pose)
+        }
+
+        /// `pose`, given in this script's frame, as `prim`'s `transform`:
+        /// relative to its parent, or to `doc`'s root for a root prim. `None`
+        /// while the parent or the document is not placed. Exact for a uniform
+        /// scale, as [`::wired_guest::math::Transform::inverse`] is.
+        #[must_use]
+        pub fn pose_in_parent(
+            doc: &wired::scene::document::Document,
+            prim: (u64, u64),
+            pose: ::wired_guest::math::Transform,
+        ) -> ::core::option::Option<::wired_guest::math::Transform> {
+            let parent = match doc.get(prim, &wired::scene::properties::PropertyKey::Parent) {
+                ::core::option::Option::Some(wired::scene::properties::Property::Parent(
+                    ::core::option::Option::Some(parent),
+                )) => doc.world_transform(parent).ok()?,
+                _ => wired::scene::document::script_document().ok()?.offset_to(doc)?,
+            };
+            ::core::option::Option::Some(parent.inverse() * pose)
+        }
+
+        /// Where a tool held by `kind` rides and fires from this frame, per
+        /// [`::wired_guest::xform::tool_pose`]. A hand that is not tracked
+        /// falls back to the eye.
+        #[must_use]
+        pub fn held_tool_pose(
+            kind: wired::input::types::PointerKind,
+        ) -> ::core::option::Option<::wired_guest::math::Transform> {
+            let eye = camera_pose()?;
+            let hand = match kind {
+                wired::input::types::PointerKind::Screen => None,
+                _ => pointer_pose(kind),
+            };
+            ::core::option::Option::Some(::wired_guest::xform::tool_pose(&eye, hand.as_ref()))
+        }
+
         impl ::core::default::Default for wired::scene::properties::Material {
             fn default() -> Self {
                 Self {

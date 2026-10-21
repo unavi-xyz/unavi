@@ -24,3 +24,19 @@ pub fn yaw(radians: f32) -> Quat {
 /// the muzzle it fires from share this offset, so they agree on where "in
 /// hand" is.
 pub const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);
+
+/// Where a held tool rides along a hand's aim, ahead of the controller
+/// rather than inside it.
+pub const HAND_OFFSET: Vec3 = Vec3::new(0.0, 0.0, -0.06);
+
+/// Where a held tool rides and fires from: a little along `hand`'s aim, or at
+/// [`ARTIFACT_OFFSET`] in the eye's frame when no hand holds it.
+#[must_use]
+pub fn tool_pose(eye: &Transform, hand: Option<&Transform>) -> Transform {
+    let (frame, offset) = hand.map_or((eye, ARTIFACT_OFFSET), |hand| (hand, HAND_OFFSET));
+    Transform::new(
+        frame.translation + frame.rotation * offset,
+        frame.rotation,
+        Vec3::ONE,
+    )
+}

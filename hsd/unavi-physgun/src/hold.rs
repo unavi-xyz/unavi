@@ -1,5 +1,5 @@
-//! The prop a physgun has grabbed: its offset from the camera, and the
-//! velocity controller that drags it toward that offset.
+//! The prop a physgun has grabbed: its offset from the aim, and the velocity
+//! controller that drags it toward that offset.
 
 use wired_guest::math::{
     Quat,
@@ -39,14 +39,86 @@ const MAX_SPEED: f32 = 30.0;
 const SETTLE: f32 = 0.01;
 const ROTATE_SETTLE: f32 = 0.01;
 const MIN_DIST: f32 = 1.0;
+/// How far from vertical, as the sine of the angle, the aim must be for its
+/// own forward to give the heading.
+const LEVEL_ENOUGH: f32 = 0.25;
 
-/// A dynamic body dragged by the physgun; grab point and orientation are
-/// stored in camera-local space.
+/// What the aim ray landed on.
+pub struct Target {
+    pub doc:   Document,
+    pub prim:  (u64, u64),
+    pub point: Vec3,
+}
+
+impl Target {
+    /// The prim the aim ray meets first, when it belongs to a loaded document.
+    #[must_use]
+    pub fn under(aim: &Transform) -> Option<Self> {
+        let hit = match raycast(
+            Ray {
+                origin:    aim.translation,
+                direction: aim.forward(),
+            },
+            RAY_MAX,
+            &RayFilter {
+                exclude_local_agent: true,
+                exclude_documents:   Vec::new(),
+            },
+        ) {
+            Ok(Some(hit)) => hit,
+            Ok(None) => return None,
+            Err(err) => {
+                eprintln!("physgun: raycast error {err:?}");
+                return None;
+            }
+        };
+
+        match open_document(hit.target.document) {
+            Ok(Some(doc)) => Some(Self {
+                doc,
+                prim: hit.target.prim,
+                point: hit.point,
+            }),
+            Ok(None) => {
+                println!("physgun: hit document not loaded");
+                None
+            }
+            Err(err) => {
+                eprintln!("physgun: open_document error {err:?}");
+                None
+            }
+        }
+    }
+}
+
+/// The rotation a held body keeps its orientation against: the whole aim
+/// while rotating with the wrist, else only its heading, so tilting or
+/// rolling the hand leaves the body as it was.
+fn reference(aim: &Transform, wrist: bool) -> Quat {
+    if wrist {
+        return aim.rotation;
+    }
+    let forward = aim.rotation * Vec3::NEG_Z;
+    // Near vertical the forward's heading is noise, so the right vector, which
+    // a hand pointing up or down still holds level, gives it instead.
+    let yaw = if forward.x.hypot(forward.z) > LEVEL_ENOUGH {
+        (-forward.x).atan2(-forward.z)
+    } else {
+        let right = aim.rotation * Vec3::X;
+        (-right.z).atan2(right.x)
+    };
+    Quat::from_rotation_y(yaw)
+}
+
+/// A dynamic body dragged by the physgun. The grab point is stored in the
+/// aim's local space and the orientation against [`reference`].
 pub struct Held {
     doc:        Document,
     prim:       (u64, u64),
     offset:     Vec3,
     offset_rot: Quat,
+    /// Whether the body turns with the whole aim rather than its heading.
+    wrist:      bool,
     /// The gravity scale to restore on release; `none` when the prop is not
     /// one this script may write, so there was nothing to zero.
     gravity:    Option<f32>,
@@ -57,41 +129,8 @@ pub struct Held {
 
 impl Held {
     #[must_use]
-    pub fn grab(cam: &Transform) -> Option<Self> {
-        let hit = match raycast(
-            Ray {
-                origin:    cam.translation,
-                direction: cam.forward(),
-            },
-            RAY_MAX,
-            &RayFilter {
-                exclude_local_agent: true,
-                exclude_documents:   Vec::new(),
-            },
-        ) {
-            Ok(Some(hit)) => hit,
-            Ok(None) => {
-                println!("physgun: raycast miss");
-                return None;
-            }
-            Err(err) => {
-                eprintln!("physgun: raycast error {err:?}");
-                return None;
-            }
-        };
-
-        let doc = match open_document(hit.target.document) {
-            Ok(Some(doc)) => doc,
-            Ok(None) => {
-                println!("physgun: hit document not loaded");
-                return None;
-            }
-            Err(err) => {
-                eprintln!("physgun: open_document error {err:?}");
-                return None;
-            }
-        };
-        let prim = hit.target.prim;
+    pub fn grab(aim: &Transform, target: Target) -> Option<Self> {
+        let Target { doc, prim, point } = target;
 
         // Read before taking the hold or zeroing gravity: a failure here
         // must leave nothing to undo, rather than leaking a hold that was
@@ -123,16 +162,27 @@ impl Held {
             }
         };
 
-        let grab_local = body.rotation.inverse() * (hit.point - body.translation);
+        let grab_local = body.rotation.inverse() * (point - body.translation);
 
         Some(Self {
             doc,
             prim,
-            offset: cam.rotation.inverse() * (hit.point - cam.translation),
-            offset_rot: cam.rotation.inverse() * body.rotation,
+            offset: aim.rotation.inverse() * (point - aim.translation),
+            offset_rot: reference(aim, false).inverse() * body.rotation,
+            wrist: false,
             gravity,
             grab_local,
         })
+    }
+
+    #[must_use]
+    pub const fn doc(&self) -> &Document {
+        &self.doc
+    }
+
+    #[must_use]
+    pub const fn prim(&self) -> (u64, u64) {
+        self.prim
     }
 
     /// The prop's collider, for building a highlight shell around it.
@@ -159,9 +209,29 @@ impl Held {
         body.translation + body.rotation * self.grab_local
     }
 
-    pub fn update(&self, cam: &Transform) {
+    /// Switches between turning with the wrist and keeping only the heading,
+    /// measured from where the body is now so it does not jump.
+    pub fn set_wrist(&mut self, aim: &Transform, wrist: bool) {
+        if self.wrist == wrist {
+            return;
+        }
+        self.wrist = wrist;
+        self.offset_rot = reference(aim, wrist).inverse() * self.body().rotation;
+    }
+
+    /// Turns the held body `radians` about the world's up axis.
+    pub fn spin(&mut self, aim: &Transform, radians: f32) {
+        let frame = reference(aim, self.wrist);
+        self.offset_rot = frame.inverse() * Quat::from_rotation_y(radians) * frame * self.offset_rot;
+    }
+
+    pub fn nudge_distance(&mut self, delta: f32) {
+        self.offset.z = (self.offset.z - delta).clamp(-RAY_MAX, -MIN_DIST);
+    }
+
+    pub fn update(&self, aim: &Transform) {
         let body = self.body();
-        let target = cam.transform_point(self.offset);
+        let target = aim.transform_point(self.offset);
 
         // Aim the body's centre at the grab point's target: measuring error
         // at the grab point couples the linear and angular controllers, and
@@ -178,7 +248,7 @@ impl Held {
             vel *= MAX_SPEED / speed;
         }
 
-        let target_rotation = cam.rotation * self.offset_rot;
+        let target_rotation = reference(aim, self.wrist) * self.offset_rot;
         let mut rotation_diff = target_rotation * body.rotation.inverse();
         // Ensure shortest path (quaternion double-cover: q and -q are the same
         // rotation)
@@ -197,10 +267,6 @@ impl Held {
         }
     }
 
-    pub fn nudge_distance(&mut self, delta: f32) {
-        self.offset.z = (self.offset.z - delta).clamp(-RAY_MAX, -MIN_DIST);
-    }
-
     /// Restores gravity and releases, keeping the body's velocity so a fast
     /// sweep throws it.
     pub fn release(&self) {
@@ -216,5 +282,36 @@ impl Held {
         if let Err(err) = release_hold(&self.doc) {
             eprintln!("physgun: release_hold: {err:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn aim(yaw: f32, pitch: f32, roll: f32) -> Transform {
+        Transform::new(
+            Vec3::ZERO,
+            Quat::from(glam::Quat::from_euler(glam::EulerRot::YXZ, yaw, pitch, roll)),
+            Vec3::ONE,
+        )
+    }
+
+    fn same(a: Quat, b: Quat) -> bool {
+        glam::Quat::from(a).dot(glam::Quat::from(b)).abs() > 0.9999
+    }
+
+    #[test]
+    fn the_heading_ignores_pitch_and_roll() {
+        assert!(same(
+            reference(&aim(0.7, 0.0, 0.0), false),
+            reference(&aim(0.7, -0.5, 0.9), false)
+        ));
+    }
+
+    #[test]
+    fn a_hand_pointing_straight_down_keeps_its_heading() {
+        let down = aim(0.7, -std::f32::consts::FRAC_PI_2, 0.0);
+        assert!(same(reference(&down, false), Quat::from_rotation_y(0.7)));
     }
 }

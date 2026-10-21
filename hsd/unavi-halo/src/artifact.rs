@@ -1,14 +1,10 @@
-//! The body of whatever is in hand, carried in front of the viewer.
+//! The body of whatever is in hand: a glowing core with orbiters, wearing the
+//! held tool's own colour, shown only while something is held.
 //!
-//! On desktop there is no tracked hand to put a held tool in, so this stands
-//! in for it: a glowing core with orbiters, wearing the held tool's own
-//! colour, shown only while something is held.
-//!
-//! It is also load-bearing rather than decorative. A tool fires from
-//! [`ARTIFACT_OFFSET`] — the physgun's muzzle *is* this body — so without it a
-//! beam starts in empty air and nothing says a tool is running at all.
-//!
-//! It retires when a tracked hand can hold the tool itself.
+//! It rides at [`wired_guest::xform::tool_pose`], ahead of the tool hand in VR and in front of
+//! the viewer on desktop. A tool fires from the same pose — the physgun's
+//! muzzle *is* this body — so without it a beam starts in empty air and
+//! nothing says a tool is running at all.
 
 use std::f32::consts::TAU;
 
@@ -20,7 +16,6 @@ use wired_guest::{
         Vec3,
     },
     xform::{
-        ARTIFACT_OFFSET,
         hidden,
         yaw,
     },
@@ -109,8 +104,8 @@ impl Artifact {
         }
     }
 
-    /// Rides the viewer, spinning faster the further out it is.
-    pub fn update(&mut self, eye: &Transform, held: bool, delta: f32) -> anyhow::Result<()> {
+    /// Rides `pose`, spinning faster the further out it is.
+    pub fn update(&mut self, pose: &Transform, held: bool, delta: f32) -> anyhow::Result<()> {
         let step = delta * SPEED;
         self.out = if held {
             (self.out + step).min(1.0)
@@ -123,8 +118,8 @@ impl Artifact {
             .set(
                 self.root,
                 Property::Transform(Transform {
-                    translation: eye.translation + eye.rotation * ARTIFACT_OFFSET,
-                    rotation:    eye.rotation,
+                    translation: pose.translation,
+                    rotation:    pose.rotation,
                     scale:       Vec3::splat(self.out),
                 }),
             )

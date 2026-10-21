@@ -1,3 +1,4 @@
+unavi-author     = "../../unavi-author/wit"
 unavi-host       = "../../../crates/unavi-script/wit"
 unavi-shapes     = "../../unavi-shapes/wit"
 unavi-tool       = "../../unavi-tool/wit"

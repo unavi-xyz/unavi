@@ -10,18 +10,32 @@ interface api {
   use wired:core/math.{color};
   use wired:core/ids.{document-id};
   use wired:core/error.{error};
+  use wired:input/types.{pointer-kind};
 
   /// Visual state the shell pushes onto a tool.
   record tool-state {
     color: color,
   }
 
+  /// A button the shell forwards to the tool in hand, while its menu is down.
+  enum tool-button {
+    /// The tool hand's trigger. Desktop: the left mouse button.
+    primary,
+    /// The tool hand's grip. Desktop: the right mouse button.
+    secondary,
+    /// The other hand's trigger. Desktop: either Shift.
+    modifier,
+  }
+
   variant tool-event {
-    activate,
+    /// The tool is in hand. It aims with this pointer: the screen pointer on
+    /// desktop, the hand that took it in VR. Its stick is read from the
+    /// pointer itself.
+    activate(pointer-kind),
     deactivate,
     set-state(tool-state),
-    /// Primary action forwarded by the shell while its menu is down.
-    trigger(bool),
+    pressed(tool-button),
+    released(tool-button),
     /// Signed scroll notches (+ in, - out).
     scroll(f32),
   }
@@ -61,10 +75,10 @@ interface api {
   resource tool-registry {
     constructor();
     poll: func() -> list<registered-tool>;
-    activate: func(document: document-id);
+    activate: func(document: document-id, hand: pointer-kind);
     deactivate: func(document: document-id);
     set-state: func(document: document-id, state: tool-state);
-    trigger: func(document: document-id, pressed: bool);
+    press: func(document: document-id, button: tool-button, pressed: bool);
     scroll: func(document: document-id, delta: f32);
   }
 }

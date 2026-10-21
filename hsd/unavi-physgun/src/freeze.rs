@@ -1,15 +1,16 @@
-//! Freezing a body where it was let go, until it is thawed.
+//! Freezing a body where it was let go, and thawing it again.
 //!
-//! A frozen body is kinematic at its frozen pose, both written to the shared
-//! layer, so every present peer sees it hang there and it lasts the session.
-//! Keeping it past the session is a build tool's commit, never the physgun's.
+//! A frozen body is a kinematic one, at its frozen pose. Both go through an
+//! undoable edit, so where the user may write the body's document (or the
+//! space referencing it) the freeze is kept, and elsewhere it lasts the
+//! session. Freezing is how a thrown thing becomes a placed one.
 
 use wired_guest::math::Vec3;
 
 use crate::{
     pose_in_parent,
+    unavi::author::api::Edit,
     wired::{
-        core::ids::DocumentId,
         physics::simulation::set_velocity,
         scene::{
             document::Document,
@@ -23,47 +24,59 @@ use crate::{
     },
 };
 
-/// The bodies this physgun froze and has not thawed.
-#[derive(Default)]
-pub struct Frozen(Vec<(DocumentId, (u64, u64))>);
+/// Whether `prim` is a kinematic body, which is what a frozen one is.
+#[must_use]
+pub fn is_frozen(doc: &Document, prim: (u64, u64)) -> bool {
+    matches!(
+        doc.get(prim, &PropertyKey::RigidBody),
+        Some(Property::RigidBody(RigidBody {
+            kind: RigidBodyKind::Kinematic,
+            ..
+        }))
+    )
+}
 
-impl Frozen {
-    /// Makes `prim` kinematic where it is now.
-    pub fn freeze(&mut self, doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
-        let body = doc
-            .world_transform(prim)
-            .map_err(|err| anyhow::anyhow!("where the body is: {err:?}"))?;
-        let local = pose_in_parent(doc, prim, body)
-            .ok_or_else(|| anyhow::anyhow!("its parent or document is not placed"))?;
+/// Makes `prim` kinematic where it is now.
+pub fn freeze(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
+    let body = doc
+        .world_transform(prim)
+        .map_err(|err| anyhow::anyhow!("where the body is: {err:?}"))?;
+    let local = pose_in_parent(doc, prim, body)
+        .ok_or_else(|| anyhow::anyhow!("its parent or document is not placed"))?;
 
-        // A kinematic body still moves by its velocity, so a body frozen
-        // mid-throw would otherwise drift off at it.
-        set_velocity(doc, prim, Some(Vec3::ZERO), Some(Vec3::ZERO))
-            .map_err(|err| anyhow::anyhow!("stopping the body: {err:?}"))?;
-        doc.shared()
-            .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Kinematic)))
-            .set(prim, Property::Transform(local))
-            .flush()?;
+    let edit = Edit::new("Freeze")?;
+    edit.track(
+        doc,
+        &[(prim, PropertyKey::RigidBody), (prim, PropertyKey::Transform)],
+    );
+    // A kinematic body still moves by its velocity, so a body frozen
+    // mid-throw would otherwise drift off at it.
+    set_velocity(doc, prim, Some(Vec3::ZERO), Some(Vec3::ZERO))
+        .map_err(|err| anyhow::anyhow!("stopping the body: {err:?}"))?;
+    doc.shared()
+        .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Kinematic)))
+        .set(prim, Property::Transform(local))
+        .flush()?;
+    keep(&edit);
+    Ok(())
+}
 
-        let key = (doc.id(), prim);
-        if !self.0.contains(&key) {
-            self.0.push(key);
-        }
-        Ok(())
-    }
+/// Lets a frozen body move again, from where it hangs.
+pub fn thaw(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
+    let edit = Edit::new("Unfreeze")?;
+    edit.track(doc, &[(prim, PropertyKey::RigidBody)]);
+    doc.shared()
+        .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Dynamic)))
+        .flush()?;
+    keep(&edit);
+    Ok(())
+}
 
-    /// Lets a body this physgun froze move again, from where it hangs.
-    /// Answers whether it was one.
-    pub fn thaw(&mut self, doc: &Document, prim: (u64, u64)) -> anyhow::Result<bool> {
-        let key = (doc.id(), prim);
-        let Some(index) = self.0.iter().position(|frozen| *frozen == key) else {
-            return Ok(false);
-        };
-        doc.shared()
-            .set(prim, Property::RigidBody(with_kind(doc, prim, RigidBodyKind::Dynamic)))
-            .flush()?;
-        self.0.swap_remove(index);
-        Ok(true)
+/// Commits `edit`, which only a document the user may write takes. Anywhere
+/// else the shared write stands for the session.
+fn keep(edit: &Edit) {
+    if let Err(err) = edit.commit() {
+        println!("physgun: held for this session only: {err:?}");
     }
 }
 

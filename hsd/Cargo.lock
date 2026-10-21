@@ -554,15 +554,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-build"
-version = "0.0.17"
-dependencies = [
- "anyhow",
- "wired-guest",
- "wit-bindgen",
-]
-
-[[package]]
 name = "unavi-default-home"
 version = "0.0.17"
 dependencies = [

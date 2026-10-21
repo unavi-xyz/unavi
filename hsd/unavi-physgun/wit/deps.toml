@@ -1,3 +1,4 @@
+unavi-author     = "../../unavi-author/wit"
 unavi-shapes     = "../../unavi-shapes/wit"
 unavi-tool       = "../../unavi-tool/wit"
 wired-agent      = "../../../protocol/wit/wired-agent"

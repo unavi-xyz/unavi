@@ -1,5 +1,6 @@
-//! An element being moved: held where the aim ray grabbed it, at a distance
-//! the stick or wheel changes, snapped to the space's grid unless freed.
+//! An element moved by editing where it is rather than by physics: held
+//! where the aim ray grabbed it, at a distance the stick or wheel changes,
+//! snapped to the space's grid unless freed, and kept on release.
 
 use wired_guest::math::{
     Quat,
@@ -95,6 +96,12 @@ impl Drag {
             edit.track(&element.doc, &[(element.prim, PropertyKey::Transform)]);
         }
         Ok((body, edit))
+    }
+
+    /// Where the aim ray holds the element, which the beam ends at.
+    #[must_use]
+    pub fn point(&self, aim: &Transform) -> Vec3 {
+        aim.translation + aim.forward() * self.distance
     }
 
     pub fn push(&mut self, metres: f32) {

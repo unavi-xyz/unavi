@@ -21,7 +21,7 @@ use n0_future::task::AbortOnDropHandle;
 use unavi_identity::{
     auth::{
         self,
-        Bindings,
+        EndpointAuth,
     },
     identity::{
         Identity,
@@ -37,6 +37,7 @@ use unavi_identity::{
 };
 use unavi_registry::client::{
     Followed,
+    NotFollowed,
     Target,
     resolve_batch,
 };
@@ -122,24 +123,24 @@ pub fn serve_auth(
 #[derive(Clone)]
 struct Follower {
     endpoint: Endpoint,
-    bindings: Arc<Bindings>,
+    auth:     Arc<EndpointAuth>,
     identity: Arc<Identity>,
     resolver: Arc<Resolver>,
     followed: Followed,
 }
 
 impl Follower {
-    async fn sync(&self, store: &Store, targets: &[Target]) {
+    async fn sync(&self, store: &Store, targets: &[Target]) -> Vec<NotFollowed> {
         self.followed
             .sync(
                 store,
                 &self.endpoint,
-                &self.bindings,
+                &self.auth,
                 targets,
                 &self.identity,
                 &self.resolver,
             )
-            .await;
+            .await
     }
 }
 
@@ -148,6 +149,7 @@ pub fn load_store(
     endpoints: Query<&IrohEndpoint>,
     node: Res<LocalNode>,
     local: Res<LocalIdentity>,
+    auth: Res<Auth>,
     storage: Res<KeyStorage>,
     sync: Res<SyncConfig>,
     dials: Res<Dials>,
@@ -162,7 +164,7 @@ pub fn load_store(
     let node = Arc::clone(&node.0);
     let follower = Follower {
         endpoint,
-        bindings: Arc::clone(&local.bindings),
+        auth: Arc::clone(&auth.0),
         identity: Arc::clone(node.user()),
         resolver: Arc::clone(&local.resolver),
         followed: local.followed.clone(),
@@ -215,7 +217,12 @@ async fn load(
     let SyncConfig { targets, .. } = sync;
 
     let (targets, unresolved) = resolve_batch(targets, &follower.resolver).await;
-    follower.sync(&store, &targets).await;
+    let unfollowed = follower.sync(&store, &targets).await;
+    let pending = unfollowed
+        .iter()
+        .filter_map(NotFollowed::retryable)
+        .cloned()
+        .collect::<Vec<_>>();
 
     let root = root_document::open(&store, node.user()).await?.id();
     let (_profile, profile_proof) = ProfileSecret::derive(node.user())?
@@ -253,43 +260,58 @@ async fn load(
         return Ok(());
     }
 
-    if !unresolved.is_empty() {
+    if !unresolved.is_empty() || !pending.is_empty() {
         task::spawn(retry(
             async_world.clone(),
             store.clone(),
             follower.clone(),
             targets,
             unresolved,
+            pending,
         ));
     }
 
     Ok(())
 }
 
-/// Keeps resolving the registries that were unreachable at startup, so a node
-/// brought up after the app is still followed without a restart.
+/// Keeps resolving and re-following registries that were not available at
+/// startup, so a node brought up after the app is still followed without a
+/// restart.
 async fn retry(
     async_world: AsyncWorld,
     store: Store,
     follower: Follower,
     mut targets: Vec<Target>,
     mut unresolved: Vec<String>,
+    mut pending: Vec<Target>,
 ) {
     let mut delay = RETRY_DELAY;
 
-    while !unresolved.is_empty() {
+    while !unresolved.is_empty() || !pending.is_empty() {
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (resolved, pending) = resolve_batch(unresolved, &follower.resolver).await;
-        unresolved = pending;
-
-        if resolved.is_empty() {
+        if !unresolved.is_empty() {
+            let (resolved, still) = resolve_batch(unresolved, &follower.resolver).await;
+            unresolved = still;
+            pending.extend(resolved.iter().cloned());
+            targets.extend(resolved);
+        }
+        if pending.is_empty() {
             continue;
         }
-        targets.extend(resolved);
 
-        follower.sync(&store, &targets).await;
+        let asked = pending.len();
+        pending = follower
+            .sync(&store, &pending)
+            .await
+            .iter()
+            .filter_map(NotFollowed::retryable)
+            .cloned()
+            .collect();
+        if pending.len() == asked {
+            continue;
+        }
 
         let published = targets
             .iter()

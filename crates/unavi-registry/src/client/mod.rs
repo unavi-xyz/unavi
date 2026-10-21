@@ -28,6 +28,7 @@ use unavi_store::Store;
 
 pub use crate::client::follow::{
     Followed,
+    NotFollowed,
     Target,
     resolve_batch,
 };

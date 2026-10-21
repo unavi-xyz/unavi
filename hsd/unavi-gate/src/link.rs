@@ -51,24 +51,33 @@ fn link_from(bytes: &[u8]) -> Option<LinkId> {
     Some((u64::from_le_bytes(low), u64::from_le_bytes(high)))
 }
 
+/// What this peer has made of the portal since the socket was last empty.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Opened {
+    /// Nothing: the portal leads where someone else put it.
+    No,
+    /// Opened or answered it, and no failed open reported yet.
+    Unreported,
+    /// Opened or answered it, and a failed open already reported.
+    Reported,
+}
+
 pub struct Link {
     portal:      (u64, u64),
     intent_rx:   IntentSubscription,
     /// The space the portal leads to, and the link it bears there.
     destination: Option<(DocumentId, Option<LinkId>)>,
-    /// Whether this peer has opened or answered the portal since the socket
-    /// was last empty, so emptying it closes the portal again.
-    opened:      bool,
+    /// What this peer has made of the portal since the socket was last empty,
+    /// so emptying it closes what this peer opened.
+    opened:      Opened,
     retry_in:    u32,
-    /// Whether a failed open has been reported since the socket was last
-    /// empty.
-    warned:      bool,
     /// Whether the destination has read as paired since it last changed.
     seen_paired: bool,
     /// The unplugged link this peer has already closed its half of.
     released:    Option<LinkId>,
-    /// Whether the unplugged mark has been spent by a new seating.
-    refused:     bool,
+    /// Whether the unplugged mark is already claimed, so the next ask for it
+    /// spends it rather than being refused.
+    claimed:     bool,
     /// Fixed ticks left in which the unplugged link is refused outright.
     grace:       u32,
     /// The seated beacon whose link the far side pulled out.
@@ -81,12 +90,11 @@ impl Link {
             portal,
             intent_rx: portals::intents()?,
             destination: None,
-            opened: false,
+            opened: Opened::No,
             retry_in: 0,
-            warned: false,
             seen_paired: false,
             released: None,
-            refused: false,
+            claimed: false,
             grace: 0,
             revoked: None,
         })
@@ -108,7 +116,7 @@ impl Link {
             self.released = None;
         }
         if self.unplugged(doc).is_none() {
-            self.refused = false;
+            self.claimed = false;
             self.grace = 0;
         } else {
             self.grace = self.grace.saturating_sub(1);
@@ -123,8 +131,8 @@ impl Link {
 
     /// Pulls the pairing out: states its link as unplugged, which every
     /// peer's gate reads and lets go of, and closes this peer's own half.
-    /// The mark holds for [`UNPLUG_GRACE_TICKS`] even though `refused` is
-    /// already set, since the far side keeps leading until it sees the socket
+    /// The mark holds for [`UNPLUG_GRACE_TICKS`] even though it is claimed
+    /// already, since the far side keeps leading until it sees the socket
     /// empty.
     pub fn unplug(&mut self, doc: &Document) -> anyhow::Result<()> {
         let Some(link) = self.destination.and_then(|(_, link)| link) else {
@@ -137,7 +145,7 @@ impl Link {
             )
             .flush()?;
         self.released = Some(link);
-        self.refused = true;
+        self.claimed = true;
         self.grace = UNPLUG_GRACE_TICKS;
         self.close(doc);
         Ok(())
@@ -188,10 +196,9 @@ impl Link {
         // far half pulled would leave the portal leading its last space.
         let Some(occupant) = occupant else {
             self.retry_in = 0;
-            self.warned = false;
             self.revoked = None;
-            if self.opened {
-                self.opened = false;
+            if self.opened != Opened::No {
+                self.opened = Opened::No;
                 self.close(doc);
             }
             return;
@@ -210,11 +217,13 @@ impl Link {
             return;
         }
         self.retry_in = RETRY_TICKS;
-        self.opened = true;
+        if self.opened != Opened::Reported {
+            self.opened = Opened::Unreported;
+        }
         if let Err(err) = portals::open(doc, self.portal, occupant.space)
-            && !self.warned
+            && self.opened == Opened::Unreported
         {
-            self.warned = true;
+            self.opened = Opened::Reported;
             eprintln!("gate: open: {err:?}");
         }
     }
@@ -229,7 +238,7 @@ impl Link {
         if self.unplugged(doc) == Some(link) {
             if self.released != Some(link) {
                 self.released = Some(link);
-                self.refused = false;
+                self.claimed = false;
                 self.close(doc);
             }
             return;
@@ -286,14 +295,14 @@ impl Link {
                 let _ = self.intent_rx.claim(intent);
                 continue;
             }
-            match consider(self.unplugged(doc), intent.link, self.refused) {
+            match consider(self.unplugged(doc), intent.link, self.claimed) {
                 Ask::Refuse => {
-                    self.refused = true;
+                    self.claimed = true;
                     let _ = self.intent_rx.claim(intent);
                     continue;
                 }
                 Ask::Spend => {
-                    self.refused = false;
+                    self.claimed = false;
                     self.released = None;
                     self.clear_unplugged(doc, intent.link);
                 }
@@ -329,11 +338,11 @@ enum Ask {
     Answer,
 }
 
-fn consider(marked: Option<LinkId>, link: LinkId, refused: bool) -> Ask {
+fn consider(marked: Option<LinkId>, link: LinkId, claimed: bool) -> Ask {
     if marked != Some(link) {
         return Ask::Answer;
     }
-    if refused { Ask::Spend } else { Ask::Refuse }
+    if claimed { Ask::Spend } else { Ask::Refuse }
 }
 
 /// Whether losing a partner revokes the link. `Unpaired` also reads while the

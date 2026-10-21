@@ -1,8 +1,8 @@
 //! The beacon-to-gate contract.
 //!
 //! A beacon announces its space and body on [`BEACON_CHANNEL`]. A gate
-//! announces its socket and what sits in it on [`SOCKET_CHANNEL`]. Each side reads
-//! the other's pose from the named prim, so neither message carries a
+//! announces its socket and what sits in it on [`SOCKET_CHANNEL`]. Each side
+//! reads the other's pose from the named prim, so neither message carries a
 //! position.
 
 use std::time::{

@@ -428,17 +428,17 @@ impl Surface {
             .filter(|(_, remaining)| *remaining > 0)
             .map(|(forward, remaining)| {
                 let spec = MoteSpec {
-                    role:        Role::Page { forward, remaining },
-                    label:       SmolStr::default(),
-                    description: None,
+                    role:             Role::Page { forward, remaining },
+                    label:            SmolStr::default(),
+                    description:      None,
                     description_icon: None,
-                    active:      false,
-                    icon:        false,
-                    glyph:       None,
-                    tint:        None,
-                    film:        palette::FILM,
-                    frost:       0.0,
-                    notice:      None,
+                    active:           false,
+                    icon:             false,
+                    glyph:            None,
+                    tint:             None,
+                    film:             palette::FILM,
+                    frost:            0.0,
+                    notice:           None,
                 };
                 (spec, layout.tab(forward, &self.tuning))
             })
@@ -687,17 +687,17 @@ mod tests {
 
     fn named(label: &str) -> MoteSpec {
         MoteSpec {
-            role:        Role::Action,
-            label:       SmolStr::new(label),
-            description: None,
+            role:             Role::Action,
+            label:            SmolStr::new(label),
+            description:      None,
             description_icon: None,
-            active:      false,
-            icon:        false,
-            glyph:       None,
-            tint:        None,
-            film:        crate::palette::FILM,
-            frost:       0.0,
-            notice:      None,
+            active:           false,
+            icon:             false,
+            glyph:            None,
+            tint:             None,
+            film:             crate::palette::FILM,
+            frost:            0.0,
+            notice:           None,
         }
     }
 

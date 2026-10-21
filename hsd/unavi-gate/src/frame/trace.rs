@@ -43,7 +43,7 @@ const HALF: f32 = WIDTH / 2.0;
 pub fn corners(seat: Vec3) -> [Vec3; 10] {
     let face = FRONT + HALF;
     // Along the plinths' tops, in front of the pillars' base bands.
-    let ledge = FRONT + PLINTH_PROUD * 0.7;
+    let ledge = PLINTH_PROUD.mul_add(0.7, FRONT);
     let plinth = PLINTH_HEIGHT + HALF;
     let jamb = FRONT - HALF;
     let left = -PILLAR_INNER + HALF;

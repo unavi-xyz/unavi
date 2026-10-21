@@ -89,7 +89,11 @@ mod tests {
         let identity = Oklcha::from(identity_color(DocId([7; 32])));
         let lch = Oklcha::from(rim.0);
 
-        assert!((lch.hue - identity.hue).abs() < 1.0, "hue drifted to {}", lch.hue);
+        assert!(
+            (lch.hue - identity.hue).abs() < 1.0,
+            "hue drifted to {}",
+            lch.hue
+        );
         assert!((lch.chroma - RIM_CHROMA).abs() < 1.0e-2);
         assert_eq!(PortalHue::of_space(None).0, PortalHue::NEUTRAL);
     }

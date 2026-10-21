@@ -79,7 +79,7 @@ pub struct PortalSnapshot {
     pub destination: Option<DocId>,
     pub linked:      bool,
     pub link:        LinkState,
-    pub state:      PortalState,
+    pub state:       PortalState,
     pub hue:         LinearRgba,
 }
 
@@ -148,7 +148,7 @@ pub fn snapshot_portals(
                     ),
                     link:        LinkState::of(target, link, resolved, &partners),
                     state:       *state,
-                    hue:        hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
+                    hue:         hue.map_or(PortalHue::NEUTRAL, |hue| hue.0),
                 })
             },
         )

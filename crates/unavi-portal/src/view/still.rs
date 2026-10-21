@@ -188,16 +188,16 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
         return;
     };
     let size = UVec2::new(ATLAS_COLUMNS, FACES.len() as u32 / ATLAS_COLUMNS) * FACE_SIZE;
-    let atlas = world
-        .resource_mut::<Assets<Image>>()
-        .add(render_image(
-            size,
-            TextureFormat::Rgba16Float,
-            "PortalStillAtlas",
-        ));
-    let distance = world
-        .resource_mut::<Assets<Image>>()
-        .add(render_image(size, DISTANCE_FORMAT, "PortalStillDistance"));
+    let atlas = world.resource_mut::<Assets<Image>>().add(render_image(
+        size,
+        TextureFormat::Rgba16Float,
+        "PortalStillAtlas",
+    ));
+    let distance = world.resource_mut::<Assets<Image>>().add(render_image(
+        size,
+        DISTANCE_FORMAT,
+        "PortalStillDistance",
+    ));
     let tonemapping = view_tonemapping(world, viewer);
     let layers = still_layers(
         &world

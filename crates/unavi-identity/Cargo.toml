@@ -12,7 +12,7 @@ workspace = true
 [dependencies]
 anyhow.workspace      = true
 blake3.workspace      = true
-hsd.path             = "../hsd"
+hsd.path              = "../hsd"
 iroh.workspace        = true
 iroh-docs.workspace   = true
 jose-jwk              = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }

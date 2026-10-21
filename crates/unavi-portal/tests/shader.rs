@@ -97,6 +97,9 @@ fn the_still_distance_shader_mirrors_the_capture_constants() {
         format!("const FACE_SIZE: f32 = {:?};", still::FACE_SIZE as f32),
         format!("const NEAR: f32 = {:?};", still::NEAR),
     ] {
-        assert!(source.contains(&constant), "`{constant}` is not in the shader");
+        assert!(
+            source.contains(&constant),
+            "`{constant}` is not in the shader"
+        );
     }
 }

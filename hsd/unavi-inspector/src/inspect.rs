@@ -29,6 +29,7 @@ use crate::{
         scene::{
             document::{
                 Document,
+                copy_document,
                 open_document,
             },
             properties::{
@@ -43,7 +44,7 @@ use crate::{
 
 /// Most attribute and child rows, so the rest of the slate always fits.
 const MAX_ATTRIBUTES: usize = 6;
-const MAX_CHILDREN: usize = 4;
+const MAX_CHILDREN: usize = 3;
 /// The smallest scale the Scale row brings an element down to.
 const MIN_SCALE: f32 = 0.01;
 
@@ -65,6 +66,7 @@ mod row {
     pub const ATTRIBUTES: u32 = 20;
     /// Attribute rows count up from here.
     pub const ATTRIBUTE: u32 = 21;
+    pub const MAKE_LOCAL: u32 = 49;
     pub const CLOSE: u32 = 50;
 }
 
@@ -80,6 +82,9 @@ pub struct Inspection {
     /// The document holding the prim the hit stands for as a whole.
     placed_in: Document,
     loose:     bool,
+    /// The reference site in `placed_in` placing the hit's document, when a
+    /// reference does.
+    site:      Option<(u64, u64)>,
     hit_doc:   Document,
     hit_prim:  (u64, u64),
     /// The transform edit a drag on a number row has open.
@@ -92,10 +97,12 @@ impl Inspection {
     #[must_use]
     pub fn of(target: PrimRef) -> Option<Self> {
         let hit_doc = open_document(target.document).ok()??;
-        let (placed_in, _, loose) = element_of(target)?;
+        let (placed_in, prim, loose) = element_of(target)?;
+        let site = (!loose && placed_in.id() != hit_doc.id()).then_some(prim);
         Some(Self {
             placed_in,
             loose,
+            site,
             hit_doc,
             hit_prim: target.prim,
             edit: None,
@@ -149,6 +156,9 @@ impl Inspection {
                 &value,
             ));
         }
+        if self.site.is_some() && self.placed_in.may_write() {
+            rows.push(action(row::MAKE_LOCAL, "Make local"));
+        }
         rows.push(Row {
             id:    row::CLOSE,
             label: "Close".to_owned(),
@@ -162,6 +172,15 @@ impl Inspection {
     pub fn apply(&mut self, event: &SlateEvent) -> Asked {
         match *event {
             SlateEvent::Pressed(row::CLOSE) => return Asked::Close,
+            // The site opens the copy in place of what it showed, so this
+            // inspection's document is gone.
+            SlateEvent::Pressed(row::MAKE_LOCAL) => {
+                match self.make_local() {
+                    Ok(()) => println!("inspector: made local"),
+                    Err(err) => eprintln!("inspector: make local: {err}"),
+                }
+                return Asked::Close;
+            }
             SlateEvent::Pressed(row::PARENT) => {
                 if let Some(parent) = self.parent() {
                     return Asked::Inspect(self.at(parent));
@@ -225,6 +244,24 @@ impl Inspection {
             document: self.hit_doc.id(),
             prim,
         }
+    }
+
+    /// Replaces the reference with a copy of what it shows, undoably, so the
+    /// object here stops following its source. Overrides kept on the site
+    /// still apply, since they are keyed by the site.
+    fn make_local(&self) -> anyhow::Result<()> {
+        let site = self
+            .site
+            .ok_or_else(|| anyhow::anyhow!("no reference places this"))?;
+        let copy = copy_document(&self.hit_doc)?;
+        let edit = Edit::new("Make local")?;
+        edit.track(&self.placed_in, &[(site, PropertyKey::Reference)]);
+        self.placed_in
+            .local()
+            .set(site, Property::Reference(copy.id()))
+            .flush()?;
+        edit.commit()?;
+        Ok(())
     }
 
     /// Keeps the transform edit a drag left open, so ending an inspection

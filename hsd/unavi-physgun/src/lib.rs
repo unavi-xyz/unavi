@@ -113,6 +113,9 @@ const SPIN_SPEED: f32 = 2.5;
 /// Stick travel below which it reads as centred.
 const DEADZONE: f32 = 0.2;
 
+/// An element copied in place, by document and prim, and its copy count.
+type Copies = ((u64, u64, u64, u64), (u64, u64), u32);
+
 /// What the beam holds.
 enum Holding {
     Body(Held),
@@ -142,6 +145,9 @@ struct Script {
     /// Keys, for the desktop chords.
     keys:     InputSubscription,
     control:  Cell<[bool; 2]>,
+    /// The element last copied in place and how many copies it has, so
+    /// copying it again lays the next one a step further on.
+    copies:   Cell<Option<Copies>>,
     outline:  Outline,
 }
 
@@ -380,8 +386,9 @@ impl Script {
         }
     }
 
-    /// Copies the aimed element one grid step along the space's X axis, and
-    /// keeps the copy. A copy that cannot be kept is taken back out.
+    /// Copies the aimed element a grid step along the space's X axis, and
+    /// keeps the copy; copying the same element again lays each copy a step
+    /// further on, as a row. A copy that cannot be kept is taken back out.
     fn copy_aimed(&self) {
         let Some(element) = self.aimed_element() else {
             return;
@@ -393,7 +400,13 @@ impl Script {
                 return;
             }
         };
-        let step = self.grid().map_or(Vec3::X, |grid| grid.rotation * Vec3::X) * GRID;
+        let source = (element.doc.id(), element.prim);
+        let count = match self.copies.get() {
+            Some((doc, prim, count)) if (doc, prim) == source => count + 1,
+            _ => 1,
+        };
+        let step =
+            self.grid().map_or(Vec3::X, |grid| grid.rotation * Vec3::X) * GRID * count as f32;
         let kept = element.pose().and_then(|pose| {
             let at = Transform {
                 translation: pose.translation + step,
@@ -410,9 +423,12 @@ impl Script {
             edit.commit()?;
             Ok(())
         });
-        if let Err(err) = kept {
-            eprintln!("physgun: copy: {err}");
-            copy.discard();
+        match kept {
+            Ok(()) => self.copies.set(Some((source.0, source.1, count))),
+            Err(err) => {
+                eprintln!("physgun: copy: {err}");
+                copy.discard();
+            }
         }
     }
 
@@ -586,6 +602,7 @@ impl ScriptBehavior for Script {
             flicks:   Cell::default(),
             keys:     device::listen()?,
             control:  Cell::new([false; 2]),
+            copies:   Cell::new(None),
             outline:  Outline::new()?,
         })
     }

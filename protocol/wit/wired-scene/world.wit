@@ -338,6 +338,20 @@ interface document {
     remove(prim-id),
   }
 
+  /// Which layer a key's value comes from.
+  variant layer-source {
+    /// The document's own content.
+    document,
+    /// The document referencing this one, as an override.
+    override,
+    /// This peer's `local` writes, which no other peer sees.
+    runtime,
+    /// This peer's `shared` writes.
+    own-session,
+    /// Another present peer's `shared` writes, by that peer's endpoint id.
+    session(string),
+  }
+
   /// What a placed document's root hangs from.
   variant anchor {
     /// The root of the space.
@@ -375,6 +389,9 @@ interface document {
     get-many: func(keys: list<tuple<prim-id, property-key>>) -> list<option<property>>;
     /// Every key that has a value on `prim`.
     keys:     func(prim: prim-id) -> list<property-key>;
+    /// The layer `key` of `prim` takes its value from, `none` when no layer
+    /// states it. A layer whose opinion its mask hides is not the source.
+    source:   func(prim: prim-id, key: property-key) -> option<layer-source>;
 
     /// Where `prim` is this frame, in the calling script's own document
     /// frame, including what physics and animation did to it since its

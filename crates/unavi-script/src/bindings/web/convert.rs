@@ -79,6 +79,7 @@ use wasm_bindgen::{
 use crate::{
     error::ScriptError,
     host::scene::{
+        LayerSource,
         edit::{
             Edit,
             Layer,
@@ -1068,6 +1069,16 @@ fn tagged(tag: &str, val: JsValue) -> JsValue {
         Reflect::set(&obj, &JsValue::from_str("val"), &val).ok();
     }
     obj.into()
+}
+
+pub fn wit_layer_source(source: LayerSource) -> JsValue {
+    match source {
+        LayerSource::Document => tagged("document", JsValue::UNDEFINED),
+        LayerSource::Override => tagged("override", JsValue::UNDEFINED),
+        LayerSource::Runtime => tagged("runtime", JsValue::UNDEFINED),
+        LayerSource::OwnSession => tagged("own-session", JsValue::UNDEFINED),
+        LayerSource::Session(peer) => tagged("session", JsValue::from_str(&peer)),
+    }
 }
 
 pub fn wit_property_key(key: PropertyKey) -> JsValue {

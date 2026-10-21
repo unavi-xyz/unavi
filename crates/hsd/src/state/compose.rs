@@ -94,9 +94,20 @@ fn after(held: Option<Stamp>) -> u64 {
 /// The strongest opinion on a key its layer's mask admits. `Blocked` stops
 /// the walk.
 fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> Option<&'a Value> {
+    resolve_property_from(stack, prim, name).and_then(|(value, _)| value)
+}
+
+/// The strongest admitted opinion on `name`, and the layer holding it. The
+/// opinion is `None` for one that the key has no value.
+fn resolve_property_from<'a>(
+    stack: &'a [Stacked],
+    prim: PrimId,
+    name: &PropName,
+) -> Option<(Option<&'a Value>, &'a LayerId)> {
     // Walked weakest first, so `resolved` is what the layers beneath each one
     // resolve to, and the strongest admitted opinion is the one left.
     let mut resolved = None;
+    let mut from = None;
     for stacked in stack {
         let Some(opinion) = stacked
             .layer
@@ -116,12 +127,32 @@ fn resolve_property<'a>(stack: &'a [Stacked], prim: PrimId, name: &PropName) -> 
             );
         if admitted {
             resolved = opinion.value();
+            from = Some(&stacked.id);
         }
     }
-    resolved
+    from.map(|id| (resolved, id))
 }
 
 impl HsdState {
+    /// The layer `prim`'s `name` resolves from, `None` when no layer the
+    /// masks admit states it.
+    #[must_use]
+    pub fn property_source(&self, prim: PrimId, name: &PropName) -> Option<&LayerId> {
+        resolve_property_from(&self.stack, prim, name).map(|(_, id)| id)
+    }
+
+    /// The layer `prim`'s parent resolves from.
+    #[must_use]
+    pub fn parent_source(&self, prim: PrimId) -> Option<&LayerId> {
+        self.stack.iter().rev().find_map(|stacked| {
+            let held = stacked.layer.get(prim)?.parent()?;
+            stacked
+                .mask
+                .admits(prim, MaskKey::Parent(held.0.value().copied()))
+                .then_some(&stacked.id)
+        })
+    }
+
     /// A timestamp for a local write to a property in the layer at `at`, past
     /// the stamp it already holds even when the wall clock has not moved.
     pub(super) fn local_property_time(&self, at: usize, prim: PrimId, name: &PropName) -> u64 {

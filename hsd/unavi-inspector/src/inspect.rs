@@ -29,6 +29,7 @@ use crate::{
         scene::{
             document::{
                 Document,
+                LayerSource,
                 copy_document,
                 open_document,
             },
@@ -123,7 +124,10 @@ impl Inspection {
         {
             let editable = self.hit_doc.may_write();
             let yaw = transform.rotation.yaw();
-            rows.push(header(row::TRANSFORM, "Transform"));
+            rows.push(header(
+                row::TRANSFORM,
+                &format!("Transform · {}", self.source_of(&PropertyKey::Transform)),
+            ));
             rows.push(number(row::X, "X", transform.translation.x, 1.0, editable));
             rows.push(number(row::Y, "Y", transform.translation.y, 1.0, editable));
             rows.push(number(row::Z, "Z", transform.translation.z, 1.0, editable));
@@ -145,11 +149,17 @@ impl Inspection {
             &format!("Attributes ({})", keys.len()),
         ));
         for (index, key) in keys.iter().take(MAX_ATTRIBUTES).enumerate() {
-            let value = self
+            let summary = self
                 .hit_doc
                 .get(self.hit_prim, key)
                 .map(|property| summary(&property))
                 .unwrap_or_default();
+            let source = self.source_of(key);
+            let value = if summary.is_empty() {
+                source
+            } else {
+                format!("{summary} · {source}")
+            };
             rows.push(field(
                 row::ATTRIBUTE + index as u32,
                 &key_label(key),
@@ -203,6 +213,21 @@ impl Inspection {
             SlateEvent::Pressed(_) | SlateEvent::Toggled(_) => {}
         }
         Asked::Nothing
+    }
+
+    /// Which layer `key`'s value comes from, as a person reads it.
+    fn source_of(&self, key: &PropertyKey) -> String {
+        match self.hit_doc.source(self.hit_prim, key) {
+            Some(LayerSource::Document) => "document".to_owned(),
+            Some(LayerSource::Override) => "override".to_owned(),
+            Some(LayerSource::Runtime) => "this peer only".to_owned(),
+            Some(LayerSource::OwnSession) => "you, live".to_owned(),
+            Some(LayerSource::Session(peer)) => {
+                let skip = peer.chars().count().saturating_sub(4);
+                format!("peer …{}", peer.chars().skip(skip).collect::<String>())
+            }
+            None => "unset".to_owned(),
+        }
     }
 
     /// The hit prim's parent and first children, each a row that inspects it.

@@ -21,6 +21,7 @@ use super::{
                 Host,
                 HostDocument,
                 Layer,
+                LayerSource,
             },
             properties::{
                 self,
@@ -133,6 +134,26 @@ impl HostDocument for HostCtx {
                     .map(convert::wit_property)
             })
             .collect())
+    }
+
+    fn source(
+        &mut self,
+        doc: Resource<DocumentRes>,
+        prim: PrimId,
+        key: PropertyKey,
+    ) -> wasmtime::Result<Option<LayerSource>> {
+        let key = convert::property_key(key)?;
+        Ok(
+            scene::source(&self.host, doc.rep(), convert::prim_id(prim), &key)?.map(|source| {
+                match source {
+                    scene::LayerSource::Document => LayerSource::Document,
+                    scene::LayerSource::Override => LayerSource::Override,
+                    scene::LayerSource::Runtime => LayerSource::Runtime,
+                    scene::LayerSource::OwnSession => LayerSource::OwnSession,
+                    scene::LayerSource::Session(peer) => LayerSource::Session(peer),
+                }
+            }),
+        )
     }
 
     fn keys(

@@ -19,9 +19,17 @@ use hsd::{
         DocId,
         PrimId,
     },
-    state::HsdState,
+    state::{
+        HsdState,
+        stack::LayerId,
+    },
 };
 use unavi_policy::permissions::HostApi;
+use unavi_space::replication::session::{
+    self,
+    LAYER_PREFIX,
+    WriterId,
+};
 
 use crate::{
     error::ScriptError,
@@ -185,6 +193,59 @@ pub fn get_many(
 pub fn keys(host: &ScriptHost, doc: u32, prim: PrimId) -> Result<Vec<PropertyKey>, ScriptError> {
     host.document(doc)?
         .read(|state| PropertyKey::all(state, prim))
+}
+
+/// Which layer a key's value comes from.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LayerSource {
+    Document,
+    Override,
+    Runtime,
+    OwnSession,
+    /// Another peer's session layer, by its endpoint id.
+    Session(String),
+}
+
+pub fn source(
+    host: &ScriptHost,
+    doc: u32,
+    prim: PrimId,
+    key: &PropertyKey,
+) -> Result<Option<LayerSource>, ScriptError> {
+    host.require(HostApi::Scene)?;
+    let name = match key {
+        PropertyKey::Parent => None,
+        key => Some(key.name()?),
+    };
+    let id = host.document(doc)?.read(|state| {
+        name.as_ref().map_or_else(
+            || state.parent_source(prim).cloned(),
+            |name| state.property_source(prim, name).cloned(),
+        )
+    })?;
+    let mine = session::layer_id(WriterId::new(host.view.me(), host.view.did()));
+    Ok(id.map(|id| classify(&id, &mine)))
+}
+
+fn classify(id: &LayerId, mine: &LayerId) -> LayerSource {
+    if *id == LayerId::BASE {
+        return LayerSource::Document;
+    }
+    if *id == bevy_hsd::stack::OVERRIDE {
+        return LayerSource::Override;
+    }
+    if *id == bevy_hsd::stack::RUNTIME {
+        return LayerSource::Runtime;
+    }
+    if id == mine {
+        return LayerSource::OwnSession;
+    }
+    // A session layer is named `session/<endpoint>/<did hash>`.
+    let rest = id
+        .as_str()
+        .strip_prefix(LAYER_PREFIX)
+        .unwrap_or(id.as_str());
+    LayerSource::Session(rest.split('/').next().unwrap_or(rest).to_owned())
 }
 
 /// Where `prim` is this frame, in the script's own frame, as the engine

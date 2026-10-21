@@ -70,8 +70,8 @@ sha512 = "c319af3c4cbce7bc4664e1182ab7f2d690a28914d729fbb6c9634bd95b4857e19c948f
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "32a427ef69f6be5a5ad80f939d9faf6d37bfe8aa31726fb772b4eb21fcfdc2f5"
-sha512 = "a32c6e8d2896e53ea76e65957efe7ccba410dd349082cd5307997fb882dd4b08827ee90c1bc55ee3de063417ea6f95e23348e3a350843273e6fdbfa2c044ffef"
+sha256 = "cf52ace0a11899b1da606af082c18bf8fdbf063e337fc194cfcd897f54f1e119"
+sha512 = "4c611c357e2d7c03dad81283b517b4bdac0f2faf87e9c885c651db76abc62a48500303b6694beabd6c632f11c25c7a88ab90dd02189ff045196ac86dc52bc7a9"
 
 [wired-script]
 path = "../../../protocol/wit/wired-script"

@@ -139,6 +139,14 @@ impl DocumentHandle {
             .collect())
     }
 
+    pub fn source(&self, prim: JsValue, key: JsValue) -> Result<JsValue, JsValue> {
+        let prim = convert::prim_id(prim).map_err(convert::into_trap)?;
+        let key = convert::property_key(&key).map_err(convert::into_trap)?;
+        scene::source(&self.host.borrow(), self.rep, prim, &key)
+            .map(|source| source.map_or(JsValue::UNDEFINED, convert::wit_layer_source))
+            .map_err(convert::into_trap)
+    }
+
     pub fn keys(&self, prim: JsValue) -> Result<Vec<JsValue>, JsValue> {
         let prim = convert::prim_id(prim).map_err(convert::into_trap)?;
         scene::keys(&self.host.borrow(), self.rep, prim)

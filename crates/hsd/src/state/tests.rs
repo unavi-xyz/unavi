@@ -2246,3 +2246,36 @@ fn a_removed_layers_prims_that_no_other_layer_states_are_forgotten() {
             .contains(&SceneEvent::Removed { prim: prim(2) })
     );
 }
+
+#[test]
+fn a_value_is_sourced_from_the_strongest_layer_stating_it() {
+    let mut state = stacked();
+    project(
+        &mut state,
+        &[
+            root_entry(prim(1), 1),
+            attr_entry(prim(1), &NameAttr("document".into()), 2),
+        ],
+    );
+    assert_eq!(
+        state.property_source(prim(1), &NameAttr::NAME),
+        Some(&LayerId::BASE)
+    );
+    assert_eq!(state.parent_source(prim(1)), Some(&LayerId::BASE));
+
+    runtime_property(
+        &mut state,
+        prim(1),
+        NameAttr::NAME,
+        Some(name_attr("runtime")),
+    );
+    assert_eq!(
+        state.property_source(prim(1), &NameAttr::NAME),
+        Some(&RUNTIME)
+    );
+    assert_eq!(
+        state.property_source(prim(1), &PropName::new("test", "absent").expect("a name")),
+        None,
+        "a key no layer states has no source"
+    );
+}

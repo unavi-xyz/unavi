@@ -2,9 +2,9 @@
 //!
 //! A cube is a body, so it is a document of its own. In a space the user can
 //! write it is kept: a reference site in the space document places it,
-//! committed through an undoable edit. Every kept cube of one colour
-//! transcludes the same template document, and each site still opens its own
-//! instance with its own body. Anywhere else a cube is minted and placed
+//! committed through an undoable edit. Every kept cube of one colour in one
+//! space transcludes the same template document, and each site still opens its
+//! own instance with its own body. Anywhere else a cube is minted and placed
 //! directly, and lasts while someone present holds it.
 
 use std::cell::RefCell;
@@ -55,19 +55,20 @@ const REACH: f32 = 6.0;
 /// drop one inside the player.
 const MIN_DIST: f32 = 1.2;
 
-/// The template cube documents kept cubes transclude, one per colour, minted
-/// on first use in a run.
+/// The template cube documents kept cubes transclude, one per colour and
+/// space, minted on first use in a run. A minted document belongs to the
+/// space it was minted in, so another space gets its own.
 #[derive(Default)]
-pub struct Templates(RefCell<Vec<(Color, DocumentId)>>);
+pub struct Templates(RefCell<Vec<(DocumentId, Color, DocumentId)>>);
 
 impl Templates {
-    fn get_or_build(&self, color: Color) -> anyhow::Result<DocumentId> {
+    fn get_or_build(&self, space: DocumentId, color: Color) -> anyhow::Result<DocumentId> {
         let known = self
             .0
             .borrow()
             .iter()
-            .find(|(c, _)| *c == color)
-            .map(|(_, id)| *id);
+            .find(|(s, c, _)| *s == space && *c == color)
+            .map(|(_, _, id)| *id);
         if let Some(id) = known
             && open_document(id)?.is_some()
         {
@@ -75,8 +76,8 @@ impl Templates {
         }
         let id = build(color, Transform::IDENTITY)?.id();
         let mut templates = self.0.borrow_mut();
-        templates.retain(|(c, _)| *c != color);
-        templates.push((color, id));
+        templates.retain(|(s, c, _)| *s != space || *c != color);
+        templates.push((space, color, id));
         Ok(id)
     }
 }
@@ -109,7 +110,7 @@ fn keep(
     pose: &Transform,
     space: &Document,
 ) -> anyhow::Result<()> {
-    let cube = templates.get_or_build(color)?;
+    let cube = templates.get_or_build(space.id(), color)?;
 
     let to_space = script_document()?
         .offset_to(space)

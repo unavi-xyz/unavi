@@ -142,9 +142,11 @@ impl Drag {
         Ok(())
     }
 
-    /// Keeps where it was left.
-    pub fn end(self) -> anyhow::Result<()> {
-        self.edit.commit()?;
-        Ok(())
+    /// Keeps where it was left. A refusal hands the element back, so a new
+    /// one can be taken out again.
+    pub fn end(self) -> Result<(), (anyhow::Error, Element)> {
+        self.edit
+            .commit()
+            .map_err(|err| (anyhow::anyhow!("{err:?}"), self.element))
     }
 }

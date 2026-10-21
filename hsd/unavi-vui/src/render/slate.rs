@@ -86,9 +86,13 @@ const EVENT_CAPACITY: usize = 64;
 /// A drag on a number row.
 struct Scrub {
     row:     usize,
+    /// The row's id, which `released` reports even once the row is gone.
+    id:      u32,
     pointer: PointerKind,
-    /// Where the pointer last met the pane, across it.
-    last_x:  f32,
+    /// Where the pointer last met the pane, across it. `None` after a sample
+    /// that missed it, so the next one sets a new baseline rather than
+    /// reporting the whole gap as a drag.
+    last_x:  Option<f32>,
 }
 
 struct Slate {
@@ -201,7 +205,7 @@ impl Slates {
                 .as_ref()
                 .is_some_and(|scrub| scrub.row >= rows.len())
             {
-                slate.scrub = None;
+                slate.end_scrub();
             }
             slate.rows = rows;
             slate.stale = true;
@@ -227,7 +231,7 @@ impl Slates {
         if let Some(slate) = self.get_mut(id) {
             slate.shown = shown;
             if !shown {
-                slate.scrub = None;
+                slate.end_scrub();
             }
         }
     }
@@ -270,7 +274,18 @@ impl Slates {
     }
 }
 
+/// Metres off the pane's centre, across it, past which a sample is a ray
+/// grazing the pane rather than a drag along it.
+const SCRUB_REACH: f32 = WIDTH * 2.0;
+
 impl Slate {
+    /// Ends a drag, telling the consumer, so a value it kept open is kept.
+    fn end_scrub(&mut self) {
+        if let Some(scrub) = self.scrub.take() {
+            self.push(SlateEvent::Released(scrub.id));
+        }
+    }
+
     /// `point`, in the script's frame, as a point on the pane.
     fn local(&self, point: Vec3) -> Option<Vec2> {
         let local = self.pose?.inverse().transform_point(point);
@@ -287,7 +302,8 @@ impl Slate {
             return None;
         }
         let travel = -origin.z / direction.z;
-        (travel > 0.0).then(|| direction.x.mul_add(travel, origin.x))
+        let x = direction.x.mul_add(travel, origin.x);
+        (travel > 0.0 && x.abs() < SCRUB_REACH).then_some(x)
     }
 
     fn push(&mut self, event: SlateEvent) {
@@ -313,43 +329,22 @@ impl Slate {
                         Press::Toggle(on) => self.push(SlateEvent::Toggled(id, on)),
                         Press::Scrub(_) => {
                             self.scrub = Some(Scrub {
-                                row:     index,
+                                row: index,
+                                id,
                                 pointer: event.pointer,
-                                last_x:  local.x,
+                                last_x: Some(local.x),
                             });
                         }
                     }
                 }
                 Action::Released(Button::Trigger) => {
-                    if let Some(scrub) = self.scrub.take()
-                        && let Some(row) = self.rows.get(scrub.row)
-                    {
-                        self.push(SlateEvent::Released(row.id));
-                    }
+                    self.end_scrub();
                 }
                 _ => {}
             }
         }
 
-        let drag = self.scrub.as_ref().and_then(|scrub| {
-            let pointer = pointers
-                .iter()
-                .find(|pointer| pointer.kind == scrub.pointer && pointer.active)?;
-            let x = self.across(pointer.ray.origin, pointer.ray.direction)?;
-            let row = self.rows.get(scrub.row)?;
-            let Press::Scrub(per_metre) = row.press() else {
-                return None;
-            };
-            Some((row.id, (x - scrub.last_x) * per_metre, x))
-        });
-        if let Some((id, change, x)) = drag {
-            if let Some(scrub) = &mut self.scrub {
-                scrub.last_x = x;
-            }
-            if change != 0.0 {
-                self.push(SlateEvent::Scrubbed(id, change));
-            }
-        }
+        self.step_scrub(pointers);
 
         let hitbox = (doc.id(), self.hitbox);
         let hovered = pointers
@@ -368,6 +363,29 @@ impl Slate {
         if hovered != self.hovered {
             self.hovered = hovered;
             self.stale = true;
+        }
+    }
+
+    /// Reports how far a drag moved since the last sample.
+    fn step_scrub(&mut self, pointers: &[crate::wired::input::types::Pointer]) {
+        let Some(scrub) = &self.scrub else {
+            return;
+        };
+        let x = pointers
+            .iter()
+            .find(|pointer| pointer.kind == scrub.pointer && pointer.active)
+            .and_then(|pointer| self.across(pointer.ray.origin, pointer.ray.direction));
+        let Some(Press::Scrub(per_metre)) = self.rows.get(scrub.row).map(Row::press) else {
+            return;
+        };
+        let (id, last) = (scrub.id, scrub.last_x);
+        if let Some(scrub) = &mut self.scrub {
+            scrub.last_x = x;
+        }
+        if let (Some(x), Some(last)) = (x, last)
+            && (x - last).abs() > f32::EPSILON
+        {
+            self.push(SlateEvent::Scrubbed(id, (x - last) * per_metre));
         }
     }
 

@@ -7,10 +7,7 @@
 
 use std::fmt::Write;
 
-use wired_guest::math::{
-    Quat,
-    Vec3,
-};
+use wired_guest::math::Quat;
 
 use crate::{
     element_of,
@@ -47,6 +44,8 @@ use crate::{
 
 /// Most attribute rows, so the rest of the slate always fits.
 const MAX_ATTRIBUTES: usize = 10;
+/// The smallest scale the Scale row brings an element down to.
+const MIN_SCALE: f32 = 0.01;
 
 mod row {
     pub const NAME: u32 = 0;
@@ -161,16 +160,20 @@ impl Inspection {
                     eprintln!("inspector: edit: {err}");
                 }
             }
-            SlateEvent::Released(_) => {
-                if let Some(edit) = self.edit.take()
-                    && let Err(err) = edit.commit()
-                {
-                    eprintln!("inspector: keep: {err:?}");
-                }
-            }
+            SlateEvent::Released(_) => self.finish(),
             SlateEvent::Pressed(_) | SlateEvent::Toggled(_) => {}
         }
         Asked::Nothing
+    }
+
+    /// Keeps the transform edit a drag left open, so ending an inspection
+    /// mid-drag still files it.
+    pub fn finish(&mut self) {
+        if let Some(edit) = self.edit.take()
+            && let Err(err) = edit.commit()
+        {
+            eprintln!("inspector: keep: {err:?}");
+        }
     }
 
     fn kind(&self) -> &'static str {
@@ -201,9 +204,13 @@ impl Inspection {
             row::YAW => {
                 transform.rotation = Quat::from_rotation_y(by.to_radians()) * transform.rotation;
             }
+            // Scaled as a whole, keeping the proportions a stretched element
+            // has; the row reads its X.
             row::SCALE => {
-                let scale = (transform.scale.x + by).max(0.01);
-                transform.scale = Vec3::splat(scale);
+                let x = transform.scale.x;
+                if x.abs() > f32::EPSILON {
+                    transform.scale *= ((x + by) / x).max(MIN_SCALE / x.abs());
+                }
             }
             _ => return Ok(()),
         }

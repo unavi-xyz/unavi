@@ -174,12 +174,12 @@ impl Script {
             println!("physgun: nothing to aim with");
             return;
         };
-        let Some(target) = Target::under(&aim) else {
+        let Some(mut target) = Target::under(&aim) else {
             return;
         };
         self.release();
 
-        match body_kind(&target) {
+        match body_of(&mut target) {
             Some(RigidBodyKind::Dynamic) => self.hold_body(&aim, target),
             Some(RigidBodyKind::Kinematic) if target.doc.may_write() => {
                 // A frozen body is kinematic, which a velocity cannot drag.
@@ -256,12 +256,21 @@ impl Script {
         let holding = self.holding.borrow_mut().take();
         match holding {
             Some(Holding::Body(held)) => held.release(),
-            Some(Holding::Element(drag, _)) => {
-                if let Err(err) = drag.end() {
+            Some(Holding::Element(drag, by)) => {
+                if let Err((err, element)) = drag.end() {
                     eprintln!("physgun: keep: {err}");
+                    // A copy that could not be kept is taken back out.
+                    if by == ToolButton::Secondary {
+                        element.discard();
+                    }
                 }
             }
             None => {}
+        }
+        // The other trigger still held makes the stick a command again once
+        // nothing is held.
+        if self.modifier.get() && self.active.get() {
+            self.take_stick(&self.command);
         }
     }
 
@@ -518,11 +527,22 @@ impl Script {
     }
 }
 
-/// The kind of body `target` is, `None` for a prim with no body.
-fn body_kind(target: &Target) -> Option<RigidBodyKind> {
-    match target.doc.get(target.prim, &PropertyKey::RigidBody) {
-        Some(Property::RigidBody(RigidBody { kind, .. })) => Some(kind),
-        _ => None,
+/// The kind of body the hit prim belongs to: its own, else the nearest
+/// ancestor's, a collider on a child moving with its parent's body. Moves
+/// `target` onto that prim; `None`, leaving it, when no prim above has one.
+fn body_of(target: &mut Target) -> Option<RigidBodyKind> {
+    let mut prim = target.prim;
+    loop {
+        if let Some(Property::RigidBody(RigidBody { kind, .. })) =
+            target.doc.get(prim, &PropertyKey::RigidBody)
+        {
+            target.prim = prim;
+            return Some(kind);
+        }
+        match target.doc.get(prim, &PropertyKey::Parent) {
+            Some(Property::Parent(Some(parent))) => prim = parent,
+            _ => return None,
+        }
     }
 }
 

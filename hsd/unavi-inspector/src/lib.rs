@@ -103,6 +103,11 @@ impl Script {
             return;
         };
 
+        // Ends a drag still running on the slate, so it cannot carry on into
+        // the element inspected next.
+        self.slate.set_shown(false);
+        self.step_slate();
+
         let toward = (aim.translation - hit.point) * Vec3::new(1.0, 0.0, 1.0);
         let at = hit.point + toward.normalize_or_zero() * TOWARD + Vec3::Y * ABOVE;
         self.slate.set_position(at);
@@ -110,11 +115,17 @@ impl Script {
             eprintln!("inspector: rows: {err:?}");
         }
         self.slate.set_shown(true);
-        *self.inspection.borrow_mut() = Some(inspection);
+        let previous = self.inspection.borrow_mut().replace(inspection);
+        if let Some(mut previous) = previous {
+            previous.finish();
+        }
     }
 
     fn close(&self) {
-        self.inspection.borrow_mut().take();
+        let closed = self.inspection.borrow_mut().take();
+        if let Some(mut closed) = closed {
+            closed.finish();
+        }
         self.slate.set_shown(false);
     }
 

@@ -9,10 +9,10 @@
 use wired_guest::math::Transform;
 
 use crate::{
+    element_of,
     unavi::author::api::Edit,
     wired::{
         core::ids::PrimRef,
-        portal::portals::current_space,
         scene::{
             document::{
                 Document,
@@ -42,27 +42,8 @@ impl Element {
     /// not loaded.
     #[must_use]
     pub fn of(target: PrimRef) -> Option<Self> {
-        let doc = open_document(target.document).ok()??;
-        if let Some(site) = doc.site() {
-            return Some(Self {
-                doc:   open_document(site.document).ok()??,
-                prim:  site.prim,
-                loose: false,
-            });
-        }
-        if current_space().ok().flatten() == Some(target.document) {
-            return Some(Self {
-                doc,
-                prim: target.prim,
-                loose: false,
-            });
-        }
-        let prim = root_of(&doc, target.prim);
-        Some(Self {
-            doc,
-            prim,
-            loose: true,
-        })
+        let (doc, prim, loose) = element_of(target)?;
+        Some(Self { doc, prim, loose })
     }
 
     /// Where it is this frame, in the tool's frame.
@@ -132,14 +113,6 @@ fn subtree(doc: &Document, prim: PrimId) -> Vec<PrimId> {
         next += 1;
     }
     prims
-}
-
-/// The root prim above `prim` in `doc`.
-fn root_of(doc: &Document, mut prim: PrimId) -> PrimId {
-    while let Some(Property::Parent(Some(parent))) = doc.get(prim, &PropertyKey::Parent) {
-        prim = parent;
-    }
-    prim
 }
 
 /// Copies `prim` and everything beneath it under `parent`, answering the

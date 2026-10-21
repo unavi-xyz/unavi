@@ -584,6 +584,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-inspector"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "wired-guest",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "unavi-lens"
 version = "0.0.17"
 dependencies = [

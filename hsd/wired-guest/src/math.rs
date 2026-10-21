@@ -69,6 +69,12 @@ impl Quat {
         Self::from(glam::Quat::from(self).normalize())
     }
 
+    /// Its turn about +Y in radians, the first of yaw, pitch and roll.
+    #[must_use]
+    pub fn yaw(self) -> f32 {
+        glam::Quat::from(self).to_euler(glam::EulerRot::YXZ).0
+    }
+
     /// Decomposes into a rotation axis and angle in radians.
     #[must_use]
     pub fn to_axis_angle(self) -> (Vec3, f32) {

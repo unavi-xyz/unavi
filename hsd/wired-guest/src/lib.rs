@@ -166,6 +166,33 @@ macro_rules! generate {
             ::core::option::Option::Some(parent.inverse() * pose)
         }
 
+        /// The prim a hit on `target` stands for as a whole, its document, and
+        /// whether it is a loose document's root: the site placing a referenced
+        /// document, a prim of the space document itself, or else the root prim
+        /// above the hit. `None` when a document it needs is not loaded.
+        pub fn element_of(
+            target: wired::core::ids::PrimRef,
+        ) -> ::core::option::Option<(wired::scene::document::Document, (u64, u64), bool)> {
+            let doc = wired::scene::document::open_document(target.document).ok()??;
+            if let ::core::option::Option::Some(site) = doc.site() {
+                let host = wired::scene::document::open_document(site.document).ok()??;
+                return ::core::option::Option::Some((host, site.prim, false));
+            }
+            if wired::portal::portals::current_space().ok().flatten()
+                == ::core::option::Option::Some(target.document)
+            {
+                return ::core::option::Option::Some((doc, target.prim, false));
+            }
+            let mut prim = target.prim;
+            while let ::core::option::Option::Some(wired::scene::properties::Property::Parent(
+                ::core::option::Option::Some(parent),
+            )) = doc.get(prim, &wired::scene::properties::PropertyKey::Parent)
+            {
+                prim = parent;
+            }
+            ::core::option::Option::Some((doc, prim, true))
+        }
+
         /// Where a tool held by `kind` rides and fires from this frame, per
         /// [`::wired_guest::xform::tool_pose`]. A hand that is not tracked
         /// falls back to the eye.

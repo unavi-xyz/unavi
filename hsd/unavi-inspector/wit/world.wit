@@ -1,0 +1,8 @@
+package unavi:inspector;
+
+world guest {
+  import unavi:author/api;
+  import unavi:tool/api;
+  import unavi:vui/api;
+  include wired:prelude/script;
+}

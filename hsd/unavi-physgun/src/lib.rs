@@ -174,7 +174,7 @@ impl Script {
             println!("physgun: nothing to aim with");
             return;
         };
-        let Some(mut target) = Target::under(&aim) else {
+        let Some(mut target) = Target::under(&aim).filter(unlocked) else {
             return;
         };
         self.release();
@@ -310,7 +310,7 @@ impl Script {
         let Some(aim) = self.aim() else {
             return;
         };
-        let Some(target) = Target::under(&aim) else {
+        let Some(target) = Target::under(&aim).filter(unlocked) else {
             return;
         };
         if freeze::is_frozen(&target.doc, target.prim) {
@@ -360,7 +360,7 @@ impl Script {
 
     /// The element the aim points at, when the user may change it.
     fn aimed_element(&self) -> Option<Element> {
-        let target = Target::under(&self.aim()?)?;
+        let target = Target::under(&self.aim()?).filter(unlocked)?;
         let element = Element::of(PrimRef {
             document: target.doc.id(),
             prim:     target.prim,
@@ -544,6 +544,18 @@ fn body_of(target: &mut Target) -> Option<RigidBodyKind> {
             _ => return None,
         }
     }
+}
+
+/// Whether `target` may be grabbed or changed: anything locked is left be.
+fn unlocked(target: &Target) -> bool {
+    let locked = is_locked(&PrimRef {
+        document: target.doc.id(),
+        prim:     target.prim,
+    });
+    if locked {
+        println!("physgun: that is locked");
+    }
+    !locked
 }
 
 /// The stick of `hand`, centred when it is not tracked.

@@ -10,6 +10,7 @@ use wired_guest::math::Quat;
 
 use crate::{
     element_of,
+    is_locked,
     unavi::{
         author::api::Edit,
         vui::api::{
@@ -44,7 +45,7 @@ use crate::{
 };
 
 /// Most attribute and child rows, so the rest of the slate always fits.
-const MAX_ATTRIBUTES: usize = 6;
+const MAX_ATTRIBUTES: usize = 5;
 const MAX_CHILDREN: usize = 3;
 /// The smallest scale the Scale row brings an element down to.
 const MIN_SCALE: f32 = 0.01;
@@ -54,6 +55,7 @@ mod row {
     pub const DOCUMENT: u32 = 1;
     pub const AUTHOR: u32 = 2;
     pub const KIND: u32 = 3;
+    pub const LOCKED: u32 = 4;
     pub const TRANSFORM: u32 = 10;
     pub const X: u32 = 11;
     pub const Y: u32 = 12;
@@ -118,6 +120,13 @@ impl Inspection {
             field(row::AUTHOR, "Author", &author_of(&self.hit_doc)),
             field(row::KIND, "Is", self.kind()),
         ];
+        if self.hit_doc.may_write() {
+            rows.push(Row {
+                id:    row::LOCKED,
+                label: "Locked".to_owned(),
+                kind:  RowKind::Toggle(self.locked()),
+            });
+        }
 
         if let Some(Property::Transform(transform)) =
             self.hit_doc.get(self.hit_prim, &PropertyKey::Transform)
@@ -210,9 +219,39 @@ impl Inspection {
                 }
             }
             SlateEvent::Released(_) => self.finish(),
+            SlateEvent::Toggled((row::LOCKED, on)) => {
+                if let Err(err) = self.lock(on) {
+                    eprintln!("inspector: lock: {err}");
+                }
+            }
             SlateEvent::Pressed(_) | SlateEvent::Toggled(_) => {}
         }
         Asked::Nothing
+    }
+
+    /// Whether this prim is locked, here or above it, so editing tools leave
+    /// it be.
+    fn locked(&self) -> bool {
+        is_locked(&self.at(self.hit_prim))
+    }
+
+    /// Locks or unlocks this prim and everything beneath it, undoably.
+    fn lock(&self, on: bool) -> anyhow::Result<()> {
+        let key = PropertyKey::Custom(wired_guest::LOCKED.to_owned());
+        let edit = Edit::new(if on { "Lock" } else { "Unlock" })?;
+        edit.track(&self.hit_doc, &[(self.hit_prim, key.clone())]);
+        let batch = self.hit_doc.shared();
+        let batch = if on {
+            batch.set(
+                self.hit_prim,
+                Property::Custom((wired_guest::LOCKED.to_owned(), vec![1])),
+            )
+        } else {
+            batch.clear(self.hit_prim, key)
+        };
+        batch.flush()?;
+        edit.commit()?;
+        Ok(())
     }
 
     /// Which layer `key`'s value comes from, as a person reads it.

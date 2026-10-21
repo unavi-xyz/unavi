@@ -21,6 +21,13 @@ pub mod xform;
 
 pub use wired_state_macro::state;
 
+/// The custom property that locks a prim and everything beneath it against
+/// editing tools: one byte, `1` for locked.
+pub const LOCKED: &str = "edit/locked";
+
+/// The most reference sites a lock check climbs through.
+pub const LOCK_DEPTH: usize = 8;
+
 /// `wit_bindgen::generate!` for a guest's own world, plus the ergonomics.
 ///
 /// Expands at the invocation site and adds:
@@ -191,6 +198,49 @@ macro_rules! generate {
                 prim = parent;
             }
             ::core::option::Option::Some((doc, prim, true))
+        }
+
+        /// Whether `target` is locked against editing tools: it, a prim above it
+        /// in its document, or the reference site placing that document states
+        /// [`::wired_guest::LOCKED`] as on. A lock guards against accidents, not
+        /// against anyone, since only a user who may write a document edits it.
+        #[must_use]
+        pub fn is_locked(target: &wired::core::ids::PrimRef) -> bool {
+            let key = wired::scene::properties::PropertyKey::Custom(
+                ::wired_guest::LOCKED.to_owned(),
+            );
+            let mut at = ::core::option::Option::Some((target.document, target.prim));
+            // Bounded by the reference depth a loader allows, so a cycle of
+            // sites cannot spin.
+            for _ in 0..::wired_guest::LOCK_DEPTH {
+                let ::core::option::Option::Some((document, mut prim)) = at else {
+                    return false;
+                };
+                let ::core::option::Option::Some(doc) =
+                    wired::scene::document::open_document(document).ok().flatten()
+                else {
+                    return false;
+                };
+                loop {
+                    if let ::core::option::Option::Some(
+                        wired::scene::properties::Property::Custom((_, value)),
+                    ) = doc.get(prim, &key)
+                        && value.first() == ::core::option::Option::Some(&1)
+                    {
+                        return true;
+                    }
+                    match doc.get(prim, &wired::scene::properties::PropertyKey::Parent) {
+                        ::core::option::Option::Some(
+                            wired::scene::properties::Property::Parent(
+                                ::core::option::Option::Some(parent),
+                            ),
+                        ) => prim = parent,
+                        _ => break,
+                    }
+                }
+                at = doc.site().map(|site| (site.document, site.prim));
+            }
+            false
         }
 
         /// Where a tool held by `kind` rides and fires from this frame, per

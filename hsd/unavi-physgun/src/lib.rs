@@ -14,14 +14,16 @@
 //! | spin a body, turn an element 15° | squeeze the grip, stick left, right | R turns an element |
 //! | turn a body with the wrist, or move an element off the grid | hold the other trigger | hold Shift |
 //! | freeze | let go of the trigger while squeezing the grip | right mouse while holding |
-//! | thaw | grip aimed at a frozen body, or grab it | right mouse aimed at it, or grab it |
+//! | thaw | grab it | grab it |
 //! | copy and move the copy | — | right mouse on an element, drag |
 //! | copy in place | the other trigger, flick the stick up | Ctrl+D |
 //! | delete | the other trigger, flick the stick down | Delete |
 //! | undo, redo | the other trigger, flick the stick left, right | Ctrl+Z, Ctrl+Shift+Z |
 //!
 //! The stick is the tool's only while the grip or the other trigger is held,
-//! so it still walks and turns the user the rest of the time.
+//! so it still walks and turns the user the rest of the time. The grip is the
+//! tool's only while something is on the beam: otherwise squeezing a body
+//! picks it up by hand, and the grip acts as above only on anything else.
 
 use std::cell::{
     Cell,
@@ -208,6 +210,7 @@ impl Script {
             self.outline.attach(&collider, self.color.get());
         }
         *self.holding.borrow_mut() = Some(Holding::Body(held));
+        self.tool.hold_grip(true);
         self.command.borrow_mut().take();
         if self.squeezed.get() {
             self.take_stick(&self.steer);
@@ -240,6 +243,7 @@ impl Script {
         match Drag::begin(element, target.point, aim, label, copy) {
             Ok(drag) => {
                 *self.holding.borrow_mut() = Some(Holding::Element(drag, by));
+                self.tool.hold_grip(true);
                 self.command.borrow_mut().take();
                 if self.squeezed.get() {
                     self.take_stick(&self.steer);
@@ -260,6 +264,9 @@ impl Script {
         self.steer.borrow_mut().take();
         self.outline.clear();
         let holding = self.holding.borrow_mut().take();
+        if holding.is_some() {
+            self.tool.hold_grip(false);
+        }
         match holding {
             Some(Holding::Body(held)) => held.release(),
             Some(Holding::Element(drag, by)) => {
@@ -300,8 +307,8 @@ impl Script {
     }
 
     /// The grip went down: steer what is held in VR, freeze a body on
-    /// desktop, or with nothing held thaw the frozen body aimed at, or on
-    /// desktop start placing a copy of the element aimed at.
+    /// desktop, or with nothing held on desktop start placing a copy of the
+    /// element aimed at.
     fn squeeze(&self) {
         self.squeezed.set(true);
         let holding_body = matches!(&*self.holding.borrow(), Some(Holding::Body(_)));
@@ -319,11 +326,9 @@ impl Script {
         let Some(target) = Target::under(&aim).filter(unlocked) else {
             return;
         };
-        if freeze::is_frozen(&target.doc, target.prim) {
-            if let Err(err) = freeze::thaw(&target.doc, target.prim) {
-                eprintln!("physgun: thaw: {err}");
-            }
-        } else if !self.is_vr() {
+        // A frozen body is the hand's to pick up, so only an element reaches
+        // here: on desktop, a copy of it to place.
+        if !self.is_vr() {
             self.place(&aim, &target, ToolButton::Secondary, true);
         }
     }

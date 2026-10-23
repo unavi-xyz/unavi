@@ -237,12 +237,16 @@ impl Script {
                 // it is noted whether or not the halo is up.
                 Action::Pressed(button) => {
                     self.aim = event.pointer;
-                    self.forward(|hand| hand.button(event.pointer, button, true));
+                    self.forward(|hand| {
+                        hand.button(event.pointer, button, true, event.hit.as_ref());
+                    });
                 }
                 // With the halo up a press belongs to whichever surface was
                 // pressed, and VUI's own listener is what hears it.
                 Action::Released(button) => {
-                    self.forward(|hand| hand.button(event.pointer, button, false));
+                    self.forward(|hand| {
+                        hand.button(event.pointer, button, false, event.hit.as_ref());
+                    });
                 }
                 Action::KeyPressed(key) => {
                     self.hand.key(key, true, !self.summon.is_up());

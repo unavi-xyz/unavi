@@ -1,7 +1,13 @@
 //! The shell side of `unavi:tool/api`: the belt a halo-like shell polls for
 //! announced tools and pushes state onto.
 
-use std::cell::Cell;
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    collections::HashSet,
+};
 
 use crate::{
     exports::unavi::tool::api::{
@@ -17,10 +23,12 @@ use crate::{
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
+        CH_HOLD_GRIP,
         CH_PRESS,
         CH_REGISTER,
         CH_SCROLL,
         CH_SET_STATE,
+        HoldGripPayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
         PressPayload,
@@ -49,6 +57,11 @@ pub struct ToolRegistry {
     /// `None` when opening the listener failed; the belt then never
     /// discovers a tool, instead of trapping the whole script.
     register_rx: Option<MessageSubscription>,
+    grip_rx:     Option<MessageSubscription>,
+    /// The tools in hand, whose grip holds are the only ones taken.
+    active:      RefCell<HashSet<(u64, u64, u64, u64)>>,
+    /// The tools that hold their hand's grip.
+    gripping:    RefCell<HashSet<(u64, u64, u64, u64)>>,
     ticks:       Cell<u32>,
 }
 
@@ -61,8 +74,18 @@ impl GuestToolRegistry for ToolRegistry {
                 None
             }
         };
+        let grip_rx = match messaging::listen(&[CH_HOLD_GRIP.to_owned()], None, Scope::Global) {
+            Ok(rx) => Some(rx),
+            Err(err) => {
+                eprintln!("tool-registry: listen: {err:?}");
+                None
+            }
+        };
         Self {
             register_rx,
+            grip_rx,
+            active: RefCell::new(HashSet::new()),
+            gripping: RefCell::new(HashSet::new()),
             ticks: Cell::new(0),
         }
     }
@@ -76,6 +99,7 @@ impl GuestToolRegistry for ToolRegistry {
             eprintln!("tool-registry: emit discover: {err:?}");
         }
 
+        self.read_grips();
         let Some(register_rx) = &self.register_rx else {
             return Vec::new();
         };
@@ -106,6 +130,7 @@ impl GuestToolRegistry for ToolRegistry {
     }
 
     fn activate(&self, document: (u64, u64, u64, u64), hand: PointerKind) {
+        self.active.borrow_mut().insert(document);
         emit_to(
             document,
             CH_ACTIVATE,
@@ -113,7 +138,15 @@ impl GuestToolRegistry for ToolRegistry {
         );
     }
 
+    fn holds_grip(&self, document: (u64, u64, u64, u64)) -> bool {
+        self.gripping.borrow().contains(&document)
+    }
+
     fn deactivate(&self, document: (u64, u64, u64, u64)) {
+        // A tool put away lets go of everything, the grip with it, and a hold
+        // it sent on its way out is not taken.
+        self.active.borrow_mut().remove(&document);
+        self.gripping.borrow_mut().remove(&document);
         if let Err(err) = messaging::emit(CH_DEACTIVATE, &[], Some(&[document]), Scope::Global) {
             eprintln!("tool-registry: emit deactivate: {err:?}");
         }
@@ -140,6 +173,29 @@ impl GuestToolRegistry for ToolRegistry {
 
     fn scroll(&self, document: (u64, u64, u64, u64), delta: f32) {
         emit_to(document, CH_SCROLL, &ScrollPayload { delta });
+    }
+}
+
+impl ToolRegistry {
+    fn read_grips(&self) {
+        let Some(grip_rx) = &self.grip_rx else {
+            return;
+        };
+        let active = self.active.borrow();
+        let mut gripping = self.gripping.borrow_mut();
+        for message in grip_rx.drain(DRAIN_MAX) {
+            let (Some(document), Ok(payload)) = (
+                message.sender,
+                postcard::from_bytes::<HoldGripPayload>(&message.payload),
+            ) else {
+                continue;
+            };
+            if payload.held && active.contains(&document) {
+                gripping.insert(document);
+            } else {
+                gripping.remove(&document);
+            }
+        }
     }
 }
 

@@ -19,6 +19,8 @@ pub const CH_DEACTIVATE: &str = "unavi:tool/deactivate";
 pub const CH_SET_STATE: &str = "unavi:tool/set-state";
 pub const CH_PRESS: &str = "unavi:tool/press";
 pub const CH_SCROLL: &str = "unavi:tool/scroll";
+/// From a tool to the shell that activated it.
+pub const CH_HOLD_GRIP: &str = "unavi:tool/hold-grip";
 
 /// Longest `tool` name, matching the bound documented on
 /// `unavi:tool/api.tool.constructor`.
@@ -144,6 +146,11 @@ impl From<ButtonPayload> for ToolButton {
             ButtonPayload::Modifier => Self::Modifier,
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct HoldGripPayload {
+    pub held: bool,
 }
 
 #[derive(Serialize, Deserialize)]

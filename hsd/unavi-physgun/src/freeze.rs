@@ -24,18 +24,6 @@ use crate::{
     },
 };
 
-/// Whether `prim` is a kinematic body, which is what a frozen one is.
-#[must_use]
-pub fn is_frozen(doc: &Document, prim: (u64, u64)) -> bool {
-    matches!(
-        doc.get(prim, &PropertyKey::RigidBody),
-        Some(Property::RigidBody(RigidBody {
-            kind: RigidBodyKind::Kinematic,
-            ..
-        }))
-    )
-}
-
 /// Makes `prim` kinematic where it is now.
 pub fn freeze(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     let body = doc

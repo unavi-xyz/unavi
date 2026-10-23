@@ -21,7 +21,10 @@ interface api {
   enum tool-button {
     /// The tool hand's trigger. Desktop: the left mouse button.
     primary,
-    /// The tool hand's grip. Desktop: the right mouse button.
+    /// The tool hand's grip, squeezed on nothing the hand can pick up.
+    /// The grip is the hand's first, so a squeeze on something grabbable
+    /// picks it up instead, unless the tool holds the grip (`hold-grip`).
+    /// Desktop: the right mouse button.
     secondary,
     /// The other hand's trigger. Desktop: either Shift.
     modifier,
@@ -61,6 +64,11 @@ interface api {
     /// generic one.
     constructor(name: string, description: string, glyph: option<glyph>) -> result<tool, error>;
     poll: func() -> option<tool-event>;
+    /// While held, every squeeze of the tool hand's grip is the tool's
+    /// `secondary`, and the hand picks nothing up with it: for a tool that has
+    /// something in hand of its own, such as a body on a beam. Let go as soon
+    /// as that ends. Putting the tool away lets go.
+    hold-grip: func(held: bool);
   }
 
   record registered-tool {
@@ -77,6 +85,8 @@ interface api {
     poll: func() -> list<registered-tool>;
     activate: func(document: document-id, hand: pointer-kind);
     deactivate: func(document: document-id);
+    /// Whether the tool holds its hand's grip, as of the last `poll`.
+    holds-grip: func(document: document-id) -> bool;
     set-state: func(document: document-id, state: tool-state);
     press: func(document: document-id, button: tool-button, pressed: bool);
     scroll: func(document: document-id, delta: f32);

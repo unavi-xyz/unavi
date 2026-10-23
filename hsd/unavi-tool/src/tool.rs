@@ -2,7 +2,10 @@
 //! polls it for what the shell asks of it.
 
 use std::{
-    cell::RefCell,
+    cell::{
+        Cell,
+        RefCell,
+    },
     collections::VecDeque,
 };
 
@@ -19,11 +22,13 @@ use crate::{
         CH_ACTIVATE,
         CH_DEACTIVATE,
         CH_DISCOVER,
+        CH_HOLD_GRIP,
         CH_PRESS,
         CH_REGISTER,
         CH_SCROLL,
         CH_SET_STATE,
         GlyphPayload,
+        HoldGripPayload,
         MAX_DESCRIPTION_BYTES,
         MAX_NAME_BYTES,
         PressPayload,
@@ -52,6 +57,9 @@ pub struct Tool {
     discover_rx: MessageSubscription,
     control_rx:  MessageSubscription,
     pending:     RefCell<VecDeque<ToolEvent>>,
+    /// The shell that last put the tool in hand, which hears what the tool
+    /// asks of it.
+    shell:       Cell<Option<(u64, u64, u64, u64)>>,
 }
 
 impl GuestTool for Tool {
@@ -93,6 +101,7 @@ impl GuestTool for Tool {
             discover_rx,
             control_rx,
             pending: RefCell::new(VecDeque::new()),
+            shell: Cell::new(None),
         })
     }
 
@@ -124,9 +133,14 @@ impl GuestTool for Tool {
         let mut pending = self.pending.borrow_mut();
         for message in self.control_rx.drain(DRAIN_MAX) {
             let event = match message.channel.as_str() {
-                CH_ACTIVATE => postcard::from_bytes::<ActivatePayload>(&message.payload)
-                    .ok()
-                    .map(|p| ToolEvent::Activate(p.hand.into())),
+                CH_ACTIVATE => {
+                    if message.sender.is_some() {
+                        self.shell.set(message.sender);
+                    }
+                    postcard::from_bytes::<ActivatePayload>(&message.payload)
+                        .ok()
+                        .map(|p| ToolEvent::Activate(p.hand.into()))
+                }
                 CH_DEACTIVATE => Some(ToolEvent::Deactivate),
                 CH_SET_STATE => postcard::from_bytes::<ToolStatePayload>(&message.payload)
                     .ok()
@@ -152,5 +166,21 @@ impl GuestTool for Tool {
         }
 
         pending.pop_front()
+    }
+
+    fn hold_grip(&self, held: bool) {
+        let Some(shell) = self.shell.get() else {
+            return;
+        };
+        let payload = match postcard::to_allocvec(&HoldGripPayload { held }) {
+            Ok(payload) => payload,
+            Err(err) => {
+                eprintln!("tool: encode hold-grip: {err}");
+                return;
+            }
+        };
+        if let Err(err) = messaging::emit(CH_HOLD_GRIP, &payload, Some(&[shell]), Scope::Global) {
+            eprintln!("tool: emit hold-grip: {err:?}");
+        }
     }
 }

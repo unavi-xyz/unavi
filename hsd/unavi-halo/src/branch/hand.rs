@@ -22,16 +22,27 @@ use crate::{
             Mote,
         },
     },
-    wired::input::{
-        device::{
-            self,
-            Claim,
-            Control,
+    wired::{
+        input::{
+            device::{
+                self,
+                Claim,
+                Control,
+            },
+            types::{
+                Button,
+                Hit,
+                Key,
+                PointerKind,
+            },
         },
-        types::{
-            Button,
-            Key,
-            PointerKind,
+        scene::{
+            document::open_document,
+            properties::{
+                Property,
+                PropertyKey,
+                RigidBodyKind,
+            },
         },
     },
 };
@@ -58,11 +69,11 @@ struct Tool {
 
 /// The tool in hand, and the hand it is in.
 struct Held {
-    doc:   (u64, u64, u64, u64),
-    hand:  PointerKind,
-    /// The tool hand's grip, taken from the host so squeezing works the tool
-    /// instead of picking things up. `None` when the claim was refused.
-    _grip: Option<Claim>,
+    doc:  (u64, u64, u64, u64),
+    hand: PointerKind,
+    /// The tool hand's grip, taken from the host while the tool holds it,
+    /// so squeezing works the tool instead of picking things up.
+    grip: Option<Claim>,
 }
 
 /// Which [`ToolButton`]s the tool in hand heard pressed and not released.
@@ -149,7 +160,9 @@ impl Toolbelt {
     /// muscle memory.
     pub fn fixed_update(&mut self, parent: &Mote) {
         let mut found = false;
-        for tool in self.registry.poll() {
+        let announced = self.registry.poll();
+        self.sync_grip();
+        for tool in announced {
             if self.tools.iter().any(|held| held.doc == tool.document) {
                 continue;
             }
@@ -238,20 +251,13 @@ impl Toolbelt {
             return true;
         }
 
-        let grip = match device::take_control(hand, Control::Grip) {
-            Ok(claim) => Some(claim),
-            Err(err) => {
-                eprintln!("halo: claim the grip for '{name}': {err:?}");
-                None
-            }
-        };
         println!("halo: holding '{name}' in {hand:?}");
         self.registry.activate(doc, hand);
         self.registry.set_state(doc, state(HELD));
         self.held = Some(Held {
             doc,
             hand,
-            _grip: grip,
+            grip: None,
         });
         self.mark();
         true
@@ -269,14 +275,43 @@ impl Toolbelt {
         self.mark();
     }
 
-    /// A button on `pointer`, while the halo is down. Only what is in the hand
-    /// hears it, and only as one of its own buttons.
-    pub fn button(&self, pointer: PointerKind, button: Button, pressed: bool) {
+    /// A button on `pointer`, while the halo is down, that met `hit`. Only
+    /// what is in the hand hears it, and only as one of its own buttons.
+    ///
+    /// The grip is the hand's first: a squeeze on something it can pick up
+    /// is the host's grab, and reaches the tool only while the tool holds
+    /// the grip. A release always does, and is dropped by [`Self::send`] when
+    /// the tool never heard the press.
+    pub fn button(&self, pointer: PointerKind, button: Button, pressed: bool, hit: Option<&Hit>) {
         let Some(held) = &self.held else {
             return;
         };
-        if let Some(button) = tool_button(held.hand, pointer, button) {
-            self.send(button, pressed);
+        let Some(button) = tool_button(held.hand, pointer, button) else {
+            return;
+        };
+        if button == ToolButton::Secondary && pressed && held.grip.is_none() && grabbable(hit) {
+            return;
+        }
+        self.send(button, pressed);
+    }
+
+    /// Takes the grip from the host while the tool in hand holds it, and gives
+    /// it back once the tool lets go.
+    fn sync_grip(&mut self) {
+        let Some(held) = &mut self.held else {
+            return;
+        };
+        let wanted = self.registry.holds_grip(held.doc);
+        if !wanted {
+            held.grip = None;
+        } else if held.grip.is_none() {
+            held.grip = match device::take_control(held.hand, Control::Grip) {
+                Ok(claim) => Some(claim),
+                Err(err) => {
+                    eprintln!("halo: claim the grip: {err:?}");
+                    None
+                }
+            };
         }
     }
 
@@ -342,6 +377,22 @@ impl Toolbelt {
             tool.mote.set_active(doc == Some(tool.doc));
         }
     }
+}
+
+/// Whether a squeeze on `hit` picks something up: the host carries a body
+/// by its own collider, a kinematic one too, which is a frozen body or one a
+/// peer drives.
+fn grabbable(hit: Option<&Hit>) -> bool {
+    let Some(target) = hit.and_then(|hit| hit.target) else {
+        return false;
+    };
+    let Ok(Some(doc)) = open_document(target.document) else {
+        return false;
+    };
+    matches!(
+        doc.get(target.prim, &PropertyKey::RigidBody),
+        Some(Property::RigidBody(body)) if body.kind != RigidBodyKind::Static
+    )
 }
 
 const fn state(color: Color) -> ToolState {

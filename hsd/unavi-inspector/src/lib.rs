@@ -1,20 +1,26 @@
-//! The Inspector: points at anything and stands a slate beside it saying
-//! what it is, with its transform to edit and its attributes to read.
+//! The Inspector: points at anything and stands a slate saying what it is,
+//! tethered to the point inspected, with a tab for each way to work on it.
+//!
+//! The slate is a thing in the world, the same in a headset and on desktop:
+//! it opens at reading distance beside what it describes, is picked up and
+//! carried like anything else, and floats where it is let go. Moving things is
+//! the physgun's; the Inspector reads them, and nudges a value by scrubbing its
+//! row.
 //!
 //! | Act | VR | Desktop |
 //! | --- | --- | --- |
 //! | inspect | trigger on it | left mouse on it |
-//! | change a number | trigger on the row, drag sideways | left mouse on the row, drag |
-//! | close | the Close row, or the grip | the Close row, or right mouse |
+//! | move the slate | squeeze the grip on it and carry it; let go and it floats | right mouse on it, drag |
+//! | change tab | trigger on a tab | left mouse on a tab |
+//! | nudge position, turn or scale | trigger on its row, slide across | left mouse on its row, drag sideways |
+//! | inspect its parent or a child | the rows of the Tree tab | the same |
+//! | lock, delete, make local | the rows of the Transform tab | the same |
+//! | close | the Close row, or squeeze the grip on nothing | the Close row, or right mouse on nothing |
 
-use std::cell::{
-    Cell,
-    RefCell,
-};
+use std::cell::RefCell;
 
 use wired_guest::math::{
     Ray,
-    Transform,
     Vec3,
 };
 
@@ -41,12 +47,17 @@ use crate::{
             RayFilter,
             raycast,
         },
-        scene::document::script_document,
+        scene::document::{
+            Document,
+            script_document,
+        },
     },
 };
 
 mod glyph;
 mod inspect;
+mod stand;
+mod tab;
 
 wired_guest::generate_script!(Script);
 
@@ -55,35 +66,37 @@ const REACH: f32 = 50.0;
 /// Fixed ticks between redraws of the rows, so values others change, or
 /// physics moves, show without a press.
 const REFRESH_TICKS: u32 = 15;
-/// Metres toward the viewer, and up, a slate stands from what it describes.
-const TOWARD: f32 = 0.35;
-const ABOVE: f32 = 0.4;
+/// Metres from the eye past which an open slate is left behind, so
+/// inspecting something new stands it again beside that.
+const LEFT_BEHIND: f32 = 3.0;
 
 struct Script {
     tool:       Tool,
-    active:     Cell<bool>,
-    hand:       Cell<PointerKind>,
+    own:        Document,
+    /// The pointer the tool aims with, while it is in hand.
+    hand:       Option<PointerKind>,
     slate:      Slate,
     inspection: RefCell<Option<Inspection>>,
-    ticks:      Cell<u32>,
+    ticks:      u32,
 }
 
 impl Script {
-    fn aim(&self) -> Option<Transform> {
-        pointer_pose(self.hand.get()).or_else(camera_pose)
+    fn aim(&self) -> Option<Ray> {
+        let aim = self.hand.and_then(pointer_pose).or_else(camera_pose)?;
+        Some(Ray {
+            origin:    aim.translation,
+            direction: aim.forward(),
+        })
     }
 
     /// Inspects what the aim points at. A hit on the tool's own slate is the
     /// slate's to answer.
-    fn inspect(&self) {
-        let Some(aim) = self.aim() else {
+    fn press(&self) {
+        let Some(ray) = self.aim() else {
             return;
         };
         let hit = match raycast(
-            Ray {
-                origin:    aim.translation,
-                direction: aim.forward(),
-            },
+            ray,
             REACH,
             &RayFilter {
                 exclude_local_agent: true,
@@ -97,36 +110,50 @@ impl Script {
                 return;
             }
         };
-        if script_document().is_ok_and(|own| own.id() == hit.target.document) {
-            return;
+        if self.own.id() != hit.target.document {
+            self.open(hit.target, Some(hit.point));
         }
-        let toward = (aim.translation - hit.point) * Vec3::new(1.0, 0.0, 1.0);
-        let at = hit.point + toward.normalize_or_zero() * TOWARD + Vec3::Y * ABOVE;
-        self.open(hit.target, Some(at));
     }
 
-    /// Inspects `target`, standing the slate at `at`, else leaving it where
-    /// it stands.
-    fn open(&self, target: PrimRef, at: Option<Vec3>) {
-        let Some(inspection) = Inspection::of(target) else {
+    /// Inspects `target`, tethered to `point` on it, else to its origin.
+    /// Inspecting from the world starts on the first tab; moving on from
+    /// what is inspected stays on the tab in use.
+    fn open(&self, target: PrimRef, point: Option<Vec3>) {
+        let Some(mut inspection) = Inspection::of(target, point) else {
             return;
         };
-        // Ends a drag still running on the slate, so it cannot carry on into
-        // the element inspected next.
-        self.slate.set_shown(false);
-        self.step_slate();
-
-        if let Some(at) = at {
-            self.slate.set_position(at);
+        let previous = self.inspection.borrow_mut().take();
+        let was_open = previous.is_some();
+        if let Some(mut previous) = previous {
+            if point.is_none() {
+                inspection.set_tab(previous.tab());
+            }
+            previous.finish();
         }
+        // Rows first, so the slate is measured at the height it will show.
         if let Err(err) = self.slate.set_rows(&inspection.rows()) {
             eprintln!("inspector: rows: {err:?}");
         }
-        self.slate.set_shown(true);
-        let previous = self.inspection.borrow_mut().replace(inspection);
-        if let Some(mut previous) = previous {
-            previous.finish();
+        if let Some(point) = point
+            && self.left_behind(was_open)
+            && let Some(eye) = camera_pose()
+        {
+            let at = stand::stand(eye.translation, point, self.slate.size(), self.own.id());
+            self.slate.set_position(at);
         }
+        self.slate.set_tether(inspection.anchor());
+        self.slate.set_shown(true);
+        *self.inspection.borrow_mut() = Some(inspection);
+    }
+
+    /// Whether the slate should stand again beside what is inspected next:
+    /// it was put away, or the viewer has walked off from it.
+    fn left_behind(&self, was_open: bool) -> bool {
+        if !was_open {
+            return true;
+        }
+        camera_pose()
+            .is_none_or(|eye| eye.translation.distance(self.slate.position()) > LEFT_BEHIND)
     }
 
     fn close(&self) {
@@ -134,16 +161,19 @@ impl Script {
         if let Some(mut closed) = closed {
             closed.finish();
         }
+        self.slate.set_tether(None);
         self.slate.set_shown(false);
     }
 
     /// Answers the slate, and redraws its rows after any change and every
     /// few ticks.
-    fn step_slate(&self) {
+    fn step_slate(&mut self) {
         let events = self.slate.events();
         let mut closing = false;
         let mut next = None;
         let mut changed = !events.is_empty();
+        self.ticks = (self.ticks + 1) % REFRESH_TICKS;
+        changed |= self.ticks == 0;
         if let Some(inspection) = &mut *self.inspection.borrow_mut() {
             for event in &events {
                 match inspection.apply(event) {
@@ -152,9 +182,6 @@ impl Script {
                     Asked::Inspect(target) => next = Some(target),
                 }
             }
-            let ticks = self.ticks.get() + 1;
-            self.ticks.set(ticks % REFRESH_TICKS);
-            changed |= ticks >= REFRESH_TICKS;
             if changed
                 && !closing
                 && let Err(err) = self.slate.set_rows(&inspection.rows())
@@ -175,14 +202,14 @@ impl ScriptBehavior for Script {
         Ok(Self {
             tool:       Tool::new(
                 "Inspector",
-                "Shows what anything is, and edits where it stands.",
+                "Shows what anything is, and nudges where it stands.",
                 Some(&glyph::mark()),
             )?,
-            active:     Cell::new(false),
-            hand:       Cell::new(PointerKind::Screen),
+            own:        script_document()?,
+            hand:       None,
             slate:      Slate::new()?,
             inspection: RefCell::new(None),
-            ticks:      Cell::new(0),
+            ticks:      0,
         })
     }
 
@@ -190,16 +217,13 @@ impl ScriptBehavior for Script {
         api::fixed_update()?;
         while let Some(event) = self.tool.poll() {
             match event {
-                ToolEvent::Activate(hand) => {
-                    self.active.set(true);
-                    self.hand.set(hand);
-                }
+                ToolEvent::Activate(hand) => self.hand = Some(hand),
                 ToolEvent::Deactivate => {
-                    self.active.set(false);
+                    self.hand = None;
                     self.close();
                 }
-                ToolEvent::Pressed(ToolButton::Primary) if self.active.get() => self.inspect(),
-                ToolEvent::Pressed(ToolButton::Secondary) if self.active.get() => self.close(),
+                ToolEvent::Pressed(ToolButton::Primary) if self.hand.is_some() => self.press(),
+                ToolEvent::Pressed(ToolButton::Secondary) if self.hand.is_some() => self.close(),
                 ToolEvent::SetState(_)
                 | ToolEvent::Pressed(_)
                 | ToolEvent::Released(_)
@@ -211,6 +235,10 @@ impl ScriptBehavior for Script {
     }
 
     fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
+        // The tether follows what it describes as physics or others move it.
+        if let Some(inspection) = &*self.inspection.borrow() {
+            self.slate.set_tether(inspection.anchor());
+        }
         api::update(tick.dt)?;
         Ok(())
     }

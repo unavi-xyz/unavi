@@ -1,14 +1,16 @@
-//! The gate's body, built once at start: white pillars under a stacked
-//! lintel, and a black stone beside the left pillar with the socket sunk into
-//! its top.
+//! The gate's body, built at start: white pillars under a three-band
+//! entablature on one stylobate, and a black stone beside the left pillar with
+//! the socket sunk into its top.
 //!
-//! Every part shares one front plane. The socket prim is authored at the seat
-//! point, so everything of the socket is built beneath it.
+//! The stone and everything of the socket are built beneath the socket prim,
+//! so moving that prim moves the stone. The trace is computed from where the
+//! socket stands and rebuilt when it moves.
 
 mod facade;
 pub mod material;
+mod route;
 mod socket;
-mod trace;
+pub mod trace;
 
 use std::f32::consts::GOLDEN_RATIO;
 
@@ -23,9 +25,12 @@ use wired_guest::{
     },
 };
 
-use self::material::{
-    NEUTRAL,
-    glow,
+use self::{
+    material::{
+        NEUTRAL,
+        glow,
+    },
+    trace::Trace,
 };
 use crate::{
     Batch,
@@ -45,12 +50,21 @@ pub const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
 
 const PILLAR_WIDTH: f32 = 0.32;
 const PILLAR_DEPTH: f32 = 0.5;
-/// The front plane every part of the facade shares, on the gate's Z axis.
+/// The front plane of the pillars and the jambs, on the gate's Z axis.
 const FRONT: f32 = PILLAR_DEPTH / 2.0;
-const PLINTH_HEIGHT: f32 = 0.12;
-/// How far each plinth stands out past what it carries, except at the jambs.
-const PLINTH_PROUD: f32 = 0.05;
-const LINTEL_HEIGHT: f32 = 0.34;
+/// The one datum: the top of the stylobate, which every horizontal run of the
+/// trace lies in.
+const STYLOBATE_HEIGHT: f32 = 0.12;
+/// How far the stylobate stands out past the pillars' base blocks, front and
+/// back.
+const STYLOBATE_PROUD: f32 = 0.05;
+/// How far a pillar's base block and capital stand out from its shaft, except
+/// at the jamb.
+const BASE_PROUD: f32 = 0.02;
+/// The front plane of the pillars' base blocks.
+const BASE_FRONT: f32 = FRONT + BASE_PROUD;
+/// The stylobate's front and back planes.
+const STYLOBATE_FRONT: f32 = FRONT + STYLOBATE_PROUD;
 /// Each pillar's inner and outer face, on the gate's X axis, right side.
 const PILLAR_INNER: f32 = PORTAL_WIDTH / 2.0;
 const PILLAR_OUTER: f32 = PILLAR_INNER + PILLAR_WIDTH;
@@ -59,17 +73,21 @@ const STONE_WIDTH: f32 = 0.26;
 const STONE_GAP: f32 = 0.06;
 /// Seat point down to the recess floor: half a beacon.
 const SEAT_FLOOR: f32 = BEACON_SIZE / 2.0;
+/// The stylobate's left end, far enough out to carry the stone at its default
+/// seat.
+const STYLOBATE_LEFT: f32 = -(PILLAR_OUTER + STONE_GAP + STONE_WIDTH + STYLOBATE_PROUD);
+const STYLOBATE_RIGHT: f32 = PILLAR_OUTER + STYLOBATE_PROUD;
 
 pub const ORBITERS: usize = 3;
 /// Seat point to the foot of the shaft, which rises from the recess floor.
 pub const SHAFT_FOOT: f32 = -SEAT_FLOOR;
 
-/// The socket's backing as a beacon drawn in sees it: the left pillar, past
-/// the gap beside the stone, as deep as the pillar about the seat.
-pub const fn backing() -> Backing {
+/// The socket's backing as a beacon drawn in sees it: the left pillar with its
+/// base block, as deep as the pillar about the seat.
+pub fn backing(seat: Vec3) -> Backing {
     Backing {
-        from:       STONE_WIDTH / 2.0 + STONE_GAP,
-        half_depth: PILLAR_DEPTH - STONE_WIDTH / 2.0,
+        from:       (-PILLAR_OUTER - BASE_PROUD - seat.x).max(0.0),
+        half_depth: BASE_FRONT + seat.z.abs(),
     }
 }
 
@@ -89,7 +107,7 @@ pub struct Run {
 pub struct Parts {
     /// The square around the recess and both crosses.
     pub marks:    Vec<(u64, u64)>,
-    pub trace:    Vec<Run>,
+    pub trace:    Trace,
     pub shaft:    (u64, u64),
     pub orbiters: [(u64, u64); ORBITERS],
     pub ghost:    (u64, u64),
@@ -167,7 +185,7 @@ pub fn build(
 ) -> anyhow::Result<Parts> {
     let batch = facade::build(doc.local(), root)?;
     let dark = glow(NEUTRAL, 0.0);
-    let (batch, socket_parts) = socket::build(doc, batch, root, socket, seat, dark)?;
+    let (batch, socket_parts) = socket::build(doc, batch, socket, seat, dark)?;
     let (batch, trace) = trace::build(doc, batch, root, seat, dark)?;
     batch.flush()?;
     Ok(Parts {
@@ -177,4 +195,17 @@ pub fn build(
         orbiters: socket_parts.orbiters,
         ghost: socket_parts.ghost,
     })
+}
+
+/// Replaces `old` with a trace routed from a socket now standing at `seat`.
+pub fn retrace(
+    doc: &Document,
+    root: (u64, u64),
+    seat: Vec3,
+    old: &Trace,
+) -> anyhow::Result<Trace> {
+    let dark = glow(NEUTRAL, 0.0);
+    let (batch, trace) = trace::build(doc, doc.local(), root, seat, dark)?;
+    old.remove(batch).flush()?;
+    Ok(trace)
 }

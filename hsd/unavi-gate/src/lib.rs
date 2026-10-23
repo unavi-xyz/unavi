@@ -91,10 +91,20 @@ const GHOST_DAMPING: f32 = 12.0;
 /// Seconds a taken ghost stays whole in a hand before it starts to dissolve.
 /// Long enough to carry it clear of the socket and feel the pull let go.
 const GHOST_HOLD_SECS: f32 = 1.0;
+/// Fixed ticks between looks at where the socket stands.
+const SOCKET_POLL_TICKS: u32 = 16;
+/// Metres the socket must move from where the trace was routed for it to be
+/// routed again.
+const SOCKET_MOVED: f32 = 0.01;
 
 struct Script {
     doc:         Document,
+    root:        (u64, u64),
     socket:      (u64, u64),
+    /// Where the socket stood, in the gate's frame, when the trace was last
+    /// routed.
+    placed:      Vec3,
+    poll_in:     u32,
     ghost:       (u64, u64),
     ghost_rx:    InputSubscription,
     /// Whether the ghost carries a collider and a body now.
@@ -110,6 +120,14 @@ struct Script {
     announce_in: u32,
     /// What the socket shows, decided on fixed ticks and drawn every frame.
     mood:        Mood,
+}
+
+/// Where the socket prim stands in the gate's frame.
+fn socket_at(doc: &Document, socket: (u64, u64)) -> Option<Vec3> {
+    match doc.get(socket, &PropertyKey::Transform) {
+        Some(Property::Transform(transform)) => Some(transform.translation),
+        _ => None,
+    }
 }
 
 fn space_color(space: DocumentId) -> Color {
@@ -140,11 +158,8 @@ impl ScriptBehavior for Script {
                 }),
             )
             .flush()?;
-        let seat = match doc.get(socket, &PropertyKey::Transform) {
-            Some(Property::Transform(transform)) => transform.translation,
-            _ => Vec3::ZERO,
-        };
-        let parts = frame::build(&doc, root, socket, seat)?;
+        let placed = socket_at(&doc, socket).unwrap_or(Vec3::ZERO);
+        let parts = frame::build(&doc, root, socket, placed)?;
         let ghost = parts.ghost;
         let ghost_rx = targeted::listen(&doc, ghost)?;
 
@@ -155,7 +170,10 @@ impl ScriptBehavior for Script {
 
         Ok(Self {
             doc,
+            root,
             socket,
+            placed,
+            poll_in: SOCKET_POLL_TICKS,
             ghost,
             ghost_rx,
             bodied: false,
@@ -174,6 +192,7 @@ impl ScriptBehavior for Script {
         let Ok(seat_at) = self.doc.world_transform(self.socket) else {
             return Ok(());
         };
+        self.follow_socket()?;
         let near = self.beacons.measure(seat_at.translation)?;
         let occupant = self.seat.update(&near);
         self.link.update(&self.doc, occupant);
@@ -204,6 +223,26 @@ impl ScriptBehavior for Script {
 }
 
 impl Script {
+    /// Routes the trace again when the socket has moved from where it was
+    /// last routed, looking every [`SOCKET_POLL_TICKS`] ticks.
+    fn follow_socket(&mut self) -> anyhow::Result<()> {
+        if self.poll_in > 0 {
+            self.poll_in -= 1;
+            return Ok(());
+        }
+        self.poll_in = SOCKET_POLL_TICKS;
+        let Some(at) = socket_at(&self.doc, self.socket) else {
+            return Ok(());
+        };
+        if at.distance(self.placed) <= SOCKET_MOVED {
+            return Ok(());
+        }
+        let trace = frame::retrace(&self.doc, self.root, at, self.look.trace())?;
+        self.look.set_trace(trace);
+        self.placed = at;
+        Ok(())
+    }
+
     /// Gives the ghost a body while it can be taken hold of, and unplugs the
     /// pairing when someone takes it. A taken ghost stays whole in the hand
     /// for [`GHOST_HOLD_SECS`] before it starts to dissolve, so pulling it out
@@ -292,7 +331,7 @@ impl Script {
         self.announce_in = ANNOUNCE_TICKS;
         let socket = Socket {
             seat:     self.socket,
-            backing:  frame::backing(),
+            backing:  frame::backing(self.placed),
             occupant: occupant.map(|o| o.beacon),
             leads:    self.link.leads(),
         };

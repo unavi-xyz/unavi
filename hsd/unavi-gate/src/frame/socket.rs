@@ -1,5 +1,5 @@
-//! The black stone on its plinth and the socket in its top: the recess and
-//! its rim, the square of light around it, the cross on its faces, the shaft
+//! The black stone and the socket in its top, all beneath the socket prim: the
+//! recess and its rim, the square of light around it, the cross on its faces, the shaft
 //! and motes over it, and the ghost.
 
 use wired_guest::{
@@ -11,17 +11,14 @@ use wired_guest::{
 };
 
 use super::{
-    FRONT,
     ORBITERS,
-    PILLAR_OUTER,
-    PLINTH_HEIGHT,
-    PLINTH_PROUD,
     SEAT_FLOOR,
     SHAFT_FOOT,
     STONE_WIDTH,
     block,
     material,
     place,
+    route,
     span,
     trim_span,
 };
@@ -73,12 +70,11 @@ pub struct SocketParts {
 pub fn build<'a>(
     doc: &Document,
     batch: Batch<'a>,
-    root: (u64, u64),
     socket: (u64, u64),
     seat: Vec3,
     dark: Material,
 ) -> anyhow::Result<(Batch<'a>, SocketParts)> {
-    let batch = stone(batch, root, socket, seat)?;
+    let batch = stone(batch, socket, seat)?;
     let (batch, marks) = marks(doc, batch, socket, dark)?;
 
     let shaft = Cuboid::new(Vec3::new(SHAFT_WIDTH, SHAFT_HEIGHT, SHAFT_WIDTH)).mesh()?;
@@ -120,47 +116,25 @@ pub fn build<'a>(
     ))
 }
 
-/// The stone's plinth, the black stone up to the recess floor, its collar,
-/// and the rim around the recess.
-fn stone(
-    batch: Batch<'_>,
-    root: (u64, u64),
-    socket: (u64, u64),
-    seat: Vec3,
-) -> anyhow::Result<Batch<'_>> {
+/// The black stone from its foot up to the recess floor, its collar, and the
+/// rim around the recess. Positions are in the socket's frame.
+fn stone(batch: Batch<'_>, socket: (u64, u64), seat: Vec3) -> anyhow::Result<Batch<'_>> {
     let black = material::black();
     let half = STONE_WIDTH / 2.0;
-    let floor = seat.y - SEAT_FLOOR;
-    // The stone's plinth runs up to the left pillar's, its front in line, so
-    // the two read as one stepped base.
+    let foot = route::foot(seat) - seat.y;
     let mut batch = span(
         batch,
-        root,
-        Vec3::new(
-            seat.x - half - PLINTH_PROUD,
-            0.0,
-            seat.z - half - PLINTH_PROUD,
-        ),
-        Vec3::new(
-            -PILLAR_OUTER - PLINTH_PROUD,
-            PLINTH_HEIGHT,
-            FRONT + PLINTH_PROUD,
-        ),
-        material::white(),
-    )?;
-    batch = span(
-        batch,
-        root,
-        Vec3::new(seat.x - half, PLINTH_HEIGHT, seat.z - half),
-        Vec3::new(seat.x + half, floor, seat.z + half),
+        socket,
+        Vec3::new(-half, foot, -half),
+        Vec3::new(half, -SEAT_FLOOR, half),
         black,
     )?;
     let collar = half + COLLAR_PROUD;
     batch = trim_span(
         batch,
-        root,
-        Vec3::new(seat.x - collar, floor - COLLAR, seat.z - collar),
-        Vec3::new(seat.x + collar, floor, seat.z + collar),
+        socket,
+        Vec3::new(-collar, -SEAT_FLOOR - COLLAR, -collar),
+        Vec3::new(collar, -SEAT_FLOOR, collar),
         black,
     )?;
     let wall = (STONE_WIDTH - RECESS) / 2.0;

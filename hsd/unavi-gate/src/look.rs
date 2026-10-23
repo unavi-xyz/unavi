@@ -23,6 +23,7 @@ use crate::{
             self,
             NEUTRAL,
         },
+        trace::Trace,
     },
     wired::scene::{
         document::Document,
@@ -182,9 +183,13 @@ fn coverage(lengths: impl Iterator<Item = f32>, covered: f32) -> Vec<f32> {
         .collect()
 }
 
+fn total_length(trace: &Trace) -> f32 {
+    trace.runs.iter().map(|run| run.length).sum()
+}
+
 impl Look {
     pub fn new(parts: Parts) -> Self {
-        let total = parts.trace.iter().map(|run| run.length).sum();
+        let total = total_length(&parts.trace);
         Self {
             parts,
             total,
@@ -204,6 +209,18 @@ impl Look {
             tick: 0,
             shown: None,
         }
+    }
+
+    pub const fn trace(&self) -> &Trace {
+        &self.parts.trace
+    }
+
+    /// Swaps in a rerouted trace. Every run is restated, and a charge in
+    /// progress carries on over the new length.
+    pub fn set_trace(&mut self, trace: Trace) {
+        self.total = total_length(&trace);
+        self.parts.trace = trace;
+        self.shown = None;
     }
 
     /// Lifts the ghost out of the socket and fades it. `grabbed` when a hand
@@ -235,7 +252,7 @@ impl Look {
     pub fn update(&mut self, doc: &Document, mood: Mood, dt: f32) -> anyhow::Result<()> {
         self.step(mood, dt);
         let covered = ease_out(self.charge) * self.total;
-        let runs = coverage(self.parts.trace.iter().map(|run| run.length), covered);
+        let runs = coverage(self.parts.trace.runs.iter().map(|run| run.length), covered);
         let lift = ease_out(self.unplug);
         let opacity = self.ghost * (1.0 - lift);
         let next = Shown {
@@ -354,7 +371,7 @@ impl Look {
 
     fn write_trace(&self, last: Option<&Shown>, next: &Shown, runs: &[f32], writes: &mut Writes) {
         let glow_changed = last.map(|s| s.glow) != Some(next.glow);
-        for (index, run) in self.parts.trace.iter().enumerate() {
+        for (index, run) in self.parts.trace.runs.iter().enumerate() {
             let was = last.map_or(-1, |s| s.runs[index]);
             let now = next.runs[index];
             if now > 0 && (glow_changed || was <= 0) {
@@ -455,7 +472,7 @@ mod tests {
     fn look() -> Look {
         Look::new(Parts {
             marks:    Vec::new(),
-            trace:    Vec::new(),
+            trace:    Trace::default(),
             shaft:    (0, 0),
             orbiters: [(0, 0); ORBITERS],
             ghost:    (1, 1),

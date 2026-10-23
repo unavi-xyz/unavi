@@ -172,7 +172,9 @@ fn process_event(
             for target in final_rels.values() {
                 index.unlink(*target, prim_ent);
             }
-            commands.entity(prim_ent).despawn();
+            // A removed ancestor in the same drain already took this prim's
+            // entity with it, since the scene tree despawns its descendants.
+            commands.entity(prim_ent).try_despawn();
         }
         SceneEvent::Property { prim, name, value } => {
             let Some(prim_ent) = index.get(prim) else {

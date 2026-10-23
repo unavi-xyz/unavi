@@ -36,6 +36,7 @@ unavi-store.path        = "../unavi-store"
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
 iroh-blobs.workspace           = true
+log                            = "0.4"
 naga.workspace                 = true
 notosans.workspace             = true
 rstest.workspace               = true

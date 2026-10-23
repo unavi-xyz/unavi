@@ -838,6 +838,7 @@ dependencies = [
  "iroh",
  "iroh-blobs",
  "iroh-docs",
+ "log",
  "msdf",
  "n0-future",
  "naga",

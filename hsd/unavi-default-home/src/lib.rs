@@ -2,6 +2,7 @@
 //! so every space reads as itself without an author having to pick a colour.
 
 use wired_guest::{
+    LOCKED,
     color::{
         desaturate,
         document_seed,
@@ -45,6 +46,7 @@ impl ScriptBehavior for Script {
             .local()
             .set(prim, Property::Collider(shape.collider()))
             .set(prim, Property::RigidBody(RigidBody::static_body()))
+            .set(prim, Property::Custom((LOCKED.to_owned(), vec![1])))
             .set(
                 prim,
                 Property::Transform(Transform::from_translation(Vec3::new(

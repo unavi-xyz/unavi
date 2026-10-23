@@ -5,6 +5,7 @@ use serde::{
     de::DeserializeOwned,
 };
 
+pub mod custom;
 pub mod name;
 pub mod value;
 

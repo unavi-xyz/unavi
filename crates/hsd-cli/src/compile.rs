@@ -17,6 +17,7 @@ use std::{
 use anyhow::{
     Context,
     Result,
+    anyhow,
     bail,
     ensure,
 };
@@ -77,6 +78,10 @@ use hsd::{
     property::{
         Payload,
         Property,
+        custom::{
+            MAX_CUSTOM_BYTES,
+            custom_name,
+        },
         name::PropName,
         value::Value,
     },
@@ -267,6 +272,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         if let Some(name) = &attrs.name {
             self.set_attribute(id, &NameAttr(name.clone()))?;
         }
+        if let Some(custom) = &attrs.custom {
+            self.emit_custom(id, custom)?;
+        }
         if let Some(scale) = attrs.gravity_scale {
             self.set_attribute(id, &GravityScaleAttr { scale })?;
         }
@@ -311,6 +319,18 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         if let Some(rel) = &attrs.reference {
             let target = self.compile_reference(rel)?;
             self.set_attribute(id, &ReferenceAttr(target))?;
+        }
+        Ok(())
+    }
+
+    fn emit_custom(&mut self, id: PrimId, custom: &BTreeMap<String, Vec<u8>>) -> Result<()> {
+        for (name, bytes) in custom {
+            let prop = custom_name(name).map_err(|e| anyhow!("custom attribute {name:?}: {e}"))?;
+            ensure!(
+                bytes.len() <= MAX_CUSTOM_BYTES,
+                "custom attribute {name:?} is over {MAX_CUSTOM_BYTES} bytes"
+            );
+            self.set_property(id, &prop, Value::Attribute(bytes.clone().into()));
         }
         Ok(())
     }

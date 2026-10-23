@@ -6,6 +6,11 @@
     prims: [
         (
             attributes: (
+                custom: {
+                    "edit/locked": [
+                        1,
+                    ],
+                },
                 name: "gate",
                 reference: "../unavi-gate/asset.hsda",
                 xform: (

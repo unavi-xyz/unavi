@@ -7,22 +7,16 @@ use bevy_hsd::attributes::buffer::MAX_MESH_STREAM_BYTES;
 use hsd::{
     attributes::{
         collider::{
-            self,
             ColliderIndices,
             ColliderKind,
             ColliderVertices,
         },
-        gravity_scale::{
-            self,
-            GravityScaleAttr,
-        },
+        gravity_scale::GravityScaleAttr,
         image::{
-            self,
             ImageData,
             ImageSampler,
         },
         material::{
-            self,
             BASE_COLOR_TEXTURE,
             BINDING,
             EMISSIVE_TEXTURE,
@@ -32,52 +26,23 @@ use hsd::{
             OCCLUSION_TEXTURE,
         },
         mesh::{
-            self,
             MeshIndices,
             MeshStream,
             Topology,
         },
-        name::{
-            self,
-            NameAttr,
-        },
-        parent::{
-            self,
-            ParentAttr,
-        },
-        portal::{
-            self,
-            PortalAttr,
-        },
-        reference::{
-            self,
-            ReferenceAttr,
-        },
-        rigid_body::{
-            self,
-            RigidBodyAttr,
-        },
-        script,
+        name::NameAttr,
+        parent::ParentAttr,
+        portal::PortalAttr,
+        reference::ReferenceAttr,
+        rigid_body::RigidBodyAttr,
         shader::{
             self,
             MAX_TEXTURE_SAMPLES,
         },
-        sky::{
-            self,
-            SkyAttr,
-        },
-        spawn::{
-            self,
-            SpawnAttr,
-        },
-        text::{
-            self,
-            TextAttr,
-        },
-        xform::{
-            self,
-            XformAttr,
-        },
+        sky::SkyAttr,
+        spawn::SpawnAttr,
+        text::TextAttr,
+        xform::XformAttr,
     },
     id::{
         DocId,
@@ -87,6 +52,11 @@ use hsd::{
     property::{
         Payload,
         Property as _,
+        custom::{
+            MAX_CUSTOM_BYTES,
+            custom_name as hsd_custom_name,
+            is_custom,
+        },
         name::{
             MAX_NAME_BYTES,
             PropName,
@@ -98,54 +68,15 @@ use unavi_physics::finite;
 
 use crate::error::ScriptError;
 
-/// Largest value one custom property may hold.
-pub const MAX_CUSTOM_BYTES: usize = 64 * 1024;
 /// Largest encoded image a single prim may carry.
 const MAX_IMAGE_BYTES: usize = 16 * 1024 * 1024;
 /// Largest string a single text prim may carry.
 const MAX_TEXT_BYTES: usize = 4 * 1024;
 
-/// Every group the host defines. A custom property or relation must live
-/// outside them, so a script cannot write raw bytes into a field the host
-/// decodes.
-const BUILTIN_GROUPS: [&str; 16] = [
-    collider::GROUP,
-    gravity_scale::GROUP,
-    image::GROUP,
-    material::GROUP,
-    mesh::GROUP,
-    name::GROUP,
-    parent::GROUP,
-    portal::GROUP,
-    reference::GROUP,
-    rigid_body::GROUP,
-    script::GROUP,
-    shader::GROUP,
-    sky::GROUP,
-    spawn::GROUP,
-    text::GROUP,
-    xform::GROUP,
-];
-
 /// Parses an application-defined `group/field` name, refusing a bare group or
 /// one the host defines.
 pub fn custom_name(name: &str) -> Result<PropName, ScriptError> {
-    let parsed = name
-        .parse::<PropName>()
-        .map_err(|_| ScriptError::invalid("a custom name is `group/field`, at most 1 KiB"))?;
-    if parsed.field().is_none() {
-        return Err(ScriptError::invalid("a custom name is `group/field`"));
-    }
-    if BUILTIN_GROUPS.contains(&parsed.group()) {
-        return Err(ScriptError::invalid(
-            "a custom name must not use a group the host defines",
-        ));
-    }
-    Ok(parsed)
-}
-
-fn is_custom(name: &PropName) -> bool {
-    name.field().is_some() && !BUILTIN_GROUPS.contains(&name.group())
+    hsd_custom_name(name).map_err(ScriptError::invalid)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

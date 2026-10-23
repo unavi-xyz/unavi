@@ -67,6 +67,9 @@ pub struct SourcePrim {
 #[serde(default)]
 pub struct SourceAttributes {
     pub collider:      Option<SourceCollider>,
+    /// Application-defined `group/field` name to raw bytes, compiled to the
+    /// custom property a script writes with the same name.
+    pub custom:        Option<BTreeMap<String, Vec<u8>>>,
     pub gravity_scale: Option<f64>,
     pub image:         Option<SourceImage>,
     pub material:      Option<SourceMaterial>,

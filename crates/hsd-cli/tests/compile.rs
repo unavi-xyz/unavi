@@ -21,6 +21,7 @@ use hsd::{
     },
     format::package::Package,
     id::DocId,
+    property::custom::custom_name,
     state::{
         HsdState,
         entry::Entry,
@@ -269,4 +270,25 @@ fn document_meta_compiles_into_the_state() {
     assert_eq!(meta.description.as_deref(), Some("a place"));
     assert!(meta.public);
     assert!(meta.author.is_none(), "the author is supplied at runtime");
+}
+
+#[test]
+fn a_custom_attribute_compiles_to_the_property_a_script_writes() {
+    let src = r#"(prims: [(attributes: (name: "root", custom: {"edit/locked": [1]}))])"#;
+    let state = load_state(&compile(&write_source("custom", src)).expect("compile"));
+
+    let root = prim_named(&state, "root");
+    let name = custom_name("edit/locked").expect("valid name");
+    let stored = state
+        .get(root)
+        .and_then(|prim| prim.property(&name))
+        .and_then(|value| value.as_attribute())
+        .expect("the property is stored");
+    assert_eq!(stored.as_ref(), [1]);
+}
+
+#[test]
+fn a_custom_attribute_in_a_built_in_group_fails_the_build() {
+    let src = r#"(prims: [(attributes: (name: "root", custom: {"name/x": [1]}))])"#;
+    assert!(compile(&write_source("custom_builtin", src)).is_err());
 }

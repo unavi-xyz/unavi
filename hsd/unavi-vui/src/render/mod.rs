@@ -319,7 +319,7 @@ impl Vui {
         self.stands
             .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         self.slates
-            .update(&self.doc, &gaze.eye, &self.palette, delta)?;
+            .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         Ok(())
     }
 
@@ -338,6 +338,15 @@ impl Vui {
 
     pub fn slate_at(&mut self, id: SlateId, at: Vec3) {
         self.slates.set_position(id, at);
+    }
+
+    pub fn slate_tether(&mut self, id: SlateId, to: Option<Vec3>) {
+        self.slates.set_tether(id, to);
+    }
+
+    #[must_use]
+    pub fn slate_position(&self, id: SlateId) -> Option<Vec3> {
+        self.slates.position(id)
     }
 
     pub fn slate_accent(&mut self, id: SlateId, accent: Option<Color>) {
@@ -374,6 +383,10 @@ impl Vui {
 
     pub fn stand_at(&mut self, id: StandId, at: Vec3) {
         self.stands.set_position(id, at);
+    }
+
+    pub fn stand_scale(&mut self, id: StandId, scale: f32) {
+        self.stands.set_scale(id, scale, &self.tuning);
     }
 
     pub fn stand_accent(&mut self, id: StandId, accent: Option<Color>) {

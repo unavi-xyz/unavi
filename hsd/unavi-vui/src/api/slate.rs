@@ -69,6 +69,26 @@ impl GuestSlate for SlateRes {
         }
     }
 
+    fn position(&self) -> Vec3 {
+        let mut at = Vec3::ZERO;
+        if let Err(err) = drive(|vui| {
+            at = vui.slate_position(self.0).unwrap_or_default();
+            Ok(())
+        }) {
+            eprintln!("vui: slate position: {err:?}");
+        }
+        at
+    }
+
+    fn set_tether(&self, to: Option<Vec3>) {
+        if let Err(err) = drive(|vui| {
+            vui.slate_tether(self.0, to);
+            Ok(())
+        }) {
+            eprintln!("vui: slate tether: {err:?}");
+        }
+    }
+
     fn set_accent(&self, accent: Option<Color>) {
         if let Err(err) = drive(|vui| {
             vui.slate_accent(self.0, accent);
@@ -112,6 +132,10 @@ fn row(row: ScriptRow) -> Row {
             },
             RowKind::Toggle(on) => Kind::Toggle(on),
             RowKind::Action => Kind::Action,
+            RowKind::Tabs(tabs) => Kind::Tabs {
+                labels:   tabs.labels.into_iter().map(SmolStr::new).collect(),
+                selected: tabs.selected,
+            },
         },
     }
 }
@@ -122,6 +146,7 @@ const fn event(event: SlateEvent) -> ScriptEvent {
         SlateEvent::Toggled(id, on) => ScriptEvent::Toggled((id, on)),
         SlateEvent::Scrubbed(id, by) => ScriptEvent::Scrubbed((id, by)),
         SlateEvent::Released(id) => ScriptEvent::Released(id),
+        SlateEvent::Picked(id, index) => ScriptEvent::Picked((id, index)),
     }
 }
 

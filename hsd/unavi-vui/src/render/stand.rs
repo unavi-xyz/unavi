@@ -63,6 +63,10 @@ struct Standing {
     prims:  PlacardPrims,
     tether: TetherPrims,
     view:   Option<PlacardView>,
+    /// The text as last set, laid out again when the scale changes.
+    text:   Option<Placard>,
+    /// A multiple of the size a standing placard is laid out at.
+    scale:  f32,
     at:     Vec3,
     /// Colours the pane's corner tab and the tether.
     accent: Option<Color>,
@@ -92,6 +96,8 @@ impl Stands {
             prims: PlacardPrims::new(doc, root)?,
             tether: TetherPrims::new(doc)?,
             view: None,
+            text: None,
+            scale: 1.0,
             at: Vec3::ZERO,
             accent: None,
             to: None,
@@ -122,9 +128,15 @@ impl Stands {
 
     pub fn set_text(&mut self, id: StandId, text: &Placard, tuning: &Tuning) {
         if let Some(standing) = self.get_mut(id) {
-            let mut view = placard::standing(text, tuning);
-            view.accent = standing.accent;
-            standing.view = Some(view);
+            standing.text = Some(text.clone());
+            standing.lay_out(tuning);
+        }
+    }
+
+    pub fn set_scale(&mut self, id: StandId, scale: f32, tuning: &Tuning) {
+        if let Some(standing) = self.get_mut(id) {
+            standing.scale = scale;
+            standing.lay_out(tuning);
         }
     }
 
@@ -223,6 +235,16 @@ impl Stands {
 
     fn get_mut(&mut self, id: StandId) -> Option<&mut Standing> {
         self.slots.get_mut(id.0)?.as_mut()
+    }
+}
+
+impl Standing {
+    fn lay_out(&mut self, tuning: &Tuning) {
+        self.view = self.text.as_ref().map(|text| {
+            let mut view = placard::standing(text, tuning, self.scale);
+            view.accent = self.accent;
+            view
+        });
     }
 }
 

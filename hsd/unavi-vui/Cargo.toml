@@ -15,6 +15,7 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow.workspace      = true
 arrayvec.workspace    = true
+glam.workspace        = true
 smol_str.workspace    = true
 wired-guest.path      = "../wired-guest"
 wit-bindgen.workspace = true

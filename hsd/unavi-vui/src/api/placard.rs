@@ -82,6 +82,13 @@ impl GuestPlacard for PlacardRes {
         });
     }
 
+    fn set_scale(&self, scale: f32) {
+        let _ = drive(|vui| {
+            vui.stand_scale(self.0, scale);
+            Ok(())
+        });
+    }
+
     fn set_accent(&self, accent: Option<Color>) {
         let _ = drive(|vui| {
             vui.stand_accent(self.0, accent);

@@ -588,6 +588,7 @@ name = "unavi-inspector"
 version = "0.0.17"
 dependencies = [
  "anyhow",
+ "glam",
  "wired-guest",
  "wit-bindgen",
 ]
@@ -655,6 +656,7 @@ version = "0.0.17"
 dependencies = [
  "anyhow",
  "arrayvec",
+ "glam",
  "smol_str",
  "wired-guest",
  "wit-bindgen",

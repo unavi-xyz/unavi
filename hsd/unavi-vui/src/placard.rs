@@ -334,16 +334,31 @@ pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> Plac
     }
 }
 
+/// Smallest and largest a standing placard is drawn, as a multiple of its
+/// size read from a few metres away.
+pub const MIN_STAND_SCALE: f32 = 0.25;
+pub const MAX_STAND_SCALE: f32 = 1.0;
+
+/// `scale` held to what a standing placard may be drawn at. Not a number is
+/// the default size.
+#[must_use]
+pub const fn standing_scale(scale: f32) -> f32 {
+    if scale.is_nan() {
+        return MAX_STAND_SCALE;
+    }
+    scale.clamp(MIN_STAND_SCALE, MAX_STAND_SCALE)
+}
+
 /// Lays a placard out standing on the origin by its bottom centre, for one
 /// that stands where it is put rather than on a mote.
 ///
 /// Laid out as a mote's is and then scaled as a whole by
-/// [`Tuning::stand_scale`], so the wrapping and the proportions are the
-/// same and only the reading distance differs.
+/// [`Tuning::stand_scale`] times `scale`, so the wrapping and the proportions
+/// are the same and only the reading distance differs.
 #[must_use]
-pub fn standing(placard: &Placard, tuning: &Tuning) -> PlacardView {
+pub fn standing(placard: &Placard, tuning: &Tuning, scale: f32) -> PlacardView {
     let (size, mut lines) = lay_out(placard, tuning);
-    let scale = tuning.stand_scale;
+    let scale = tuning.stand_scale * standing_scale(scale);
     for line in &mut lines {
         line.offset *= scale;
         line.size *= scale;
@@ -540,7 +555,7 @@ mod tests {
     fn a_standing_placard_stands_on_the_origin_and_lays_out_like_a_mote_s_but_larger() {
         let tuning = tuning();
         let placard = Placard::describing(&group());
-        let standing = standing(&placard, &tuning);
+        let standing = standing(&placard, &tuning, 1.0);
         let on_mote = view_of(&placard);
         let scale = tuning.stand_scale;
 
@@ -561,13 +576,29 @@ mod tests {
 
     #[test]
     fn a_standing_title_reads_at_the_size_the_plan_asks_for() {
-        let title = standing(&Placard::new("t"), &tuning()).lines[0].size;
+        let title = standing(&Placard::new("t"), &tuning(), 1.0).lines[0].size;
         assert!((0.05..0.06).contains(&title), "{title} m");
     }
 
     #[test]
     fn a_standing_placard_starts_with_no_accent() {
-        assert_eq!(standing(&Placard::new("t"), &tuning()).accent, None);
+        assert_eq!(standing(&Placard::new("t"), &tuning(), 1.0).accent, None);
+    }
+
+    #[test]
+    fn a_smaller_standing_placard_is_the_same_layout_shrunk_within_its_bounds() {
+        let tuning = tuning();
+        let placard = Placard::new("Undo").line("Moved the crate");
+        let full = standing(&placard, &tuning, 1.0);
+        let small = standing(&placard, &tuning, 0.4);
+        assert!(near(small.size.x, full.size.x * 0.4));
+        assert!(near(small.lines[0].size, full.lines[0].size * 0.4));
+        let floor = standing(&placard, &tuning, 0.0);
+        assert!(near(floor.size.x, full.size.x * MIN_STAND_SCALE));
+        assert!(near(
+            standing(&placard, &tuning, f32::NAN).size.x,
+            full.size.x
+        ));
     }
 
     #[test]

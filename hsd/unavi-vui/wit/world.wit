@@ -363,6 +363,11 @@ interface api {
     /// turns about the vertical axis to face the viewer on its own.
     set-position: func(at: vec3);
 
+    /// Its size, as a multiple of the size it is laid out at, which reads
+    /// from a few metres away. Held to 0.25 to 1: one read at arm's length
+    /// wants about 0.4. Applies to the text it has and any set after.
+    set-scale: func(scale: f32);
+
     /// Colours the corner tab and the tether. `none` draws neither in colour
     /// (no tab; a neutral tether).
     set-accent: func(color: option<color>);
@@ -384,6 +389,14 @@ interface api {
     per-metre: f32,
   }
 
+  /// A row of up to 4 tabs, each label at most 16 bytes. The tab at
+  /// `selected` is drawn the way a toggle that is on is; pressing another
+  /// reports `picked`, and the consumer sets `selected`.
+  record tabs {
+    labels:   list<string>,
+    selected: u32,
+  }
+
   /// What a slate row shows, and what pressing it does.
   variant row-kind {
     /// A heading over the rows beneath it. Pressing does nothing.
@@ -396,6 +409,8 @@ interface api {
     toggle(bool),
     /// Pressing reports `pressed`.
     action,
+    /// Pressing a tab reports `picked`.
+    tabs(tabs),
   }
 
   record row {
@@ -419,11 +434,17 @@ interface api {
     scrubbed(tuple<u32, f32>),
     /// The drag on a number row ended: the place to keep the value.
     released(u32),
+    /// A tab on a tabs row was pressed: the row id and the tab index. The
+    /// slate draws the tab the consumer selects, not this one.
+    picked(tuple<u32, u32>),
   }
 
   /// A pane of labelled rows standing where the script puts it, read and
   /// worked with any pointer: for the information that is a list of values
-  /// rather than a thing to hold, such as a prim's attributes.
+  /// rather than a thing to hold, such as settings or an object's properties.
+  /// It is a weightless thing in the world: a grip picks it up and carries
+  /// it like any body, and let go it drifts to a stop, floats there and turns
+  /// to face the viewer.
   resource slate {
     /// Nothing shows until it has rows and is shown.
     constructor() -> result<slate, error>;
@@ -432,9 +453,16 @@ interface api {
     set-rows: func(rows: list<row>) -> result<_, error>;
     /// The pane, width by height in metres.
     size: func() -> vec2;
-    /// Where its top centre stands, in the calling script's document frame.
-    /// It turns about the vertical axis to face the viewer on its own.
+    /// Moves its top centre here, in the calling script's document frame,
+    /// upright and facing the viewer. It floats there until moved again or
+    /// carried off.
     set-position: func(at: vec3);
+    /// Where its top centre is now: where it was put, or where it floats.
+    position: func() -> vec3;
+    /// A line from the pane's side nearer `to`, at the pane's vertical
+    /// middle, to `to`, ending in a small dot at `to`. `none` removes it. In
+    /// the calling script's document frame.
+    set-tether: func(to: option<vec3>);
     /// Colours the row a pointer is over. `none` uses the shell's accent.
     set-accent: func(color: option<color>);
     /// Eases it in or out.

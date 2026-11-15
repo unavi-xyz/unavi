@@ -39,54 +39,56 @@
         pointer-events: none;
       }
 
-      /* A pane: a one-pixel ink border, an inverted title strip, and a body
-         laid out in character cells. */
+      /* The website's tokens: its field type, its signage, its mono. Progress
+         is a row of thirty dots that light one at a time. */
       .pane {
-        --ink: #383f4b;
-        --ink-2: #656973;
-        --paper: #f1f4f6;
-        --warning: #bf3800;
-        width: 32ch;
+        --fg: #0f0f0f;
+        --muted: #666666;
+        --red: #dc2626;
+        --dot: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
         max-width: calc(100vw - 32px);
-        border: 1px solid var(--ink);
-        background: var(--paper);
-        color: var(--ink);
-        font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
-        font-size: 14px;
-        line-height: 1.5;
+        color: var(--fg);
       }
 
       .pane-title {
-        padding: 0 1ch;
-        background: var(--ink);
-        color: var(--paper);
+        font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        text-transform: uppercase;
       }
 
       .pane-body {
         display: flex;
         flex-direction: column;
-        gap: 0.75em;
-        padding: 0.75em 1ch;
+        align-items: center;
+        gap: 12px;
       }
 
-      /* The track is a 50% checker; the fill is solid ink and moves a whole
-         cell at a time. */
       .progress {
-        height: 1em;
+        width: calc(var(--dot) * 30);
+        max-width: 100%;
+        height: var(--dot);
         overflow: hidden;
-        background: repeating-conic-gradient(var(--ink) 0% 25%, var(--paper) 0% 50%) 0 0 / 2px
-          2px;
+        background: radial-gradient(circle, rgba(15, 15, 15, 0.14) 0 36%, rgba(15, 15, 15, 0.001) 38%)
+          0 0 / var(--dot) var(--dot);
       }
 
       .progress-fill {
         width: 0;
         height: 100%;
-        background: var(--ink);
+        background: radial-gradient(circle, var(--fg) 0 36%, rgba(15, 15, 15, 0.001) 38%) 0 0 /
+          var(--dot) var(--dot);
       }
 
       .progress.indeterminate .progress-fill {
-        width: 4ch;
-        animation: march 2.5s steps(26) infinite;
+        width: calc(var(--dot) * 4);
+        animation: march 2.6s steps(26) infinite;
       }
 
       @keyframes march {
@@ -94,14 +96,16 @@
           transform: translateX(0);
         }
         to {
-          transform: translateX(26ch);
+          transform: translateX(calc(var(--dot) * 26));
         }
       }
 
       .progress-label {
         min-height: 1.5em;
-        color: var(--ink-2);
-        font-size: 11px;
+        color: var(--muted);
+        font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -120,28 +124,40 @@
       }
 
       .error .pane-title {
-        background: var(--warning);
+        color: var(--red);
+        font-size: 14px;
+        letter-spacing: 0.14em;
       }
 
       .error .reason {
+        max-width: 32rem;
         overflow-wrap: anywhere;
+        text-align: center;
+        font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       .error button {
-        align-self: flex-start;
-        padding: 0 1ch;
-        border: 1px solid var(--ink);
-        background: var(--paper);
-        color: var(--ink);
-        font: inherit;
+        padding: 12px 20px;
+        border: 0;
+        background: var(--fg);
+        color: #f8f8f5;
+        font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
         cursor: pointer;
       }
 
-      .error button:hover,
+      .error button:active {
+        transform: scale(0.97);
+      }
+
       .error button:focus-visible {
-        background: var(--ink);
-        color: var(--paper);
-        outline: none;
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
       }
     </style>
   </head>
@@ -196,7 +212,7 @@
           document.body.appendChild(message);
         };
 
-        // The bar is 30 cells wide and fills a whole cell at a time.
+        // The bar is 30 dots wide and lights a whole dot at a time.
         const CELLS = 30;
 
         const megabytes = (bytes) => (bytes / 1048576).toFixed(1);

@@ -3,8 +3,8 @@
 html,
 body {
   background-color: #e4d2df;
-  color: #383f4b;
-  font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  color: #0f0f0f;
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   overflow: hidden;
 }

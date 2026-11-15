@@ -264,13 +264,21 @@ fn an_instanced_document_resolves_the_holders_its_host_does() {
         Some(author_device),
         "the host's author drives an instance nothing grabs"
     );
+    assert!(
+        replicas.has_doc(here, site),
+        "the host's presence is the instance's presence"
+    );
+    assert!(
+        !replicas.has_doc(space(b"elsewhere"), site),
+        "an instance is present where its host is, nowhere else"
+    );
 
     assert!(replicas.add_hold(
         grabber,
         HoldClaim {
-            doc: site,
+            doc:   site,
             space: here,
-            at: 5,
+            at:    5,
         }
     ));
     assert_eq!(replicas.holder(here, site), Some(grabber));

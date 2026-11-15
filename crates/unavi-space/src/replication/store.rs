@@ -348,6 +348,21 @@ impl Inner {
         self.holds.holder(doc, space).or(authored)
     }
 
+    /// Whether `doc` has presence in `space`. An instanced document has none
+    /// of its own, so its host's presence stands for it.
+    fn has_doc(&self, space: SpaceId, doc: DocId) -> bool {
+        self.docs.get(&doc).map_or_else(
+            || {
+                self.attribution.policy().get(doc).host.is_some_and(|host| {
+                    self.docs
+                        .get(&host)
+                        .is_some_and(|presence| presence.space == space)
+                })
+            },
+            |presence| presence.space == space,
+        )
+    }
+
     /// The budget `device`'s layer on `doc` is charged to, and whether it may
     /// take a reserved layer: the author's, or the local peer's.
     fn charge_of(&self, device: EndpointId, did: &Did, doc: DocId) -> (Arc<Quota>, bool) {
@@ -849,11 +864,7 @@ impl Replicas {
 
     #[must_use]
     pub fn has_doc(&self, space: SpaceId, doc: DocId) -> bool {
-        self.0
-            .lock()
-            .docs
-            .get(&doc)
-            .is_some_and(|p| p.space == space)
+        self.0.lock().has_doc(space, doc)
     }
 
     /// The space `doc` is present in, per any peer's replica.

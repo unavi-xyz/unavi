@@ -5,6 +5,7 @@
 //! already tracked in state. The physics side neither knows nor needs to know
 //! which of those two happened.
 
+use avian3d::prelude::RigidBody;
 use bevy::{
     platform::collections::{
         HashMap,
@@ -15,15 +16,17 @@ use bevy::{
 use bevy_hsd::{
     document::{
         Hsd,
-        HsdNamespace,
+        HsdDocId,
         Unplaced,
     },
     hierarchy::ancestors,
     prim::PrimOf,
 };
 use hsd::id::DocId;
-use iroh_docs::NamespaceId;
-use unavi_grab::held::Held;
+use unavi_grab::{
+    events::Grabbed,
+    held::Held,
+};
 
 use crate::{
     authority::SpaceView,
@@ -32,10 +35,11 @@ use crate::{
         Space,
         SpaceId,
     },
+    object_sync::systems::ReplicaObject,
     replication::Replicas,
 };
 
-type Docs<'w, 's> = Query<'w, 's, &'static HsdNamespace, (With<Hsd>, Without<Unplaced>)>;
+type Docs<'w, 's> = Query<'w, 's, &'static HsdDocId, (With<Hsd>, Without<Unplaced>)>;
 
 /// The documents this node has taken a hold on for a held entity.
 #[derive(Resource, Default)]
@@ -65,7 +69,7 @@ pub(crate) fn reconcile_holds(
 
     let mut wanted = HashMap::new();
     for entity in &carried {
-        let Some((doc_entity, ns)) = resolve_doc(entity, &hsd_children, &docs) else {
+        let Some((doc_entity, doc)) = resolve_doc(entity, &hsd_children, &docs) else {
             continue;
         };
         let Some(space) = resolve_space(doc_entity, &spaces, &parents).or_else(|| {
@@ -74,7 +78,6 @@ pub(crate) fn reconcile_holds(
         }) else {
             continue;
         };
-        let doc = DocId(*ns.as_bytes());
         if replicas.has_doc(space, doc) {
             wanted.insert(doc, space);
         }
@@ -99,13 +102,13 @@ fn resolve_doc(
     entity: Entity,
     hsd_children: &Query<&PrimOf>,
     docs: &Docs,
-) -> Option<(Entity, NamespaceId)> {
+) -> Option<(Entity, DocId)> {
     if let Ok(record) = docs.get(entity) {
-        return Some((entity, record.0.id()));
+        return Some((entity, record.0));
     }
     let child = hsd_children.get(entity).ok()?;
     let record = docs.get(child.0).ok()?;
-    Some((child.0, record.0.id()))
+    Some((child.0, record.0))
 }
 
 fn resolve_space(
@@ -114,6 +117,24 @@ fn resolve_space(
     parents: &Query<&ChildOf>,
 ) -> Option<SpaceId> {
     ancestors(doc_entity, parents).find_map(|at| spaces.get(at).ok().map(Space::id))
+}
+
+/// Taking a frozen body in hand thaws it.
+///
+/// The physgun parks a frozen body kinematic, and a grab that left it there
+/// would hand the user back something still hanging when they let go. A
+/// replica a peer drives is left alone: taking the hold over is what makes
+/// that one dynamic, and this node does not own its body yet.
+pub fn thaw_on_grab(
+    trigger: On<Grabbed>,
+    bodies: Query<&RigidBody>,
+    replicas: Query<(), With<ReplicaObject>>,
+    mut commands: Commands,
+) {
+    let entity = trigger.entity;
+    if matches!(bodies.get(entity), Ok(RigidBody::Kinematic)) && replicas.get(entity).is_err() {
+        commands.entity(entity).insert(RigidBody::Dynamic);
+    }
 }
 
 #[cfg(test)] mod tests;

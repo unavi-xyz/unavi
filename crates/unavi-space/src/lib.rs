@@ -81,6 +81,7 @@ impl Plugin for SpacePlugin {
             .init_resource::<grab::Holds>()
             .init_resource::<avatar_sync::crossing::LastCrossing>()
             .add_observer(avatar_sync::crossing::record_crossing)
+            .add_observer(grab::thaw_on_grab)
             .add_observer(replication::request::request_on_space_added)
             .add_observer(grid::assign_anchor)
             .add_observer(grid::promote_first_space)

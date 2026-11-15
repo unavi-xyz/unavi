@@ -1,7 +1,15 @@
 use std::sync::Arc;
 
+use avian3d::prelude::RigidBody;
 use bevy::ecs::system::RunSystemOnce;
-use hsd::state::HsdState;
+use bevy_hsd::{
+    document::HsdNamespace,
+    prim::Prim,
+};
+use hsd::{
+    id::PrimId,
+    state::HsdState,
+};
 use iroh::{
     EndpointId,
     SecretKey,
@@ -28,6 +36,7 @@ use xdid::method::key::{
 use super::*;
 use crate::{
     identity::LocalIdentity,
+    object_sync::systems::ReplicaObject,
     replication::{
         record::{
             PinRecord,
@@ -123,6 +132,7 @@ fn fixture() -> Fixture {
 
     let mut app = App::new();
     app.add_plugins(bevy_async::AsyncPlugin)
+        .add_observer(thaw_on_grab)
         .insert_resource(replicas.clone())
         .init_resource::<Holds>();
     crate::replication::guards::init_indexes(app.world_mut());
@@ -145,6 +155,7 @@ fn fixture() -> Fixture {
         .world_mut()
         .spawn((
             Hsd::new(HsdState::new()),
+            HsdDocId(doc),
             HsdNamespace(document),
             ChildOf(space_entity),
         ))
@@ -172,17 +183,100 @@ fn pump(app: &mut App) {
 }
 
 fn grab(fixture: &mut Fixture) {
-    fixture
+    grab_entity(fixture, fixture.object);
+}
+
+fn grab_entity(fixture: &mut Fixture, entity: Entity) {
+    fixture.app.world_mut().entity_mut(entity).insert(Held {
+        pointer:       fixture.pointer,
+        reach:         1.0,
+        offset_tra:    Vec3::ZERO,
+        offset_rot:    Quat::IDENTITY,
+        prior_gravity: None,
+    });
+}
+
+#[test]
+fn a_grab_inside_an_instance_holds_the_site_not_the_template() {
+    let mut fixture = fixture();
+    let replicas = fixture.app.world().resource::<Replicas>().clone();
+    let policy = replicas.attribution().policy().clone();
+
+    // The space document hosts a reference site; the instance opened there is
+    // a document of its own, whose namespace is still the template's.
+    let host = fixture.doc;
+    let site = DocId::site(host, PrimId::new());
+    policy.update(site, |record| record.host = Some(host));
+
+    let held = {
+        let world = fixture.app.world_mut();
+        let site_prim = world
+            .spawn((Prim(PrimId::new()), PrimOf(fixture.object)))
+            .id();
+        let site_doc = world
+            .spawn((
+                Hsd::new(HsdState::new()),
+                HsdDocId(site),
+                ChildOf(site_prim),
+            ))
+            .id();
+        world.spawn((Prim(PrimId::new()), PrimOf(site_doc))).id()
+    };
+
+    grab_entity(&mut fixture, held);
+    pump(&mut fixture.app);
+
+    assert_eq!(
+        replicas.holder(fixture.space, site),
+        Some(fixture.me),
+        "a grab inside an instance must hold the instance, which is the id \
+         its object stream is keyed on"
+    );
+    assert_eq!(
+        replicas.holder(fixture.space, host),
+        Some(fixture.other_device),
+        "the grab took the template instead, which every placement shares"
+    );
+}
+
+#[test]
+fn a_grab_thaws_a_frozen_body() {
+    let mut fixture = fixture();
+    let frozen = fixture.app.world_mut().spawn(RigidBody::Kinematic).id();
+
+    fixture.app.world_mut().trigger(Grabbed {
+        entity:  frozen,
+        pointer: fixture.pointer,
+    });
+    fixture.app.update();
+
+    assert_eq!(
+        fixture.app.world().entity(frozen).get::<RigidBody>(),
+        Some(&RigidBody::Dynamic),
+        "a frozen body taken in hand must fall again when it is let go"
+    );
+}
+
+#[test]
+fn a_grab_leaves_a_remote_replica_for_its_holder() {
+    let mut fixture = fixture();
+    let replica = fixture
         .app
         .world_mut()
-        .entity_mut(fixture.object)
-        .insert(Held {
-            pointer:       fixture.pointer,
-            reach:         1.0,
-            offset_tra:    Vec3::ZERO,
-            offset_rot:    Quat::IDENTITY,
-            prior_gravity: None,
-        });
+        .spawn((RigidBody::Kinematic, ReplicaObject))
+        .id();
+
+    fixture.app.world_mut().trigger(Grabbed {
+        entity:  replica,
+        pointer: fixture.pointer,
+    });
+    fixture.app.update();
+
+    assert_eq!(
+        fixture.app.world().entity(replica).get::<RigidBody>(),
+        Some(&RigidBody::Kinematic),
+        "the taking-over peer, not the grabber, decides when a replica moves"
+    );
 }
 
 #[test]

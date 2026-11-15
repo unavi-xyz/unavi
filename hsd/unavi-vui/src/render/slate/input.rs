@@ -120,12 +120,16 @@ impl Slate {
                 }
             }
             Press::Scrub(_) => {
+                let Some(part) = self.rows[index].part_at(local.x) else {
+                    return;
+                };
                 // One drag at a time: a second pointer taking a row ends the
                 // first one's, reporting it kept.
                 self.end_scrub();
                 self.scrub = Some(Scrub {
                     row: index,
                     id,
+                    part,
                     pointer,
                     last_x: Some(local.x),
                 });
@@ -145,14 +149,14 @@ impl Slate {
         let Some(Press::Scrub(per_metre)) = self.rows.get(scrub.row).map(Row::press) else {
             return;
         };
-        let (id, last) = (scrub.id, scrub.last_x);
+        let (id, part, last) = (scrub.id, scrub.part, scrub.last_x);
         if let Some(scrub) = &mut self.scrub {
             scrub.last_x = x;
         }
         if let (Some(x), Some(last)) = (x, last)
             && (x - last).abs() > f32::EPSILON
         {
-            self.push(SlateEvent::Scrubbed(id, (x - last) * per_metre));
+            self.push(SlateEvent::Scrubbed(id, part, (x - last) * per_metre));
         }
     }
 }

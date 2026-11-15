@@ -1,6 +1,6 @@
-//! The Attributes tab's lines: what a prim states, one line per thing a
-//! person thinks of (where it is, its mesh, its body) rather than one per
-//! stored key. Pure, over the keys and values read from the prim.
+//! A prim's attributes as components: one card per thing a prim states (where
+//! it is, its mesh, its body), each with a summary to show folded and the
+//! fields to show open. Pure, over the keys and values read from the prim.
 
 use wired_guest::math::{
     Color,
@@ -11,6 +11,7 @@ use super::format::words;
 use crate::wired::scene::properties::{
     AlphaMode,
     Collider,
+    Material,
     Property,
     PropertyKey,
     RigidBody,
@@ -19,120 +20,98 @@ use crate::wired::scene::properties::{
     VertexAttribute,
 };
 
-/// One line of the tab: a label, what it reads, and the key whose layer the
-/// line is said to come from.
-pub struct Line {
-    pub label: String,
-    pub value: String,
-    pub key:   PropertyKey,
+/// One component of a prim.
+pub struct Card {
+    pub name:    String,
+    /// What it says folded.
+    pub summary: String,
+    /// The key whose layer the card is said to come from.
+    pub key:     PropertyKey,
+    /// Label and value of each field, shown open.
+    pub fields:  Vec<(String, String)>,
 }
 
-impl Line {
-    fn new(label: &str, value: String, key: PropertyKey) -> Self {
+impl Card {
+    fn new(name: &str, summary: String, key: &PropertyKey) -> Self {
         Self {
-            label: label.to_owned(),
-            value,
-            key,
+            name: name.to_owned(),
+            summary,
+            key: key.clone(),
+            fields: Vec::new(),
         }
+    }
+
+    fn field(mut self, label: &str, value: impl Into<String>) -> Self {
+        self.fields.push((label.to_owned(), value.into()));
+        self
     }
 }
 
-/// The lines for a prim stating `stated`, in a fixed order: placement, look,
+/// The name of the card a transform is on, which edits in place.
+pub const TRANSFORM: &str = "Transform";
+
+/// The cards of a prim stating `stated`, in a fixed order: placement, look,
 /// physics, then the rest. The name and parent are left out, since the
-/// header and the Tree tab show them.
+/// slate's heading and the document show them.
 #[must_use]
-pub fn lines(stated: &[(PropertyKey, Property)]) -> Vec<Line> {
-    let find = |wanted: fn(&Property) -> bool| {
-        stated
-            .iter()
-            .find(|(_, property)| wanted(property))
-            .map(|(key, property)| (key.clone(), property))
-    };
+pub fn cards(stated: &[(PropertyKey, Property)]) -> Vec<Card> {
     let mut out = Vec::new();
-    if let Some((key, Property::Transform(at))) = find(|p| matches!(p, Property::Transform(_))) {
-        placement(at, &key, &mut out);
-    }
-    if let Some(line) = mesh(stated) {
-        out.push(line);
-    }
-    if let Some((key, Property::Material(material))) = find(|p| matches!(p, Property::Material(_)))
-    {
-        let mut parts = vec![
-            material
-                .base_color
-                .map_or_else(|| "default".to_owned(), hex),
-        ];
-        if let Some(mode) = material.alpha_mode
-            && mode != AlphaMode::Opaque
-        {
-            parts.push(alpha(mode).to_owned());
+    for (key, property) in stated {
+        if let Property::Transform(at) = property {
+            out.push(transform(at, key));
         }
-        if material.emissive.is_some() {
-            parts.push("glows".to_owned());
-        }
-        out.push(Line::new("Material", parts.join(" · "), key));
     }
-    if let Some((key, Property::ImageData(bytes))) = find(|p| matches!(p, Property::ImageData(_))) {
-        out.push(Line::new("Image", kib(bytes.len()), key));
-    }
-    if let Some((key, Property::Collider(collider))) = find(|p| matches!(p, Property::Collider(_)))
-    {
-        let triangles = stated.iter().find_map(|(_, p)| match p {
-            Property::ColliderIndices(indices) => Some(indices.len() / 3),
-            _ => None,
-        });
-        out.push(Line::new("Collider", shape(collider, triangles), key));
-    }
-    if let Some((key, Property::RigidBody(body))) = find(|p| matches!(p, Property::RigidBody(_))) {
-        let gravity = stated.iter().find_map(|(_, p)| match p {
-            Property::GravityScale(scale) => Some(*scale),
-            _ => None,
-        });
-        out.push(Line::new("Body", body_value(body, gravity), key));
+    if let Some(card) = mesh(stated) {
+        out.push(card);
     }
     for (key, property) in stated {
-        if let Some(line) = other(key, property) {
-            out.push(line);
+        if let Property::Material(material) = property {
+            out.push(material_card(material, key));
         }
     }
+    if let Some(card) = collider(stated) {
+        out.push(card);
+    }
+    if let Some(card) = body(stated) {
+        out.push(card);
+    }
+    out.extend(
+        stated
+            .iter()
+            .filter_map(|(key, property)| other(key, property)),
+    );
     out
 }
 
-fn placement(at: &Transform, key: &PropertyKey, out: &mut Vec<Line>) {
+fn transform(at: &Transform, key: &PropertyKey) -> Card {
     let t = at.translation;
-    out.push(Line::new(
-        "Position",
-        format!("{:.2}  {:.2}  {:.2}", t.x, t.y, t.z),
-        key.clone(),
-    ));
-    // Any peer may state a rotation, so it is normalized before it is read.
+    let position = format!("{:.2}  {:.2}  {:.2}", t.x, t.y, t.z);
     let rotation = glam::Vec4::from(glam::Quat::from(at.rotation))
         .try_normalize()
-        .map(glam::Quat::from_vec4);
-    let value = rotation.map_or_else(
-        || "invalid".to_owned(),
-        |rotation| {
-            let (yaw, pitch, roll) = rotation.to_euler(glam::EulerRot::YXZ);
-            format!(
-                "{:.0}°  {:.0}°  {:.0}°",
-                degrees(yaw),
-                degrees(pitch),
-                degrees(roll)
-            )
-        },
-    );
-    out.push(Line::new("Rotation", value, key.clone()));
+        .map(glam::Quat::from_vec4)
+        .map_or_else(
+            || "invalid".to_owned(),
+            |rotation| {
+                let (yaw, pitch, roll) = rotation.to_euler(glam::EulerRot::YXZ);
+                format!(
+                    "{:.0}°  {:.0}°  {:.0}°",
+                    degrees(yaw),
+                    degrees(pitch),
+                    degrees(roll)
+                )
+            },
+        );
     let s = at.scale;
     let uniform = (s.x - s.y).abs() < 1.0e-4 && (s.y - s.z).abs() < 1.0e-4;
-    out.push(Line::new(
-        "Scale",
-        if uniform {
-            format!("{:.2}", s.x)
-        } else {
-            format!("{:.2}  {:.2}  {:.2}", s.x, s.y, s.z)
-        },
-        key.clone(),
-    ));
+    let scale = if uniform {
+        format!("{:.2}", s.x)
+    } else {
+        format!("{:.2}  {:.2}  {:.2}", s.x, s.y, s.z)
+    };
+    Card::new(TRANSFORM, position.clone(), key)
+        .field("Position", position)
+        .field("Rotation", rotation)
+        .field("Scale", scale)
 }
 
 /// Degrees, without a negative zero.
@@ -141,36 +120,135 @@ fn degrees(radians: f32) -> f32 {
     if degrees.abs() < 0.5 { 0.0 } else { degrees }
 }
 
-/// The topology, vertex streams and indices as one line.
-fn mesh(stated: &[(PropertyKey, Property)]) -> Option<Line> {
+fn mesh(stated: &[(PropertyKey, Property)]) -> Option<Card> {
     let mut topology = None;
-    let mut vertices = None;
+    let mut position = None;
+    let mut streams = Vec::new();
     let mut indices = None;
     for (key, property) in stated {
         match property {
             Property::MeshTopology(kind) => topology = Some(*kind),
-            Property::MeshVertices(stream) if stream.attribute == VertexAttribute::Position => {
-                vertices = Some((key, stream.values.len() / 3));
+            Property::MeshVertices(stream) => {
+                streams.push(words(&format!("{:?}", stream.attribute)));
+                if stream.attribute == VertexAttribute::Position {
+                    position = Some((key, stream.values.len() / 3));
+                }
             }
             Property::MeshIndices(list) => indices = Some(list.len()),
             _ => {}
         }
     }
-    let (key, count) = vertices?;
-    let value = match (topology, indices) {
-        (Some(Topology::TriangleList) | None, Some(indices)) => {
-            format!("{count} vertices · {} triangles", indices / 3)
-        }
-        (Some(Topology::TriangleList) | None, None) => format!("{count} vertices"),
-        (Some(kind), _) => format!("{count} vertices · {}", topology_name(kind)),
+    let (key, vertices) = position?;
+    let triangles = match (topology, indices) {
+        (Some(Topology::TriangleList) | None, Some(indices)) => Some(indices / 3),
+        (Some(Topology::TriangleList) | None, None) => Some(vertices / 3),
+        _ => None,
     };
-    Some(Line::new("Mesh", value, key.clone()))
+    let summary = triangles.map_or_else(
+        || format!("{vertices} vertices"),
+        |triangles| format!("{triangles} triangles"),
+    );
+    let mut card = Card::new("Mesh", summary, key).field("Vertices", vertices.to_string());
+    if let Some(kind) = topology {
+        card = card.field("Topology", topology_name(kind));
+    }
+    Some(card.field("Streams", streams.join(", ")))
 }
 
-/// A line for a key the fixed lines above do not cover, or `None` for one
-/// they do or one the slate shows elsewhere.
-fn other(key: &PropertyKey, property: &Property) -> Option<Line> {
-    let (label, value) = match property {
+fn material_card(material: &Material, key: &PropertyKey) -> Card {
+    let base = material
+        .base_color
+        .map_or_else(|| "default".to_owned(), hex);
+    let mut card = Card::new("Material", base.clone(), key).field("Colour", base);
+    if let Some(mode) = material.alpha_mode {
+        card = card.field("Alpha", alpha(mode));
+    }
+    if let Some(metallic) = material.metallic {
+        card = card.field("Metallic", format!("{metallic:.2}"));
+    }
+    if let Some(roughness) = material.roughness {
+        card = card.field("Roughness", format!("{roughness:.2}"));
+    }
+    if let Some(glow) = material.emissive {
+        card = card.field("Glow", hex(glow));
+    }
+    card
+}
+
+fn collider(stated: &[(PropertyKey, Property)]) -> Option<Card> {
+    let (key, shape) = stated.iter().find_map(|(key, property)| match property {
+        Property::Collider(shape) => Some((key, shape)),
+        _ => None,
+    })?;
+    let triangles = stated.iter().find_map(|(_, property)| match property {
+        Property::ColliderIndices(indices) => Some(indices.len() / 3),
+        _ => None,
+    });
+    let (kind, size) = match shape {
+        Collider::Cuboid(size) => (
+            "box",
+            format!("{:.2} × {:.2} × {:.2}", size.x, size.y, size.z),
+        ),
+        Collider::Sphere(radius) => ("sphere", format!("r {radius:.2}")),
+        Collider::Capsule(capsule) => (
+            "capsule",
+            format!("r {:.2}  h {:.2}", capsule.radius, capsule.height),
+        ),
+        Collider::Cylinder(cylinder) => (
+            "cylinder",
+            format!("r {:.2}  h {:.2}", cylinder.radius, cylinder.height),
+        ),
+        Collider::ConvexHull => ("hull", String::new()),
+        Collider::Trimesh => (
+            "mesh",
+            triangles.map_or_else(String::new, |count| format!("{count} triangles")),
+        ),
+    };
+    let mut card = Card::new("Collider", kind.to_owned(), key).field("Shape", kind);
+    if !size.is_empty() {
+        card = card.field("Size", size);
+    }
+    Some(card)
+}
+
+fn body(stated: &[(PropertyKey, Property)]) -> Option<Card> {
+    let (key, body): (&PropertyKey, &RigidBody) =
+        stated.iter().find_map(|(key, property)| match property {
+            Property::RigidBody(body) => Some((key, body)),
+            _ => None,
+        })?;
+    let kind = match body.kind {
+        RigidBodyKind::Dynamic => "dynamic",
+        RigidBodyKind::Kinematic => "kinematic",
+        RigidBodyKind::Static => "static",
+    };
+    let mut card = Card::new("Body", kind.to_owned(), key).field("Kind", kind);
+    let numbers = [
+        ("Mass", body.mass),
+        ("Friction", body.friction),
+        ("Bounce", body.restitution),
+        ("Drag", body.linear_damping),
+        ("Spin drag", body.angular_damping),
+    ];
+    for (label, value) in numbers {
+        if let Some(value) = value {
+            card = card.field(label, format!("{value:.2}"));
+        }
+    }
+    let gravity = stated.iter().find_map(|(_, property)| match property {
+        Property::GravityScale(scale) => Some(*scale),
+        _ => None,
+    });
+    if let Some(gravity) = gravity {
+        card = card.field("Gravity", format!("{gravity:.2}"));
+    }
+    Some(card)
+}
+
+/// A card for a key the cards above do not cover, or `None` for one they
+/// do or one the slate shows elsewhere.
+fn other(key: &PropertyKey, property: &Property) -> Option<Card> {
+    Some(match property {
         Property::Parent(_)
         | Property::Name(_)
         | Property::Transform(_)
@@ -178,46 +256,41 @@ fn other(key: &PropertyKey, property: &Property) -> Option<Line> {
         | Property::MeshVertices(_)
         | Property::MeshIndices(_)
         | Property::Material(_)
-        | Property::ImageData(_)
         | Property::ImageSampler(_)
         | Property::Collider(_)
         | Property::ColliderVertices(_)
         | Property::ColliderIndices(_)
         | Property::RigidBody(_)
         | Property::GravityScale(_) => return None,
-        Property::Text(text) => (
-            "Text".to_owned(),
-            format!("“{}”", text.value.lines().next().unwrap_or_default()),
-        ),
-        Property::Reference(doc) => ("Reference".to_owned(), format!("…{:04x}", doc.3 & 0xFFFF)),
-        Property::Sky(color) => ("Sky".to_owned(), hex(*color)),
-        Property::Portal(portal) => (
-            "Portal".to_owned(),
-            format!(
-                "{:.2} × {:.2} m · {}",
-                portal.width,
-                portal.height,
-                if portal.destination.is_some() {
-                    "linked"
-                } else {
-                    "open"
-                }
+        Property::ImageData(bytes) => Card::new("Image", size_of(bytes.len()), key),
+        Property::Text(text) => {
+            let first = text.value.lines().next().unwrap_or_default();
+            Card::new("Text", format!("“{first}”"), key).field("Text", text.value.clone())
+        }
+        Property::Reference(doc) => Card::new("Reference", wired_guest::color::short_id(*doc), key),
+        Property::Sky(color) => Card::new("Sky", hex(*color), key),
+        Property::Portal(portal) => Card::new(
+            "Portal",
+            format!("{:.2} × {:.2}", portal.width, portal.height),
+            key,
+        )
+        .field(
+            "Leads to",
+            portal.destination.as_ref().map_or_else(
+                || "nowhere yet".to_owned(),
+                |to| wired_guest::color::short_id(to.space),
             ),
         ),
-        Property::Spawn(spawn) => ("Spawn".to_owned(), format!("{:.2} m around", spawn.radius)),
-        Property::Relation((relation, _)) => (
-            capitalised(&words(&format!("{relation:?}"))),
+        Property::Spawn(spawn) => Card::new("Spawn", format!("r {:.2}", spawn.radius), key),
+        Property::Relation((relation, _)) => Card::new(
+            &capitalised(&words(&format!("{relation:?}"))),
             "linked".to_owned(),
+            key,
         ),
         Property::Custom((name, bytes)) if name == wired_guest::LOCKED => {
-            ("Locked".to_owned(), custom_value(bytes))
+            Card::new("Locked", custom_value(bytes), key)
         }
-        Property::Custom((name, bytes)) => (name.clone(), custom_value(bytes)),
-    };
-    Some(Line {
-        label,
-        value,
-        key: key.clone(),
+        Property::Custom((name, bytes)) => Card::new(name, custom_value(bytes), key),
     })
 }
 
@@ -234,46 +307,8 @@ fn custom_value(bytes: &[u8]) -> String {
         [0] => "off".to_owned(),
         [1] => "on".to_owned(),
         [byte] => byte.to_string(),
-        _ => format!("{} bytes", bytes.len()),
+        _ => size_of(bytes.len()),
     }
-}
-
-fn shape(collider: &Collider, triangles: Option<usize>) -> String {
-    match collider {
-        Collider::Cuboid(size) => format!("box {:.2} × {:.2} × {:.2}", size.x, size.y, size.z),
-        Collider::Sphere(radius) => format!("sphere r {radius:.2}"),
-        Collider::Capsule(capsule) => {
-            format!("capsule r {:.2} h {:.2}", capsule.radius, capsule.height)
-        }
-        Collider::Cylinder(cylinder) => {
-            format!("cylinder r {:.2} h {:.2}", cylinder.radius, cylinder.height)
-        }
-        Collider::ConvexHull => "convex hull".to_owned(),
-        Collider::Trimesh => triangles.map_or_else(
-            || "mesh".to_owned(),
-            |triangles| format!("mesh · {triangles} triangles"),
-        ),
-    }
-}
-
-fn body_value(body: &RigidBody, gravity: Option<f32>) -> String {
-    let mut parts = vec![
-        match body.kind {
-            RigidBodyKind::Dynamic => "dynamic",
-            RigidBodyKind::Kinematic => "kinematic",
-            RigidBodyKind::Static => "static",
-        }
-        .to_owned(),
-    ];
-    if let Some(mass) = body.mass {
-        parts.push(format!("{mass:.2} kg"));
-    }
-    if let Some(gravity) = gravity
-        && (gravity - 1.0).abs() > 1.0e-3
-    {
-        parts.push(format!("gravity {gravity:.2}"));
-    }
-    parts.join(" · ")
 }
 
 const fn alpha(mode: AlphaMode) -> &'static str {
@@ -306,9 +341,9 @@ fn hex(color: Color) -> String {
     )
 }
 
-fn kib(bytes: usize) -> String {
+fn size_of(bytes: usize) -> String {
     if bytes < 1024 {
-        format!("{bytes} bytes")
+        format!("{bytes} B")
     } else {
         format!("{} KiB", bytes / 1024)
     }
@@ -324,8 +359,8 @@ mod tests {
     use super::*;
     use crate::wired::scene::properties::VertexStream;
 
-    fn labels(stated: &[(PropertyKey, Property)]) -> Vec<String> {
-        lines(stated).into_iter().map(|line| line.label).collect()
+    fn names(stated: &[(PropertyKey, Property)]) -> Vec<String> {
+        cards(stated).into_iter().map(|card| card.name).collect()
     }
 
     fn cube_mesh() -> Vec<(PropertyKey, Property)> {
@@ -346,42 +381,57 @@ mod tests {
                 PropertyKey::MeshVertices(VertexAttribute::Normal),
                 Property::MeshVertices(stream(VertexAttribute::Normal)),
             ),
-            (
-                PropertyKey::MeshVertices(VertexAttribute::Uv0),
-                Property::MeshVertices(stream(VertexAttribute::Uv0)),
-            ),
             (PropertyKey::MeshIndices, Property::MeshIndices(vec![0; 36])),
         ]
     }
 
     #[test]
-    fn a_mesh_reads_as_one_line() {
-        let lines = lines(&cube_mesh());
-        assert_eq!(lines.len(), 1);
-        assert_eq!(lines[0].label, "Mesh");
-        assert_eq!(lines[0].value, "24 vertices · 12 triangles");
+    fn a_mesh_is_one_card_however_many_keys_it_takes() {
+        let cards = cards(&cube_mesh());
+        assert_eq!(cards.len(), 1);
+        assert_eq!(cards[0].name, "Mesh");
+        assert_eq!(cards[0].summary, "12 triangles");
+        assert!(
+            cards[0]
+                .fields
+                .iter()
+                .any(|(label, value)| label == "Streams" && value == "position, normal")
+        );
     }
 
     #[test]
-    fn a_transform_reads_as_position_rotation_and_scale() {
+    fn a_transform_card_sums_up_where_it_is_and_lists_its_parts() {
         let at = Transform::new(
             Vec3::new(1.0, 2.0, 3.0),
             Quat::from(glam::Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
             Vec3::splat(2.0),
         );
-        let lines = lines(&[(PropertyKey::Transform, Property::Transform(at))]);
-        let read: Vec<_> = lines
+        let cards = cards(&[(PropertyKey::Transform, Property::Transform(at))]);
+        assert_eq!(cards[0].summary, "1.00  2.00  3.00");
+        let fields: Vec<_> = cards[0]
+            .fields
             .iter()
-            .map(|line| (line.label.as_str(), line.value.as_str()))
+            .map(|(label, value)| (label.as_str(), value.as_str()))
             .collect();
         assert_eq!(
-            read,
+            fields,
             [
                 ("Position", "1.00  2.00  3.00"),
                 ("Rotation", "90°  0°  0°"),
                 ("Scale", "2.00"),
             ]
         );
+    }
+
+    #[test]
+    fn a_rotation_that_is_no_rotation_reads_as_invalid() {
+        let at = Transform::new(
+            Vec3::ZERO,
+            Quat::from(glam::Quat::from_xyzw(0.0, 0.0, 0.0, 0.0)),
+            Vec3::ONE,
+        );
+        let cards = cards(&[(PropertyKey::Transform, Property::Transform(at))]);
+        assert_eq!(cards[0].fields[1].1, "invalid");
     }
 
     #[test]
@@ -403,30 +453,16 @@ mod tests {
             Property::Transform(Transform::IDENTITY),
         ));
         stated.push((PropertyKey::Name, Property::Name("Crate".to_owned())));
-        assert_eq!(
-            labels(&stated),
-            ["Position", "Rotation", "Scale", "Mesh", "Body"]
-        );
+        assert_eq!(names(&stated), ["Transform", "Mesh", "Body"]);
     }
 
     #[test]
-    fn a_rotation_that_is_no_rotation_reads_as_invalid() {
-        let at = Transform::new(
-            Vec3::ZERO,
-            Quat::from(glam::Quat::from_xyzw(0.0, 0.0, 0.0, 0.0)),
-            Vec3::ONE,
-        );
-        let lines = lines(&[(PropertyKey::Transform, Property::Transform(at))]);
-        assert_eq!(lines[1].value, "invalid");
-    }
-
-    #[test]
-    fn a_custom_attribute_is_labelled_by_its_name() {
-        let lines = lines(&[(
+    fn a_custom_attribute_is_a_card_named_by_it() {
+        let cards = cards(&[(
             PropertyKey::Custom("game/score".to_owned()),
             Property::Custom(("game/score".to_owned(), vec![7])),
         )]);
-        assert_eq!(lines[0].label, "game/score");
-        assert_eq!(lines[0].value, "7");
+        assert_eq!(cards[0].name, "game/score");
+        assert_eq!(cards[0].summary, "7");
     }
 }

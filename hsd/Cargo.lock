@@ -589,6 +589,7 @@ version = "0.0.17"
 dependencies = [
  "anyhow",
  "glam",
+ "unavi-lens",
  "wired-guest",
  "wit-bindgen",
 ]

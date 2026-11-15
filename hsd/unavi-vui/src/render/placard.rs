@@ -194,7 +194,12 @@ impl PlacardPrims {
             }),
         );
 
+        // Unrolled from the top edge: the pane to the front, and each line as
+        // the front passes it.
+        graphs::set_pane_open(doc, self.panel, pop::front(progress))?;
+        let reached = pop::front(progress) * view.size.y;
         for (prim, line) in self.lines.iter().zip(&view.lines) {
+            let shown = pop::line(reached, -line.offset.y - line.size, line.size);
             batch = batch
                 .set(
                     *prim,
@@ -213,10 +218,7 @@ impl PlacardPrims {
                         anchor:        Some(TextAnchor::Baseline),
                         wrap:          None,
                         line_height:   None,
-                        color:         Some(draw::with_alpha(
-                            tint(palette, line.emphasis),
-                            progress,
-                        )),
+                        color:         Some(draw::with_alpha(tint(palette, line.emphasis), shown)),
                         // No outline: dark type on a light pane needs none.
                         outline:       None,
                         outline_width: None,

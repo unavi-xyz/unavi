@@ -1,23 +1,25 @@
-//! The Inspector: points at anything and stands a slate saying what it is,
-//! tethered to the point inspected, with a tab for each way to work on it.
+//! The Inspector: points at anything and opens a slate on it, tethered to
+//! the point inspected: the prim, the document it is in, and a card for each
+//! of its components (where it is, its mesh, its body), folded to a summary
+//! or open to edit.
 //!
-//! The slate is a thing in the world, the same in a headset and on desktop:
+//! Each slate is a thing in the world, the same in a headset and on desktop:
 //! it opens at reading distance beside what it describes, is picked up and
-//! carried like anything else, and floats where it is let go. Moving things is
-//! the physgun's; the Inspector reads them, and nudges a value by scrubbing its
-//! row.
+//! carried like anything else, and floats where it is let go. Several can be
+//! open at once, one per thing inspected. Moving things is the physgun's;
+//! the Inspector reads them, and nudges a value by scrubbing its row.
 //!
 //! | Act | VR | Desktop |
 //! | --- | --- | --- |
+//! | see the documents around | hold the Inspector: the Documents lens is on while it is in hand | the same |
 //! | inspect | trigger on it | left mouse on it |
-//! | move the slate | squeeze the grip on it and carry it; let go and it floats | right mouse on it, drag |
-//! | change tab | trigger on a tab | left mouse on a tab |
-//! | nudge position, turn or scale | trigger on its row, slide across | left mouse on its row, drag sideways |
-//! | inspect its parent or a child | the rows of the Tree tab | the same |
-//! | lock, delete, make local | the rows of the Transform tab | the same |
-//! | close | the Close row, or squeeze the grip on nothing | the Close row, or right mouse on nothing |
-
-use std::cell::RefCell;
+//! | inspect it again | trigger on it: its slate comes back to you | the same |
+//! | move a slate | squeeze the grip on it and carry it; let go and it floats | right mouse on it, drag |
+//! | open or fold a card | trigger on its heading | left mouse on it |
+//! | nudge position, turn or scale | trigger on its number, slide across | left mouse on it, drag sideways |
+//! | inspect its parent or a child | the rows of the Tree card | the same |
+//! | lock, delete, make local | the rows of the slate | the same |
+//! | close | the Close row; squeezing the grip on nothing closes the newest | the Close row, or right mouse on nothing |
 
 use wired_guest::math::{
     Ray,
@@ -41,7 +43,14 @@ use crate::{
         },
     },
     wired::{
-        core::ids::PrimRef,
+        core::ids::{
+            DocumentId,
+            PrimRef,
+        },
+        event::messaging::{
+            self,
+            Scope,
+        },
         input::types::PointerKind,
         physics::simulation::{
             RayFilter,
@@ -57,7 +66,6 @@ use crate::{
 mod glyph;
 mod inspect;
 mod stand;
-mod tab;
 
 wired_guest::generate_script!(Script);
 
@@ -66,18 +74,28 @@ const REACH: f32 = 50.0;
 /// Fixed ticks between redraws of the rows, so values others change, or
 /// physics moves, show without a press.
 const REFRESH_TICKS: u32 = 15;
-/// Metres from the eye past which an open slate is left behind, so
-/// inspecting something new stands it again beside that.
-const LEFT_BEHIND: f32 = 3.0;
+/// Most slates open at once; opening another closes the oldest.
+const MAX_OPEN: usize = 6;
+/// Fixed ticks a closed slate is kept while it rolls away.
+const ROLL_AWAY_TICKS: u32 = 30;
+
+/// A slate open on one inspected prim.
+struct Open {
+    inspection: Inspection,
+    slate:      Slate,
+}
 
 struct Script {
-    tool:       Tool,
-    own:        Document,
+    tool:    Tool,
+    own:     Document,
     /// The pointer the tool aims with, while it is in hand.
-    hand:       Option<PointerKind>,
-    slate:      Slate,
-    inspection: RefCell<Option<Inspection>>,
-    ticks:      u32,
+    hand:    Option<PointerKind>,
+    /// Oldest first.
+    open:    Vec<Open>,
+    /// Closed slates rolling away, and the ticks until they are freed: one
+    /// freed while shown would vanish mid-motion.
+    closing: Vec<(Slate, u32)>,
+    ticks:   u32,
 }
 
 impl Script {
@@ -89,9 +107,9 @@ impl Script {
         })
     }
 
-    /// Inspects what the aim points at. A hit on the tool's own slate is the
-    /// slate's to answer.
-    fn press(&self) {
+    /// Inspects what the aim points at. A hit on one of the tool's own slates
+    /// is the slate's to answer.
+    fn press(&mut self) {
         let Some(ray) = self.aim() else {
             return;
         };
@@ -111,105 +129,146 @@ impl Script {
             }
         };
         if self.own.id() != hit.target.document {
-            self.open(hit.target, Some(hit.point));
+            self.inspect(hit.target, hit.point);
         }
     }
 
-    /// Inspects `target`, tethered to `point` on it, else to its origin.
-    /// Inspecting from the world starts on the first tab; moving on from
-    /// what is inspected stays on the tab in use.
-    fn open(&self, target: PrimRef, point: Option<Vec3>) {
-        let Some(mut inspection) = Inspection::of(target, point) else {
+    /// Opens a slate on `target`, tethered to `point` on it; a slate already
+    /// open on it comes back to the viewer instead.
+    fn inspect(&mut self, target: PrimRef, point: Vec3) {
+        let own = self.own.id();
+        if let Some(open) = self
+            .open
+            .iter()
+            .find(|open| same(&open.inspection.target(), &target))
+        {
+            stand_beside(&open.slate, point, own);
+            return;
+        }
+        let Some(inspection) = Inspection::of(target, Some(point)) else {
             return;
         };
-        let previous = self.inspection.borrow_mut().take();
-        let was_open = previous.is_some();
-        if let Some(mut previous) = previous {
-            if point.is_none() {
-                inspection.set_tab(previous.tab());
+        let slate = match Slate::new() {
+            Ok(slate) => slate,
+            Err(err) => {
+                eprintln!("inspector: slate: {err:?}");
+                return;
             }
-            previous.finish();
-        }
+        };
         // Rows first, so the slate is measured at the height it will show.
-        if let Err(err) = self.slate.set_rows(&inspection.rows()) {
+        if let Err(err) = slate.set_rows(&inspection.rows()) {
             eprintln!("inspector: rows: {err:?}");
         }
-        if let Some(point) = point
-            && self.left_behind(was_open)
-            && let Some(eye) = camera_pose()
-        {
-            let at = stand::stand(eye.translation, point, self.slate.size(), self.own.id());
-            self.slate.set_position(at);
+        stand_beside(&slate, point, own);
+        slate.set_tether(inspection.anchor());
+        slate.set_shown(true);
+        if self.open.len() >= MAX_OPEN {
+            self.close(0);
         }
-        self.slate.set_tether(inspection.anchor());
-        self.slate.set_shown(true);
-        *self.inspection.borrow_mut() = Some(inspection);
+        self.open.push(Open { inspection, slate });
     }
 
-    /// Whether the slate should stand again beside what is inspected next:
-    /// it was put away, or the viewer has walked off from it.
-    fn left_behind(&self, was_open: bool) -> bool {
-        if !was_open {
-            return true;
+    fn close(&mut self, index: usize) {
+        if index >= self.open.len() {
+            return;
         }
-        camera_pose()
-            .is_none_or(|eye| eye.translation.distance(self.slate.position()) > LEFT_BEHIND)
+        let mut closed = self.open.remove(index);
+        closed.inspection.finish();
+        closed.slate.set_tether(None);
+        closed.slate.set_shown(false);
+        self.closing.push((closed.slate, ROLL_AWAY_TICKS));
     }
 
-    fn close(&self) {
-        let closed = self.inspection.borrow_mut().take();
-        if let Some(mut closed) = closed {
-            closed.finish();
+    fn close_all(&mut self) {
+        while let Some(newest) = self.open.len().checked_sub(1) {
+            self.close(newest);
         }
-        self.slate.set_tether(None);
-        self.slate.set_shown(false);
     }
 
-    /// Answers the slate, and redraws its rows after any change and every
+    /// Answers each slate, and redraws its rows after any change and every
     /// few ticks.
-    fn step_slate(&mut self) {
-        let events = self.slate.events();
-        let mut closing = false;
-        let mut next = None;
-        let mut changed = !events.is_empty();
+    fn step_slates(&mut self) {
         self.ticks = (self.ticks + 1) % REFRESH_TICKS;
-        changed |= self.ticks == 0;
-        if let Some(inspection) = &mut *self.inspection.borrow_mut() {
+        let refresh = self.ticks == 0;
+        let mut closing = Vec::new();
+        for (index, open) in self.open.iter_mut().enumerate() {
+            let events = open.slate.events();
+            let mut next = None;
             for event in &events {
-                match inspection.apply(event) {
+                match open.inspection.apply(event) {
                     Asked::Nothing => {}
-                    Asked::Close => closing = true,
+                    Asked::Close => closing.push(index),
                     Asked::Inspect(target) => next = Some(target),
                 }
             }
-            if changed
-                && !closing
-                && let Err(err) = self.slate.set_rows(&inspection.rows())
+            // Moving on from what this slate shows keeps the slate where it
+            // floats, and the cards it had open.
+            if let Some(target) = next
+                && let Some(mut inspection) = Inspection::of(target, None)
+            {
+                inspection.set_open_cards(open.inspection.open_cards());
+                open.inspection.finish();
+                open.inspection = inspection;
+            }
+            if (refresh || !events.is_empty())
+                && let Err(err) = open.slate.set_rows(&open.inspection.rows())
             {
                 eprintln!("inspector: rows: {err:?}");
             }
         }
-        if closing {
-            self.close();
-        } else if let Some(target) = next {
-            self.open(target, None);
+        closing.dedup();
+        for index in closing.into_iter().rev() {
+            self.close(index);
         }
+        for (_, left) in &mut self.closing {
+            *left = left.saturating_sub(1);
+        }
+        self.closing.retain(|(_, left)| *left > 0);
+    }
+}
+
+/// Shows the visor's Documents lens while the Inspector is in hand,
+/// leaving the user's own setting for it as it was.
+fn hold_documents_lens(held: bool) {
+    let request = unavi_lens::Hold {
+        lens: unavi_lens::DOCUMENTS.to_owned(),
+        held,
+    };
+    let sent = unavi_lens::encode_hold(&request)
+        .map_err(|err| format!("{err}"))
+        .and_then(|bytes| {
+            messaging::emit(unavi_lens::HOLD, &bytes, None, Scope::Global)
+                .map_err(|err| format!("{err:?}"))
+        });
+    if let Err(err) = sent {
+        eprintln!("inspector: hold the documents lens: {err}");
+    }
+}
+
+fn same(a: &PrimRef, b: &PrimRef) -> bool {
+    a.document == b.document && a.prim == b.prim
+}
+
+/// Stands `slate` at reading distance beside `point`, as seen from the eye.
+fn stand_beside(slate: &Slate, point: Vec3, own: DocumentId) {
+    if let Some(eye) = camera_pose() {
+        slate.set_position(stand::stand(eye.translation, point, slate.size(), own));
     }
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
         Ok(Self {
-            tool:       Tool::new(
+            tool:    Tool::new(
                 "Inspector",
                 "Shows what anything is, and nudges where it stands.",
                 Some(&glyph::mark()),
             )?,
-            own:        script_document()?,
-            hand:       None,
-            slate:      Slate::new()?,
-            inspection: RefCell::new(None),
-            ticks:      0,
+            own:     script_document()?,
+            hand:    None,
+            open:    Vec::new(),
+            closing: Vec::new(),
+            ticks:   0,
         })
     }
 
@@ -217,27 +276,36 @@ impl ScriptBehavior for Script {
         api::fixed_update()?;
         while let Some(event) = self.tool.poll() {
             match event {
-                ToolEvent::Activate(hand) => self.hand = Some(hand),
+                ToolEvent::Activate(hand) => {
+                    self.hand = Some(hand);
+                    hold_documents_lens(true);
+                }
                 ToolEvent::Deactivate => {
                     self.hand = None;
-                    self.close();
+                    hold_documents_lens(false);
+                    self.close_all();
                 }
                 ToolEvent::Pressed(ToolButton::Primary) if self.hand.is_some() => self.press(),
-                ToolEvent::Pressed(ToolButton::Secondary) if self.hand.is_some() => self.close(),
+                // The grip squeezed on nothing: put away the newest slate.
+                ToolEvent::Pressed(ToolButton::Secondary) if self.hand.is_some() => {
+                    if let Some(newest) = self.open.len().checked_sub(1) {
+                        self.close(newest);
+                    }
+                }
                 ToolEvent::SetState(_)
                 | ToolEvent::Pressed(_)
                 | ToolEvent::Released(_)
                 | ToolEvent::Scroll(_) => {}
             }
         }
-        self.step_slate();
+        self.step_slates();
         Ok(())
     }
 
     fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
-        // The tether follows what it describes as physics or others move it.
-        if let Some(inspection) = &*self.inspection.borrow() {
-            self.slate.set_tether(inspection.anchor());
+        // Each tether follows what it describes as physics or others move it.
+        for open in &self.open {
+            open.slate.set_tether(open.inspection.anchor());
         }
         api::update(tick.dt)?;
         Ok(())

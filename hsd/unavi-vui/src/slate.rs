@@ -5,7 +5,10 @@
 //! to the viewer's right and the rows run down -Y.
 
 use smol_str::SmolStr;
-use wired_guest::math::Vec2;
+use wired_guest::math::{
+    Color,
+    Vec2,
+};
 
 use crate::tuning::Tuning;
 
@@ -28,6 +31,11 @@ pub const PADDING: f32 = 0.018;
 /// Type height of a row's label and value, and of a header.
 pub const TEXT_SIZE: f32 = 0.017;
 pub const HEADER_SIZE: f32 = 0.02;
+/// A row's dot, across, and the room it takes beside a label or value.
+pub const DOT: f32 = 0.009;
+const DOT_ROOM: f32 = 0.016;
+/// Metres across each number of a vector row.
+pub const COLUMN: f32 = 0.078;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kind {
@@ -44,6 +52,16 @@ pub enum Kind {
         labels:   Vec<SmolStr>,
         selected: u32,
     },
+    /// A card's heading, open or folded, and what it says in brief.
+    Section {
+        open:    bool,
+        summary: SmolStr,
+    },
+    /// Three numbers side by side, each scrubbed on its own.
+    Vector {
+        values:    [f32; 3],
+        per_metre: f32,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,6 +69,10 @@ pub struct Row {
     pub id:    u32,
     pub label: SmolStr,
     pub kind:  Kind,
+    /// Before the label: what the row names.
+    pub dot:   Option<Color>,
+    /// At the row's end: where its value comes from.
+    pub mark:  Option<Color>,
 }
 
 impl Row {
@@ -59,11 +81,47 @@ impl Row {
     pub const fn press(&self) -> Press {
         match self.kind {
             Kind::Header | Kind::Field(_) => Press::Nothing,
-            Kind::Number { per_metre, .. } => Press::Scrub(per_metre),
+            Kind::Number { per_metre, .. } | Kind::Vector { per_metre, .. } => {
+                Press::Scrub(per_metre)
+            }
             Kind::Toggle(on) => Press::Toggle(!on),
-            Kind::Action => Press::Act,
+            Kind::Action | Kind::Section { .. } => Press::Act,
             Kind::Tabs { .. } => Press::Pick,
         }
+    }
+
+    /// Where the label starts, across the pane.
+    #[must_use]
+    pub fn label_left(&self) -> f32 {
+        let dot = if self.dot.is_some() { DOT_ROOM } else { 0.0 };
+        -WIDTH / 2.0 + PADDING + dot
+    }
+
+    /// Where the value ends, across the pane.
+    #[must_use]
+    pub fn value_right(&self) -> f32 {
+        let mark = if self.mark.is_some() { DOT_ROOM } else { 0.0 };
+        WIDTH / 2.0 - PADDING - mark
+    }
+
+    /// Where part `index` of a vector row ends, across the pane.
+    #[must_use]
+    pub fn part_right(&self, index: usize) -> f32 {
+        (2.0 - index as f32).mul_add(-COLUMN, self.value_right())
+    }
+
+    /// The part of a vector row at `x` across the pane: 0 for anything else
+    /// that scrubs, `None` off a vector's numbers.
+    #[must_use]
+    pub fn part_at(&self, x: f32) -> Option<u32> {
+        if !matches!(self.kind, Kind::Vector { .. }) {
+            return Some(0);
+        }
+        let left = 3.0f32.mul_add(-COLUMN, self.value_right());
+        if x < left || x > self.value_right() {
+            return None;
+        }
+        Some((((x - left) / COLUMN) as u32).min(2))
     }
 
     /// The value drawn at the row's right edge, empty for a header or an
@@ -71,7 +129,10 @@ impl Row {
     #[must_use]
     pub fn value(&self) -> SmolStr {
         match &self.kind {
-            Kind::Header | Kind::Action | Kind::Tabs { .. } => SmolStr::default(),
+            Kind::Header | Kind::Action | Kind::Tabs { .. } | Kind::Vector { .. } => {
+                SmolStr::default()
+            }
+            Kind::Section { summary, .. } => summary.clone(),
             Kind::Field(value) => value.clone(),
             Kind::Number { value, .. } => format_number(*value),
             Kind::Toggle(true) => SmolStr::new_static("on"),
@@ -88,11 +149,11 @@ impl Row {
         } else {
             TEXT_SIZE
         };
-        fit(
-            &self.label,
-            &self.value(),
-            budget(2.0f32.mul_add(-PADDING, WIDTH), size),
-        )
+        let mut width = self.value_right() - self.label_left();
+        if matches!(self.kind, Kind::Vector { .. }) {
+            width = 3.0f32.mul_add(-COLUMN, width);
+        }
+        fit(&self.label, &self.value(), budget(width, size))
     }
 }
 
@@ -193,7 +254,9 @@ pub fn check(rows: &[Row]) -> Result<(), Refused> {
             return Err(Refused::Label(row.label.len()));
         }
         match &row.kind {
-            Kind::Field(value) if value.len() > MAX_VALUE_BYTES => {
+            Kind::Field(value) | Kind::Section { summary: value, .. }
+                if value.len() > MAX_VALUE_BYTES =>
+            {
                 return Err(Refused::Value(value.len()));
             }
             Kind::Tabs { labels, .. } => {
@@ -297,6 +360,8 @@ mod tests {
             id:    1,
             label: SmolStr::new_static("Frozen"),
             kind:  Kind::Toggle(true),
+            dot:   None,
+            mark:  None,
         };
         assert_eq!(row.press(), Press::Toggle(false));
     }
@@ -315,7 +380,61 @@ mod tests {
                 labels:   labels.iter().map(SmolStr::new).collect(),
                 selected: 0,
             },
+            dot:   None,
+            mark:  None,
         }
+    }
+
+    fn vector(mark: Option<Color>) -> Row {
+        Row {
+            id: 3,
+            label: SmolStr::new_static("Position"),
+            kind: Kind::Vector {
+                values:    [1.0, 2.0, 3.0],
+                per_metre: 1.0,
+            },
+            dot: None,
+            mark,
+        }
+    }
+
+    #[test]
+    fn each_number_of_a_vector_is_found_where_it_is_drawn() {
+        for mark in [None, Some(Color::rgb(1.0, 0.0, 0.0))] {
+            let row = vector(mark);
+            for part in 0..3 {
+                let middle = row.part_right(part) - COLUMN / 2.0;
+                assert_eq!(row.part_at(middle), Some(part as u32), "{mark:?}");
+            }
+            assert_eq!(row.part_at(row.label_left()), None);
+            assert_eq!(row.part_at(row.value_right() + 0.001), None);
+        }
+    }
+
+    #[test]
+    fn a_dot_moves_the_label_in_and_a_mark_moves_the_value_in() {
+        let plain = vector(None);
+        let marked = Row {
+            dot: Some(Color::rgb(0.0, 1.0, 0.0)),
+            ..vector(Some(Color::rgb(1.0, 0.0, 0.0)))
+        };
+        assert!(marked.label_left() > plain.label_left());
+        assert!(marked.value_right() < plain.value_right());
+    }
+
+    #[test]
+    fn a_vector_leaves_its_label_the_room_its_numbers_do_not_take() {
+        let row = Row {
+            label: SmolStr::new("l".repeat(60)),
+            ..vector(None)
+        };
+        let (label, value) = row.fitted();
+        assert!(value.is_empty());
+        let room = budget(
+            3.0f32.mul_add(-COLUMN, row.value_right() - row.label_left()),
+            TEXT_SIZE,
+        );
+        assert_eq!(label.chars().count(), room);
     }
 
     #[test]
@@ -385,6 +504,8 @@ mod tests {
             id:    0,
             label: SmolStr::default(),
             kind:  Kind::Action,
+            dot:   None,
+            mark:  None,
         };
         assert_eq!(
             check(&vec![row; MAX_ROWS + 1]),

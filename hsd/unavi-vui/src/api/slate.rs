@@ -136,7 +136,17 @@ fn row(row: ScriptRow) -> Row {
                 labels:   tabs.labels.into_iter().map(SmolStr::new).collect(),
                 selected: tabs.selected,
             },
+            RowKind::Section(section) => Kind::Section {
+                open:    section.open,
+                summary: SmolStr::new(section.summary),
+            },
+            RowKind::Vector(vector) => Kind::Vector {
+                values:    vector.values.into(),
+                per_metre: vector.per_metre,
+            },
         },
+        dot:   row.dot,
+        mark:  row.mark,
     }
 }
 
@@ -144,7 +154,7 @@ const fn event(event: SlateEvent) -> ScriptEvent {
     match event {
         SlateEvent::Pressed(id) => ScriptEvent::Pressed(id),
         SlateEvent::Toggled(id, on) => ScriptEvent::Toggled((id, on)),
-        SlateEvent::Scrubbed(id, by) => ScriptEvent::Scrubbed((id, by)),
+        SlateEvent::Scrubbed(id, part, by) => ScriptEvent::Scrubbed((id, part, by)),
         SlateEvent::Released(id) => ScriptEvent::Released(id),
         SlateEvent::Picked(id, index) => ScriptEvent::Picked((id, index)),
     }

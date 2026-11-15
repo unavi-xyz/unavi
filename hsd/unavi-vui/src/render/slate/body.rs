@@ -19,6 +19,7 @@ use crate::{
     palette::Palette,
     render::{
         draw,
+        graphs,
         pop,
     },
     slate::{
@@ -154,6 +155,9 @@ impl Slate {
                 eprintln!("vui: slate stop: {err:?}");
             }
         }
+        if moved {
+            graphs::set_pane_open(doc, self.pane, pop::front(progress))?;
+        }
         if !self.stale && !moved {
             batch.flush()?;
             return Ok(());
@@ -197,7 +201,7 @@ impl Slate {
             None => batch.set(self.hover, Property::Transform(draw::hidden())),
         };
 
-        batch = self.draw_rows(batch, palette, progress);
+        batch = self.draw_rows(batch, palette, pop::front(progress) * size.y);
         batch.flush()?;
         Ok(())
     }

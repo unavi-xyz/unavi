@@ -389,6 +389,24 @@ interface api {
     per-metre: f32,
   }
 
+  /// Three numbers side by side, such as a position, each changed by
+  /// pressing on it and dragging sideways.
+  record vector {
+    values:    tuple<f32, f32, f32>,
+    /// How much a value changes per metre the pointer travels across the
+    /// pane.
+    per-metre: f32,
+  }
+
+  /// A card's heading.
+  record section {
+    /// Whether the card's rows are shown beneath it.
+    open:    bool,
+    /// What the card says in brief, drawn at the heading's end; at most
+    /// 128 bytes.
+    summary: string,
+  }
+
   /// A row of up to 4 tabs, each label at most 16 bytes. The tab at
   /// `selected` is drawn the way a toggle that is on is; pressing another
   /// reports `picked`, and the consumer sets `selected`.
@@ -411,6 +429,13 @@ interface api {
     action,
     /// Pressing a tab reports `picked`.
     tabs(tabs),
+    /// The heading of a card of rows beneath it, set off from the card above
+    /// by a rule. Pressing reports `pressed`, for a consumer that folds the
+    /// card away or open.
+    section(section),
+    /// Pressing one of its numbers and dragging sideways reports `scrubbed`
+    /// for that part.
+    vector(vector),
   }
 
   record row {
@@ -420,6 +445,12 @@ interface api {
     /// At most 64 bytes.
     label: string,
     kind:  row-kind,
+    /// A coloured dot before the label: what the row names, such as a
+    /// document in its own colour.
+    dot:   option<color>,
+    /// A coloured dot at the row's end: where its value comes from, such
+    /// as the layer that states it.
+    mark:  option<color>,
   }
 
   /// What a slate's rows did.
@@ -429,10 +460,11 @@ interface api {
     /// A toggle row was pressed, asking for this state. The slate draws the
     /// state the consumer sets, not this one.
     toggled(tuple<u32, bool>),
-    /// A number row was dragged sideways by this much of its value since the
-    /// last report. The slate draws the value the consumer sets.
-    scrubbed(tuple<u32, f32>),
-    /// The drag on a number row ended: the place to keep the value.
+    /// A number row, or one part of a vector row (0 to 2; 0 for a number),
+    /// was dragged sideways by this much of its value since the last report.
+    /// The slate draws the value the consumer sets.
+    scrubbed(tuple<u32, u32, f32>),
+    /// The drag on a number or vector row ended: the place to keep the value.
     released(u32),
     /// A tab on a tabs row was pressed: the row id and the tab index. The
     /// slate draws the tab the consumer selects, not this one.

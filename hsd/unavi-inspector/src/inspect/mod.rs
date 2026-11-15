@@ -3,6 +3,8 @@
 //! placed is read from what it stands for as a whole (a referenced
 //! document's site, a prim of the space, a loose document's root).
 
+use std::collections::HashSet;
+
 use wired_guest::math::{
     Transform,
     Vec3,
@@ -14,7 +16,6 @@ use self::edit::{
 };
 use crate::{
     element_of,
-    tab::Tab,
     unavi::vui::api::SlateEvent,
     wired::{
         core::ids::PrimRef,
@@ -36,28 +37,34 @@ mod edit;
 mod format;
 mod rows;
 
-/// Most children the Tree tab lists.
+/// Most children the tree card lists.
 const MAX_CHILDREN: usize = 8;
 
 mod row {
     pub const NAME: u32 = 0;
-    pub const SOURCE: u32 = 1;
-    pub const TABS: u32 = 2;
+    pub const DOCUMENT: u32 = 1;
     pub const LOCKED: u32 = 4;
-    /// Position X, Y and Z, then the turn and the scale.
+    /// The position as a vector, then the turn and the scale.
     pub const POSITION: u32 = 10;
     pub const TURN: u32 = 13;
     pub const SCALE: u32 = 14;
+    /// The tree card's heading, its parent and its children.
+    pub const TREE: u32 = 30;
     pub const PARENT: u32 = 31;
-    /// Child rows count up from here, as many as the Tree tab lists.
     pub const CHILD: u32 = 32;
     pub const DELETE: u32 = 48;
     pub const MAKE_LOCAL: u32 = 49;
     pub const CLOSE: u32 = 50;
-    pub const MORE: u32 = 99;
-    /// Attribute rows count up from here.
-    pub const ATTRIBUTE: u32 = 100;
+    /// Component cards count up from here, [`CARD_STRIDE`] ids each: the
+    /// heading, then its fields.
+    pub const CARD: u32 = 200;
+    pub const CARD_STRIDE: u32 = 16;
 }
+
+/// The cards open on a new inspection: where it is.
+const OPEN_AT_FIRST: [&str; 1] = [attributes::TRANSFORM];
+/// The name the tree card is kept open by.
+const TREE: &str = "Tree";
 
 /// What a row press asked of the tool rather than of the element.
 pub enum Asked {
@@ -79,7 +86,8 @@ pub struct Inspection {
     /// The point inspected, in the prim's own frame, which the slate's
     /// tether runs to as the prim moves.
     anchor:    Vec3,
-    tab:       Tab,
+    /// The cards shown open, by name.
+    open:      HashSet<String>,
     /// The transform edit a scrub has open.
     held:      Option<Held>,
 }
@@ -106,18 +114,36 @@ impl Inspection {
             hit_doc,
             hit_prim: target.prim,
             anchor,
-            tab: Tab::default(),
+            open: OPEN_AT_FIRST
+                .iter()
+                .map(|name| (*name).to_owned())
+                .collect(),
             held: None,
         })
     }
 
+    /// The prim inspected.
     #[must_use]
-    pub const fn tab(&self) -> Tab {
-        self.tab
+    pub fn target(&self) -> PrimRef {
+        self.at(self.hit_prim)
     }
 
-    pub const fn set_tab(&mut self, tab: Tab) {
-        self.tab = tab;
+    /// Which cards are open, carried over to the next prim inspected from
+    /// this slate.
+    #[must_use]
+    pub fn open_cards(&self) -> HashSet<String> {
+        self.open.clone()
+    }
+
+    pub fn set_open_cards(&mut self, open: HashSet<String>) {
+        self.open = open;
+    }
+
+    /// Folds the card named `name` if it is open, else opens it.
+    fn flip(&mut self, name: &str) {
+        if !self.open.remove(name) {
+            self.open.insert(name.to_owned());
+        }
     }
 
     /// Where the point inspected is now, in the script's frame.
@@ -158,10 +184,14 @@ impl Inspection {
                     return Asked::Inspect(child);
                 }
             }
-            SlateEvent::Picked((row::TABS, index)) => {
-                if let Some(tab) = Tab::at(index) {
+            SlateEvent::Pressed(row::TREE) => self.flip(TREE),
+            SlateEvent::Pressed(id)
+                if id >= row::CARD && (id - row::CARD).is_multiple_of(row::CARD_STRIDE) =>
+            {
+                let index = ((id - row::CARD) / row::CARD_STRIDE) as usize;
+                if let Some(card) = self.cards().into_iter().nth(index) {
                     self.finish();
-                    self.tab = tab;
+                    self.flip(&card.name);
                 }
             }
             SlateEvent::Toggled((row::LOCKED, on)) => {
@@ -169,8 +199,8 @@ impl Inspection {
                     eprintln!("inspector: lock: {err}");
                 }
             }
-            SlateEvent::Scrubbed((id, by)) => {
-                if let Some(nudge) = Nudge::of(id, by)
+            SlateEvent::Scrubbed((id, part, by)) => {
+                if let Some(nudge) = Nudge::of(id, part, by)
                     && let Err(err) = self.nudge(nudge)
                 {
                     eprintln!("inspector: nudge: {err:?}");

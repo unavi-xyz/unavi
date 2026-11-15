@@ -25,7 +25,6 @@ use crate::{
         scene::{
             document::{
                 Layer,
-                LayerSource,
                 copy_document,
             },
             properties::{
@@ -53,16 +52,14 @@ pub enum Nudge {
 }
 
 impl Nudge {
-    /// The nudge a scrub of `by` on row `id` asks for, if it is a transform
-    /// row.
+    /// The nudge a scrub of `by` on part `part` of row `id` asks for, if it
+    /// is a transform row.
     #[must_use]
-    pub fn of(id: u32, by: f32) -> Option<Self> {
+    pub const fn of(id: u32, part: u32, by: f32) -> Option<Self> {
         match id {
+            row::POSITION if part < 3 => Some(Self::Move(part as usize, by)),
             row::TURN => Some(Self::Turn(by)),
             row::SCALE => Some(Self::Grow(by)),
-            id if (row::POSITION..row::POSITION + 3).contains(&id) => {
-                Some(Self::Move((id - row::POSITION) as usize, by))
-            }
             _ => None,
         }
     }
@@ -339,21 +336,6 @@ impl Inspection {
         Ok(())
     }
 
-    /// Which layer `key`'s value comes from, as a person reads it, or `None`
-    /// when it is the document's own, as most values are.
-    pub(super) fn source_of(&self, key: &PropertyKey) -> Option<String> {
-        Some(match self.hit_doc.source(self.hit_prim, key)? {
-            LayerSource::Document => return None,
-            LayerSource::Override => "override".to_owned(),
-            LayerSource::Runtime => "this peer only".to_owned(),
-            LayerSource::OwnSession => "you, live".to_owned(),
-            LayerSource::Session(peer) => {
-                let skip = peer.chars().count().saturating_sub(4);
-                format!("peer …{}", peer.chars().skip(skip).collect::<String>())
-            }
-        })
-    }
-
     /// Replaces the reference with a copy of what it shows, undoably, so the
     /// object here stops following its source. Overrides kept on the site
     /// still apply, since they are keyed by the site.
@@ -386,7 +368,8 @@ mod tests {
 
     #[test]
     fn each_position_row_moves_along_its_own_axis() {
-        assert_eq!(Nudge::of(row::POSITION + 1, 0.5), Some(Nudge::Move(1, 0.5)));
+        assert_eq!(Nudge::of(row::POSITION, 1, 0.5), Some(Nudge::Move(1, 0.5)));
+        assert_eq!(Nudge::of(row::POSITION, 3, 0.5), None);
         let moved = Nudge::Move(1, 0.5).apply(Transform::IDENTITY);
         assert_eq!(moved.translation, Vec3::new(0.0, 0.5, 0.0));
     }

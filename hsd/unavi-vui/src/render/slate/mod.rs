@@ -63,8 +63,9 @@ pub enum SlateEvent {
     Pressed(u32),
     /// A toggle row was pressed, asking for this state.
     Toggled(u32, bool),
-    /// A number row was dragged sideways, by this much of its value.
-    Scrubbed(u32, f32),
+    /// A number row, or a part of a vector row, was dragged sideways, by
+    /// this much of its value.
+    Scrubbed(u32, u32, f32),
     /// A drag on a number row ended.
     Released(u32),
     /// A tab was pressed: the tabs row, and the tab's index.
@@ -81,6 +82,8 @@ struct Scrub {
     row:     usize,
     /// The row's id, which `released` reports even once the row is gone.
     id:      u32,
+    /// Which number of a vector row; 0 for a number row.
+    part:    u32,
     pointer: PointerKind,
     /// Where the pointer last met the pane, across it. `None` after a sample
     /// that missed it, so the next one sets a new baseline rather than
@@ -98,6 +101,9 @@ struct Slate {
     hover:         (u64, u64),
     labels:        Vec<(u64, u64)>,
     values:        Vec<(u64, u64)>,
+    /// Per row: the first two numbers of a vector row (the value prim draws
+    /// the third), the dot, the mark and a section's rule.
+    extras:        Vec<Extras>,
     /// One text prim per tab of the tabs row, and the bar under the selected.
     tab_labels:    Vec<(u64, u64)>,
     tab_mark:      (u64, u64),
@@ -131,6 +137,15 @@ struct Slate {
     stale:         bool,
 }
 
+/// The prims a row draws besides its label and value.
+#[derive(Clone, Copy)]
+struct Extras {
+    parts: [(u64, u64); 2],
+    dot:   (u64, u64),
+    mark:  (u64, u64),
+    rule:  (u64, u64),
+}
+
 /// Every slate a script holds, as a free list like the panels.
 #[derive(Default)]
 pub struct Slates {
@@ -158,14 +173,35 @@ impl Slates {
 
         let mut labels = Vec::with_capacity(MAX_ROWS);
         let mut values = Vec::with_capacity(MAX_ROWS);
+        let mut extras = Vec::with_capacity(MAX_ROWS);
+        let dot_mesh = draw::mesh(&mesh::sphere(1.0, 6, 10));
+        let bar_mesh = draw::mesh(&mesh::bar());
         for _ in 0..MAX_ROWS {
-            let label = doc.create_prim(Layer::Local, Some(face))?;
-            let value = doc.create_prim(Layer::Local, Some(face))?;
-            batch = batch
-                .set(label, Property::Transform(draw::hidden()))
-                .set(value, Property::Transform(draw::hidden()));
-            labels.push(label);
-            values.push(value);
+            let text = || doc.create_prim(Layer::Local, Some(face));
+            let row = [text()?, text()?];
+            let row_extras = Extras {
+                parts: [text()?, text()?],
+                dot:   text()?,
+                mark:  text()?,
+                rule:  text()?,
+            };
+            for prim in row.iter().chain(&row_extras.parts) {
+                batch = batch.set(*prim, Property::Transform(draw::hidden()));
+            }
+            for (prim, shape) in [
+                (row_extras.dot, &dot_mesh),
+                (row_extras.mark, &dot_mesh),
+                (row_extras.rule, &bar_mesh),
+            ] {
+                batch = shape
+                    .iter()
+                    .cloned()
+                    .fold(batch, |batch, property| batch.set(prim, property))
+                    .set(prim, Property::Transform(draw::hidden()));
+            }
+            labels.push(row[0]);
+            values.push(row[1]);
+            extras.push(row_extras);
         }
         let tab_mark = doc.create_prim(Layer::Local, Some(face))?;
         batch = draw::mesh(&mesh::bar())
@@ -188,6 +224,7 @@ impl Slates {
             hover,
             labels,
             values,
+            extras,
             tab_labels,
             tab_mark,
             tether: TetherPrims::new(doc)?,

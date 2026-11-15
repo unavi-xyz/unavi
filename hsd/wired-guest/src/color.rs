@@ -34,6 +34,26 @@ pub fn generate_color(hash: Hash) -> Color {
     Color::hsv(h, s, v)
 }
 
+/// A document's colour, the one its gate and beacon wear, which marks it
+/// wherever it is named.
+#[must_use]
+pub fn document_color(id: (u64, u64, u64, u64)) -> Color {
+    generate_color(document_seed(id))
+}
+
+/// A user's colour, derived from their DID so every peer sees the same one.
+#[must_use]
+pub fn user_color(did: &str) -> Color {
+    generate_color(blake3::hash(did.as_bytes()))
+}
+
+/// A document's first three bytes in hex, the short id the devtools print.
+#[must_use]
+pub fn short_id(id: (u64, u64, u64, u64)) -> String {
+    let [a, b, c, ..] = id.0.to_le_bytes();
+    format!("{a:02x}{b:02x}{c:02x}")
+}
+
 /// Mixes `color` toward its own luminance gray.
 #[must_use]
 pub fn desaturate(color: Color, amount: f32) -> Color {
@@ -43,5 +63,28 @@ pub fn desaturate(color: Color, amount: f32) -> Color {
         g: color.g.mul_add(1.0 - amount, luma * amount),
         b: color.b.mul_add(1.0 - amount, luma * amount),
         a: color.a,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_users_colour_follows_their_did() {
+        assert_eq!(user_color("did:key:a"), user_color("did:key:a"));
+        assert_ne!(user_color("did:key:a"), user_color("did:key:b"));
+    }
+
+    #[test]
+    fn a_short_id_is_the_leading_bytes_of_the_namespace() {
+        let id = (
+            u64::from_le_bytes([0xAB, 0x01, 0xFF, 9, 9, 9, 9, 9]),
+            1,
+            2,
+            3,
+        );
+        assert_eq!(short_id(id), "ab01ff");
+        assert_eq!(&document_seed(id).to_hex()[..6], "ab01ff");
     }
 }

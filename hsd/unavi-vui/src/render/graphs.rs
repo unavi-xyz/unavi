@@ -76,6 +76,10 @@ pub const PANE_ACCENT: u16 = 0;
 /// How many metres a pane's shape is drawn in per metre of its mote-scale
 /// design, so a pane stood at several times that size keeps its proportions.
 pub const PANE_UNIT: u16 = 1;
+/// How far a pane has unrolled from its top edge, 0 for not at all and 1 for
+/// whole. Drawn as a front sweeping down it, so a pane opens and closes like
+/// a blind rather than fading, which opaque glass cannot.
+pub const PANE_OPEN: u16 = 2;
 
 /// The frost laid over what a pane shows: cool, and light enough that dark
 /// type reads on it over any room.
@@ -759,11 +763,13 @@ pub fn pane() -> ShaderGraph {
         t: tab,
     }));
     let covered = net.push(Node::Max(binary(body, tab)));
+    let (painted, covered) = unroll(&mut net, painted, covered, (edge_low, edge_high));
     let color = with_alpha(&mut net, painted, covered);
 
     ShaderGraph {
         public_inputs: vec![
             GraphValue::Color(accent_input(None)),
+            GraphValue::Float(1.0),
             GraphValue::Float(1.0),
         ],
         surface:       SurfaceGraph {
@@ -780,6 +786,50 @@ pub fn pane() -> ShaderGraph {
         },
         displacement:  None,
     }
+}
+
+/// Unrolls a pane drawn as `painted` over `covered` down to [`PANE_OPEN`]:
+/// everything nearer the top edge than the front shows, and while it moves,
+/// a bright line `edge` metres wide runs along the front.
+fn unroll(net: &mut Net, painted: Port, covered: Port, edge: (Port, Port)) -> (Port, Port) {
+    // Metres below the top edge, measured as the pane's shape is.
+    let uv = net.push(Node::Uv);
+    let down = net.push(Node::Extract(ExtractOp {
+        v:       uv,
+        channel: 1,
+    }));
+    let down = net.push(Node::OneMinus(down));
+    let scale = net.push(Node::ObjectScale);
+    let tall_now = net.push(Node::Extract(ExtractOp {
+        v:       scale,
+        channel: 1,
+    }));
+    let top = net.push(Node::Mul(binary(down, tall_now)));
+    let front = net.push(Node::Mul(binary(Port::Input(PANE_OPEN), tall_now)));
+    let unrolled = net.push(Node::Step(StepOp {
+        edge: top,
+        x:    front,
+    }));
+    let behind = net.push(Node::Sub(binary(front, top)));
+    let past_front = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  edge.0,
+        high: edge.1,
+        x:    behind,
+    }));
+    let near_front = net.push(Node::OneMinus(past_front));
+    let opening = net.push(Node::OneMinus(Port::Input(PANE_OPEN)));
+    let opening = net.push(Node::Step(StepOp {
+        edge: cf(1.0e-3),
+        x:    opening,
+    }));
+    let sweep = net.push(Node::Mul(binary(near_front, opening)));
+    let painted = net.push(Node::Lerp(LerpOp {
+        a: painted,
+        b: Port::Const(GraphValue::Color(Color::WHITE)),
+        t: sweep,
+    }));
+    let covered = net.push(Node::Mul(binary(covered, unrolled)));
+    (painted, covered)
 }
 
 /// Submits [`shell`] to `prim`. Cheap and repeatable: the host shares one
@@ -816,6 +866,17 @@ pub fn set_pane_look(
             (PANE_ACCENT, GraphValue::Color(accent_input(accent))),
             (PANE_UNIT, GraphValue::Float(unit)),
         ],
+    )?;
+    Ok(())
+}
+
+/// How far `prim`'s pane has unrolled; see [`PANE_OPEN`].
+pub fn set_pane_open(doc: &Document, prim: (u64, u64), open: f32) -> anyhow::Result<()> {
+    set_overrides(
+        doc,
+        prim,
+        Layer::Local,
+        &[(PANE_OPEN, GraphValue::Float(open.clamp(0.0, 1.0)))],
     )?;
     Ok(())
 }

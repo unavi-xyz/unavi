@@ -3,6 +3,20 @@
 //! Both are scripts on the same peer, talking over `wired:event` on global
 //! channels with postcard payloads. This crate holds the names and the shapes
 //! so neither side has to agree with the other by copying.
+//!
+//! # Wearing
+//!
+//! [`WEAR`] sets the user's own choice of a lens, which only the user's
+//! requests change.
+//!
+//! # Holding
+//!
+//! A tool sends [`HOLD`] with a [`Hold`] when it takes up or lays down a lens,
+//! such as an inspector that needs document outlines while it is in hand. The
+//! visor keeps one holder per sending document and lens, and shows a lens
+//! while it is worn or any holder holds it. A hold never changes what is worn,
+//! so letting go leaves the lens as the user had it. The visor acts only on
+//! holds from documents the local user authors.
 
 pub mod intake;
 pub mod verdicts;
@@ -19,6 +33,8 @@ pub type DocumentId = (u64, u64, u64, u64);
 pub const TRAVEL: &str = "travel";
 /// The id of the social lens.
 pub const SOCIAL: &str = "social";
+/// The id of the documents lens.
+pub const DOCUMENTS: &str = "documents";
 
 /// Visor to everyone: every lens it has, as a [`Vec<Lens>`]. Sent at start,
 /// after every change, and in answer to [`ASK`].
@@ -29,6 +45,9 @@ pub const ASK: &str = "unavi:visor/ask";
 
 /// Halo to visor: put a lens on or take it off, as a [`Wear`].
 pub const WEAR: &str = "unavi:visor/wear";
+
+/// Any tool to visor: the sender holds a lens or lets it go, as a [`Hold`].
+pub const HOLD: &str = "unavi:visor/hold";
 
 /// One layer of the visor, and whether it is on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,6 +64,14 @@ pub struct Lens {
 pub struct Wear {
     pub id:   String,
     pub worn: bool,
+}
+
+/// A tool taking up or laying down a lens.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Hold {
+    /// The id of the lens, as in [`Lens::id`].
+    pub lens: String,
+    pub held: bool,
 }
 
 /// Whether the local user authors the document a script has loaded. `open` is
@@ -70,9 +97,27 @@ pub fn decode_wear(bytes: &[u8]) -> Result<Wear, postcard::Error> {
     postcard::from_bytes(bytes)
 }
 
+pub fn encode_hold(hold: &Hold) -> Result<Vec<u8>, postcard::Error> {
+    postcard::to_stdvec(hold)
+}
+
+pub fn decode_hold(bytes: &[u8]) -> Result<Hold, postcard::Error> {
+    postcard::from_bytes(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hold_round_trips() {
+        let hold = Hold {
+            lens: DOCUMENTS.to_owned(),
+            held: true,
+        };
+        let bytes = encode_hold(&hold).expect("encodes");
+        assert_eq!(decode_hold(&bytes).expect("decodes"), hold);
+    }
 
     fn lens(id: &str, worn: bool) -> Lens {
         Lens {

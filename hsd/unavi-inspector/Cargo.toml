@@ -15,5 +15,6 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow.workspace      = true
 glam.workspace        = true
+unavi-lens.path       = "../unavi-lens"
 wired-guest.path      = "../wired-guest"
 wit-bindgen.workspace = true

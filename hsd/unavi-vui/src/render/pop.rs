@@ -1,13 +1,16 @@
-//! The pop a placard arrives and leaves with: a progress value stepped over
-//! time, and the size it stands for.
+//! How a pane arrives and leaves, for every pane VUI draws: it grows a
+//! little while it unrolls down from its top edge, each line of text showing
+//! as the front passes it, and rolls back up to go. A progress value stepped
+//! over time, and what it stands for.
 
-/// Fraction of full size a placard starts from.
-const START: f32 = 0.6;
-/// Seconds to grow from [`START`] to full size.
-const GROW: f32 = 0.18;
-/// Seconds to shrink back, quicker than the growth: leaving should not hold
+/// Fraction of full size a pane starts from: enough growth to read as
+/// arriving, little enough that it unrolls rather than zooms.
+const START: f32 = 0.94;
+/// Seconds to unroll.
+const GROW: f32 = 0.24;
+/// Seconds to roll back up, quicker than unrolling: leaving should not hold
 /// anything up.
-const SHRINK: f32 = 0.1;
+const SHRINK: f32 = 0.16;
 
 /// Moves `progress` toward 1 while `shown` and toward 0 otherwise, at the
 /// speed of that direction.
@@ -28,9 +31,42 @@ pub fn scale(progress: f32) -> f32 {
     (1.0 - START).mul_add((left * left).mul_add(-left, 1.0), START)
 }
 
+/// How far down the pane the front has unrolled at `progress`, 0 to 1,
+/// easing out so it slows as it reaches the bottom.
+#[must_use]
+pub fn front(progress: f32) -> f32 {
+    let left = 1.0 - progress.clamp(0.0, 1.0);
+    (left * left).mul_add(-left, 1.0)
+}
+
+/// How much a line `height` tall whose top is `top` below the pane's top
+/// edge shows, with the front `reached` below that edge: none until the
+/// front reaches it, whole once the front has passed it.
+#[must_use]
+pub fn line(reached: f32, top: f32, height: f32) -> f32 {
+    if height <= f32::EPSILON {
+        return if reached >= top { 1.0 } else { 0.0 };
+    }
+    ((reached - top) / height).clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_front_runs_from_the_top_edge_to_the_bottom() {
+        assert!(front(0.0).abs() < f32::EPSILON);
+        assert!((front(1.0) - 1.0).abs() < f32::EPSILON);
+        assert!(front(0.5) > 0.5, "eases out");
+    }
+
+    #[test]
+    fn a_line_shows_as_the_front_passes_it() {
+        assert!(line(0.1, 0.2, 0.05).abs() < f32::EPSILON);
+        assert!((line(0.225, 0.2, 0.05) - 0.5).abs() < 1.0e-5);
+        assert!((line(0.3, 0.2, 0.05) - 1.0).abs() < f32::EPSILON);
+    }
 
     #[test]
     fn it_starts_small_and_ends_at_exactly_full_size() {

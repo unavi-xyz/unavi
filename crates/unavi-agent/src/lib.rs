@@ -68,6 +68,10 @@ impl Plugin for AgentPlugin {
             FixedUpdate,
             (
                 movement::apply_body_input.in_set(TnuaUserControlsSystems),
+                // Before Tnua's sensors read the world, so a collider that
+                // exists this tick is already marked out of their reach.
+                movement::grounded::exclude_query_only_colliders
+                    .before(TnuaPipelineSystems::Sensors),
                 config::apply_config_to_controller,
                 movement::grounded::sync_grounded_state,
             ),

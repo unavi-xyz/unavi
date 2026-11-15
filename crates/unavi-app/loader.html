@@ -39,77 +39,75 @@
         pointer-events: none;
       }
 
-      .spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(0, 0, 0, 0.12);
-        border-top-color: rgba(0, 0, 0, 0.55);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
+      /* A pane: a one-pixel ink border, an inverted title strip, and a body
+         laid out in character cells. */
+      .pane {
+        --ink: #383f4b;
+        --ink-2: #656973;
+        --paper: #f1f4f6;
+        --warning: #bf3800;
+        width: 32ch;
+        max-width: calc(100vw - 32px);
+        border: 1px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+        font-size: 14px;
+        line-height: 1.5;
       }
 
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
+      .pane-title {
+        padding: 0 1ch;
+        background: var(--ink);
+        color: var(--paper);
       }
 
+      .pane-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75em;
+        padding: 0.75em 1ch;
+      }
+
+      /* The track is a 50% checker; the fill is solid ink and moves a whole
+         cell at a time. */
       .progress {
-        width: 200px;
-        height: 3px;
-        border-radius: 2px;
-        background: rgba(42, 31, 40, 0.12);
+        height: 1em;
         overflow: hidden;
+        background: repeating-conic-gradient(var(--ink) 0% 25%, var(--paper) 0% 50%) 0 0 / 2px
+          2px;
       }
 
       .progress-fill {
         width: 0;
         height: 100%;
-        border-radius: 2px;
-        background: rgba(42, 31, 40, 0.7);
-        transition: width 120ms linear;
+        background: var(--ink);
       }
 
       .progress.indeterminate .progress-fill {
-        width: 40%;
-        animation: slide 1.4s ease-in-out infinite;
+        width: 4ch;
+        animation: march 2.5s steps(26) infinite;
       }
 
-      @keyframes slide {
+      @keyframes march {
         from {
-          transform: translateX(-100%);
+          transform: translateX(0);
         }
         to {
-          transform: translateX(250%);
+          transform: translateX(26ch);
         }
       }
 
       .progress-label {
-        min-height: 1em;
-        color: #2a1f28;
-        font-family:
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          sans-serif;
-        font-size: 12px;
-        letter-spacing: 0.02em;
-        opacity: 0.75;
+        min-height: 1.5em;
+        color: var(--ink-2);
+        font-size: 11px;
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .spinner {
-          animation: none;
-        }
-
         .progress.indeterminate .progress-fill {
           animation: none;
-          width: 100%;
-          opacity: 0.35;
-        }
-
-        .progress-fill {
-          transition: none;
+          width: 0;
         }
       }
 
@@ -119,21 +117,46 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #8a1c1c;
-        font-family: sans-serif;
-        max-width: 32rem;
-        text-align: center;
+      }
+
+      .error .pane-title {
+        background: var(--warning);
+      }
+
+      .error .reason {
+        overflow-wrap: anywhere;
+      }
+
+      .error button {
+        align-self: flex-start;
+        padding: 0 1ch;
+        border: 1px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .error button:hover,
+      .error button:focus-visible {
+        background: var(--ink);
+        color: var(--paper);
+        outline: none;
       }
     </style>
   </head>
 
   <body>
     <div class="overlay" id="overlay">
-      <div class="spinner"></div>
-      <div class="progress indeterminate" id="progress">
-        <div class="progress-fill" id="progress-fill"></div>
+      <div class="pane">
+        <div class="pane-title">UNAVI</div>
+        <div class="pane-body">
+          <div class="progress indeterminate" id="progress">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-label" id="progress-label">connecting</div>
+        </div>
       </div>
-      <div class="progress-label" id="progress-label"></div>
     </div>
     <noscript>UNAVI needs JavaScript enabled to load.</noscript>
     <script>
@@ -149,11 +172,32 @@
           console.error("Failed to load UNAVI:", e);
           const overlay = document.getElementById("overlay");
           if (overlay) overlay.remove();
+          if (document.querySelector(".error")) return;
+
+          const title = document.createElement("div");
+          title.className = "pane-title";
+          title.textContent = "failed to load";
+          const reason = document.createElement("div");
+          reason.className = "reason";
+          reason.textContent = String(e);
+          const reload = document.createElement("button");
+          reload.type = "button";
+          reload.textContent = "reload";
+          reload.addEventListener("click", () => location.reload());
+          const body = document.createElement("div");
+          body.className = "pane-body";
+          body.append(reason, reload);
+          const pane = document.createElement("div");
+          pane.className = "pane";
+          pane.append(title, body);
           const message = document.createElement("div");
           message.className = "error";
-          message.textContent = "Failed to load: " + e;
+          message.appendChild(pane);
           document.body.appendChild(message);
         };
+
+        // The bar is 30 cells wide and fills a whole cell at a time.
+        const CELLS = 30;
 
         const megabytes = (bytes) => (bytes / 1048576).toFixed(1);
 
@@ -167,13 +211,13 @@
           bar.classList.toggle("indeterminate", !known && !state.starting);
           if (state.starting) {
             fill.style.width = "100%";
-            label.textContent = "Starting…";
+            label.textContent = "starting";
           } else if (known) {
             const fraction = Math.min(state.current / state.total, 1);
-            fill.style.width = fraction * 100 + "%";
-            label.textContent = `Downloading ${megabytes(state.current)} / ${megabytes(state.total)} MB`;
+            fill.style.width = (Math.floor(fraction * CELLS) / CELLS) * 100 + "%";
+            label.textContent = `downloading ${megabytes(state.current)} / ${megabytes(state.total)} MB`;
           } else if (state.current > 0) {
-            label.textContent = `Downloading ${megabytes(state.current)} MB`;
+            label.textContent = `downloading ${megabytes(state.current)} MB`;
           }
         };
 

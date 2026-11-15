@@ -1,8 +1,10 @@
+/* The limbo fog at hue zero, which loader.html also paints, so nothing darker
+   shows between the loader and the first frame. */
 html,
 body {
-  background-color: #111;
-  color: #fff;
-  font-family: "Roboto", sans-serif;
+  background-color: #e4d2df;
+  color: #383f4b;
+  font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
   margin: 0;
   overflow: hidden;
 }

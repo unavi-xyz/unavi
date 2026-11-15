@@ -74,7 +74,7 @@ pub struct ActiveSpace(pub Option<Entity>);
 pub struct Spaceless;
 
 pub fn assign_anchor(
-    trigger: On<Add, Space>,
+    trigger: On<Add<Space>>,
     mut allocator: ResMut<SpaceGrid>,
     mut commands: Commands,
 ) {
@@ -85,7 +85,7 @@ pub fn assign_anchor(
 }
 
 pub fn release_anchor(
-    trigger: On<Remove, Space>,
+    trigger: On<Remove<Space>>,
     anchors: Query<&SpaceAnchor>,
     active: Option<ResMut<ActiveSpace>>,
     mut allocator: ResMut<SpaceGrid>,
@@ -243,7 +243,7 @@ pub fn recenter_active_space(
 
 /// The first space loaded is active until the agent stands somewhere.
 pub fn promote_first_space(
-    trigger: On<Add, Space>,
+    trigger: On<Add<Space>>,
     spaces: Query<(), With<Space>>,
     spaceless: Query<(), With<Spaceless>>,
     mut active: ResMut<ActiveSpace>,

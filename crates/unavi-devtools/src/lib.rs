@@ -12,6 +12,7 @@ use bevy::{
     prelude::*,
 };
 
+pub mod button;
 pub mod overlay;
 pub mod scroll;
 pub mod tabs;

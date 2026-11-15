@@ -165,7 +165,7 @@ async fn load_recorded_home(store: &Store, root: NamespaceId) -> Option<(Namespa
 /// Enters a `join_home` entity as [`Space`] once its namespace resolves, and
 /// records it as home.
 pub fn enter_home(
-    trigger: On<Add, HsdNamespace>,
+    trigger: On<Add<HsdNamespace>>,
     joining: Query<&HsdNamespace, With<JoiningHome>>,
     root: Option<Res<RootDocument>>,
     store: Option<Res<DataStore>>,

@@ -20,7 +20,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serde_vrm::vrm0::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
@@ -187,7 +187,7 @@ fn delta_pose(pose: Pose<Keyframe>, last: &Pose<Keyframe>) -> Pose<Delta> {
 struct Baseline {
     id:    u32,
     root:  RigidTransform<F32Vec3>,
-    bones: HashMap<BoneName, RigidTransform<F16Vec3>>,
+    bones: HashMap<HumanBoneName, RigidTransform<F16Vec3>>,
 }
 
 /// Reconstructs a full-precision pose from a message, tracking the keyframe
@@ -329,7 +329,7 @@ mod tests {
         }
     }
 
-    fn keyframe_pose_with_bone(t: Vec3, bone: BoneName, bone_local: Transform) -> Pose<Keyframe> {
+    fn keyframe_pose_with_bone(t: Vec3, bone: HumanBoneName, bone_local: Transform) -> Pose<Keyframe> {
         let mut pose = keyframe_pose(t);
         pose.bones.insert(bone, (&bone_local).into());
         pose
@@ -409,14 +409,14 @@ mod tests {
             AgentMsg::Keyframe {
                 id:       1,
                 space:    SPACE,
-                pose:     keyframe_pose_with_bone(Vec3::ZERO, BoneName::LeftUpperArm, bone_local),
+                pose:     keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::LeftUpperArm, bone_local),
                 grounded: true,
             },
             &mut baseline,
         )
         .expect("resolved");
 
-        let bone = resolved.bones.get(&BoneName::LeftUpperArm).expect("bone");
+        let bone = resolved.bones.get(&HumanBoneName::LeftUpperArm).expect("bone");
         assert!((bone.translation - bone_local.translation).length() < 0.01);
         assert!(bone.rotation.angle_between(bone_local.rotation) < 0.02);
     }
@@ -433,7 +433,7 @@ mod tests {
             AgentMsg::Keyframe {
                 id:       1,
                 space:    SPACE,
-                pose:     keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+                pose:     keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, base_bone),
                 grounded: true,
             },
             &mut baseline,
@@ -445,8 +445,8 @@ mod tests {
             ..Default::default()
         };
         let delta = delta_pose(
-            keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, moved_bone),
-            &keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+            keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, moved_bone),
+            &keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, base_bone),
         );
         let resolved = resolve_msg(
             AgentMsg::Delta {
@@ -459,7 +459,7 @@ mod tests {
         )
         .expect("resolved");
 
-        let bone = resolved.bones.get(&BoneName::Head).expect("bone");
+        let bone = resolved.bones.get(&HumanBoneName::Head).expect("bone");
         assert!((bone.translation - moved_bone.translation).length() < 0.02);
         assert!(bone.rotation.angle_between(moved_bone.rotation) < 0.05);
     }
@@ -519,11 +519,11 @@ mod tests {
     #[test]
     fn a_bone_appearing_or_vanishing_needs_a_new_keyframe() {
         let empty = keyframe_pose(Vec3::ZERO);
-        let with_head = keyframe_pose_with_bone(Vec3::ZERO, BoneName::Head, Transform::default());
+        let with_head = keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, Transform::default());
         let with_head_and_hand = {
             let mut pose = with_head.clone();
             pose.bones
-                .insert(BoneName::RightHand, RigidTransform::default());
+                .insert(HumanBoneName::RightHand, RigidTransform::default());
             pose
         };
 

@@ -47,7 +47,7 @@ use bevy::{
         texture::GpuImage,
         view::{
             ExtractedView,
-            ViewDepthTexture,
+            ViewDepthStencilTexture,
         },
     },
 };
@@ -61,6 +61,7 @@ pub const DISTANCE_FORMAT: TextureFormat = TextureFormat::R32Float;
 
 /// A still face camera, and the distance atlas it writes its tile of.
 #[derive(Component, Clone, ExtractComponent)]
+#[extract_app(RenderApp)]
 pub struct StillFace {
     pub distance: Handle<Image>,
 }
@@ -121,7 +122,7 @@ fn init_pipeline(
 /// texture is the size of the whole atlas and its viewport sits on the tile,
 /// so the pixel the pass reads is the pixel it writes.
 fn write_distance(
-    view: ViewQuery<(&ExtractedView, &ViewDepthTexture, &StillFace)>,
+    view: ViewQuery<(&ExtractedView, &ViewDepthStencilTexture, &StillFace)>,
     pipeline: Res<DistancePipeline>,
     pipeline_cache: Res<PipelineCache>,
     images: Res<RenderAssets<GpuImage>>,
@@ -135,11 +136,16 @@ fn write_distance(
     let Some(target) = images.get(&face.distance) else {
         return;
     };
+    // Binding the depth aspect alone: the combined view is an attachment, not
+    // a binding resource.
+    let Some(depth_view) = depth.attachment.depth_stencil_views().depth_only_view() else {
+        return;
+    };
 
     let bind_group = ctx.render_device().create_bind_group(
         "still_distance_bind_group",
         &pipeline_cache.get_bind_group_layout(&pipeline.layout),
-        &BindGroupEntries::single(depth.view()),
+        &BindGroupEntries::single(depth_view),
     );
 
     let mut pass = ctx

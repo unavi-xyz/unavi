@@ -97,7 +97,7 @@ pub struct AbsoluteNodeId {
 pub struct RegisterTransforms(pub AbsoluteNodeId);
 
 pub fn register_nodes(
-    trigger: On<Add, Prim>,
+    trigger: On<Add<Prim>>,
     prims: Query<(&Prim, &PrimOf)>,
     docs: Query<&HsdDocId>,
     mut commands: Commands,
@@ -134,7 +134,7 @@ pub fn snapshot_transforms(
 }
 
 pub fn deregister_transforms(
-    trigger: On<Remove, RegisterTransforms>,
+    trigger: On<Remove<RegisterTransforms>>,
     ids: Query<&RegisterTransforms>,
     registry: Res<TransformSnapshots>,
 ) {
@@ -174,7 +174,7 @@ pub fn snapshot_doc_roots(
 }
 
 pub fn deregister_doc_root(
-    trigger: On<Remove, Hsd>,
+    trigger: On<Remove<Hsd>>,
     docs: Query<&HsdDocId>,
     registry: Res<TransformSnapshots>,
 ) {

@@ -178,7 +178,7 @@ pub fn name_late_occupants(
     }
 }
 
-pub fn despawn_space_scene(trigger: On<Remove, Space>, mut commands: Commands) {
+pub fn despawn_space_scene(trigger: On<Remove<Space>>, mut commands: Commands) {
     // Removing PendingScene drops the oneshot::Sender, signalling the task to
     // cancel. Despawning the space drops it just as well, so a missing entity
     // is not an error.

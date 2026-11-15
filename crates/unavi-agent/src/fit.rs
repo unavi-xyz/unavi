@@ -6,10 +6,8 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::{
-    BoneName,
-    first_person::SetupFirstPerson,
-};
+use bevy_vrm::first_person::SetupFirstPerson;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_avatar::{
     Avatar,
     bones::AvatarBones,
@@ -45,7 +43,7 @@ pub fn fit_rig_to_avatar(
     mut colliders: Query<&mut Collider, With<AgentRig>>,
     mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<AgentRig>>,
     globals: Query<&GlobalTransform>,
-    bones: Query<&GlobalTransform, With<BoneName>>,
+    bones: Query<&GlobalTransform, With<HumanBoneName>>,
 ) {
     for (avatar_ent, avatar_bones, avatar_parent) in avatars.iter() {
         let Ok(rig_parent) = rigs.get(avatar_parent.parent()) else {
@@ -75,11 +73,11 @@ pub fn fit_rig_to_avatar(
             lowest_y = lowest_y.min(y);
 
             match bone_name {
-                BoneName::LeftEye => left_eye = Some(entity),
-                BoneName::RightEye => right_eye = Some(entity),
-                BoneName::Head => head = Some(entity),
-                BoneName::LeftShoulder => left_shoulder = Some(bone_transform.translation()),
-                BoneName::RightShoulder => right_shoulder = Some(bone_transform.translation()),
+                HumanBoneName::LeftEye => left_eye = Some(entity),
+                HumanBoneName::RightEye => right_eye = Some(entity),
+                HumanBoneName::Head => head = Some(entity),
+                HumanBoneName::LeftShoulder => left_shoulder = Some(bone_transform.translation()),
+                HumanBoneName::RightShoulder => right_shoulder = Some(bone_transform.translation()),
                 _ => {}
             }
         }
@@ -165,7 +163,7 @@ pub fn fit_rig_to_avatar(
             .entity(avatar_ent)
             .trigger(|entity| SetupFirstPerson {
                 entity,
-                render_layers: Some(avatar_first_person_layers()),
+                layers: avatar_first_person_layers(),
             })
             .insert(RigFitted);
     }
@@ -176,7 +174,7 @@ fn head_in_rig_space(
     rig_entity: Entity,
     head: Entity,
     globals: &Query<&GlobalTransform>,
-    bones: &Query<&GlobalTransform, With<BoneName>>,
+    bones: &Query<&GlobalTransform, With<HumanBoneName>>,
 ) -> Vec3 {
     globals.get(rig_entity).map_or(Vec3::ZERO, |rig| {
         let head = bones
@@ -217,7 +215,7 @@ mod tests {
         transform::TransformPlugin,
     };
     use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-    use bevy_vrm::BoneName;
+    use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
     use unavi_avatar::{
         Avatar,
         bones::AvatarBones,
@@ -267,7 +265,7 @@ mod tests {
         (agent, rig, avatar)
     }
 
-    fn spawn_bones(app: &mut App, avatar: Entity, bones: &[(BoneName, Vec3)]) {
+    fn spawn_bones(app: &mut App, avatar: Entity, bones: &[(HumanBoneName, Vec3)]) {
         let mut bone_map = HashMap::new();
         for (name, local) in bones {
             let bone = app
@@ -286,13 +284,13 @@ mod tests {
             .insert(AvatarBones(bone_map));
     }
 
-    const SANE_BONES: &[(BoneName, Vec3)] = &[
-        (BoneName::Hips, Vec3::new(0.0, 1.0, 0.0)),
-        (BoneName::Head, Vec3::new(0.0, 1.6, 0.0)),
-        (BoneName::LeftFoot, Vec3::new(0.0, 0.0, 0.0)),
-        (BoneName::RightFoot, Vec3::new(0.0, 0.0, 0.0)),
-        (BoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
-        (BoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
+    const SANE_BONES: &[(HumanBoneName, Vec3)] = &[
+        (HumanBoneName::Hips, Vec3::new(0.0, 1.0, 0.0)),
+        (HumanBoneName::Head, Vec3::new(0.0, 1.6, 0.0)),
+        (HumanBoneName::LeftFoot, Vec3::new(0.0, 0.0, 0.0)),
+        (HumanBoneName::RightFoot, Vec3::new(0.0, 0.0, 0.0)),
+        (HumanBoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
+        (HumanBoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
     ];
 
     fn spawn_rig(app: &mut App, avatar_y: f32) -> (Entity, Entity) {
@@ -360,7 +358,7 @@ mod tests {
     /// Runs `fit_rig_to_avatar` once over `bones` and asserts the rig stays
     /// at its default size and every transform stays finite: the shared
     /// shape for every degenerate-geometry case below.
-    fn assert_bones_are_rejected(bones: &[(BoneName, Vec3)]) {
+    fn assert_bones_are_rejected(bones: &[(HumanBoneName, Vec3)]) {
         let mut app = App::new();
         app.add_plugins((TransformPlugin, StatesPlugin));
 
@@ -401,20 +399,20 @@ mod tests {
     #[test]
     fn zero_bones_leave_the_rig_at_its_defaults() {
         assert_bones_are_rejected(&[
-            (BoneName::LeftEye, Vec3::ZERO),
-            (BoneName::RightEye, Vec3::ZERO),
-            (BoneName::LeftShoulder, Vec3::ZERO),
-            (BoneName::RightShoulder, Vec3::ZERO),
+            (HumanBoneName::LeftEye, Vec3::ZERO),
+            (HumanBoneName::RightEye, Vec3::ZERO),
+            (HumanBoneName::LeftShoulder, Vec3::ZERO),
+            (HumanBoneName::RightShoulder, Vec3::ZERO),
         ]);
     }
 
     #[test]
     fn nan_eye_bones_leave_the_rig_at_its_defaults() {
         assert_bones_are_rejected(&[
-            (BoneName::LeftEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
-            (BoneName::RightEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
-            (BoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
-            (BoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
+            (HumanBoneName::LeftEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
+            (HumanBoneName::RightEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
+            (HumanBoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
+            (HumanBoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
         ]);
     }
 
@@ -424,20 +422,20 @@ mod tests {
         // `positive_length` rejects the same way it would a negative
         // one.
         assert_bones_are_rejected(&[
-            (BoneName::LeftEye, Vec3::new(0.0, 1.6, 0.0)),
-            (BoneName::RightEye, Vec3::new(0.0, 1.6, 0.0)),
-            (BoneName::LeftShoulder, Vec3::ZERO),
-            (BoneName::RightShoulder, Vec3::ZERO),
+            (HumanBoneName::LeftEye, Vec3::new(0.0, 1.6, 0.0)),
+            (HumanBoneName::RightEye, Vec3::new(0.0, 1.6, 0.0)),
+            (HumanBoneName::LeftShoulder, Vec3::ZERO),
+            (HumanBoneName::RightShoulder, Vec3::ZERO),
         ]);
     }
 
     #[test]
     fn a_huge_eye_height_leaves_the_rig_at_its_defaults() {
         assert_bones_are_rejected(&[
-            (BoneName::LeftEye, Vec3::new(0.0, 1.0e8, 0.0)),
-            (BoneName::RightEye, Vec3::new(0.0, 1.0e8, 0.0)),
-            (BoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
-            (BoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
+            (HumanBoneName::LeftEye, Vec3::new(0.0, 1.0e8, 0.0)),
+            (HumanBoneName::RightEye, Vec3::new(0.0, 1.0e8, 0.0)),
+            (HumanBoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
+            (HumanBoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
         ]);
     }
 }

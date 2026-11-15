@@ -6,7 +6,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use serde_vrm::vrm0::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_avatar::{
     Avatar,
     Grounded,
@@ -70,7 +70,7 @@ impl TransformLerp {
 #[derive(Component)]
 pub struct PoseLerp {
     root:      TransformLerp,
-    bones:     HashMap<BoneName, TransformLerp>,
+    bones:     HashMap<HumanBoneName, TransformLerp>,
     elapsed:   Duration,
     duration:  Duration,
     last_recv: Instant,

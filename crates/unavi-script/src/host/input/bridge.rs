@@ -8,11 +8,10 @@ use bevy::{
     picking::{
         backend::HitData,
         events::{
-            Enter,
-            Leave,
-            Pointer as PickPointer,
-            Press,
-            Scroll,
+            PointerEnter,
+            PointerLeave,
+            PointerPress,
+            PointerScroll,
         },
         pointer::{
             PointerButton as PickButton,
@@ -135,25 +134,25 @@ const fn button_of(button: PickButton) -> Option<Button> {
 }
 
 pub fn bridge_press(
-    trigger: On<PickPointer<Press>>,
+    trigger: On<PointerPress>,
     targets: PrimTargets,
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
     mut pressing: ResMut<Pressing>,
 ) {
-    let Some(button) = button_of(trigger.event.button) else {
+    let Some(button) = button_of(trigger.button) else {
         return;
     };
-    let Some(kind) = kind_of(trigger.pointer_id) else {
+    let Some(kind) = kind_of(trigger.pointer.id) else {
         return;
     };
     let original = trigger.original_event_target();
     let Some(target) = deliver(
         trigger.entity,
         original,
-        trigger.pointer_id,
+        trigger.pointer.id,
         Action::Pressed(button),
-        &trigger.event.hit,
+        &trigger.hit,
         &targets,
         &pointers,
         &listeners,
@@ -171,7 +170,7 @@ pub fn bridge_press(
 }
 
 pub fn bridge_enter(
-    trigger: On<PickPointer<Enter>>,
+    trigger: On<PointerEnter>,
     targets: PrimTargets,
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
@@ -179,9 +178,9 @@ pub fn bridge_enter(
     deliver(
         trigger.entity,
         trigger.original_event_target(),
-        trigger.pointer_id,
+        trigger.pointer.id,
         Action::Entered,
-        &trigger.event.hit,
+        &trigger.hit,
         &targets,
         &pointers,
         &listeners,
@@ -189,7 +188,7 @@ pub fn bridge_enter(
 }
 
 pub fn bridge_leave(
-    trigger: On<PickPointer<Leave>>,
+    trigger: On<PointerLeave>,
     targets: PrimTargets,
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
@@ -197,9 +196,9 @@ pub fn bridge_leave(
     deliver(
         trigger.entity,
         trigger.original_event_target(),
-        trigger.pointer_id,
+        trigger.pointer.id,
         Action::Left,
-        &trigger.event.hit,
+        &trigger.hit,
         &targets,
         &pointers,
         &listeners,
@@ -207,7 +206,7 @@ pub fn bridge_leave(
 }
 
 pub fn bridge_scroll(
-    trigger: On<PickPointer<Scroll>>,
+    trigger: On<PointerScroll>,
     targets: PrimTargets,
     pointers: Query<(&PointerAnchor, &GlobalTransform)>,
     listeners: Res<InputListeners>,
@@ -217,9 +216,9 @@ pub fn bridge_scroll(
     deliver(
         trigger.entity,
         trigger.original_event_target(),
-        trigger.pointer_id,
-        Action::Scroll(Vec2::new(trigger.event.x, trigger.event.y)),
-        &trigger.event.hit,
+        trigger.pointer.id,
+        Action::Scroll(Vec2::new(trigger.x, trigger.y)),
+        &trigger.hit,
         &targets,
         &pointers,
         &listeners,

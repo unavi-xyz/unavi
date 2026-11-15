@@ -13,12 +13,12 @@ use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
 };
-use bevy_vrm::first_person::{
-    DEFAULT_RENDER_LAYERS,
-    FirstPersonFlag,
-};
+
 use unavi_agent::LocalAgent;
-use unavi_avatar::render_layers::AVATAR_RENDER_LAYER;
+use unavi_avatar::render_layers::{
+    AVATAR_RENDER_LAYER,
+    avatar_first_person_layers,
+};
 
 use crate::util::create_app_store;
 
@@ -79,7 +79,7 @@ fn init_scene(mut commands: Commands) {
 }
 
 fn on_agent_load(
-    _: On<Add, Camera3d>,
+    _: On<Add<Camera3d>>,
     mut cameras: Query<&mut Camera>,
     mut commands: Commands,
     mut added: Local<bool>,
@@ -99,7 +99,7 @@ fn on_agent_load(
         PanOrbitCamera::default(),
         Transform::from_xyz(-3.0, 5.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
         RenderLayers::from_layers(&[0, AVATAR_RENDER_LAYER])
-            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
+            .union(&avatar_first_person_layers().third_person_only),
     ));
 
     let handle = asset_server.load(SCRIPT_PATH);

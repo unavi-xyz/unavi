@@ -139,7 +139,7 @@ pub struct SpaceMembers(Vec<Entity>);
 
 /// Registers a space's own document into itself, so everything hanging under
 /// it resolves the same space.
-pub fn register_space(trigger: On<Add, Space>, spaces: Query<&Space>, policy: Res<Policy>) {
+pub fn register_space(trigger: On<Add<Space>>, spaces: Query<&Space>, policy: Res<Policy>) {
     if let Ok(space) = spaces.get(trigger.entity) {
         let id = space.doc_id();
         policy.update(id, |record| record.space = Some(id));
@@ -195,7 +195,7 @@ pub fn parent_docs_under_space(
 }
 
 pub fn register_membership(
-    trigger: On<Insert, SpaceOwner>,
+    trigger: On<Insert<SpaceOwner>>,
     owners: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
     policy: Res<Policy>,
@@ -210,7 +210,7 @@ pub fn register_membership(
 }
 
 pub fn forget_membership(
-    trigger: On<Remove, SpaceOwner>,
+    trigger: On<Remove<SpaceOwner>>,
     docs: Query<&HsdDocId>,
     policy: Res<Policy>,
 ) {
@@ -220,7 +220,7 @@ pub fn forget_membership(
 }
 
 pub fn forget_space(
-    trigger: On<Remove, Space>,
+    trigger: On<Remove<Space>>,
     spaces: Query<&Space>,
     policy: Res<Policy>,
     replicas: Option<Res<Replicas>>,
@@ -264,7 +264,7 @@ fn host_of(parent: &ChildOf, prims: &Query<&PrimOf>, ids: &Query<&HsdDocId>) -> 
 
 /// Drops a despawned document's record. Keyed off the document id, which
 /// every document has.
-pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>, policy: Res<Policy>) {
+pub fn forget_document(trigger: On<Remove<HsdDocId>>, docs: Query<&HsdDocId>, policy: Res<Policy>) {
     if let Ok(doc) = docs.get(trigger.entity) {
         policy.forget_document(doc.0);
     }

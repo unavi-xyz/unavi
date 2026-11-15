@@ -1,7 +1,7 @@
 //! `wired:agent`: the local user's camera and body.
 
 use bevy::prelude::*;
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use hsd::attributes::xform::XformAttr;
 use unavi_policy::permissions::HostApi;
 
@@ -21,7 +21,7 @@ use crate::{
 pub enum Attachment {
     Camera,
     Body,
-    Bone(BoneName),
+    Bone(HumanBoneName),
 }
 
 /// `tracked`'s pose in the script's own frame. The node's snapshot is world,
@@ -42,7 +42,7 @@ pub fn camera_transform(host: &ScriptHost) -> Result<Transform, ScriptError> {
 }
 
 /// `None` when the avatar lacks `bone`.
-pub fn bone_transform(host: &ScriptHost, bone: BoneName) -> Result<Option<Transform>, ScriptError> {
+pub fn bone_transform(host: &ScriptHost, bone: HumanBoneName) -> Result<Option<Transform>, ScriptError> {
     host.require(HostApi::LocalAgent)?;
     if !host.shared.agents.is_ready() {
         return Err(ScriptError::NotReady);

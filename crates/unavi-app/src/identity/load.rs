@@ -82,7 +82,7 @@ struct AuthTask(#[expect(dead_code, reason = "aborts the task on drop")] AbortOn
 
 /// Answers `wired/auth` on the endpoint the hooks were installed on.
 pub fn serve_auth(
-    trigger: On<Add, IrohEndpoint>,
+    trigger: On<Add<IrohEndpoint>>,
     endpoints: Query<&IrohEndpoint>,
     auth: Res<Auth>,
     async_world: Res<AsyncWorld>,
@@ -145,7 +145,7 @@ impl Follower {
 }
 
 pub fn load_store(
-    trigger: On<Add, IrohEndpoint>,
+    trigger: On<Add<IrohEndpoint>>,
     endpoints: Query<&IrohEndpoint>,
     node: Res<LocalNode>,
     local: Res<LocalIdentity>,

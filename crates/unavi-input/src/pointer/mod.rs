@@ -120,7 +120,7 @@ pub struct GripPressed(pub PointerAim);
 pub struct GripReleased(pub PointerAim);
 
 pub fn attach_pointers(
-    trigger: On<Add, PointerAnchor>,
+    trigger: On<Add<PointerAnchor>>,
     anchors: Query<&PointerAnchor>,
     config: Res<InputConfig>,
     mut commands: Commands,

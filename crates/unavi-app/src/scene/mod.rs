@@ -15,7 +15,7 @@ use bevy_iroh::{
         IrohRouter,
     },
 };
-use bevy_vrm::mtoon::MtoonSun;
+use bevy_shader_mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
 use unavi_space::grid::Spaceless;
 

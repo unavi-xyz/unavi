@@ -7,7 +7,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use hsd::id::{
     DocId,
     PrimId,
@@ -54,7 +54,7 @@ struct Nodes {
     camera: Option<Tracked>,
     /// Follows the agent's rig body in position only; see [`BodyNode`].
     body:   Option<Tracked>,
-    bones:  Option<HashMap<BoneName, Tracked>>,
+    bones:  Option<HashMap<HumanBoneName, Tracked>>,
 }
 
 impl LocalAgentNodes {
@@ -75,7 +75,7 @@ impl LocalAgentNodes {
     }
 
     #[must_use]
-    pub fn bone(&self, bone: BoneName) -> Option<Tracked> {
+    pub fn bone(&self, bone: HumanBoneName) -> Option<Tracked> {
         self.0.read().bones.as_ref()?.get(&bone).copied()
     }
 }
@@ -189,7 +189,7 @@ pub fn follow_body(
 /// body is tracked afresh. The body node is not the agent's descendant, so it
 /// goes explicitly, after letting go of what was attached to it.
 pub fn forget_local_agent(
-    _: On<Remove, LocalAgent>,
+    _: On<Remove<LocalAgent>>,
     registry: Res<LocalAgentNodes>,
     children: Query<&Children>,
     mut commands: Commands,

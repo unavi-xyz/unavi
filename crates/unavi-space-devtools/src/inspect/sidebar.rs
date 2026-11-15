@@ -5,13 +5,11 @@ use bevy::{
         relationship::RelatedSpawnerCommands,
         spawn::Spawn,
     },
-    feathers::controls::{
-        ButtonBundleProps,
-        ButtonVariant,
-    },
+    feathers::controls::ButtonVariant,
     prelude::*,
 };
 use iroh::EndpointId;
+use unavi_devtools::button::button;
 use iroh_docs::NamespaceId;
 use unavi_space::{
     authority::SpaceView,
@@ -112,18 +110,23 @@ fn rows(
     out
 }
 
-#[expect(
-    deprecated,
-    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
-)]
 fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: String) {
     let bytes = match page {
         Page::Peer(id) => *id.as_bytes(),
         Page::Space(hash) | Page::Doc(hash) => *hash.as_bytes(),
     };
     let color = widgets::hash_color(&bytes);
-    l.spawn(bevy::feathers::controls::button_bundle(
-        ButtonBundleProps::default(),
+    l.spawn(button(
+        Node {
+            width: Val::Percent(100.0),
+            padding: UiRect::axes(Val::Px(6.0), Val::Px(3.0)),
+            column_gap: Val::Px(5.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::FlexStart,
+            flex_shrink: 0.0,
+            border_radius: BorderRadius::all(Val::Px(3.0)),
+            ..default()
+        },
         (SidebarButton(page), LinkTo(page)),
         (
             Spawn(widgets::swatch(color)),
@@ -136,17 +139,7 @@ fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: Stri
                 TextColor(color),
             )),
         ),
-    ))
-    .insert(Node {
-        width: Val::Percent(100.0),
-        padding: UiRect::axes(Val::Px(6.0), Val::Px(3.0)),
-        column_gap: Val::Px(5.0),
-        align_items: AlignItems::Center,
-        justify_content: JustifyContent::FlexStart,
-        flex_shrink: 0.0,
-        border_radius: BorderRadius::all(Val::Px(3.0)),
-        ..default()
-    });
+    ));
 }
 
 pub fn sync(

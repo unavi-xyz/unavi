@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use iroh::EndpointId;
 use parking_lot::RwLock;
 use unavi_avatar::bones::AvatarBones;
@@ -48,7 +48,7 @@ pub fn snapshot_remote_agents(
             peer: agent.0,
             body: *body,
             head: bones
-                .and_then(|bones| bones.get(&BoneName::Head))
+                .and_then(|bones| bones.get(&HumanBoneName::Head))
                 .and_then(|head| transforms.get(*head).ok())
                 .copied(),
         })

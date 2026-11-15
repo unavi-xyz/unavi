@@ -228,7 +228,7 @@ pub(crate) fn space_of(policy: &Policy, replicas: &Replicas, doc: DocId) -> Opti
 
 /// Records a document this node minted as its own.
 pub fn record_minted(
-    trigger: On<Insert, Minted>,
+    trigger: On<Insert<Minted>>,
     docs: Query<&HsdDocId, With<Minted>>,
     replicas: Res<Replicas>,
 ) {
@@ -241,7 +241,7 @@ pub fn record_minted(
 /// minted. A namespace can be instanced twice, as a space and as a portal's
 /// copy of it.
 pub fn forget_minted(
-    trigger: On<Remove, Minted>,
+    trigger: On<Remove<Minted>>,
     docs: Query<&HsdDocId>,
     minted: Query<(Entity, &HsdDocId), With<Minted>>,
     replicas: Res<Replicas>,
@@ -260,7 +260,7 @@ pub fn forget_minted(
 /// Repoints a document's quota at its owner when it joins or changes space,
 /// migrating standing usage off the previous owner.
 pub fn reassign_doc_quota(
-    trigger: On<Insert, SpaceOwner>,
+    trigger: On<Insert<SpaceOwner>>,
     docs: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
     replicas: Res<Replicas>,
@@ -280,7 +280,7 @@ pub fn reassign_doc_quota(
 /// Forgets a departed peer's quota, under its endpoint and under the DID it
 /// proved, if that binding is still known.
 pub fn forget_peer_quota(
-    trigger: On<Remove, Peer>,
+    trigger: On<Remove<Peer>>,
     peers: Query<&Peer>,
     policy: Res<Policy>,
     identity: Option<Res<LocalIdentity>>,

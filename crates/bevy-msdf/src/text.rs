@@ -25,6 +25,7 @@ use bevy::{
     },
     prelude::*,
     render::{
+        RenderApp,
         extract_resource::ExtractResource,
         render_asset::RenderAssets,
         render_resource::{
@@ -169,6 +170,7 @@ pub(crate) struct QueuedUpload {
 /// The uploads waiting on the current frame's extraction. Cleared and refilled
 /// by [`update_pages`] so the render world never replays stale rects.
 #[derive(Resource, Debug, Default, Clone, ExtractResource)]
+#[extract_app(RenderApp)]
 pub(crate) struct QueuedUploads(pub(crate) Vec<QueuedUpload>);
 
 fn settings(style: &MsdfStyle, unit_range: Vec2) -> MsdfSettings {
@@ -570,7 +572,7 @@ pub(crate) fn upload_pages(
         let Some(gpu) = images.get(upload.image) else {
             continue;
         };
-        queue_wgpu.0.write_texture(
+        queue_wgpu.write_texture(
             TexelCopyTextureInfo {
                 texture:   &gpu.texture,
                 mip_level: 0,

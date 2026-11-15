@@ -33,7 +33,7 @@ impl Sites {
 }
 
 pub fn register_site(
-    trigger: On<Insert, ReferenceInstance>,
+    trigger: On<Insert<ReferenceInstance>>,
     instances: Query<(&HsdDocId, &ReferenceInstance)>,
     prims: Query<(&Prim, &PrimOf)>,
     docs: Query<&HsdDocId>,
@@ -52,7 +52,7 @@ pub fn register_site(
 }
 
 pub fn deregister_site(
-    trigger: On<Remove, ReferenceInstance>,
+    trigger: On<Remove<ReferenceInstance>>,
     instances: Query<&HsdDocId>,
     sites: Res<Sites>,
 ) {

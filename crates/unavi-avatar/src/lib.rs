@@ -5,8 +5,8 @@
 
 use bevy::prelude::*;
 use bevy_vrm::{
-    VrmInstance,
     VrmPlugins,
+    instance::VrmInstance,
 };
 use unavi_assets::DEFAULT_AVATAR;
 
@@ -49,7 +49,7 @@ pub struct Avatar;
 pub struct VrmPath(pub String);
 
 fn on_avatar_added(
-    event: On<Add, Avatar>,
+    event: On<Add<Avatar>>,
     vrm_paths: Query<&VrmPath>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,

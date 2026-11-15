@@ -137,7 +137,7 @@ impl Default for TestContext {
 
 impl TestContext {
     /// Same as `default()` with physics enabled. Needed by any test that
-    /// exercises colliders or rigid bodies. Avian's `On<Add, Collider>`
+    /// exercises colliders or rigid bodies. Avian's `On<Add<Collider>>`
     /// observer reads `Position`/`Rotation` and panics on the placeholder MAX
     /// values if a `Collider` is inserted without seeding them.
     pub fn with_physics() -> Self {

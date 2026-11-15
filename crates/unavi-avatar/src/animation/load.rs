@@ -3,10 +3,8 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bevy_vrm::{
-    BoneName,
-    animations::vrm::VRM_ANIMATION_TARGETS,
-};
+use bevy_vrm::animations::vrm::VRM_ANIMATION_TARGETS;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
 use super::{
     AnimationName,
@@ -60,7 +58,7 @@ pub(crate) fn load_animation_nodes(
                 };
 
                 // Head transform is set by user's camera.
-                if bone_name == BoneName::Head {
+                if bone_name == HumanBoneName::Head {
                     continue;
                 }
 

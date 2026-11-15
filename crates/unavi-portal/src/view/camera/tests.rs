@@ -1,8 +1,5 @@
 use bevy::camera::visibility::RenderLayers;
-use bevy_vrm::first_person::{
-    FIRST_PERSON_LAYER,
-    FirstPersonFlag,
-};
+use bevy_vrm::first_person::FIRST_PERSON_LAYER;
 use unavi_avatar::render_layers::{
     AVATAR_RENDER_LAYER,
     avatar_first_person_layers,
@@ -24,14 +21,21 @@ fn main_camera() -> RenderLayers {
     ])
 }
 
+/// Every layer an avatar mesh can end up on.
+fn person_layers() -> [RenderLayers; 3] {
+    let layers = avatar_first_person_layers();
+    [
+        layers.both,
+        layers.first_person_only,
+        layers.third_person_only,
+    ]
+}
+
 #[test]
 fn a_still_leaves_out_every_avatar_mesh() {
     let still = still_layers(&main_camera());
-    for (flag, layers) in avatar_first_person_layers() {
-        assert!(
-            !still.intersects(&layers),
-            "a {flag:?} avatar mesh is in the still"
-        );
+    for layers in person_layers() {
+        assert!(!still.intersects(&layers), "{layers:?} avatar mesh is in the still");
     }
 }
 
@@ -49,8 +53,8 @@ fn a_still_has_no_portal_planes() {
 fn the_main_camera_still_sees_the_avatars_it_saw() {
     let main = main_camera();
     let layers = avatar_first_person_layers();
-    for flag in [FirstPersonFlag::Both, FirstPersonFlag::FirstPersonOnly] {
-        assert!(main.intersects(&layers[&flag]), "{flag:?} vanished");
+    for layers in [layers.both, layers.first_person_only] {
+        assert!(main.intersects(&layers), "{layers:?} vanished");
     }
 }
 
@@ -58,7 +62,7 @@ fn the_main_camera_still_sees_the_avatars_it_saw() {
 fn live_views_still_see_the_avatars_they_saw() {
     let live = third_person_layers(&main_camera());
     let layers = avatar_first_person_layers();
-    for flag in [FirstPersonFlag::Both, FirstPersonFlag::ThirdPersonOnly] {
-        assert!(live.intersects(&layers[&flag]), "{flag:?} vanished");
+    for layers in [layers.both, layers.third_person_only] {
+        assert!(live.intersects(&layers), "{layers:?} vanished");
     }
 }

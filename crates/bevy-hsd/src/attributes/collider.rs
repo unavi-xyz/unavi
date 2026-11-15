@@ -142,7 +142,7 @@ fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
         warn!("convex hull: empty point buffer");
         return None;
     }
-    let c = Collider::convex_hull(points);
+    let c = Collider::convex_hull(&points);
     if c.is_none() {
         warn!("convex hull: construction failed (degenerate points?)");
     }

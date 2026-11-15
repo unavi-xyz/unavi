@@ -225,7 +225,7 @@ pub(crate) fn compose(
 
 /// Stacks every layer the replicas hold for `doc`, once its state exists.
 pub fn stack_on_arrival(
-    trigger: On<Insert, HsdDocId>,
+    trigger: On<Insert<HsdDocId>>,
     docs: Query<&HsdDocId>,
     mut commands: Commands,
 ) {

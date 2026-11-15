@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 use iroh::EndpointId;
-use serde_vrm::vrm0::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
 use crate::{
     avatar_sync::crossing::NumberedCrossing,
@@ -32,7 +32,7 @@ pub mod wire;
 pub struct ResolvedPose {
     pub space:    SpaceId,
     pub root:     Transform,
-    pub bones:    HashMap<BoneName, Transform>,
+    pub bones:    HashMap<HumanBoneName, Transform>,
     /// Whether the sender was standing on something. Drives the remote
     /// avatar's falling animation, which no tracked transform can convey.
     pub grounded: bool,

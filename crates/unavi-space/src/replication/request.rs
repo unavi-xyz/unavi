@@ -22,7 +22,7 @@ use crate::{
 /// arrived since. One instancing sends one request per peer, and instancing the
 /// space again sends another.
 pub fn request_on_space_added(
-    trigger: On<Add, Space>,
+    trigger: On<Add<Space>>,
     spaces: Query<&Space>,
     peers: Query<(&Peer, &LastSeenIn)>,
     replicas: Res<Replicas>,

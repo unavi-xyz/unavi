@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
 use crate::animation::{
     load::AvatarAnimationNodes,
@@ -50,11 +50,11 @@ pub fn init_animation_players(
 
 /// The animation graph's mask group for `bone`.
 ///
-/// `BoneName` is a fieldless enum with no two variants sharing a
+/// `HumanBoneName` is a fieldless enum with no two variants sharing a
 /// discriminant, so its own discriminant is already a distinct group id;
 /// see the test below for the guarantee this relies on.
 #[must_use]
-pub const fn bone_mask_group(bone: BoneName) -> u32 {
+pub const fn bone_mask_group(bone: HumanBoneName) -> u32 {
     bone as u32
 }
 
@@ -62,70 +62,70 @@ pub const fn bone_mask_group(bone: BoneName) -> u32 {
 mod tests {
     use std::collections::HashSet;
 
-    use bevy_vrm::BoneName;
+    use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
     use super::bone_mask_group;
 
     /// Every bone this animation system knows about (see
     /// [`mixamo::MIXAMO_BONES`](super::mixamo) for the subset Mixamo
     /// clips retarget onto) plus the ones it does not: a full
-    /// cross-check that `BoneName as u32` stays injective.
-    const ALL_BONES: &[BoneName] = &[
-        BoneName::Hips,
-        BoneName::Spine,
-        BoneName::Chest,
-        BoneName::UpperChest,
-        BoneName::Neck,
-        BoneName::Head,
-        BoneName::LeftEye,
-        BoneName::RightEye,
-        BoneName::Jaw,
-        BoneName::LeftShoulder,
-        BoneName::LeftUpperArm,
-        BoneName::LeftLowerArm,
-        BoneName::LeftHand,
-        BoneName::RightShoulder,
-        BoneName::RightUpperArm,
-        BoneName::RightLowerArm,
-        BoneName::RightHand,
-        BoneName::LeftUpperLeg,
-        BoneName::LeftLowerLeg,
-        BoneName::LeftFoot,
-        BoneName::LeftToes,
-        BoneName::RightUpperLeg,
-        BoneName::RightLowerLeg,
-        BoneName::RightFoot,
-        BoneName::RightToes,
-        BoneName::LeftThumbProximal,
-        BoneName::LeftThumbIntermediate,
-        BoneName::LeftThumbDistal,
-        BoneName::LeftIndexProximal,
-        BoneName::LeftIndexIntermediate,
-        BoneName::LeftIndexDistal,
-        BoneName::LeftMiddleProximal,
-        BoneName::LeftMiddleIntermediate,
-        BoneName::LeftMiddleDistal,
-        BoneName::LeftRingProximal,
-        BoneName::LeftRingIntermediate,
-        BoneName::LeftRingDistal,
-        BoneName::LeftLittleProximal,
-        BoneName::LeftLittleIntermediate,
-        BoneName::LeftLittleDistal,
-        BoneName::RightThumbProximal,
-        BoneName::RightThumbIntermediate,
-        BoneName::RightThumbDistal,
-        BoneName::RightIndexProximal,
-        BoneName::RightIndexIntermediate,
-        BoneName::RightIndexDistal,
-        BoneName::RightMiddleProximal,
-        BoneName::RightMiddleIntermediate,
-        BoneName::RightMiddleDistal,
-        BoneName::RightRingProximal,
-        BoneName::RightRingIntermediate,
-        BoneName::RightRingDistal,
-        BoneName::RightLittleProximal,
-        BoneName::RightLittleIntermediate,
-        BoneName::RightLittleDistal,
+    /// cross-check that `HumanBoneName as u32` stays injective.
+    const ALL_BONES: &[HumanBoneName] = &[
+        HumanBoneName::Hips,
+        HumanBoneName::Spine,
+        HumanBoneName::Chest,
+        HumanBoneName::UpperChest,
+        HumanBoneName::Neck,
+        HumanBoneName::Head,
+        HumanBoneName::LeftEye,
+        HumanBoneName::RightEye,
+        HumanBoneName::Jaw,
+        HumanBoneName::LeftShoulder,
+        HumanBoneName::LeftUpperArm,
+        HumanBoneName::LeftLowerArm,
+        HumanBoneName::LeftHand,
+        HumanBoneName::RightShoulder,
+        HumanBoneName::RightUpperArm,
+        HumanBoneName::RightLowerArm,
+        HumanBoneName::RightHand,
+        HumanBoneName::LeftUpperLeg,
+        HumanBoneName::LeftLowerLeg,
+        HumanBoneName::LeftFoot,
+        HumanBoneName::LeftToes,
+        HumanBoneName::RightUpperLeg,
+        HumanBoneName::RightLowerLeg,
+        HumanBoneName::RightFoot,
+        HumanBoneName::RightToes,
+        HumanBoneName::LeftThumbMetacarpal,
+        HumanBoneName::LeftThumbProximal,
+        HumanBoneName::LeftThumbDistal,
+        HumanBoneName::LeftIndexProximal,
+        HumanBoneName::LeftIndexIntermediate,
+        HumanBoneName::LeftIndexDistal,
+        HumanBoneName::LeftMiddleProximal,
+        HumanBoneName::LeftMiddleIntermediate,
+        HumanBoneName::LeftMiddleDistal,
+        HumanBoneName::LeftRingProximal,
+        HumanBoneName::LeftRingIntermediate,
+        HumanBoneName::LeftRingDistal,
+        HumanBoneName::LeftLittleProximal,
+        HumanBoneName::LeftLittleIntermediate,
+        HumanBoneName::LeftLittleDistal,
+        HumanBoneName::RightThumbMetacarpal,
+        HumanBoneName::RightThumbProximal,
+        HumanBoneName::RightThumbDistal,
+        HumanBoneName::RightIndexProximal,
+        HumanBoneName::RightIndexIntermediate,
+        HumanBoneName::RightIndexDistal,
+        HumanBoneName::RightMiddleProximal,
+        HumanBoneName::RightMiddleIntermediate,
+        HumanBoneName::RightMiddleDistal,
+        HumanBoneName::RightRingProximal,
+        HumanBoneName::RightRingIntermediate,
+        HumanBoneName::RightRingDistal,
+        HumanBoneName::RightLittleProximal,
+        HumanBoneName::RightLittleIntermediate,
+        HumanBoneName::RightLittleDistal,
     ];
 
     #[test]

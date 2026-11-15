@@ -4,13 +4,11 @@ use bevy::{
     prelude::*,
     world_serialization::WorldInstanceReady,
 };
-use bevy_vrm::{
-    BoneName,
-    VrmInstanceReady,
-};
+use bevy_vrm::instance::VrmInstanceReady;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
 #[derive(Component, Deref, DerefMut)]
-pub struct AvatarBones(pub HashMap<BoneName, Entity>);
+pub struct AvatarBones(pub HashMap<HumanBoneName, Entity>);
 
 /// Collects an avatar's bones once its VRM scene has finished spawning.
 /// `WorldInstanceReady` fires once the whole hierarchy under the avatar
@@ -20,7 +18,7 @@ pub(crate) fn populate_avatar_bones(
     ready: On<WorldInstanceReady>,
     avatars: Query<(), (With<VrmInstanceReady>, Without<AvatarBones>)>,
     children: Query<&Children>,
-    bone_names: Query<&BoneName>,
+    bone_names: Query<&HumanBoneName>,
     mut commands: Commands,
 ) {
     let entity = ready.entity;
@@ -28,7 +26,7 @@ pub(crate) fn populate_avatar_bones(
         return;
     }
 
-    let avatar_bones: HashMap<BoneName, Entity> = children
+    let avatar_bones: HashMap<HumanBoneName, Entity> = children
         .iter_descendants(entity)
         .filter_map(|descendant| {
             bone_names

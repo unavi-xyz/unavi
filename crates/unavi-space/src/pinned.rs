@@ -99,7 +99,7 @@ pub struct FetchBackoff(Duration);
 /// Reparents unparented trackers under a space once it is entered, so state
 /// replicated for not-yet-visited spaces anchors correctly on join.
 pub fn adopt_pinned_docs(
-    trigger: On<Add, Space>,
+    trigger: On<Add<Space>>,
     spaces: Query<&Space>,
     trackers: Query<(Entity, &PinnedDoc), Without<ChildOf>>,
     mut commands: Commands,

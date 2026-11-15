@@ -12,12 +12,13 @@ use bevy::{
     },
 };
 use bevy_vrm::first_person::{
-    DEFAULT_RENDER_LAYERS,
     FIRST_PERSON_LAYER,
-    FirstPersonFlag,
     THIRD_PERSON_LAYER,
 };
-use unavi_avatar::render_layers::AVATAR_RENDER_LAYER;
+use unavi_avatar::render_layers::{
+    AVATAR_RENDER_LAYER,
+    avatar_first_person_layers,
+};
 
 use crate::{
     body::PortalBody,
@@ -280,7 +281,7 @@ pub fn update_view_camera_layers(
 /// `base` as a camera outside every body sees it: third-person meshes, and
 /// no portal planes.
 pub(crate) fn third_person_layers(base: &RenderLayers) -> RenderLayers {
-    base.union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly])
+    base.union(&avatar_first_person_layers().third_person_only)
         .without(FIRST_PERSON_LAYER)
         .without(PORTAL_RENDER_LAYER)
 }

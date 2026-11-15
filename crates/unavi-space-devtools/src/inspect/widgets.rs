@@ -5,12 +5,10 @@ use bevy::{
         relationship::RelatedSpawnerCommands,
         spawn::Spawn,
     },
-    feathers::{
-        controls::ButtonBundleProps,
-        theme::ThemedText,
-    },
+    feathers::theme::ThemedText,
     prelude::*,
 };
+use unavi_devtools::button::button;
 use unavi_space::replication::clock;
 
 use crate::{
@@ -54,69 +52,56 @@ pub fn swatch(color: Color) -> impl Bundle {
 }
 
 /// Spawns a clickable id chip: colored swatch plus short hex, navigating to
-/// `page`. The compact layout is inserted after spawn because the feathers
-/// button bundle already carries a `Node` and duplicates panic.
-#[expect(
-    deprecated,
-    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
-)]
+/// `page`.
 pub fn chip(parent: &mut RelatedSpawnerCommands<ChildOf>, bytes: &[u8], page: Page) {
     let color = hash_color(bytes);
-    parent
-        .spawn(bevy::feathers::controls::button_bundle(
-            ButtonBundleProps::default(),
-            LinkTo(page),
-            (
-                Spawn(swatch(color)),
-                Spawn((
-                    Text::new(short(bytes)),
-                    TextFont {
-                        font_size: FontSize::Px(12.0),
-                        ..default()
-                    },
-                    TextColor(color),
-                )),
-            ),
-        ))
-        .insert(Node {
+    parent.spawn(button(
+        Node {
             padding: UiRect::axes(Val::Px(5.0), Val::Px(1.0)),
             column_gap: Val::Px(4.0),
             align_items: AlignItems::Center,
             border_radius: BorderRadius::all(Val::Px(3.0)),
             ..default()
-        });
+        },
+        LinkTo(page),
+        (
+            Spawn(swatch(color)),
+            Spawn((
+                Text::new(short(bytes)),
+                TextFont {
+                    font_size: FontSize::Px(12.0),
+                    ..default()
+                },
+                TextColor(color),
+            )),
+        ),
+    ));
 }
 
 /// Spawns a compact labeled button carrying `marker` (back or view toggles).
-#[expect(
-    deprecated,
-    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
-)]
 pub fn small_button(
     parent: &mut RelatedSpawnerCommands<ChildOf>,
     label: &str,
     marker: impl Bundle,
 ) {
-    parent
-        .spawn(bevy::feathers::controls::button_bundle(
-            ButtonBundleProps::default(),
-            marker,
-            Spawn((
-                Text::new(label),
-                ThemedText,
-                TextFont {
-                    font_size: FontSize::Px(11.0),
-                    ..default()
-                },
-            )),
-        ))
-        .insert(Node {
+    parent.spawn(button(
+        Node {
             padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
             border_radius: BorderRadius::all(Val::Px(3.0)),
             ..default()
-        });
+        },
+        marker,
+        Spawn((
+            Text::new(label),
+            ThemedText,
+            TextFont {
+                font_size: FontSize::Px(11.0),
+                ..default()
+            },
+        )),
+    ));
 }
 
 pub fn row_node() -> Node {

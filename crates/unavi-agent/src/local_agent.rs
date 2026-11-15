@@ -11,10 +11,7 @@ use bevy_tnua::{
     prelude::*,
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::first_person::{
-    DEFAULT_RENDER_LAYERS,
-    FirstPersonFlag,
-};
+
 use unavi_avatar::{
     Avatar,
     VrmPath,
@@ -22,7 +19,10 @@ use unavi_avatar::{
         defaults::default_character_animations,
         velocity::AverageVelocity,
     },
-    render_layers::AVATAR_RENDER_LAYER,
+    render_layers::{
+        AVATAR_RENDER_LAYER,
+        avatar_first_person_layers,
+    },
 };
 use unavi_input::pointer::{
     PointerAnchor,
@@ -62,7 +62,7 @@ const MAX_WALK_SLOPE_DEGREES: f32 = 55.0;
 const INITIAL_EYE_DROP: f32 = 0.1;
 
 pub fn spawn_local_agent(
-    trigger: On<Add, LocalAgent>,
+    trigger: On<Add<LocalAgent>>,
     asset_server: Res<AssetServer>,
     input_mode: Res<InputMode>,
     agent: Query<(&AgentConfig, Option<&VrmPath>)>,
@@ -185,8 +185,9 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
             ..default()
         }),
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER, AVATAR_RENDER_LAYER])
-            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
+            .union(&avatar_first_person_layers().first_person_only)
+            .with(AVATAR_RENDER_LAYER),
         PortalViewer,
     ));
 

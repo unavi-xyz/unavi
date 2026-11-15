@@ -9,7 +9,7 @@ use bevy_tnua::prelude::{
     TnuaBuiltinWalk,
     TnuaController,
 };
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_avatar::bones::AvatarBones;
 use unavi_input::{
     action::{
@@ -117,7 +117,7 @@ pub fn follow_animated_head(
             continue;
         };
 
-        let Some(&head_bone) = avatar_bones.get(&BoneName::Head) else {
+        let Some(&head_bone) = avatar_bones.get(&HumanBoneName::Head) else {
             continue;
         };
         let (Ok(head), Ok(mut eye)) = (bones.get(head_bone), eyes.get_mut(entities.tracked_head))

@@ -33,7 +33,7 @@ pub struct PortalRefused;
 /// already carry [`Portal`], marking it [`PortalRefused`] instead so
 /// [`admit_refused_portals`] can open it later if capacity frees.
 pub fn sync_portal_config(
-    trigger: On<Insert, PortalConfig>,
+    trigger: On<Insert<PortalConfig>>,
     configs: Query<&PortalConfig>,
     existing: Query<(), With<Portal>>,
     limits: Res<PortalLimits>,
@@ -115,7 +115,7 @@ fn open_portal(entity: &mut EntityCommands, cfg: &PortalConfig) {
 
 /// `try_remove` because the config is also removed by despawning the portal,
 /// which leaves nothing to strip by the time the command runs.
-pub fn clear_portal_config(trigger: On<Remove, PortalConfig>, mut commands: Commands) {
+pub fn clear_portal_config(trigger: On<Remove<PortalConfig>>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<(
         Portal,
         PortalSize,

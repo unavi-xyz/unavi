@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     transform::TransformPlugin,
 };
-use bevy_vrm::mtoon::MtoonMaterial;
+use bevy_shader_mtoon::MtoonMaterial;
 
 use crate::{
     body::{

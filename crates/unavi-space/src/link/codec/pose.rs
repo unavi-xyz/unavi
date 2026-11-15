@@ -7,7 +7,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serde_vrm::vrm0::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 
 use super::{
     Delta,
@@ -39,7 +39,7 @@ where
     T: PosePrecision + Serialize + for<'a> Deserialize<'a> + Clone,
 {
     pub root:  T::RootTransform,
-    pub bones: HashMap<BoneName, T::BoneTransform>,
+    pub bones: HashMap<HumanBoneName, T::BoneTransform>,
 }
 
 pub const MAX_POSE_BONES: usize = 12;

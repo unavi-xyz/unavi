@@ -195,7 +195,7 @@ pub fn join_space_topics(
 /// Removing [`SpaceGossip`] drops the sender its task waits on, and the task
 /// broadcasts [`SpaceMessage::Leave`] before it ends. Despawning the space
 /// drops it just as well, so a missing entity is not an error.
-pub fn leave_space_topic(trigger: On<Remove, Space>, mut commands: Commands) {
+pub fn leave_space_topic(trigger: On<Remove<Space>>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<SpaceGossip>();
 }
 

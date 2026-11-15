@@ -1,17 +1,12 @@
 //! The render layer every avatar mesh draws on, so a camera can leave
 //! avatars out by leaving the layer out.
 
-use std::collections::HashMap;
-
 use bevy::{
     camera::visibility::RenderLayers,
     prelude::*,
     world_serialization::WorldInstanceReady,
 };
-use bevy_vrm::first_person::{
-    DEFAULT_RENDER_LAYERS,
-    FirstPersonFlag,
-};
+use bevy_vrm::first_person::FirstPersonLayers;
 
 use crate::Avatar;
 
@@ -19,15 +14,17 @@ use crate::Avatar;
 /// show avatars include it; the portal stills do not.
 pub const AVATAR_RENDER_LAYER: usize = 9;
 
-/// `bevy_vrm`'s per-flag layers with the default layer swapped for
-/// [`AVATAR_RENDER_LAYER`]. Pass to `SetupFirstPerson` so a first-person
-/// split avatar never lands back on the default layer.
+/// `bevy_vrm`'s first-person layers with the default layer swapped for
+/// [`AVATAR_RENDER_LAYER`]. Pass to `SetupFirstPerson` so a first-person split
+/// avatar never lands back on the default layer.
 #[must_use]
-pub fn avatar_first_person_layers() -> HashMap<FirstPersonFlag, RenderLayers> {
-    DEFAULT_RENDER_LAYERS
-        .iter()
-        .map(|(flag, layers)| (*flag, avatar_layers(layers)))
-        .collect()
+pub fn avatar_first_person_layers() -> FirstPersonLayers {
+    let default = FirstPersonLayers::default();
+    FirstPersonLayers {
+        both:              avatar_layers(&default.both),
+        first_person_only: avatar_layers(&default.first_person_only),
+        third_person_only: avatar_layers(&default.third_person_only),
+    }
 }
 
 fn avatar_layers(layers: &RenderLayers) -> RenderLayers {
@@ -65,23 +62,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn no_flag_keeps_the_default_layer() {
-        for (flag, layers) in avatar_first_person_layers() {
+    fn no_split_keeps_the_default_layer() {
+        let layers = avatar_first_person_layers();
+        for layers in [&layers.both, &layers.first_person_only, &layers.third_person_only] {
             assert!(
                 !layers.intersects(&RenderLayers::layer(0)),
-                "{flag:?} still draws on the default layer"
+                "{layers:?} still draws on the default layer"
             );
         }
     }
 
     #[test]
-    fn flags_that_were_visible_to_default_cameras_are_on_the_avatar_layer() {
+    fn meshes_visible_to_default_cameras_are_on_the_avatar_layer() {
         let layers = avatar_first_person_layers();
-        for flag in [FirstPersonFlag::Auto, FirstPersonFlag::Both] {
-            assert!(
-                layers[&flag].intersects(&RenderLayers::layer(AVATAR_RENDER_LAYER)),
-                "{flag:?} is not on the avatar layer"
-            );
-        }
+        assert!(
+            layers.both.intersects(&RenderLayers::layer(AVATAR_RENDER_LAYER)),
+            "both-person meshes are not on the avatar layer"
+        );
     }
 }

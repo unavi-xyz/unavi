@@ -1,6 +1,7 @@
 use bevy::{
     input::mouse::{
         AccumulatedMouseMotion,
+        MouseScrollPixelsPerLine,
         MouseScrollUnit,
         MouseWheel,
     },
@@ -26,18 +27,18 @@ use crate::{
 /// a guest ("notches turned on each axis"). Hardware that reports
 /// [`MouseScrollUnit::Line`] sends one notch as a line; a platform that reports
 /// [`MouseScrollUnit::Pixel`] sends many, and the browser reports those in
-/// physical pixels, so both Bevy's own conversion factor and the window's scale
+/// physical pixels, so both [`MouseScrollPixelsPerLine`] and the window's scale
 /// factor divide it back down. Without that, one notch on the web moves a
 /// hundred times as far as one notch on the desktop.
 #[derive(Resource, Default, Clone, Copy, Debug, PartialEq)]
 pub struct Notches(pub Vec2);
 
 /// `event`'s travel in notches, on a window at `scale`.
-fn notches_of(event: &MouseWheel, scale: f32) -> Vec2 {
+fn notches_of(event: &MouseWheel, scale: f32, pixels_per_line: f32) -> Vec2 {
     let delta = Vec2::new(event.x, event.y);
     match event.unit {
         MouseScrollUnit::Line => delta,
-        MouseScrollUnit::Pixel => delta / (MouseScrollUnit::SCROLL_UNIT_CONVERSION_FACTOR * scale),
+        MouseScrollUnit::Pixel => delta / (pixels_per_line * scale),
     }
 }
 
@@ -47,6 +48,7 @@ pub fn read(
     window: Query<&Window, With<PrimaryWindow>>,
     buttons: Res<ButtonInput<MouseButton>>,
     config: Res<InputConfig>,
+    pixels_per_line: Res<MouseScrollPixelsPerLine>,
     mut state: ResMut<ActionState>,
     mut notches: ResMut<Notches>,
 ) {
@@ -62,7 +64,7 @@ pub fn read(
     let scale = window.single().map_or(1.0, Window::scale_factor);
     let mut turned = Vec2::ZERO;
     for event in wheel.read() {
-        turned += notches_of(event, scale);
+        turned += notches_of(event, scale, **pixels_per_line);
     }
     notches.0 = turned;
 
@@ -97,6 +99,7 @@ mod tests {
         AccumulatedMouseMotion,
         ActionState,
         InputConfig,
+        MouseScrollPixelsPerLine,
         MouseScrollUnit,
         MouseWheel,
         Notches,
@@ -104,6 +107,8 @@ mod tests {
         read,
     };
     use crate::action::Action;
+
+    const PIXELS_PER_LINE: f32 = 100.0;
 
     /// The notches one wheel event turns, and the reach `read` gives it.
     fn wheel_turns(unit: MouseScrollUnit, y: f32) -> (Vec2, f32) {
@@ -113,7 +118,8 @@ mod tests {
             .init_resource::<ButtonInput<MouseButton>>()
             .init_resource::<InputConfig>()
             .init_resource::<ActionState>()
-            .init_resource::<Notches>();
+            .init_resource::<Notches>()
+            .init_resource::<MouseScrollPixelsPerLine>();
         app.world_mut().write_message(MouseWheel {
             unit,
             x: 0.0,
@@ -139,7 +145,7 @@ mod tests {
         let (line, line_reach) = wheel_turns(MouseScrollUnit::Line, 1.0);
         let (pixel, pixel_reach) = wheel_turns(
             MouseScrollUnit::Pixel,
-            MouseScrollUnit::SCROLL_UNIT_CONVERSION_FACTOR,
+            PIXELS_PER_LINE,
         );
 
         assert!(
@@ -157,11 +163,12 @@ mod tests {
             &MouseWheel {
                 unit:   MouseScrollUnit::Pixel,
                 x:      0.0,
-                y:      2.0 * MouseScrollUnit::SCROLL_UNIT_CONVERSION_FACTOR,
+                y:      2.0 * PIXELS_PER_LINE,
                 window: Entity::PLACEHOLDER,
                 phase:  TouchPhase::Moved,
             },
             2.0,
+            PIXELS_PER_LINE,
         );
 
         assert!((notches.y - 1.0).abs() < 1.0e-5, "got {notches}");
@@ -179,6 +186,7 @@ mod tests {
             .init_resource::<InputConfig>()
             .init_resource::<ActionState>()
             .init_resource::<Notches>()
+            .init_resource::<MouseScrollPixelsPerLine>()
             .add_systems(Update, read);
         for y in [0.5, 0.5] {
             app.world_mut().write_message(MouseWheel {

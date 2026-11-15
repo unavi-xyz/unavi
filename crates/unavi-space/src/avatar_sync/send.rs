@@ -8,7 +8,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use serde_vrm::vrm0::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_agent::{
     AgentAvatar,
     LocalAgent,
@@ -50,18 +50,18 @@ use crate::{
 /// Humanoid bones streamed to peers, ordered by visual significance and capped
 /// at [`MAX_POSE_BONES`]. Bones absent from an
 /// avatar's rig are simply skipped.
-const NETWORKED_BONES: [BoneName; 11] = [
-    BoneName::Hips,
-    BoneName::Spine,
-    BoneName::Chest,
-    BoneName::Neck,
-    BoneName::Head,
-    BoneName::LeftUpperArm,
-    BoneName::LeftLowerArm,
-    BoneName::LeftHand,
-    BoneName::RightUpperArm,
-    BoneName::RightLowerArm,
-    BoneName::RightHand,
+const NETWORKED_BONES: [HumanBoneName; 11] = [
+    HumanBoneName::Hips,
+    HumanBoneName::Spine,
+    HumanBoneName::Chest,
+    HumanBoneName::Neck,
+    HumanBoneName::Head,
+    HumanBoneName::LeftUpperArm,
+    HumanBoneName::LeftLowerArm,
+    HumanBoneName::LeftHand,
+    HumanBoneName::RightUpperArm,
+    HumanBoneName::RightLowerArm,
+    HumanBoneName::RightHand,
 ];
 
 const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
@@ -69,11 +69,11 @@ const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
 /// Desktop tracks nothing but the look pitch, which the animation system does
 /// not touch; the limbs are reproduced by the receiver's own locomotion
 /// animation.
-const DESKTOP_BONES: [BoneName; 1] = [BoneName::Head];
+const DESKTOP_BONES: [HumanBoneName; 1] = [HumanBoneName::Head];
 
 /// The bones this agent streams: its whole tracked pose in VR, just the head on
 /// desktop.
-const fn streamed_bones(is_xr: bool) -> &'static [BoneName] {
+const fn streamed_bones(is_xr: bool) -> &'static [HumanBoneName] {
     if is_xr {
         &NETWORKED_BONES
     } else {
@@ -164,8 +164,8 @@ pub fn send_agent_pose(
 fn gather_bones(
     bones: &AvatarBones,
     locals: &Query<&Transform>,
-    names: &[BoneName],
-) -> HashMap<BoneName, RigidTransform<F16Vec3>> {
+    names: &[HumanBoneName],
+) -> HashMap<HumanBoneName, RigidTransform<F16Vec3>> {
     names
         .iter()
         .filter_map(|name| {

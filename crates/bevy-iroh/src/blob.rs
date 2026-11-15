@@ -207,7 +207,7 @@ pub(crate) fn start_blob_fetches(
     }
 }
 
-pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
+pub(crate) fn on_blob_request_remove(trigger: On<Remove<BlobRequest>>, mut commands: Commands) {
     commands.entity(trigger.entity).try_remove::<BlobPending>();
 }
 

@@ -6,10 +6,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{
-    Context,
-    bail,
-};
+use anyhow::bail;
 use bevy::prelude::*;
 use iroh::{
     EndpointId,
@@ -136,7 +133,7 @@ pub async fn recv_state_stream(
             guards::claim_remote_peer(world, peer, claimed, generation)
         })
         .await
-        .context("claim remote peer")?;
+        .ok_or_else(|| anyhow::anyhow!("claim remote peer: the world is gone"))?;
 
     let res = recv_loop(link, peer_ent, peer, did.as_ref(), &mut rx).await;
     let released = link
@@ -169,7 +166,7 @@ async fn recv_loop(
         let len = match rx.read_u32().await {
             Ok(len) => len as usize,
             Err(err) if read_disconnected(&err) => return Ok(()),
-            Err(err) => return Err(err).context("read len"),
+            Err(err) => return Err(anyhow::anyhow!("read len: {err}")),
         };
         if len > MAX_STATE_FRAME {
             bail!("state frame of {len} bytes exceeds {MAX_STATE_FRAME}")
@@ -180,12 +177,13 @@ async fn recv_loop(
             .take(len as u64)
             .read_to_end(&mut buf)
             .await
-            .context("read msg")?;
+            .map_err(|err| anyhow::anyhow!("read msg: {err}"))?;
         if buf.len() != len {
             bail!("state frame truncated");
         }
 
-        let msg = postcard::from_bytes::<ReplicationMsg>(&buf).context("parse msg")?;
+        let msg = postcard::from_bytes::<ReplicationMsg>(&buf)
+            .map_err(|err| anyhow::anyhow!("parse msg: {err}"))?;
         let is_snapshot = matches!(msg, ReplicationMsg::Snapshot { .. });
         if snapshot_frames > 0 && !is_snapshot {
             bail!("state message interleaved with a snapshot");
@@ -254,7 +252,7 @@ async fn recv_loop(
             .push(move |world: &mut World| guards::apply_remote(world, peer_ent, change))
             .send()
             .await
-            .context("async command queue closed")?;
+            .map_err(|err| anyhow::anyhow!("async command queue closed: {err}"))?;
     }
 }
 

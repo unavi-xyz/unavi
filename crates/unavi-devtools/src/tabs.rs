@@ -1,17 +1,23 @@
 use bevy::{
-    ecs::spawn::Spawn,
     feathers::{
-        controls::{
-            ButtonBundleProps,
-            ButtonVariant,
+        constants::{
+            fonts,
+            size,
         },
+        controls::ButtonVariant,
+        font_styles::InheritableFont,
+        rounded_corners::RoundedCorners,
         theme::ThemedText,
     },
     prelude::*,
+    text::FontWeight,
     ui_widgets::Activate,
 };
 
-use crate::overlay::DevOverlay;
+use crate::{
+    button::button,
+    overlay::DevOverlay,
+};
 
 /// Marks a node as a dev tools panel's content root. Spawn one (with a panel
 /// marker component) to contribute a tab; the framework mounts it and builds
@@ -44,14 +50,11 @@ pub fn panel_active<M: Component>(q: Query<(), (With<M>, With<ActivePanel>)>) ->
     !q.is_empty()
 }
 
-#[expect(
-    deprecated,
-    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
-)]
 pub(crate) fn register_panel(
-    add: On<Add, DevPanel>,
+    add: On<Add<DevPanel>>,
     panels: Query<&DevPanel>,
     overlay: Option<Res<DevOverlay>>,
+    assets: Res<AssetServer>,
     mut active: ResMut<ActiveDevPanel>,
     mut commands: Commands,
 ) {
@@ -64,11 +67,26 @@ pub(crate) fn register_panel(
     };
     let title = dev_panel.title.clone();
 
+    let font = assets.load(fonts::REGULAR);
     commands.entity(panel).insert(ChildOf(overlay.body));
     commands.entity(overlay.tab_bar).with_children(|tabs| {
-        tabs.spawn(bevy::feathers::controls::button_bundle(
-            ButtonBundleProps::default(),
-            PanelButton(panel),
+        tabs.spawn(button(
+            Node {
+                height: size::ROW_HEIGHT,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                padding: UiRect::horizontal(px(8)),
+                border_radius: RoundedCorners::All.to_border_radius(4.0),
+                ..default()
+            },
+            (
+                PanelButton(panel),
+                InheritableFont {
+                    font,
+                    font_size: size::MEDIUM_FONT,
+                    weight: FontWeight::NORMAL,
+                },
+            ),
             Spawn((Text::new(title), ThemedText)),
         ));
     });

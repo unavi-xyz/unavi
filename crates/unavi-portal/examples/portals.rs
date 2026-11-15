@@ -271,7 +271,7 @@ fn spawn_ramp(
     );
     let mesh = meshes.add(Extrusion::new(profile, width));
 
-    let hull = Collider::convex_hull(vec![
+    let hull = Collider::convex_hull(&[
         Vec3::new(-hl, 0.0, -hw),
         Vec3::new(hl, 0.0, -hw),
         Vec3::new(hl, height, -hw),

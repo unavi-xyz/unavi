@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_vrm::BoneName;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_avatar::bones::AvatarBones;
 
 use crate::{
@@ -17,7 +17,7 @@ pub fn apply_head_tracking(
             continue;
         };
 
-        let Some(&head_bone) = avatar_bones.get(&BoneName::Head) else {
+        let Some(&head_bone) = avatar_bones.get(&HumanBoneName::Head) else {
             continue;
         };
 

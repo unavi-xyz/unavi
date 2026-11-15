@@ -10,7 +10,7 @@ use bevy::{
     render::render_resource::AsBindGroup,
     shader::ShaderRef,
 };
-use bevy_vrm::mtoon::MtoonMaterial;
+use bevy_shader_mtoon::MtoonMaterial;
 
 pub const PORTAL_CLIP_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("9a4065b6-b09f-4091-ae05-2630fcec10bb");

@@ -33,7 +33,7 @@ use crate::{
 };
 
 /// Re-emits the whole scene when a placed document spawns.
-pub fn resync_on_add(trigger: On<Add, Hsd>, docs: Query<(&Hsd, Has<Unplaced>)>) {
+pub fn resync_on_add(trigger: On<Add<Hsd>>, docs: Query<(&Hsd, Has<Unplaced>)>) {
     let Ok((doc, unplaced)) = docs.get(trigger.entity) else {
         return;
     };
@@ -46,7 +46,7 @@ pub fn resync_on_add(trigger: On<Add, Hsd>, docs: Query<(&Hsd, Has<Unplaced>)>) 
 }
 
 /// Re-emits the whole scene when a document is placed.
-pub fn resync_on_place(trigger: On<Remove, Unplaced>, docs: Query<&Hsd>) {
+pub fn resync_on_place(trigger: On<Remove<Unplaced>>, docs: Query<&Hsd>) {
     if let Ok(doc) = docs.get(trigger.entity)
         && let Some(mut state) = doc.lock()
     {

@@ -11,7 +11,7 @@ use crate::{
 /// Every peer runs every script; one that should act once decides at run time,
 /// through `wired:peer/authority`.
 pub fn load_hsd_scripts(
-    trigger: On<Add, HsdScript>,
+    trigger: On<Add<HsdScript>>,
     scripts: Query<&HsdScript>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,

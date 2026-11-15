@@ -142,7 +142,7 @@ impl DocFeed {
 
 /// Gives a namespace-backed document a feed unless it already has one.
 pub(crate) fn feed_namespace(
-    trigger: On<Add, HsdNamespace>,
+    trigger: On<Add<HsdNamespace>>,
     docs: Query<&HsdNamespace, Without<DocFeed>>,
     mut commands: Commands,
 ) {
@@ -184,7 +184,7 @@ pub(crate) fn apply_doc_deltas(
             else {
                 continue;
             };
-            for reference in references.iter_many(site_instances.iter()) {
+            for reference in references.iter_many(site_instances.iter()).matched() {
                 let Some(mut state) = reference.lock() else {
                     continue;
                 };

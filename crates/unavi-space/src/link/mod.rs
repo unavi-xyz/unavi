@@ -282,7 +282,7 @@ impl PeerLink {
 
 /// Installs the link once the endpoint and the local identity both exist.
 pub fn register_protocol(
-    trigger: On<Add, IrohEndpoint>,
+    trigger: On<Add<IrohEndpoint>>,
     endpoints: Query<&IrohEndpoint>,
     identity: Option<Res<LocalIdentity>>,
     policy: Res<unavi_policy::Policy>,
@@ -322,7 +322,7 @@ pub fn register_protocol(
 
 /// Ends the connection to a peer no longer tracked.
 pub fn disconnect_peer(
-    trigger: On<Remove, Peer>,
+    trigger: On<Remove<Peer>>,
     peers: Query<&Peer>,
     link: Option<Res<PeerLink>>,
 ) {

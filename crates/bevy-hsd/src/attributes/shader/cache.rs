@@ -148,7 +148,7 @@ impl ShaderGraphCache {
 }
 
 pub(crate) fn evict_document_shaders(
-    trigger: On<Remove, Hsd>,
+    trigger: On<Remove<Hsd>>,
     mut cache: ResMut<ShaderGraphCache>,
 ) {
     let Some(dropped) = cache.charged.remove(&trigger.entity) else {

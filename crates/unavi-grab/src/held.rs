@@ -128,7 +128,7 @@ pub fn begin_grab(
 /// other components go with it — so `Held`'s own value is still readable
 /// here no matter which path ended the grab.
 pub fn on_held_removed(
-    trigger: On<Remove, Held>,
+    trigger: On<Remove<Held>>,
     held: Query<&Held>,
     gravity: Query<&GravityScale>,
     mut commands: Commands,

@@ -44,7 +44,7 @@ impl Plugin for CameraPlugin {
 }
 
 pub fn apply_camera_effects(
-    trigger: On<Add, Camera3d>,
+    trigger: On<Add<Camera3d>>,
     portal_cameras: Query<(), With<PortalCamera>>,
     mut commands: Commands,
     sky: Res<sky::blend::SkyBlend>,

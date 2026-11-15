@@ -198,12 +198,7 @@ pub fn build(
 }
 
 /// Replaces `old` with a trace routed from a socket now standing at `seat`.
-pub fn retrace(
-    doc: &Document,
-    root: (u64, u64),
-    seat: Vec3,
-    old: &Trace,
-) -> anyhow::Result<Trace> {
+pub fn retrace(doc: &Document, root: (u64, u64), seat: Vec3, old: &Trace) -> anyhow::Result<Trace> {
     let dark = glow(NEUTRAL, 0.0);
     let (batch, trace) = trace::build(doc, doc.local(), root, seat, dark)?;
     old.remove(batch).flush()?;

@@ -1,6 +1,6 @@
 //! The black stone and the socket in its top, all beneath the socket prim: the
-//! recess and its rim, the square of light around it, the cross on its faces, the shaft
-//! and motes over it, and the ghost.
+//! recess and its rim, the square of light around it, the cross on its faces,
+//! the shaft and motes over it, and the ghost.
 
 use wired_guest::{
     beacon::BEACON_SIZE,

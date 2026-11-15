@@ -67,12 +67,20 @@ pub fn build<'a>(
     let mut paving = Vec::new();
     for (low, high) in route::grounded(&route) {
         let from = Vec3::new(low.x - PAVING_MARGIN, 0.0, low.z - PAVING_MARGIN);
-        let to = Vec3::new(high.x + PAVING_MARGIN, PAVING_HEIGHT, high.z + PAVING_MARGIN);
+        let to = Vec3::new(
+            high.x + PAVING_MARGIN,
+            PAVING_HEIGHT,
+            high.z + PAVING_MARGIN,
+        );
         let slab = Cuboid::new((to - from).abs()).mesh()?;
         batch = place(batch, slab, root, from.midpoint(to), material::white());
         paving.push(slab);
     }
-    let corners = route.iter().chain(&route::opening()[1..]).copied().collect::<Vec<_>>();
+    let corners = route
+        .iter()
+        .chain(&route::opening()[1..])
+        .copied()
+        .collect::<Vec<_>>();
     let mut runs = Vec::with_capacity(corners.len());
     for pair in corners.windows(2) {
         let (start, end) = (pair[0], pair[1]);

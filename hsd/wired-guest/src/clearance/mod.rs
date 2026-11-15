@@ -165,5 +165,4 @@ fn snap(at: Vec3) -> Vec3 {
     Vec3::new(round(at.x), round(at.y), round(at.z))
 }
 
-#[cfg(test)]
-mod tests;
+#[cfg(test)] mod tests;

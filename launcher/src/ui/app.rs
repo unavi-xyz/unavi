@@ -7,7 +7,7 @@ use super::{
     settings::Settings,
 };
 
-const TOKEN_STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/tokens.css"));
+const TOKEN_STYLES: &str = include_str!("../../assets/tokens.css");
 const BASE_STYLES: &str = include_str!("../../assets/base.css");
 const BUTTON_STYLES: &str = include_str!("../../assets/buttons.css");
 const COMPONENT_STYLES: &str = include_str!("../../assets/components.css");

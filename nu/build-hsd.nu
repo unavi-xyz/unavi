@@ -66,7 +66,7 @@ def output_path [crate: string] {
 # may embed, and the workspace manifests. Build outputs are skipped.
 def newest_input [] {
   let tree = glob "{hsd,protocol/wit,crates/hsd,crates/hsd-cli,crates/unavi-app/assets}/**/*" --no-dir --exclude ["**/target/**" "crates/unavi-app/assets/hsd/**"]
-  $tree | append ["Cargo.toml" "Cargo.lock"] | append (glob "assets/tokens.*")
+  $tree | append ["Cargo.toml" "Cargo.lock"]
   | par-each {|file| ls -l $file | get 0.modified }
   | math max
 }

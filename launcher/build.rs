@@ -28,10 +28,6 @@ fn main() {
     )
     .expect("write logo data uri");
 
-    let tokens = assets.join("tokens.css");
-    println!("cargo:rerun-if-changed={}", tokens.display());
-    fs::copy(&tokens, out_dir.join("tokens.css")).expect("copy tokens");
-
     let icon = assets.join("icon-rounded.png");
     println!("cargo:rerun-if-changed={}", icon.display());
     fs::copy(&icon, out_dir.join("icon-rounded.png")).expect("copy icon");

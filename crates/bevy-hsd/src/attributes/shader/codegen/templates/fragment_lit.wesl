@@ -1,6 +1,7 @@
 import bevy_pbr::render::forward_io::{VertexOutput, FragmentOutput};
 import bevy_pbr::render::mesh_functions;
-import bevy_pbr::render::mesh_view_bindings::{view, globals, view_transmission_texture, view_transmission_sampler};
+import bevy_pbr::render::mesh_view_bindings::{view, globals};
+@if(VIEW_TRANSMISSION_TEXTURE) import bevy_pbr::render::mesh_view_bindings::{view_transmission_texture, view_transmission_sampler};
 import bevy_pbr::render::pbr_fragment::pbr_input_from_vertex_output;
 import bevy_pbr::render::pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing, alpha_discard};
 

@@ -68,7 +68,18 @@ fn expand_conditionals(source: &str, defined: bool) -> String {
 /// The helper functions a generated body calls, spliced in from the shipped
 /// templates rather than restated here. A copy in the harness would let the
 /// real ones drift out from under the tests meant to cover them.
-const HELPERS: &str = concat!(
+///
+/// The `SceneColor` helper carries `@if`ed statements, so the helpers go
+/// through the same preprocessor as the body.
+const SURFACE_HELPERS: &str = concat!(
+    include_str!("../src/attributes/shader/codegen/templates/noise.wesl"),
+    include_str!("../src/attributes/shader/codegen/templates/context.wesl"),
+    include_str!("../src/attributes/shader/codegen/templates/scene_color.wesl"),
+);
+
+/// The displacement harness declares no view bindings, so it leaves out the
+/// `SceneColor` helper.
+const DISPLACEMENT_HELPERS: &str = concat!(
     include_str!("../src/attributes/shader/codegen/templates/noise.wesl"),
     include_str!("../src/attributes/shader/codegen/templates/context.wesl"),
 );
@@ -81,7 +92,7 @@ const HELPERS: &str = concat!(
 fn assert_surface_valid(body: &str, out_expr: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/surface.wgsl")
-            .replace("//#HELPERS", HELPERS)
+            .replace("//#HELPERS", &expand_conditionals(SURFACE_HELPERS, defined))
             .replace("//#BODY", &expand_conditionals(body, defined))
             .replace("{OUT_EXPR}", out_expr);
 
@@ -98,7 +109,7 @@ fn assert_surface_valid(body: &str, out_expr: &str) {
 fn assert_displacement_valid(body: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/displacement.wgsl")
-            .replace("//#HELPERS", HELPERS)
+            .replace("//#HELPERS", DISPLACEMENT_HELPERS)
             .replace("//#BODY", &expand_conditionals(body, defined));
         // The generated body reads `vertex.position`/`vertex.normal` fields,
         // but the placeholder is a bare `vec3<f32>`. Rewrite those accesses so
@@ -238,6 +249,29 @@ fn a_graph_can_bend_what_is_drawn_behind_it() {
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated).expect("codegen");
     assert_surface_valid(&body, "out_color");
+}
+
+/// A view binds the transmission texture only when it prepares one, so an
+/// unconditional import fails to resolve in a view with no transmissive
+/// surface and takes the whole shader with it.
+#[test]
+fn the_transmission_texture_is_imported_under_its_shader_flag() {
+    let graph = ShaderGraph::default();
+    let validated = validate(&graph).expect("valid");
+    let fragment = generate_fragment_shader(&graph, &validated).expect("codegen");
+    assert!(
+        fragment
+            .lines()
+            .any(|line| line.starts_with("@if(VIEW_TRANSMISSION_TEXTURE)")
+                && line.contains("view_transmission_texture")),
+        "{fragment}"
+    );
+    assert!(
+        !fragment
+            .lines()
+            .any(|line| line.starts_with("import") && line.contains("view_transmission")),
+        "{fragment}"
+    );
 }
 
 /// An unlit graph reading a normal must not reference `pbr_input`, which only

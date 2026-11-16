@@ -37,6 +37,10 @@ const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wesl");
 /// than the graph's own hash.
 const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wesl");
 
+/// The `SceneColor` helper, fragment only: the vertex stage binds no view
+/// texture. Same terms as [`CONTEXT_FUNCTIONS`].
+const SCENE_COLOR_FUNCTIONS: &str = include_str!("templates/scene_color.wesl");
+
 fn texture_bindings() -> Result<String, fmt::Error> {
     let mut out = String::new();
     for slot in 0..MAX_TEXTURE_SAMPLES {
@@ -78,11 +82,12 @@ pub fn generate_fragment_shader(
 ) -> Result<String, fmt::Error> {
     let body = generate_surface_body(graph, validated)?;
     let preamble = format!(
-        "{uniform}\n{textures}\n{noise}\n{context}",
+        "{uniform}\n{textures}\n{noise}\n{context}\n{scene}",
         uniform = uniform_block(),
         textures = texture_bindings()?,
         noise = NOISE_FUNCTIONS,
         context = CONTEXT_FUNCTIONS,
+        scene = SCENE_COLOR_FUNCTIONS,
     );
 
     Ok(match &graph.surface.output {

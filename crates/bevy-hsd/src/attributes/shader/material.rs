@@ -27,7 +27,7 @@ use hsd::attributes::shader::{
 /// Unlit black, so an unresolved material is visibly wrong rather than
 /// silently reusing the pipeline's default. [`ShaderGraphMaterial::specialize`]
 /// overrides it once a graph loads.
-const FALLBACK_SHADER: &str = "embedded://bevy_hsd/attributes/shader/fallback.wgsl";
+const FALLBACK_SHADER: &str = "embedded://bevy_hsd/attributes/shader/fallback.wesl";
 
 #[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]
 pub struct GraphParams {

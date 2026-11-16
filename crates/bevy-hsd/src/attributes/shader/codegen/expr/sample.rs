@@ -33,14 +33,12 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
         }
         Node::SceneColor { uv } => {
             // The view-wide texture holding what was drawn before this
-            // surface. Bound unconditionally by `mesh_view_bindings`. Filled
-            // only for materials in the transmissive phase, which
-            // `ShaderGraphMaterial` requests when a graph contains this node.
-            out.push_str(
-                "textureSampleLevel(view_transmission_texture, view_transmission_sampler, ",
-            );
+            // surface. Filled only for materials in the transmissive phase,
+            // which `ShaderGraphMaterial` requests when a graph contains this
+            // node; the helper reads black where a view binds none.
+            out.push_str("graph_scene_color(");
             port_expr(out, public_inputs, uv)?;
-            out.push_str(", 0.0)");
+            out.push(')');
         }
         Node::Select { cond, a, b } => {
             out.push_str("select(");

@@ -1,10 +1,8 @@
-#import bevy_pbr::{
-    forward_io::{VertexOutput, FragmentOutput},
-    mesh_functions,
-    mesh_view_bindings::{view, globals, view_transmission_texture, view_transmission_sampler},
-    pbr_fragment::pbr_input_from_vertex_output,
-    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing, alpha_discard},
-}
+import bevy_pbr::render::forward_io::{VertexOutput, FragmentOutput};
+import bevy_pbr::render::mesh_functions;
+import bevy_pbr::render::mesh_view_bindings::{view, globals, view_transmission_texture, view_transmission_sampler};
+import bevy_pbr::render::pbr_fragment::pbr_input_from_vertex_output;
+import bevy_pbr::render::pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing, alpha_discard};
 
 //#PREAMBLE
 @fragment
@@ -26,7 +24,11 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     pbr_input.material.diffuse_transmission = out_diffuse_transmission;
     pbr_input.material.thickness = out_thickness;
     pbr_input.material.ior = out_ior;
-    pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
+    pbr_input.material.base_color = alpha_discard(
+        pbr_input.material.flags,
+        pbr_input.material.alpha_cutoff,
+        pbr_input.material.base_color
+    );
     pbr_input.world_normal = out_normal;
     pbr_input.N = normalize(out_normal);
 

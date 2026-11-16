@@ -6,7 +6,7 @@ use bevy::{
     },
 };
 
-const SHADER: &str = "embedded://bevy_msdf/msdf.wgsl";
+const SHADER: &str = "embedded://bevy_msdf/msdf.wesl";
 
 /// The baked distance range as a fraction of a page's dimensions, which is the
 /// one number tying a shader to the atlas it samples.

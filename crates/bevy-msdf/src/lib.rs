@@ -37,7 +37,7 @@ pub struct MsdfPlugin;
 
 impl Plugin for MsdfPlugin {
     fn build(&self, app: &mut App) {
-        embedded_asset!(app, "msdf.wgsl");
+        embedded_asset!(app, "msdf.wesl");
 
         app.add_plugins((
             MaterialPlugin::<material::MsdfMaterial>::default(),

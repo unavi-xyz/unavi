@@ -30,7 +30,7 @@ use super::expr::{
 /// it is absent.
 ///
 /// `VertexOutput`/`Vertex` declare `uv`, `color`, `normal` and `position`
-/// behind `#ifdef`s, and an HSD prim supplies mesh attributes individually,
+/// behind `@if` flags, and an HSD prim supplies mesh attributes individually,
 /// so a graph reading `Uv` on a mesh with no `UV_0` degrades instead of
 /// failing to compile.
 const fn guarded_leaf(node: &Node) -> Option<(&'static str, &'static str, &'static str)> {
@@ -62,8 +62,8 @@ fn emit_nodes(
         if let Some((def, present, absent)) = guarded_leaf(node) {
             writeln!(
                 out,
-                "#ifdef {def}\n    let n{index}: {ty} = {present};\n#else\n    let n{index}: {ty} \
-                 = {absent};\n#endif"
+                "@if({def})\n    let n{index}: {ty} = {present};\n@if(!{def})\n    let n{index}: {ty} \
+                 = {absent};"
             )?;
         } else {
             write!(out, "    let n{index}: {ty} = ")?;
@@ -178,9 +178,9 @@ pub fn generate_displacement_body(
     out.push_str("    var out_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
     out.push_str("    var out_world_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
     out.push_str(
-        "#ifdef VERTEX_NORMALS\n    var out_normal_override: vec3<f32> = \
-         vertex.normal;\n#else\n    var out_normal_override: vec3<f32> = vec3<f32>(0.0, 0.0, \
-         1.0);\n#endif\n",
+        "@if(VERTEX_NORMALS)\n    var out_normal_override: vec3<f32> = \
+         vertex.normal;\n@if(!VERTEX_NORMALS)\n    var out_normal_override: vec3<f32> = \
+         vec3<f32>(0.0, 0.0, 1.0);\n",
     );
 
     for (name, port) in [

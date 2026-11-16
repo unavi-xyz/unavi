@@ -1,6 +1,4 @@
-#define_import_path unavi_portal::portal_clip
-
-@group(#{MATERIAL_BIND_GROUP}) @binding(100)
+@group(constants::MATERIAL_BIND_GROUP) @binding(100)
 var<uniform> clip_plane: vec4<f32>;
 
 // True for fragments behind the portal plane, which a straddling mesh must

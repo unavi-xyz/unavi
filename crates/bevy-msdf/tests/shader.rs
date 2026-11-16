@@ -1,8 +1,8 @@
 //! Parses the distance-field shader with `naga`, so a malformed one fails a
 //! `cargo test` rather than a run in a headset.
 //!
-//! Bevy's preprocessor is not WGSL: it resolves `#import` and substitutes
-//! `#{...}` before wgpu sees the source, so both are stood in for here.
+//! The shader is WESL, which naga does not parse: its `import`s and its
+//! `constants::` references are stood in for here.
 
 use naga::front::wgsl;
 
@@ -22,15 +22,15 @@ const MATERIAL_BIND_GROUP: &str = "3";
 fn preprocess(source: &str) -> String {
     let body = source
         .lines()
-        .filter(|line| !line.trim_start().starts_with("#import"))
+        .filter(|line| !line.trim_start().starts_with("import "))
         .collect::<Vec<_>>()
         .join("\n");
-    format!("{VERTEX_OUTPUT}{body}").replace("#{MATERIAL_BIND_GROUP}", MATERIAL_BIND_GROUP)
+    format!("{VERTEX_OUTPUT}{body}").replace("constants::MATERIAL_BIND_GROUP", MATERIAL_BIND_GROUP)
 }
 
 #[test]
 fn the_distance_field_shader_is_valid_wgsl() {
-    let source = preprocess(include_str!("../src/msdf.wgsl"));
+    let source = preprocess(include_str!("../src/msdf.wesl"));
     if let Err(err) = wgsl::parse_str(&source) {
         panic!("{}", err.emit_to_string(&source));
     }
@@ -38,7 +38,7 @@ fn the_distance_field_shader_is_valid_wgsl() {
 
 #[test]
 fn the_shader_binds_the_group_bevy_gives_a_material() {
-    let source = include_str!("../src/msdf.wgsl");
+    let source = include_str!("../src/msdf.wesl");
     assert!(
         !source.contains("@group(3)"),
         "a hardcoded index silently breaks the frame Bevy renumbers its groups"
@@ -46,7 +46,7 @@ fn the_shader_binds_the_group_bevy_gives_a_material() {
     for binding in 0..3 {
         assert!(
             source.contains(&format!(
-                "@group(#{{MATERIAL_BIND_GROUP}}) @binding({binding})"
+                "@group(constants::MATERIAL_BIND_GROUP) @binding({binding})"
             )),
             "binding {binding} must match the AsBindGroup attribute order"
         );

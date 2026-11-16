@@ -1,8 +1,8 @@
 //! Parses and validates the portal shader with `naga`, so a malformed one
 //! fails a `cargo test` rather than a run in a headset.
 //!
-//! Bevy's preprocessor is not WGSL: it resolves `#import` and substitutes
-//! `#{...}` before wgpu sees the source, so both are stood in for here.
+//! The shaders are WESL, which naga does not parse: their `import`s and their
+//! `constants::` references are stood in for here.
 
 use naga::{
     front::wgsl,
@@ -49,7 +49,7 @@ fn preprocess(stubs: &str, source: &str) -> String {
     let mut body = String::new();
     let mut in_import = false;
     for line in source.lines() {
-        if line.trim_start().starts_with("#import") {
+        if line.trim_start().starts_with("import ") {
             in_import = line.trim_end().ends_with('{');
             continue;
         }
@@ -60,7 +60,7 @@ fn preprocess(stubs: &str, source: &str) -> String {
         body.push_str(line);
         body.push('\n');
     }
-    format!("{stubs}{body}").replace("#{MATERIAL_BIND_GROUP}", MATERIAL_BIND_GROUP)
+    format!("{stubs}{body}").replace("constants::MATERIAL_BIND_GROUP", MATERIAL_BIND_GROUP)
 }
 
 fn assert_valid(source: &str) {
@@ -78,7 +78,7 @@ fn assert_valid(source: &str) {
 fn the_portal_shader_is_valid_wgsl() {
     assert_valid(&preprocess(
         PORTAL_STUBS,
-        include_str!("../assets/portal.wgsl"),
+        include_str!("../assets/portal.wesl"),
     ));
 }
 
@@ -86,13 +86,13 @@ fn the_portal_shader_is_valid_wgsl() {
 fn the_still_distance_shader_is_valid_wgsl() {
     assert_valid(&preprocess(
         DISTANCE_STUBS,
-        include_str!("../assets/still_distance.wgsl"),
+        include_str!("../assets/still_distance.wesl"),
     ));
 }
 
 #[test]
 fn the_still_distance_shader_mirrors_the_capture_constants() {
-    let source = include_str!("../assets/still_distance.wgsl");
+    let source = include_str!("../assets/still_distance.wesl");
     for constant in [
         format!("const FACE_SIZE: f32 = {:?};", still::FACE_SIZE as f32),
         format!("const NEAR: f32 = {:?};", still::NEAR),

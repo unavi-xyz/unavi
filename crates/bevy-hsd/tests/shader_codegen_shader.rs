@@ -38,23 +38,28 @@ use hsd::attributes::shader::{
 };
 use naga::front::wgsl;
 
-/// Resolves the `#ifdef`/`#else`/`#endif` a generated body may carry for
-/// optional mesh attributes, since plain `naga` has no preprocessor.
-/// Generated bodies never nest these, so one flag suffices.
-fn expand_ifdefs(source: &str, defined: bool) -> String {
+/// Chooses the branch a body carries for one optional mesh attribute, since
+/// plain `naga` has no preprocessor. Generated bodies condition on at most one
+/// flag, so one boolean suffices.
+fn expand_conditionals(source: &str, defined: bool) -> String {
     let mut out = String::new();
+    // A flag guards the one statement after it, kept or skipped alike.
     let mut keep = true;
+    let mut guarded = false;
     for line in source.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with("#ifdef ") {
-            keep = defined;
-        } else if trimmed == "#else" {
-            keep = !defined;
-        } else if trimmed == "#endif" {
-            keep = true;
-        } else if keep {
+        if let Some(rest) = trimmed.strip_prefix("@if(") {
+            keep = if rest.starts_with('!') { !defined } else { defined };
+            guarded = true;
+            continue;
+        }
+        if keep {
             out.push_str(line);
             out.push('\n');
+        }
+        if guarded && (trimmed.ends_with(';') || trimmed.ends_with('}')) {
+            keep = true;
+            guarded = false;
         }
     }
     out
@@ -64,20 +69,20 @@ fn expand_ifdefs(source: &str, defined: bool) -> String {
 /// templates rather than restated here. A copy in the harness would let the
 /// real ones drift out from under the tests meant to cover them.
 const HELPERS: &str = concat!(
-    include_str!("../src/attributes/shader/codegen/templates/noise.wgsl"),
-    include_str!("../src/attributes/shader/codegen/templates/context.wgsl"),
+    include_str!("../src/attributes/shader/codegen/templates/noise.wesl"),
+    include_str!("../src/attributes/shader/codegen/templates/context.wesl"),
 );
 
 /// Wraps a generated surface body in a bare WGSL module with no Bevy
 /// preprocessor syntax, so plain `naga` can parse it and malformed WGSL fails
-/// `cargo test`. Parses both branches of every `#ifdef`. `VertexOutput.uv` /
+/// `cargo test`. Parses both branches of every conditional. `VertexOutput.uv` /
 /// `.color` do not exist without their shader defs, and an HSD prim supplies
 /// mesh attributes individually.
 fn assert_surface_valid(body: &str, out_expr: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/surface.wgsl")
             .replace("//#HELPERS", HELPERS)
-            .replace("//#BODY", &expand_ifdefs(body, defined))
+            .replace("//#BODY", &expand_conditionals(body, defined))
             .replace("{OUT_EXPR}", out_expr);
 
         if let Err(err) = wgsl::parse_str(&module) {
@@ -94,7 +99,7 @@ fn assert_displacement_valid(body: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/displacement.wgsl")
             .replace("//#HELPERS", HELPERS)
-            .replace("//#BODY", &expand_ifdefs(body, defined));
+            .replace("//#BODY", &expand_conditionals(body, defined));
         // The generated body reads `vertex.position`/`vertex.normal` fields,
         // but the placeholder is a bare `vec3<f32>`. Rewrite those accesses so
         // the harness stays a single flat local instead of a full `Vertex`
@@ -386,12 +391,12 @@ fn the_shared_leaves_generate_valid_wgsl_in_displacement_too() {
 /// `VertexOutput.uv` only exists under `VERTEX_UVS_A`, and an HSD prim need
 /// not supply `UV_0`, so a `Uv` node must degrade rather than fail to compile.
 #[test]
-fn optional_mesh_attributes_are_guarded_by_their_shader_defs() {
+fn optional_mesh_attributes_are_guarded_by_their_shader_flags() {
     let graph = graph_with_output(vec![Node::Uv, Node::VertexColor], unlit(node(1)));
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated).expect("codegen");
-    assert!(body.contains("#ifdef VERTEX_UVS_A"), "{body}");
-    assert!(body.contains("#ifdef VERTEX_COLORS"), "{body}");
+    assert!(body.contains("@if(VERTEX_UVS_A)"), "{body}");
+    assert!(body.contains("@if(VERTEX_COLORS)"), "{body}");
     assert_surface_valid(&body, "out_color");
 }
 
@@ -438,7 +443,7 @@ fn fragment_shader_splices_the_body_and_declares_bevy_imports() {
     let graph = ShaderGraph::default();
     let validated = validate(&graph).expect("valid");
     let source = generate_fragment_shader(&graph, &validated).expect("codegen");
-    assert!(source.contains("#import bevy_pbr"));
+    assert!(source.contains("import bevy_pbr::"));
     assert!(source.contains("var out_color: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0);"));
     assert!(source.contains("var<uniform> params: GraphParams;"));
     assert!(source.contains("tex_3: texture_2d<f32>"));
@@ -491,7 +496,7 @@ fn vertex_shader_splices_the_displacement_body() {
     let source = generate_vertex_shader(&graph, &validated)
         .expect("codegen")
         .expect("has displacement");
-    assert!(source.contains("#import bevy_pbr"));
+    assert!(source.contains("import bevy_pbr::"));
     assert!(source.contains("vertex.position += out_position_offset;"));
     assert!(source.contains("mesh_position_local_to_world"));
 }

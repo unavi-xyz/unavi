@@ -29,13 +29,13 @@ use hsd::attributes::shader::{
 
 /// Payload-noise helpers the generated body calls into. Defined once per
 /// shader rather than inlined per `Noise` node.
-const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wgsl");
+const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wesl");
 
 /// Instance, object and UV helpers, on the same terms as [`NOISE_FUNCTIONS`].
 /// Emitted whether or not a graph calls them. Naga strips a function nothing
 /// reaches, and a conditional preamble would key the shader cache on more
 /// than the graph's own hash.
-const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wgsl");
+const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wesl");
 
 fn texture_bindings() -> Result<String, fmt::Error> {
     let mut out = String::new();
@@ -44,7 +44,7 @@ fn texture_bindings() -> Result<String, fmt::Error> {
         let sampler_binding = tex_binding + 1;
         writeln!(
             out,
-            "@group(#{{MATERIAL_BIND_GROUP}}) @binding({tex_binding})\nvar tex_{slot}: texture_2d<f32>;\n@group(#{{MATERIAL_BIND_GROUP}}) @binding({sampler_binding})\nvar samp_{slot}: sampler;"
+            "@group(constants::MATERIAL_BIND_GROUP) @binding({tex_binding})\nvar tex_{slot}: texture_2d<f32>;\n@group(constants::MATERIAL_BIND_GROUP) @binding({sampler_binding})\nvar samp_{slot}: sampler;"
         )?;
     }
     Ok(out)
@@ -52,11 +52,11 @@ fn texture_bindings() -> Result<String, fmt::Error> {
 
 fn uniform_block() -> String {
     format!(
-        "struct GraphParams {{\n    inputs: array<vec4<f32>, {MAX_PUBLIC_INPUTS}>,\n}};\n\n@group(#{{MATERIAL_BIND_GROUP}}) @binding(0)\nvar<uniform> params: GraphParams;\n"
+        "struct GraphParams {{\n    inputs: array<vec4<f32>, {MAX_PUBLIC_INPUTS}>,\n}};\n\n@group(constants::MATERIAL_BIND_GROUP) @binding(0)\nvar<uniform> params: GraphParams;\n"
     )
 }
 
-/// Splices a generated body and uniform preamble into a `.wgsl` template at
+/// Splices a generated body and uniform preamble into a `.wesl` template at
 /// its `//#PREAMBLE`/`//#BODY` line-comment markers.
 fn splice(template: &str, body: &str, preamble: &str) -> String {
     template
@@ -70,8 +70,8 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 /// for `Lit`. `Unlit` skips both and writes `out_color` straight to the
 /// fragment output.
 ///
-/// Not naga-testable standalone. The `#import`s are Bevy's shader-preprocessor
-/// syntax, so the integration tests wrap the bodies in a bare harness.
+/// Not naga-testable standalone. The `import`s are WESL, which naga does not
+/// parse, so the integration tests wrap the bodies in a bare harness.
 pub fn generate_fragment_shader(
     graph: &ShaderGraph,
     validated: &Validated,
@@ -87,12 +87,12 @@ pub fn generate_fragment_shader(
 
     Ok(match &graph.surface.output {
         SurfaceOutput::Lit(_) => splice(
-            include_str!("templates/fragment_lit.wgsl"),
+            include_str!("templates/fragment_lit.wesl"),
             &body,
             &preamble,
         ),
         SurfaceOutput::Unlit(_) => splice(
-            include_str!("templates/fragment_unlit.wgsl"),
+            include_str!("templates/fragment_unlit.wesl"),
             &body,
             &preamble,
         ),
@@ -121,7 +121,7 @@ pub fn generate_vertex_shader(
         context = CONTEXT_FUNCTIONS,
     );
     Ok(Some(splice(
-        include_str!("templates/vertex.wgsl"),
+        include_str!("templates/vertex.wesl"),
         &body,
         &preamble,
     )))

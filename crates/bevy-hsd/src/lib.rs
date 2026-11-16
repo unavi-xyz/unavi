@@ -32,7 +32,7 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        embedded_asset!(app, "attributes/shader/fallback.wgsl");
+        embedded_asset!(app, "attributes/shader/fallback.wesl");
 
         app.add_plugins((
             MaterialPlugin::<attributes::shader::material::ShaderGraphMaterial>::default(),

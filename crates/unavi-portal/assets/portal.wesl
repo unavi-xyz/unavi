@@ -1,11 +1,10 @@
-#import bevy_pbr::{
-    forward_io::{Vertex, VertexOutput},
-    mesh_view_bindings::{globals, view},
-}
+import bevy_pbr::render::forward_io::{Vertex, VertexOutput};
+import bevy_pbr::render::mesh_view_bindings::{globals, view};
 
-@group(#{MATERIAL_BIND_GROUP}) @binding(0)
+
+@group(constants::MATERIAL_BIND_GROUP) @binding(0)
 var live_texture: texture_2d<f32>;
-@group(#{MATERIAL_BIND_GROUP}) @binding(1)
+@group(constants::MATERIAL_BIND_GROUP) @binding(1)
 var live_sampler: sampler;
 
 struct PortalParams {
@@ -18,17 +17,17 @@ struct PortalParams {
     parallax:          u32,
 };
 
-@group(#{MATERIAL_BIND_GROUP}) @binding(2)
+@group(constants::MATERIAL_BIND_GROUP) @binding(2)
 var<uniform> params: PortalParams;
 
 // The arrival still: `still::FACES` in tiles of `ATLAS_COLUMNS` per row.
-@group(#{MATERIAL_BIND_GROUP}) @binding(3)
+@group(constants::MATERIAL_BIND_GROUP) @binding(3)
 var still_texture: texture_2d<f32>;
-@group(#{MATERIAL_BIND_GROUP}) @binding(4)
+@group(constants::MATERIAL_BIND_GROUP) @binding(4)
 var still_sampler: sampler;
 // Each texel's distance from its face's eye, in the still's layout. Read
 // unfiltered: a blend across a depth edge is a distance that is nowhere.
-@group(#{MATERIAL_BIND_GROUP}) @binding(5)
+@group(constants::MATERIAL_BIND_GROUP) @binding(5)
 var distance_texture: texture_2d<f32>;
 
 const MODE_LIVE: u32 = 0u;

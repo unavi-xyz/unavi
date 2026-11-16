@@ -16,9 +16,26 @@
 
       wasmBindgenAttr = "wasm-bindgen-cli_${builtins.replaceStrings [ "." ] [ "_" ] wasmBindgenVersion}";
 
+      # nixpkgs carries one CLI per wasm-bindgen version it packages, and
+      # Cargo.lock moves ahead of it; build the missing version from the crate.
       wasm-bindgen-cli =
         pkgs.${wasmBindgenAttr}
-          or (throw "nixpkgs has no `${wasmBindgenAttr}`, which Cargo.lock's wasm-bindgen ${wasmBindgenVersion} requires");
+          or (pkgs.callPackage (
+            { buildWasmBindgenCli, fetchCrate, rustPlatform }:
+            buildWasmBindgenCli rec {
+              src = fetchCrate {
+                pname = "wasm-bindgen-cli";
+                version = wasmBindgenVersion;
+                hash = "sha256-9Og1O/6/VC3sc5hBjoIWBErmLW2UHGMsTQO+6+m/dng=";
+              };
+
+              cargoDeps = rustPlatform.fetchCargoVendor {
+                inherit src;
+                inherit (src) pname version;
+                hash = "sha256-j81sUf1m5yXU4FJfGj7GV+hdqVCV8mRmNb0QIsMCjqw=";
+              };
+            }
+          ) { });
 
       src = lib.fileset.toSource rec {
         root = ../..;

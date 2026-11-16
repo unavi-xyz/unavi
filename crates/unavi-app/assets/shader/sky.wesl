@@ -1,7 +1,6 @@
-#import bevy_pbr::{
-    forward_io::VertexOutput,
-    mesh_view_bindings::view,
-}
+import bevy_pbr::render::forward_io::VertexOutput;
+import bevy_pbr::render::mesh_view_bindings::view;
+
 
 struct SkyParams {
     zenith: vec4<f32>,
@@ -15,7 +14,7 @@ struct SkyParams {
     pulse: f32,
 };
 
-@group(#{MATERIAL_BIND_GROUP}) @binding(0)
+@group(constants::MATERIAL_BIND_GROUP) @binding(0)
 var<uniform> params: SkyParams;
 
 const PI: f32 = 3.14159265;

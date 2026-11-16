@@ -99,12 +99,12 @@ impl ShaderGraphCache {
             .inspect_err(|err| warn!(?err, "failed to generate vertex shader"))
             .ok()?;
 
-        let fragment = shaders.add(Shader::from_wgsl(
+        let fragment = shaders.add(Shader::from_wesl(
             fragment_source,
             format!("generated://shader/{hash}/fragment"),
         ));
         let vertex = vertex_source.map(|source| {
-            shaders.add(Shader::from_wgsl(
+            shaders.add(Shader::from_wesl(
                 source,
                 format!("generated://shader/{hash}/vertex"),
             ))

@@ -1,6 +1,9 @@
-#import bevy_pbr::forward_io::VertexOutput
-#import bevy_shader_mtoon::mtoon::mtoon_shade
-#import unavi_portal::portal_clip::{portal_clipped, portal_cap_normal}
+import bevy_pbr::render::forward_io::VertexOutput;
+
+import bevy_shader_mtoon::mtoon::mtoon_shade;
+
+import unavi_portal::portal_clip::{portal_clipped, portal_cap_normal};
+
 
 @fragment
 fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> @location(0) vec4<f32> {

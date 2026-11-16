@@ -1,4 +1,4 @@
-#import bevy_pbr::forward_io::VertexOutput
+import bevy_pbr::render::forward_io::VertexOutput;
 
 struct MsdfSettings {
     color: vec4<f32>,
@@ -8,9 +8,9 @@ struct MsdfSettings {
     emissive: f32,
 }
 
-@group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> settings: MsdfSettings;
-@group(#{MATERIAL_BIND_GROUP}) @binding(1) var field_texture: texture_2d<f32>;
-@group(#{MATERIAL_BIND_GROUP}) @binding(2) var field_sampler: sampler;
+@group(constants::MATERIAL_BIND_GROUP) @binding(0) var<uniform> settings: MsdfSettings;
+@group(constants::MATERIAL_BIND_GROUP) @binding(1) var field_texture: texture_2d<f32>;
+@group(constants::MATERIAL_BIND_GROUP) @binding(2) var field_sampler: sampler;
 
 /// Each channel holds the distance to a different edge; their median is the
 /// true distance, which keeps corners sharp.

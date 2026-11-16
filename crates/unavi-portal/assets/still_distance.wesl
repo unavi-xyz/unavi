@@ -1,4 +1,5 @@
-#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
+import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput;
+
 
 // `still::FACE_SIZE` and `still::NEAR`, checked against them in
 // `tests/shader.rs`.

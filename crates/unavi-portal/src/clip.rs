@@ -12,8 +12,10 @@ use bevy::{
 };
 use bevy_shader_mtoon::MtoonMaterial;
 
+/// The WESL module holding the clip helpers the clip shaders import.
 pub const PORTAL_CLIP_SHADER_HANDLE: Handle<Shader> =
-    uuid_handle!("9a4065b6-b09f-4091-ae05-2630fcec10bb");
+    uuid_handle!("1d0f9b0e-6a3c-4d1e-8f5b-2c7a9e4d6b31");
+
 pub const PORTAL_CLIP_STANDARD_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("4946577f-5b0d-480a-80fa-7a57ad6d8d3b");
 pub const PORTAL_CLIP_MTOON_SHADER_HANDLE: Handle<Shader> =

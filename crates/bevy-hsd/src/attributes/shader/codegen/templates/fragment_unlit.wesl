@@ -1,9 +1,7 @@
-#import bevy_pbr::{
-    forward_io::{VertexOutput, FragmentOutput},
-    mesh_functions,
-    mesh_view_bindings::{view, globals, view_transmission_texture, view_transmission_sampler},
-    pbr_functions::calculate_view,
-}
+import bevy_pbr::render::forward_io::{VertexOutput, FragmentOutput};
+import bevy_pbr::render::mesh_functions;
+import bevy_pbr::render::mesh_view_bindings::{view, globals, view_transmission_texture, view_transmission_sampler};
+import bevy_pbr::render::pbr_functions::calculate_view;
 
 //#PREAMBLE
 @fragment

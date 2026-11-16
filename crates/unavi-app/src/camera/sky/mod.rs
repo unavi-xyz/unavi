@@ -75,7 +75,7 @@ impl SkyParams {
 
 impl Material for SkyMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shader/sky.wgsl".into()
+        "shader/sky.wesl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {

@@ -11,12 +11,13 @@ use bevy::{
     prelude::*,
 };
 
+use bevy_shader_mtoon::MtoonPlugin;
+
 use crate::{
     clip::{
         ClippedMtoonMaterial,
         ClippedStandardMaterial,
         PORTAL_CLIP_MTOON_SHADER_HANDLE,
-        PORTAL_CLIP_SHADER_HANDLE,
         PORTAL_CLIP_STANDARD_SHADER_HANDLE,
     },
     portal::PortalLimits,
@@ -50,6 +51,12 @@ pub struct PortalPlugin;
 impl Plugin for PortalPlugin {
     fn build(&self, app: &mut App) {
         load_shaders(app);
+
+        // A clipped MToon material extends MToon's own shader, which only
+        // exists once its plugin registers the library.
+        if !app.is_plugin_added::<MtoonPlugin>() {
+            app.add_plugins(MtoonPlugin);
+        }
 
         app.add_plugins((
             MaterialPlugin::<PortalMaterial>::default(),
@@ -108,37 +115,44 @@ impl Plugin for PortalPlugin {
 }
 
 fn load_shaders(app: &mut App) {
+    // The clip helpers are a WESL module other shaders import, so the asset
+    // needs the import path its module name comes from.
+    let _ = app
+        .world_mut()
+        .resource_mut::<Assets<Shader>>()
+        .insert(
+            clip::PORTAL_CLIP_SHADER_HANDLE.id(),
+            Shader::from_wesl(
+                include_str!("portal_clip.wesl"),
+                "embedded://unavi_portal/portal_clip.wesl",
+            ),
+        );
+
     load_internal_asset!(
         app,
         PORTAL_SHADER_HANDLE,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal.wgsl"),
-        Shader::from_wgsl
+        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal.wesl"),
+        Shader::from_wesl
     );
     load_internal_asset!(
         app,
         STILL_DISTANCE_SHADER_HANDLE,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/still_distance.wgsl"),
-        Shader::from_wgsl
-    );
-    load_internal_asset!(
-        app,
-        PORTAL_CLIP_SHADER_HANDLE,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal_clip.wgsl"),
-        Shader::from_wgsl
+        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/still_distance.wesl"),
+        Shader::from_wesl
     );
     load_internal_asset!(
         app,
         PORTAL_CLIP_STANDARD_SHADER_HANDLE,
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/assets/portal_clip_standard.wgsl"
+            "/assets/portal_clip_standard.wesl"
         ),
-        Shader::from_wgsl
+        Shader::from_wesl
     );
     load_internal_asset!(
         app,
         PORTAL_CLIP_MTOON_SHADER_HANDLE,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal_clip_mtoon.wgsl"),
-        Shader::from_wgsl
+        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal_clip_mtoon.wesl"),
+        Shader::from_wesl
     );
 }

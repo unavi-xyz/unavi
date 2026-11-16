@@ -8,7 +8,10 @@ use bevy::{
         RenderTarget,
         visibility::RenderLayers,
     },
-    core_pipeline::tonemapping::Tonemapping,
+    core_pipeline::tonemapping::{
+        DebandDither,
+        Tonemapping,
+    },
     light::Atmosphere,
     pbr::AtmosphereSettings,
     post_process::dof::DepthOfField,
@@ -137,7 +140,7 @@ pub(crate) fn install_live(world: &mut World, portal: Entity) -> bool {
         .get::<Camera3d>(viewer_camera)
         .cloned()
         .unwrap_or_default();
-    let tonemapping = view_tonemapping(world, viewer_camera);
+    let color_output = view_color_output(world, viewer_camera);
     let view_camera_ent = world
         .spawn((
             PortalViewCamera { portal },
@@ -148,7 +151,7 @@ pub(crate) fn install_live(world: &mut World, portal: Entity) -> bool {
             },
             RenderTarget::Image(image_handle.into()),
             camera_3d,
-            tonemapping,
+            color_output,
         ))
         .id();
 
@@ -156,18 +159,27 @@ pub(crate) fn install_live(world: &mut World, portal: Entity) -> bool {
     true
 }
 
-/// An HDR viewer camera tonemaps as a post-pass, so a portal camera's image
+/// How a portal camera writes colour into its image.
+///
+/// An HDR viewer camera tonemaps as a post-pass, so the portal camera's image
 /// stays linear to avoid double-darkening. An LDR one tonemaps in-shader, so
-/// the portal camera tonemaps the same way.
-pub(crate) fn view_tonemapping(world: &World, viewer_camera: Entity) -> Tonemapping {
-    if world.get::<Hdr>(viewer_camera).is_some() {
+/// the portal camera tonemaps the same way. Dithering is off either way: the
+/// image is a 16-bit intermediate the portal shader samples, and the viewer
+/// camera dithers once, where it writes the frame.
+pub(crate) fn view_color_output(
+    world: &World,
+    viewer_camera: Entity,
+) -> (Tonemapping, DebandDither) {
+    let tonemapping = if world.get::<Hdr>(viewer_camera).is_some() {
         Tonemapping::None
     } else {
         world
             .get::<Tonemapping>(viewer_camera)
             .copied()
             .unwrap_or_default()
-    }
+    };
+
+    (tonemapping, DebandDither::Disabled)
 }
 
 /// Best-effort initial viewport size for the viewer camera.

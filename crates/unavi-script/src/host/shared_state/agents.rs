@@ -7,12 +7,12 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use hsd::id::{
     DocId,
     PrimId,
 };
 use parking_lot::RwLock;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_agent::{
     AgentAvatar,
     AgentCamera,

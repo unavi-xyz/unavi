@@ -30,6 +30,7 @@ pub use crate::client::follow::{
     Followed,
     NotFollowed,
     Target,
+    Unresolved,
     resolve_batch,
 };
 use crate::{

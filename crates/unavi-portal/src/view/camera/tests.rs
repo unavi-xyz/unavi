@@ -35,7 +35,10 @@ fn person_layers() -> [RenderLayers; 3] {
 fn a_still_leaves_out_every_avatar_mesh() {
     let still = still_layers(&main_camera());
     for layers in person_layers() {
-        assert!(!still.intersects(&layers), "{layers:?} avatar mesh is in the still");
+        assert!(
+            !still.intersects(&layers),
+            "{layers:?} avatar mesh is in the still"
+        );
     }
 }
 

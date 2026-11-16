@@ -409,8 +409,14 @@ mod tests {
     #[test]
     fn nan_eye_bones_leave_the_rig_at_its_defaults() {
         assert_bones_are_rejected(&[
-            (HumanBoneName::LeftEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
-            (HumanBoneName::RightEye, Vec3::new(f32::NAN, f32::NAN, f32::NAN)),
+            (
+                HumanBoneName::LeftEye,
+                Vec3::new(f32::NAN, f32::NAN, f32::NAN),
+            ),
+            (
+                HumanBoneName::RightEye,
+                Vec3::new(f32::NAN, f32::NAN, f32::NAN),
+            ),
             (HumanBoneName::LeftShoulder, Vec3::new(-0.2, 1.4, 0.0)),
             (HumanBoneName::RightShoulder, Vec3::new(0.2, 1.4, 0.0)),
         ]);

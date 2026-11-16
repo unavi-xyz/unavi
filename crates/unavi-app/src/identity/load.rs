@@ -217,6 +217,13 @@ async fn load(
     let SyncConfig { targets, .. } = sync;
 
     let (targets, unresolved) = resolve_batch(targets, &follower.resolver).await;
+    for target in &unresolved {
+        warn!(
+            did = %target.did,
+            err = ?target.error,
+            "failed to resolve registry; retrying"
+        );
+    }
     let unfollowed = follower.sync(&store, &targets).await;
     let pending = unfollowed
         .iter()
@@ -266,7 +273,7 @@ async fn load(
             store.clone(),
             follower.clone(),
             targets,
-            unresolved,
+            unresolved.into_iter().map(|u| u.did).collect(),
             pending,
         ));
     }
@@ -293,7 +300,14 @@ async fn retry(
 
         if !unresolved.is_empty() {
             let (resolved, still) = resolve_batch(unresolved, &follower.resolver).await;
-            unresolved = still;
+            for target in &still {
+                debug!(
+                    did = %target.did,
+                    err = ?target.error,
+                    "registry still unresolved"
+                );
+            }
+            unresolved = still.into_iter().map(|target| target.did).collect();
             pending.extend(resolved.iter().cloned());
             targets.extend(resolved);
         }

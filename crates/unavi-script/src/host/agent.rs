@@ -1,8 +1,8 @@
 //! `wired:agent`: the local user's camera and body.
 
 use bevy::prelude::*;
-use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use hsd::attributes::xform::XformAttr;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_policy::permissions::HostApi;
 
 use crate::{
@@ -42,7 +42,10 @@ pub fn camera_transform(host: &ScriptHost) -> Result<Transform, ScriptError> {
 }
 
 /// `None` when the avatar lacks `bone`.
-pub fn bone_transform(host: &ScriptHost, bone: HumanBoneName) -> Result<Option<Transform>, ScriptError> {
+pub fn bone_transform(
+    host: &ScriptHost,
+    bone: HumanBoneName,
+) -> Result<Option<Transform>, ScriptError> {
     host.require(HostApi::LocalAgent)?;
     if !host.shared.agents.is_ready() {
         return Err(ScriptError::NotReady);

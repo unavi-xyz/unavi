@@ -49,7 +49,11 @@ fn expand_conditionals(source: &str, defined: bool) -> String {
     for line in source.lines() {
         let trimmed = line.trim_start();
         if let Some(rest) = trimmed.strip_prefix("@if(") {
-            keep = if rest.starts_with('!') { !defined } else { defined };
+            keep = if rest.starts_with('!') {
+                !defined
+            } else {
+                defined
+            };
             guarded = true;
             continue;
         }

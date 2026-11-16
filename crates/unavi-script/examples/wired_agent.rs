@@ -13,7 +13,6 @@ use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
 };
-
 use unavi_agent::LocalAgent;
 use unavi_avatar::render_layers::{
     AVATAR_RENDER_LAYER,

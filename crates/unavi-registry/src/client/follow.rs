@@ -194,12 +194,23 @@ impl Followed {
     }
 }
 
+/// A target that did not resolve, and why.
+#[derive(Debug)]
+pub struct Unresolved {
+    pub did:   String,
+    pub error: anyhow::Error,
+}
+
 /// Resolves every target, returning the ones that answered alongside the DIDs
 /// that did not.
 ///
-/// An unresolved target is worth retrying rather than failing the load over. A
-/// app with no reachable registry still runs peer to peer.
-pub async fn resolve_batch(dids: Vec<String>, resolver: &Resolver) -> (Vec<Target>, Vec<String>) {
+/// An unresolved target is worth retrying rather than failing the load over. An
+/// app with no reachable registry still runs peer to peer, so the first failed
+/// pass is the caller's to report and the retries after it are routine.
+pub async fn resolve_batch(
+    dids: Vec<String>,
+    resolver: &Resolver,
+) -> (Vec<Target>, Vec<Unresolved>) {
     let mut targets = Vec::new();
     let mut unresolved = Vec::new();
 
@@ -209,10 +220,7 @@ pub async fn resolve_batch(dids: Vec<String>, resolver: &Resolver) -> (Vec<Targe
                 info!(%did, "following registry");
                 targets.push(target);
             }
-            Err(err) => {
-                warn!(%did, ?err, "failed to resolve registry");
-                unresolved.push(did);
-            }
+            Err(error) => unresolved.push(Unresolved { did, error }),
         }
     }
 

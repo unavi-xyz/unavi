@@ -143,10 +143,7 @@ mod tests {
     #[test]
     fn pixel_and_line_wheel_units_produce_comparable_notches() {
         let (line, line_reach) = wheel_turns(MouseScrollUnit::Line, 1.0);
-        let (pixel, pixel_reach) = wheel_turns(
-            MouseScrollUnit::Pixel,
-            PIXELS_PER_LINE,
-        );
+        let (pixel, pixel_reach) = wheel_turns(MouseScrollUnit::Pixel, PIXELS_PER_LINE);
 
         assert!(
             (line.y - pixel.y).abs() < 1.0e-5,

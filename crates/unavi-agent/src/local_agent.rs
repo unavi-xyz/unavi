@@ -11,7 +11,6 @@ use bevy_tnua::{
     prelude::*,
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-
 use unavi_avatar::{
     Avatar,
     VrmPath,

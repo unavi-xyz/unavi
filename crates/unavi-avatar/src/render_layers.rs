@@ -64,7 +64,11 @@ mod tests {
     #[test]
     fn no_split_keeps_the_default_layer() {
         let layers = avatar_first_person_layers();
-        for layers in [&layers.both, &layers.first_person_only, &layers.third_person_only] {
+        for layers in [
+            &layers.both,
+            &layers.first_person_only,
+            &layers.third_person_only,
+        ] {
             assert!(
                 !layers.intersects(&RenderLayers::layer(0)),
                 "{layers:?} still draws on the default layer"
@@ -76,7 +80,9 @@ mod tests {
     fn meshes_visible_to_default_cameras_are_on_the_avatar_layer() {
         let layers = avatar_first_person_layers();
         assert!(
-            layers.both.intersects(&RenderLayers::layer(AVATAR_RENDER_LAYER)),
+            layers
+                .both
+                .intersects(&RenderLayers::layer(AVATAR_RENDER_LAYER)),
             "both-person meshes are not on the avatar layer"
         );
     }

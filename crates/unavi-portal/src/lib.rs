@@ -10,7 +10,6 @@ use bevy::{
     camera::visibility::VisibilitySystems,
     prelude::*,
 };
-
 use bevy_shader_mtoon::MtoonPlugin;
 
 use crate::{
@@ -117,16 +116,13 @@ impl Plugin for PortalPlugin {
 fn load_shaders(app: &mut App) {
     // The clip helpers are a WESL module other shaders import, so the asset
     // needs the import path its module name comes from.
-    let _ = app
-        .world_mut()
-        .resource_mut::<Assets<Shader>>()
-        .insert(
-            clip::PORTAL_CLIP_SHADER_HANDLE.id(),
-            Shader::from_wesl(
-                include_str!("portal_clip.wesl"),
-                "embedded://unavi_portal/portal_clip.wesl",
-            ),
-        );
+    let _ = app.world_mut().resource_mut::<Assets<Shader>>().insert(
+        clip::PORTAL_CLIP_SHADER_HANDLE.id(),
+        Shader::from_wesl(
+            include_str!("portal_clip.wesl"),
+            "embedded://unavi_portal/portal_clip.wesl",
+        ),
+    );
 
     load_internal_asset!(
         app,

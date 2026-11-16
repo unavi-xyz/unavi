@@ -329,7 +329,11 @@ mod tests {
         }
     }
 
-    fn keyframe_pose_with_bone(t: Vec3, bone: HumanBoneName, bone_local: Transform) -> Pose<Keyframe> {
+    fn keyframe_pose_with_bone(
+        t: Vec3,
+        bone: HumanBoneName,
+        bone_local: Transform,
+    ) -> Pose<Keyframe> {
         let mut pose = keyframe_pose(t);
         pose.bones.insert(bone, (&bone_local).into());
         pose
@@ -409,14 +413,21 @@ mod tests {
             AgentMsg::Keyframe {
                 id:       1,
                 space:    SPACE,
-                pose:     keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::LeftUpperArm, bone_local),
+                pose:     keyframe_pose_with_bone(
+                    Vec3::ZERO,
+                    HumanBoneName::LeftUpperArm,
+                    bone_local,
+                ),
                 grounded: true,
             },
             &mut baseline,
         )
         .expect("resolved");
 
-        let bone = resolved.bones.get(&HumanBoneName::LeftUpperArm).expect("bone");
+        let bone = resolved
+            .bones
+            .get(&HumanBoneName::LeftUpperArm)
+            .expect("bone");
         assert!((bone.translation - bone_local.translation).length() < 0.01);
         assert!(bone.rotation.angle_between(bone_local.rotation) < 0.02);
     }
@@ -519,7 +530,8 @@ mod tests {
     #[test]
     fn a_bone_appearing_or_vanishing_needs_a_new_keyframe() {
         let empty = keyframe_pose(Vec3::ZERO);
-        let with_head = keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, Transform::default());
+        let with_head =
+            keyframe_pose_with_bone(Vec3::ZERO, HumanBoneName::Head, Transform::default());
         let with_head_and_hand = {
             let mut pose = with_head.clone();
             pose.bones

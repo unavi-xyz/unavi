@@ -35,7 +35,7 @@ use crate::{
         live::{
             copy_viewer_camera_extras,
             render_image,
-            view_tonemapping,
+            view_color_output,
             viewer_camera,
         },
         still::distance::{
@@ -198,7 +198,7 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
         DISTANCE_FORMAT,
         "PortalStillDistance",
     ));
-    let tonemapping = view_tonemapping(world, viewer);
+    let color_output = view_color_output(world, viewer);
     let layers = still_layers(
         &world
             .get::<RenderLayers>(viewer)
@@ -239,7 +239,7 @@ fn spawn_capture(world: &mut World, portal: Entity, arrival: Arrival, now: f32) 
             .id();
         copy_viewer_camera_extras(world, camera, viewer);
         world.entity_mut(camera).insert((
-            tonemapping,
+            color_output,
             Projection::Perspective(PerspectiveProjection {
                 fov: FRAC_PI_2,
                 aspect_ratio: 1.0,

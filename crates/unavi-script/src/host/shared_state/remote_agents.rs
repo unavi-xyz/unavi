@@ -4,9 +4,9 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use iroh::EndpointId;
 use parking_lot::RwLock;
+use serde_vrm::vrm1::vrmc_vrm::humanoid::HumanBoneName;
 use unavi_avatar::bones::AvatarBones;
 use unavi_space::avatar_sync::RemoteAgent;
 

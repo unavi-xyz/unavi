@@ -31,7 +31,7 @@ const BUDGET: usize = 3;
 const STALE_TICKS: u64 = 2048;
 
 /// The colour of a document no user has proven they author.
-const UNAUTHORED: Color = Color::rgb(0.8, 0.8, 0.8);
+const UNAUTHORED: Color = Color::rgb(0.22, 0.22, 0.22);
 
 pub struct Entry {
     pub id:       DocumentId,
@@ -141,5 +141,21 @@ impl Catalog {
             self.entries.push(entry);
         }
         self.cursor = 0;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wired_guest::{
+        color::contrast,
+        style::BG,
+    };
+
+    use super::*;
+
+    #[test]
+    fn the_unauthored_dot_reads_on_the_ground() {
+        let ratio = contrast(UNAUTHORED, BG);
+        assert!(ratio >= 3.0, "reads at {ratio} on the ground");
     }
 }

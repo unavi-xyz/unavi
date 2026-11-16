@@ -66,9 +66,23 @@ pub fn desaturate(color: Color, amount: f32) -> Color {
     }
 }
 
+/// The WCAG contrast ratio between two linear colours, from 1 to 21.
+#[must_use]
+pub fn contrast(a: Color, b: Color) -> f32 {
+    let luminance = |c: Color| 0.0722f32.mul_add(c.b, 0.2126f32.mul_add(c.r, 0.7152 * c.g));
+    let (high, low) = (luminance(a).max(luminance(b)), luminance(a).min(luminance(b)));
+    (high + 0.05) / (low + 0.05)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn black_on_white_is_the_widest_contrast() {
+        assert!((contrast(Color::BLACK, Color::rgb(1.0, 1.0, 1.0)) - 21.0).abs() < 1.0e-4);
+        assert!((contrast(Color::BLACK, Color::BLACK) - 1.0).abs() < 1.0e-6);
+    }
 
     #[test]
     fn a_users_colour_follows_their_did() {

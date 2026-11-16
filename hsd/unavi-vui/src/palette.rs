@@ -1,7 +1,10 @@
 //! Every colour VUI draws with, and the rules that turn a role and an
 //! attention state into one.
 
-use wired_guest::math::Color;
+use wired_guest::{
+    math::Color,
+    style,
+};
 
 use crate::attention::Attention;
 
@@ -23,11 +26,12 @@ pub struct Palette {
     pub dim:          Color,
     /// How far an inactive toggle's tint is drawn toward [`Palette::dim`].
     pub mute:         f32,
-    /// A notice's title, and the one saturated colour on a placard. A red
-    /// orange rather than the accent: the accent means a mote is held, so a
-    /// warning wearing it would read as selection, and a warning has to be
-    /// distinct from every state a mote can be in. Deep, since it is set on
-    /// the pane like any other type.
+    /// A notice's title, and the one saturated colour on a placard. Red
+    /// rather than the accent: the accent means a mote is held, so a warning
+    /// wearing it would read as selection, and a warning has to be distinct
+    /// from every state a mote can be in. Red drawn 15% toward black, which
+    /// is as bright as it can be and still read on the frosted pane over a
+    /// black backdrop.
     pub warning:      Color,
     /// Type set on a placard's frosted panel: near-black, since the panel
     /// is light.
@@ -42,8 +46,7 @@ pub struct Palette {
     /// lit rather than as painted.
     pub tether_glow:  f32,
     /// Every glyph's dots, whatever the mote wears. Colour is spent on the
-    /// shell, so what it holds stays one cool off-white and reads against
-    /// any hue.
+    /// shell, so what it holds stays one white and reads against any hue.
     pub glyph:        Color,
     /// Warmth mixed into an item that is a source of its thing, so a mote you
     /// can take another of reads apart from the one of it.
@@ -69,18 +72,18 @@ pub struct Palette {
 }
 
 impl Palette {
-    /// A cool near-white family; colour only signals state.
+    /// The website's warm neutral family; colour only signals state.
     pub const DEFAULT: Self = Self {
-        base:         shade(0.92),
-        accent:       rgb(0.60, 0.84, 1.00),
-        dim:          shade(0.42),
+        base:         style::BG,
+        accent:       glow(style::BLUE, 0.2),
+        dim:          blend(style::RULE, style::MUTED, 0.5),
         mute:         0.55,
-        warning:      rgb(0.52, 0.04, 0.0),
-        ink:          rgb(0.04, 0.05, 0.07),
-        muted_ink:    rgb(0.13, 0.14, 0.17),
-        tether:       shade(0.78),
+        warning:      blend(style::RED, Color::BLACK, 0.15),
+        ink:          style::FG,
+        muted_ink:    style::MUTED,
+        tether:       style::RULE,
         tether_glow:  1.6,
-        glyph:        shade(0.97),
+        glyph:        style::PANEL,
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
 
@@ -189,17 +192,6 @@ impl Default for Palette {
 #[must_use]
 pub const fn rgb(r: f32, g: f32, b: f32) -> Color {
     Color { r, g, b, a: 1.0 }
-}
-
-/// One step of the neutral family: a cool near-white at `lightness`.
-#[must_use]
-pub const fn shade(lightness: f32) -> Color {
-    Color {
-        r: lightness * 0.96,
-        g: lightness * 0.98,
-        b: lightness,
-        a: 1.0,
-    }
 }
 
 /// Moves a colour `amount` of the way to white, keeping its hue.

@@ -23,14 +23,14 @@ pub const MAX_TABS: usize = 4;
 pub const MAX_TAB_BYTES: usize = 16;
 
 /// Metres across the pane.
-pub const WIDTH: f32 = 0.46;
+pub const WIDTH: f32 = Tuning::DEFAULT.slate_width;
 /// Metres per row.
-pub const ROW_HEIGHT: f32 = 0.036;
+pub const ROW_HEIGHT: f32 = Tuning::DEFAULT.slate_row;
 /// Metres of pane around the rows.
 pub const PADDING: f32 = 0.018;
 /// Type height of a row's label and value, and of a header.
-pub const TEXT_SIZE: f32 = 0.017;
-pub const HEADER_SIZE: f32 = 0.02;
+pub const TEXT_SIZE: f32 = Tuning::DEFAULT.slate_text;
+pub const HEADER_SIZE: f32 = Tuning::DEFAULT.slate_header;
 /// A row's dot, across, and the room it takes beside a label or value.
 pub const DOT: f32 = 0.009;
 const DOT_ROOM: f32 = 0.016;

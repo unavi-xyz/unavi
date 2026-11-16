@@ -17,6 +17,7 @@ pub mod clearance;
 pub mod color;
 pub mod glyph;
 pub mod math;
+pub mod style;
 pub mod teleport;
 pub mod xform;
 

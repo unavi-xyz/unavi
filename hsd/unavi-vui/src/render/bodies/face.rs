@@ -284,7 +284,7 @@ mod tests {
             position: Vec3::ZERO,
             radius,
             style: Style {
-                color:    crate::palette::shade(1.0),
+                color:    crate::palette::Palette::DEFAULT.glyph,
                 alpha:    1.0,
                 emissive: 0.0,
             },

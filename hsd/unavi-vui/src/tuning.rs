@@ -1,5 +1,21 @@
 //! Every feel constant VUI animates by, in one place.
 
+use wired_guest::style;
+
+/// Metres from the eye at which a mote's label is read.
+const READING: f32 = 0.7;
+/// Metres at which a placard on its mote is read. A standing placard is
+/// that many times larger, which makes its title 28 mrad read from two metres.
+const PLACARD_READING: f32 = 0.57;
+/// Metres from the eye at which a slate's text is read.
+const SLATE_READING: f32 = 0.85;
+
+/// The em height in metres of a type step given in milliradians, read from
+/// `distance` metres.
+const fn em(mrad: f32, distance: f32) -> f32 {
+    mrad * 0.001 * distance
+}
+
 /// Every feel constant in one place.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tuning {
@@ -137,6 +153,15 @@ pub struct Tuning {
     pub tab_scale:    f32,
     /// Most interior bodies a group draws; beyond this it reports overflow.
     pub pip_cap:      usize,
+
+    /// Metres across a slate's pane.
+    pub slate_width:  f32,
+    /// Metres per slate row.
+    pub slate_row:    f32,
+    /// Em height of a slate row's label and value.
+    pub slate_text:   f32,
+    /// Em height of a slate header.
+    pub slate_header: f32,
 }
 
 impl Tuning {
@@ -159,9 +184,9 @@ impl Tuning {
         placard_delay:    0.25,
         placard_gap:      0.018,
         placard_lift:     0.012,
-        placard_title:    0.016,
-        placard_kicker:   0.0095,
-        placard_row:      0.0125,
+        placard_title:    em(style::MRAD_TITLE, PLACARD_READING),
+        placard_kicker:   em(style::MRAD_SMALL, PLACARD_READING),
+        placard_row:      em(style::MRAD_BODY, PLACARD_READING),
         placard_line:     1.5,
         placard_pad:      0.013,
         placard_width:    0.24,
@@ -173,7 +198,7 @@ impl Tuning {
 
         notice_duration: 3.0,
 
-        label_size: 0.011,
+        label_size: em(style::MRAD_SMALL, READING),
         label_gap:  0.007,
         label_lift: 0.004,
 
@@ -209,6 +234,11 @@ impl Tuning {
         parent_scale: 0.8,
         tab_scale:    0.6,
         pip_cap:      9,
+
+        slate_width:  0.46,
+        slate_row:    0.036,
+        slate_text:   em(style::MRAD_BODY, SLATE_READING),
+        slate_header: em(style::MRAD_TITLE, SLATE_READING),
     };
 }
 

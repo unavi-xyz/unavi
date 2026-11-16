@@ -34,13 +34,13 @@ use crate::{
 };
 
 /// The dot of a value this peer states for itself only.
-const RUNTIME: Color = Color::rgb(0.55, 0.6, 0.7);
+const RUNTIME: Color = Color::rgb(0.12, 0.16, 0.26);
 /// The dot of a value this peer states for everyone, live.
-const OWN_SESSION: Color = Color::rgb(0.35, 0.78, 0.5);
+const OWN_SESSION: Color = Color::rgb(0.03, 0.30, 0.12);
 /// The dot of a value another peer states, live.
-const PEER_SESSION: Color = Color::rgb(0.66, 0.5, 0.9);
+const PEER_SESSION: Color = Color::rgb(0.30, 0.10, 0.60);
 /// The dot of a value a reference site overrides.
-const OVERRIDE: Color = Color::rgb(0.95, 0.7, 0.25);
+const OVERRIDE: Color = Color::rgb(0.50, 0.18, 0.0);
 
 pub fn row(id: u32, label: &str, kind: RowKind) -> Row {
     Row {
@@ -148,7 +148,20 @@ pub fn words(debug: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use wired_guest::{
+        color::contrast,
+        style::BG,
+    };
+
     use super::*;
+
+    #[test]
+    fn every_provenance_dot_reads_on_the_ground() {
+        for dot in [RUNTIME, OWN_SESSION, PEER_SESSION, OVERRIDE] {
+            let ratio = contrast(dot, BG);
+            assert!(ratio >= 3.0, "{dot:?} reads at {ratio} on the ground");
+        }
+    }
 
     #[test]
     fn a_key_reads_as_words() {

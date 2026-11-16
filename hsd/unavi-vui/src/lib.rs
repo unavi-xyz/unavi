@@ -16,6 +16,7 @@ mod glyph;
 mod grasp;
 mod layout;
 mod marks;
+mod measure;
 mod mesh;
 mod mote;
 mod palette;

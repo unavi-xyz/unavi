@@ -5,7 +5,10 @@ use bevy::{
     prelude::*,
 };
 use iroh::EndpointId;
-use unavi_devtools::tabs::DevPanel;
+use unavi_devtools::{
+    style,
+    tabs::DevPanel,
+};
 use unavi_space::link::PeerLink;
 
 use crate::short;
@@ -53,7 +56,7 @@ pub fn spawn(mut commands: Commands) {
                     font_size: FontSize::Px(14.0),
                     ..default()
                 },
-                TextColor(Color::srgb(0.85, 0.9, 0.95)),
+                TextColor(style::FG.into()),
             ));
         });
 }

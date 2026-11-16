@@ -11,7 +11,10 @@ use bevy::{
         checkbox_self_update,
     },
 };
-use unavi_devtools::tabs::DevPanel;
+use unavi_devtools::{
+    style,
+    tabs::DevPanel,
+};
 
 #[derive(Component, Clone, Copy)]
 pub(super) enum Toggle {
@@ -72,7 +75,7 @@ pub(super) fn spawn(mut commands: Commands) {
                 font_size: FontSize::Px(14.0),
                 ..default()
             },
-            TextColor(Color::WHITE),
+            TextColor(style::FG.into()),
             ChildOf(row),
         ));
 

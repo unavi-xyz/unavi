@@ -6,7 +6,6 @@ use bevy::{
         },
         controls::ButtonVariant,
         font_styles::InheritableFont,
-        rounded_corners::RoundedCorners,
         theme::ThemedText,
     },
     prelude::*,
@@ -76,7 +75,6 @@ pub(crate) fn register_panel(
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 padding: UiRect::horizontal(px(8)),
-                border_radius: RoundedCorners::All.to_border_radius(4.0),
                 ..default()
             },
             (

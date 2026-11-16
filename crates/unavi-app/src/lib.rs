@@ -22,6 +22,7 @@ mod icon;
 mod identity;
 mod logging;
 mod scene;
+pub mod style;
 
 pub use config::dev_build;
 

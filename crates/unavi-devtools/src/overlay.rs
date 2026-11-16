@@ -1,4 +1,12 @@
-use bevy::prelude::*;
+use bevy::{
+    color::Alpha,
+    prelude::*,
+};
+
+use crate::style;
+
+/// How much of the world shows through the body.
+const BODY_ALPHA: f32 = 0.85;
 
 /// Whether the overlay is currently open. Other crates read this to suppress
 /// gameplay input while dev tools have focus.
@@ -31,9 +39,11 @@ pub(crate) fn spawn_overlay(mut commands: Commands) {
                 flex_direction: FlexDirection::Row,
                 column_gap: Val::Px(4.0),
                 padding: UiRect::all(Val::Px(6.0)),
+                border: UiRect::bottom(Val::Px(1.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
+            BackgroundColor(style::PANEL.into()),
+            BorderColor::all(style::RULE),
         ))
         .id();
 
@@ -58,7 +68,7 @@ pub(crate) fn spawn_overlay(mut commands: Commands) {
                 display: Display::None,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.05, 0.05, 0.07, 0.85)),
+            BackgroundColor(Color::from(style::BG).with_alpha(BODY_ALPHA)),
             GlobalZIndex(1000),
         ))
         .add_children(&[tab_bar, body])

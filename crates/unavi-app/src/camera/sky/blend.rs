@@ -69,11 +69,16 @@ pub struct SkyBlend {
 }
 
 impl SkyBlend {
-    pub fn palette(&self) -> Palette {
-        Palette::new(Tone {
+    /// The tone as currently drawn.
+    pub fn tone(&self) -> Tone {
+        Tone {
             hue:    self.hue.value.rem_euclid(360.0),
             chroma: self.chroma.value.max(0.0),
-        })
+        }
+    }
+
+    pub fn palette(&self) -> Palette {
+        Palette::new(self.tone())
     }
 
     pub const fn graticule(&self) -> f32 {
@@ -191,12 +196,95 @@ pub fn blend_sky(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style;
 
     #[test]
     fn limbo_fog_at_hue_zero_matches_the_loader_cover() {
         let fog = Palette::new(SkyTarget::limbo(0.0).tone).fog();
         // loader.html paints this colour until the app's first frames.
         assert_eq!(Srgba::from(fog).to_hex().to_lowercase(), "#e4d2df");
+    }
+
+    /// Every token colour as the lower-case hex a stylesheet writes.
+    fn token_hexes() -> Vec<(&'static str, String)> {
+        [
+            ("BG", style::BG),
+            ("BG_DARK", style::BG_DARK),
+            ("FG", style::FG),
+            ("FG_2", style::FG_2),
+            ("MUTED", style::MUTED),
+            ("LIGHT", style::LIGHT),
+            ("PANEL", style::PANEL),
+            ("TINT", style::TINT),
+            ("RULE", style::RULE),
+            ("BLUE", style::BLUE),
+            ("RED", style::RED),
+            ("FIELD_COVER", style::FIELD_COVER),
+        ]
+        .map(|(name, token)| {
+            let hex = Color::from(token).to_srgba().to_hex().to_lowercase();
+            (name, hex)
+        })
+        .to_vec()
+    }
+
+    /// The `#rrggbb` literals in `text`.
+    fn hex_literals(text: &str) -> Vec<String> {
+        text.split('#')
+            .skip(1)
+            .filter_map(|rest| {
+                let digits = rest.get(..6)?;
+                let ends = rest
+                    .get(6..7)
+                    .is_none_or(|next| !next.chars().all(|c| c.is_ascii_alphanumeric()));
+                (ends && digits.chars().all(|c| c.is_ascii_hexdigit()))
+                    .then(|| format!("#{}", digits.to_lowercase()))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_loader_and_page_write_the_token_colours() {
+        let loader = include_str!("../../../loader.html");
+        let page = include_str!("../../../public/style.css");
+        let tokens = token_hexes();
+        let hex = |name: &str| {
+            tokens
+                .iter()
+                .find(|(token, _)| *token == name)
+                .map(|(_, hex)| hex.clone())
+                .unwrap_or_default()
+        };
+
+        for (file, text, wanted) in [
+            (
+                "loader.html",
+                loader,
+                ["FIELD_COVER", "FG", "MUTED", "RED", "BG", "BLUE"].as_slice(),
+            ),
+            ("style.css", page, ["FIELD_COVER", "FG"].as_slice()),
+        ] {
+            let written = hex_literals(text);
+            for literal in &written {
+                assert!(
+                    tokens.iter().any(|(_, hex)| hex == literal),
+                    "{file} writes {literal}, which is no token"
+                );
+            }
+            for name in wanted {
+                assert!(
+                    written.contains(&hex(name)),
+                    "{file} does not write {name} ({})",
+                    hex(name)
+                );
+            }
+        }
+
+        let [r, g, b, _] = Color::from(style::FG).to_srgba().to_u8_array();
+        assert!(
+            loader.contains(&format!("rgba({r}, {g}, {b},")),
+            "loader.html's dot rgba is not FG"
+        );
     }
 
     #[test]

@@ -35,6 +35,7 @@ impl Plugin for CameraPlugin {
                 (
                     sky::blend::target_sky,
                     sky::blend::blend_sky,
+                    sky::shade::tint_ambient,
                     veil::apply_veil,
                 )
                     .chain(),

@@ -8,11 +8,12 @@ use super::{
     FOG_START,
     sky::blend::SkyBlend,
 };
+use crate::style::MOTION_ARRIVE;
 
 /// Seconds the world takes to disappear into the fog.
 pub const COVER: f32 = 0.35;
 /// Seconds it takes to come back, longer so an arrival settles gently.
-pub const REVEAL: f32 = 0.7;
+pub const REVEAL: f32 = MOTION_ARRIVE;
 /// Seconds the world stays fully hidden before a reveal may begin, so new
 /// materials compile and settle behind the fog instead of popping in.
 pub const MIN_COVERED: f32 = 0.8;

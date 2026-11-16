@@ -17,6 +17,7 @@ use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_devtools::{
     scroll::Scrollable,
+    style,
     tabs::DevPanel,
 };
 use unavi_policy::trust::Trust;
@@ -150,7 +151,7 @@ pub fn spawn(mut commands: Commands) {
                     padding: UiRect::all(Val::Px(6.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.25)),
+                BackgroundColor(style::PANEL.into()),
             ));
             p.spawn((
                 PageRoot,
@@ -165,7 +166,7 @@ pub fn spawn(mut commands: Commands) {
                     padding: UiRect::all(Val::Px(10.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.25)),
+                BackgroundColor(style::PANEL.into()),
             ));
         });
 }

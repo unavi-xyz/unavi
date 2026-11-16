@@ -16,6 +16,7 @@ use bevy::{
 
 pub mod blend;
 pub mod palette;
+pub mod shade;
 
 use palette::Palette;
 

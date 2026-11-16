@@ -8,7 +8,10 @@ use bevy::{
     feathers::theme::ThemedText,
     prelude::*,
 };
-use unavi_devtools::button::button;
+use unavi_devtools::{
+    button::button,
+    style,
+};
 use unavi_space::replication::clock;
 
 use crate::{
@@ -35,7 +38,7 @@ pub fn refresh_times(mut texts: Query<(&AgoText, &mut Text)>) {
 /// space, or peer is recognizable across pages.
 pub fn hash_color(bytes: &[u8]) -> Color {
     let hue = f32::from(u16::from_be_bytes([bytes[0], bytes[1]])) / 65535.0 * 360.0;
-    Color::hsl(hue, 0.6, 0.65)
+    Color::hsl(hue, 0.6, 0.4)
 }
 
 pub fn swatch(color: Color) -> impl Bundle {
@@ -134,7 +137,7 @@ pub fn section_title(title: &str) -> impl Bundle {
             font_size: FontSize::Px(13.0),
             ..default()
         },
-        TextColor(Color::srgba(1.0, 1.0, 1.0, 0.85)),
+        TextColor(style::FG.into()),
         Node {
             margin: UiRect::top(Val::Px(4.0)),
             ..default()
@@ -149,7 +152,7 @@ pub fn header_cell(header: &str) -> impl Bundle {
             font_size: FontSize::Px(10.0),
             ..default()
         },
-        TextColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+        TextColor(style::MUTED.into()),
     )
 }
 
@@ -160,7 +163,7 @@ pub fn value_text(value: String) -> impl Bundle {
             font_size: FontSize::Px(12.0),
             ..default()
         },
-        TextColor(Color::srgba(1.0, 1.0, 1.0, 0.85)),
+        TextColor(style::FG.into()),
     )
 }
 
@@ -171,7 +174,7 @@ pub fn dim_text(value: &str) -> impl Bundle {
             font_size: FontSize::Px(12.0),
             ..default()
         },
-        TextColor(Color::srgba(1.0, 1.0, 1.0, 0.45)),
+        TextColor(style::MUTED.into()),
     )
 }
 
@@ -181,14 +184,14 @@ pub fn mono_block(content: String) -> impl Bundle {
             padding: UiRect::all(Val::Px(8.0)),
             ..default()
         },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)),
+        BackgroundColor(style::TINT.into()),
         children![(
             Text::new(content),
             TextFont {
                 font_size: FontSize::Px(11.0),
                 ..default()
             },
-            TextColor(Color::srgb(0.75, 0.85, 0.75)),
+            TextColor(style::FG_2.into()),
         )],
     )
 }
@@ -219,7 +222,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
             padding: UiRect::all(Val::Px(8.0)),
             ..default()
         },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)),
+        BackgroundColor(style::TINT.into()),
         children![
             (
                 Text::new(hex),
@@ -227,7 +230,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
                     font_size: FontSize::Px(11.0),
                     ..default()
                 },
-                TextColor(Color::srgb(0.75, 0.85, 0.75)),
+                TextColor(style::FG_2.into()),
             ),
             (
                 Text::new(text),
@@ -235,7 +238,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
                     font_size: FontSize::Px(11.0),
                     ..default()
                 },
-                TextColor(Color::srgba(1.0, 1.0, 1.0, 0.6)),
+                TextColor(style::FG_2.into()),
             ),
         ],
     )

@@ -3,9 +3,11 @@
 use bevy::prelude::*;
 use unavi_space::membership::SpaceId;
 
+use crate::style::FIELD_SKY_CHROMA_MAX;
+
 /// The most chroma a sky shows, whatever colour it is given, so it never
 /// competes with the saturated hues VUI spends on state.
-pub const MAX_CHROMA: f32 = 0.05;
+pub const MAX_CHROMA: f32 = FIELD_SKY_CHROMA_MAX;
 
 /// The part of a colour a sky uses: OKLCH hue in degrees, and chroma.
 #[derive(Clone, Copy, Debug, PartialEq)]

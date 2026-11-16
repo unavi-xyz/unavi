@@ -5,7 +5,6 @@ use bevy::{
     app::PluginGroup,
     feathers::{
         FeathersPlugins,
-        dark_theme::create_dark_theme,
         theme::UiTheme,
     },
     input_focus::tab_navigation::TabNavigationPlugin,
@@ -15,7 +14,9 @@ use bevy::{
 pub mod button;
 pub mod overlay;
 pub mod scroll;
+pub mod style;
 pub mod tabs;
+pub mod theme;
 
 /// Installs the dev tools overlay: a tabbed, `~`-toggled surface that other
 /// crates contribute panels to by spawning a [`tabs::DevPanel`] entity.
@@ -24,7 +25,7 @@ pub struct DevToolsPlugin;
 impl Plugin for DevToolsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(FeathersPlugins.build().disable::<TabNavigationPlugin>())
-            .insert_resource(UiTheme(create_dark_theme()))
+            .insert_resource(UiTheme(theme::light_theme()))
             .init_resource::<overlay::DevToolsActive>()
             .init_resource::<tabs::ActiveDevPanel>()
             .add_systems(PreStartup, overlay::spawn_overlay)

@@ -6,7 +6,6 @@ use std::cell::{
 };
 
 use wired_guest::math::{
-    Color,
     Quat,
     Transform,
     Vec3,
@@ -63,8 +62,6 @@ pub struct PlacardPrims {
     view:     RefCell<Option<PlacardView>>,
     /// Last view and progress drawn; an identical pair costs no write at all.
     last:     Shadow<(PlacardView, f32)>,
-    /// Last accent and unit written to the pane's graph inputs.
-    look:     Shadow<(Option<Color>, f32)>,
 }
 
 impl PlacardPrims {
@@ -79,7 +76,7 @@ impl PlacardPrims {
             .into_iter()
             .fold(doc.local(), |batch, property| batch.set(panel, property));
         batch = batch.set(panel, Property::Transform(draw::hidden()));
-        graphs::set_pane(doc, panel)?;
+        graphs::slab::set_slab(doc, panel)?;
 
         let mut lines = Vec::with_capacity(MAX_LINES);
         for _ in 0..MAX_LINES {
@@ -105,7 +102,6 @@ impl PlacardPrims {
             progress: Cell::new(0.0),
             view: RefCell::new(None),
             last: Shadow::new(),
-            look: Shadow::new(),
         })
     }
 
@@ -164,10 +160,6 @@ impl PlacardPrims {
         };
         self.shown.set(true);
 
-        if let Some((accent, unit)) = self.look.diff((view.accent, view.unit)) {
-            graphs::set_pane_look(doc, self.panel, accent, unit)?;
-        }
-
         // The root sits at the pane's top centre and the pane hangs down from
         // it, so scaling the root alone would grow the placard from that edge.
         // Moving it by the pane's centre times what the scale took off keeps
@@ -196,7 +188,7 @@ impl PlacardPrims {
 
         // Unrolled from the top edge: the pane to the front, and each line as
         // the front passes it.
-        graphs::set_pane_open(doc, self.panel, pop::front(progress))?;
+        graphs::slab::set_slab_open(doc, self.panel, pop::front(progress))?;
         let reached = pop::front(progress) * view.size.y;
         for (prim, line) in self.lines.iter().zip(&view.lines) {
             let shown = pop::line(reached, -line.offset.y - line.size, line.size);

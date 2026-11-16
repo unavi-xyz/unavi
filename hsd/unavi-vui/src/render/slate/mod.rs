@@ -215,7 +215,7 @@ impl Slates {
             tab_labels.push(prim);
         }
         batch.flush()?;
-        graphs::set_pane(doc, pane)?;
+        graphs::slab::set_slab(doc, pane)?;
 
         let slate = Slate {
             body,

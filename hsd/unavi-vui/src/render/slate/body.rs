@@ -156,7 +156,7 @@ impl Slate {
             }
         }
         if moved {
-            graphs::set_pane_open(doc, self.pane, pop::front(progress))?;
+            graphs::slab::set_slab_open(doc, self.pane, pop::front(progress))?;
         }
         if !self.stale && !moved {
             batch.flush()?;

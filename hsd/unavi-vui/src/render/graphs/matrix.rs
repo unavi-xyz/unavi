@@ -426,171 +426,19 @@ impl Inputs {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{
+        super::interp::{
+            self,
+            Context,
+            Val,
+        },
+        *,
+    };
     use crate::glyph::Glyph;
 
-    /// A value the graph computes: its components, and how many it has,
-    /// which stands in for its kind (1 float, 2 vec2, 3 vec3, 4 colour).
-    #[derive(Clone, Copy, Debug)]
-    struct Val {
-        n: usize,
-        c: [f32; 4],
-    }
-
-    fn of(value: &GraphValue) -> Val {
-        match value {
-            GraphValue::Float(x) => Val {
-                n: 1,
-                c: [*x, 0.0, 0.0, 0.0],
-            },
-            GraphValue::Vec2(v) => Val {
-                n: 2,
-                c: [v.x, v.y, 0.0, 0.0],
-            },
-            GraphValue::Vec3(v) => Val {
-                n: 3,
-                c: [v.x, v.y, v.z, 0.0],
-            },
-            GraphValue::Color(v) => Val {
-                n: 4,
-                c: [v.r, v.g, v.b, v.a],
-            },
-        }
-    }
-
-    fn map(a: Val, f: impl Fn(f32) -> f32) -> Val {
-        Val {
-            n: a.n,
-            c: a.c.map(&f),
-        }
-    }
-
-    /// `+ - * /` pair two of one kind or broadcast a float; anything else is
-    /// a graph the host would refuse.
-    fn arithmetic(left: Val, right: Val, op: impl Fn(f32, f32) -> f32) -> Val {
-        assert!(
-            left.n == right.n || left.n == 1 || right.n == 1,
-            "{} with {}",
-            left.n,
-            right.n
-        );
-        let n = left.n.max(right.n);
-        let mut c = [0.0; 4];
-        for (component, out) in c.iter_mut().enumerate().take(n) {
-            *out = op(
-                left.c[component.min(left.n - 1)],
-                right.c[component.min(right.n - 1)],
-            );
-        }
-        Val { n, c }
-    }
-
-    /// Operands that must be one kind exactly.
-    fn matching(a: Val, b: Val, f: impl Fn(f32, f32) -> f32) -> Val {
-        assert_eq!(a.n, b.n, "operands of different kinds");
-        arithmetic(a, b, f)
-    }
-
-    fn gather(vals: &[Val], port: Port, inputs: &[GraphValue]) -> Val {
-        match port {
-            Port::Const(value) => of(&value),
-            Port::Input(i) => of(&inputs[usize::from(i)]),
-            Port::Node(i) => vals[usize::from(i)],
-        }
-    }
-
-    /// Runs the fragment network at `uv` the way the host would, for the
-    /// subset of nodes the matrix uses. Checks the host's kind rules on the
-    /// way, which a guest otherwise only learns of from a refused graph.
+    /// Runs the matrix at `uv`.
     fn shade(graph: &ShaderGraph, inputs: &[GraphValue], uv: [f32; 2]) -> Val {
-        let mut vals: Vec<Val> = Vec::new();
-        for node in &graph.surface.nodes {
-            let at = |port: Port| gather(&vals, port, inputs);
-            let out = match node {
-                Node::Uv => Val {
-                    n: 2,
-                    c: [uv[0], uv[1], 0.0, 0.0],
-                },
-                Node::Add(op) => arithmetic(at(op.a), at(op.b), |x, y| x + y),
-                Node::Sub(op) => arithmetic(at(op.a), at(op.b), |x, y| x - y),
-                Node::Mul(op) => arithmetic(at(op.a), at(op.b), |x, y| x * y),
-                Node::Div(op) => arithmetic(at(op.a), at(op.b), |x, y| x / y),
-                Node::Max(op) => matching(at(op.a), at(op.b), f32::max),
-                Node::Floor(p) => map(at(*p), f32::floor),
-                Node::Fract(p) => map(at(*p), |x| x - x.floor()),
-                Node::Abs(p) => map(at(*p), f32::abs),
-                Node::OneMinus(p) => map(at(*p), |x| 1.0 - x),
-                Node::Saturate(p) => map(at(*p), |x| x.clamp(0.0, 1.0)),
-                Node::Length(p) => {
-                    let v = at(*p);
-                    assert!(v.n > 1, "length of a scalar");
-                    Val {
-                        n: 1,
-                        c: [v.c.iter().map(|x| x * x).sum::<f32>().sqrt(), 0.0, 0.0, 0.0],
-                    }
-                }
-                Node::Dot(op) => {
-                    let v = matching(at(op.a), at(op.b), |x, y| x * y);
-                    Val {
-                        n: 1,
-                        c: [v.c.iter().take(v.n).sum(), 0.0, 0.0, 0.0],
-                    }
-                }
-                Node::Step(op) => matching(at(op.edge), at(op.x), |e, x| f32::from(x >= e)),
-                Node::Smoothstep(op) => {
-                    let (low, high, x) = (at(op.low), at(op.high), at(op.x));
-                    let first = matching(low, high, |l, h| h - l);
-                    let t = matching(first, matching(x, low, |x, l| x - l), |w, d| {
-                        (d / w).clamp(0.0, 1.0)
-                    });
-                    map(t, |t| t * t * 2.0f32.mul_add(-t, 3.0))
-                }
-                Node::Lerp(op) => {
-                    let (a, b, t) = (at(op.a), at(op.b), at(op.t));
-                    assert_eq!(t.n, 1, "lerp factor must be a float");
-                    assert_eq!(a.n, b.n);
-                    arithmetic(a, arithmetic(b, a, |b, a| b - a), |a, d| {
-                        d.mul_add(t.c[0], a)
-                    })
-                }
-                Node::Select(op) => {
-                    let (cond, a, b) = (at(op.cond), at(op.a), at(op.b));
-                    assert_eq!(cond.n, 1, "select condition must be a float");
-                    assert_eq!(a.n, b.n);
-                    if cond.c[0] > 0.5 { a } else { b }
-                }
-                Node::Extract(op) => {
-                    let v = at(op.v);
-                    assert!(v.n > 1 && usize::from(op.channel) < v.n);
-                    Val {
-                        n: 1,
-                        c: [v.c[usize::from(op.channel)], 0.0, 0.0, 0.0],
-                    }
-                }
-                Node::Combine2(op) => {
-                    let (x, y) = (at(op.x), at(op.y));
-                    assert!(x.n == 1 && y.n == 1);
-                    Val {
-                        n: 2,
-                        c: [x.c[0], y.c[0], 0.0, 0.0],
-                    }
-                }
-                Node::Combine4(op) => {
-                    let parts = [at(op.x), at(op.y), at(op.z), at(op.w)];
-                    assert!(parts.iter().all(|part| part.n == 1));
-                    Val {
-                        n: 4,
-                        c: parts.map(|part| part.c[0]),
-                    }
-                }
-                other => panic!("the matrix does not use {other:?}"),
-            };
-            vals.push(out);
-        }
-        let SurfaceOutput::Unlit(unlit) = &graph.surface.output else {
-            panic!("the matrix is unlit");
-        };
-        gather(&vals, unlit.color, inputs)
+        interp::shade(graph, inputs, &Context::at(uv)).color
     }
 
     fn glyph(size: u8, lit: &[(usize, usize)]) -> Glyph {

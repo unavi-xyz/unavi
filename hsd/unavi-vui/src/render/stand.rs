@@ -159,9 +159,6 @@ impl Stands {
     pub fn set_accent(&mut self, id: StandId, accent: Option<Color>) {
         if let Some(standing) = self.get_mut(id) {
             standing.accent = accent;
-            if let Some(view) = &mut standing.view {
-                view.accent = accent;
-            }
         }
     }
 
@@ -240,11 +237,10 @@ impl Stands {
 
 impl Standing {
     fn lay_out(&mut self, tuning: &Tuning) {
-        self.view = self.text.as_ref().map(|text| {
-            let mut view = placard::standing(text, tuning, self.scale);
-            view.accent = self.accent;
-            view
-        });
+        self.view = self
+            .text
+            .as_ref()
+            .map(|text| placard::standing(text, tuning, self.scale));
     }
 }
 

@@ -3,7 +3,6 @@
 use arrayvec::ArrayVec;
 use smol_str::SmolStr;
 use wired_guest::math::{
-    Color,
     Vec2,
     Vec3,
 };
@@ -236,11 +235,6 @@ pub struct PlacardView {
     /// Backing panel extents, sized to the laid-out lines.
     pub size:     Vec2,
     pub lines:    ArrayVec<PlacardLine, MAX_LINES>,
-    /// What the pane's corner tab is drawn in, if it has one.
-    pub accent:   Option<Color>,
-    /// How many times larger than a mote's this is laid out, which the pane's
-    /// shape follows.
-    pub unit:     f32,
 }
 
 /// Whether attention has been held long enough to earn a placard. How it
@@ -329,8 +323,6 @@ pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> Plac
         position: mount(mote, radius, size.y, tuning),
         size,
         lines,
-        accent: None,
-        unit: 1.0,
     }
 }
 
@@ -368,8 +360,6 @@ pub fn standing(placard: &Placard, tuning: &Tuning, scale: f32) -> PlacardView {
         position: Vec3::new(0.0, size.y, 0.0),
         size,
         lines,
-        accent: None,
-        unit: scale,
     }
 }
 
@@ -570,19 +560,12 @@ mod tests {
             assert!(near(large.offset.x, small.offset.x * scale));
             assert!(near(large.offset.y, small.offset.y * scale));
         }
-        assert!(near(standing.unit, scale), "the pane's shape scales too");
-        assert!(near(on_mote.unit, 1.0));
     }
 
     #[test]
     fn a_standing_title_reads_at_the_size_the_plan_asks_for() {
         let title = standing(&Placard::new("t"), &tuning(), 1.0).lines[0].size;
         assert!((0.05..0.06).contains(&title), "{title} m");
-    }
-
-    #[test]
-    fn a_standing_placard_starts_with_no_accent() {
-        assert_eq!(standing(&Placard::new("t"), &tuning(), 1.0).accent, None);
     }
 
     #[test]

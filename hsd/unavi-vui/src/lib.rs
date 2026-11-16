@@ -9,6 +9,11 @@ mod api;
 mod assist;
 mod attention;
 mod cast;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "no surface draws cell art yet")
+)]
+mod cells;
 mod fit;
 mod flip;
 mod font;

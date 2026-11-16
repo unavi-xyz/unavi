@@ -19,7 +19,6 @@ use crate::wired::{
     shading::graph::{
         BinaryOp,
         BlendMode,
-        Combine2Op,
         Combine3Op,
         Combine4Op,
         ConvertOp,
@@ -33,17 +32,26 @@ use crate::wired::{
         RemapOp,
         ShaderGraph,
         SmoothstepOp,
-        StepOp,
         SurfaceGraph,
         SurfaceOutput,
         UnlitOutput,
         ValueKind,
         set_graph,
-        set_overrides,
     },
 };
 
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "no surface draws cells from these yet")
+)]
+mod cell;
+#[cfg(test)] mod interp;
 pub mod matrix;
+#[expect(dead_code, reason = "no surface draws a meter yet")]
+pub mod meter;
+#[expect(dead_code, reason = "no surface draws a picture yet")]
+pub mod picture;
+pub mod slab;
 
 /// Tint, with the body's alpha in its own alpha channel.
 pub const SHELL_TINT: u16 = 0;
@@ -69,46 +77,6 @@ pub const SHELL_BLOOM: u16 = 6;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
-
-/// The accent a pane's corner tab is drawn in; its alpha says whether there
-/// is a tab at all.
-pub const PANE_ACCENT: u16 = 0;
-/// How many metres a pane's shape is drawn in per metre of its mote-scale
-/// design, so a pane stood at several times that size keeps its proportions.
-pub const PANE_UNIT: u16 = 1;
-/// How far a pane has unrolled from its top edge, 0 for not at all and 1 for
-/// whole. Drawn as a front sweeping down it, so a pane opens and closes like
-/// a blind rather than fading, which opaque glass cannot.
-pub const PANE_OPEN: u16 = 2;
-
-/// The frost laid over what a pane shows: cool, and light enough that dark
-/// type reads on it over any room.
-const FROST: Color = Color {
-    r: 0.93,
-    g: 0.96,
-    b: 1.0,
-    a: 1.0,
-};
-/// How far the blurred room is lifted toward [`FROST`]. Nearly all of the
-/// way: dark type has to read on a pane over any backdrop, a black one
-/// included.
-const FROST_LIFT: f32 = 0.9;
-/// Radius of the pane's rounded corners, in metres at mote scale.
-const CORNER: f32 = 0.012;
-/// How far along each edge the top-right corner is cut away, in metres at
-/// mote scale.
-const CHAMFER: f32 = 0.02;
-/// The gap between the chamfered edge and the corner tab, measured square to
-/// the edge, in metres at mote scale.
-const TAB_GAP: f32 = 0.003;
-/// How far the rim line is mixed toward white.
-const RIM_MIX: f32 = 0.5;
-/// How far the blur's taps stray from the centre, in screen coordinates. The
-/// diagonals sit at three quarters of it so the nine taps cover a disc.
-const PANE_SPREAD: f32 = 0.006;
-/// Where a pane's edge line starts and ends fading, in metres from its border
-/// at mote scale.
-const EDGE: (f32, f32) = (0.0007, 0.0015);
 
 /// Appends nodes and hands back a port naming each, so a graph is written as
 /// what it computes rather than as a list of indices to keep in step.
@@ -626,212 +594,6 @@ pub fn ring() -> ShaderGraph {
     }
 }
 
-impl Net {
-    /// The room behind a pane, blurred over nine taps and lifted nearly to
-    /// the frost.
-    fn frosted_room(&mut self) -> Port {
-        let screen = self.push(Node::ScreenUv);
-        let mut sum = self.push(Node::SceneColor(screen));
-        let diagonal = PANE_SPREAD * 0.75;
-        let taps = [
-            (PANE_SPREAD, 0.0),
-            (-PANE_SPREAD, 0.0),
-            (0.0, PANE_SPREAD),
-            (0.0, -PANE_SPREAD),
-            (diagonal, diagonal),
-            (-diagonal, diagonal),
-            (diagonal, -diagonal),
-            (-diagonal, -diagonal),
-        ];
-        for (dx, dy) in taps {
-            let at = self.push(Node::Add(binary(
-                screen,
-                Port::Const(GraphValue::Vec2(Vec2::new(dx, dy))),
-            )));
-            let tap = self.push(Node::SceneColor(at));
-            sum = self.push(Node::Add(binary(sum, tap)));
-        }
-        let blurred = self.push(Node::Mul(binary(sum, cf(1.0 / 9.0))));
-        self.push(Node::Lerp(LerpOp {
-            a: blurred,
-            b: Port::Const(GraphValue::Color(FROST)),
-            t: cf(FROST_LIFT),
-        }))
-    }
-}
-
-/// A pane of frosted glass: the room behind it, blurred and lifted nearly to a
-/// cool white, with a faint bright line on its border. Its corners are
-/// rounded, but for the top right, which is cut away on the diagonal and
-/// holds a small solid triangle in the placard's accent colour.
-///
-/// The shape is an alpha clip on a flat quad rather than geometry. Like the
-/// shell it is opaque so it reaches the phase `SceneColor` is filled in,
-/// unlit so the lit transmissive path cannot occlude it, and arrives by
-/// scale. It is double sided so a placard reads from whichever side the
-/// viewer stands.
-pub fn pane() -> ShaderGraph {
-    let mut net = Net::default();
-    let frosted = net.frosted_room();
-
-    // Every length below is in metres, so the shape is the same on a tall pane
-    // as on a wide one: the quad is stretched, its uv is not. `unit` carries a
-    // pane stood at several times mote scale.
-    let unit = Port::Input(PANE_UNIT);
-    let scaled = |net: &mut Net, metres: f32| net.push(Node::Mul(binary(unit, cf(metres))));
-    let corner = scaled(&mut net, CORNER);
-    let chamfer = scaled(&mut net, CHAMFER);
-    let gap = scaled(&mut net, TAB_GAP);
-    let edge_low = scaled(&mut net, EDGE.0);
-    let edge_high = scaled(&mut net, EDGE.1);
-
-    // How far a fragment is from the low and the high border along an axis.
-    let uv = net.push(Node::Uv);
-    let scale = net.push(Node::ObjectScale);
-    let axis = |net: &mut Net, channel: u8| {
-        let across = net.push(Node::Extract(ExtractOp { v: uv, channel }));
-        let back = net.push(Node::OneMinus(across));
-        let size = net.push(Node::Extract(ExtractOp { v: scale, channel }));
-        let low = net.push(Node::Mul(binary(across, size)));
-        let high = net.push(Node::Mul(binary(back, size)));
-        (low, high)
-    };
-    let (left, right) = axis(&mut net, 0);
-    let (bottom, top) = axis(&mut net, 1);
-    let wide = net.push(Node::Min(binary(left, right)));
-    let tall = net.push(Node::Min(binary(bottom, top)));
-
-    // Depth inside a rounded rectangle: the nearer border's distance, except
-    // within a corner's radius of both, where it is the radius less the
-    // distance from the corner circle's centre.
-    let straight = net.push(Node::Min(binary(wide, tall)));
-    let round_axis = |net: &mut Net, depth: Port| {
-        let short = net.push(Node::Sub(binary(corner, depth)));
-        net.push(Node::Max(binary(short, cf(0.0))))
-    };
-    let round_wide = round_axis(&mut net, wide);
-    let round_tall = round_axis(&mut net, tall);
-    let corner_at = net.push(Node::Combine2(Combine2Op {
-        x: round_wide,
-        y: round_tall,
-    }));
-    let reach = net.push(Node::Length(corner_at));
-    let rounded = net.push(Node::Sub(binary(corner, reach)));
-    let boxed = net.push(Node::Min(binary(straight, rounded)));
-
-    // The top-right corner is cut along a diagonal instead of rounded: signed
-    // metres from that line, negative on the corner's side of it.
-    let legs = net.push(Node::Add(binary(right, top)));
-    let past = net.push(Node::Sub(binary(legs, chamfer)));
-    let cut = net.push(Node::Mul(binary(past, cf(std::f32::consts::FRAC_1_SQRT_2))));
-    let depth = net.push(Node::Min(binary(boxed, cut)));
-    let body = net.push(Node::Step(StepOp {
-        edge: cf(0.0),
-        x:    depth,
-    }));
-
-    // A faint bright rim, where the pane's own edge is.
-    let inside = net.push(Node::Smoothstep(SmoothstepOp {
-        low:  edge_low,
-        high: edge_high,
-        x:    depth,
-    }));
-    let edge = net.push(Node::OneMinus(inside));
-    let rim = net.push(Node::Mul(binary(edge, cf(RIM_MIX))));
-    let line = net.push(Node::Lerp(LerpOp {
-        a: frosted,
-        b: Port::Const(GraphValue::Color(Color::WHITE)),
-        t: rim,
-    }));
-
-    // The corner tab: what the chamfer took off, less a gap, in the accent.
-    // An accent with no alpha has no tab, and is clipped like the rest.
-    let beyond = net.push(Node::Sub(binary(cf(0.0), cut)));
-    let in_tab = net.push(Node::Step(StepOp {
-        edge: gap,
-        x:    beyond,
-    }));
-    let accent = Port::Input(PANE_ACCENT);
-    let accent_alpha = net.push(Node::Extract(ExtractOp {
-        v:       accent,
-        channel: 3,
-    }));
-    let tab = net.push(Node::Mul(binary(in_tab, accent_alpha)));
-    let painted = net.push(Node::Lerp(LerpOp {
-        a: line,
-        b: accent,
-        t: tab,
-    }));
-    let covered = net.push(Node::Max(binary(body, tab)));
-    let (painted, covered) = unroll(&mut net, painted, covered, (edge_low, edge_high));
-    let color = with_alpha(&mut net, painted, covered);
-
-    ShaderGraph {
-        public_inputs: vec![
-            GraphValue::Color(accent_input(None)),
-            GraphValue::Float(1.0),
-            GraphValue::Float(1.0),
-        ],
-        surface:       SurfaceGraph {
-            nodes:        net.nodes,
-            // Clipping composes with the opaque blend, so the cut shape does
-            // not leave the phase `SceneColor` is filled in.
-            output:       SurfaceOutput::Unlit(UnlitOutput {
-                color,
-                alpha_clip_threshold: Some(cf(0.5)),
-            }),
-            blend:        BlendMode::Opaque,
-            cull:         CullMode::None,
-            cast_shadows: false,
-        },
-        displacement:  None,
-    }
-}
-
-/// Unrolls a pane drawn as `painted` over `covered` down to [`PANE_OPEN`]:
-/// everything nearer the top edge than the front shows, and while it moves,
-/// a bright line `edge` metres wide runs along the front.
-fn unroll(net: &mut Net, painted: Port, covered: Port, edge: (Port, Port)) -> (Port, Port) {
-    // Metres below the top edge, measured as the pane's shape is.
-    let uv = net.push(Node::Uv);
-    let down = net.push(Node::Extract(ExtractOp {
-        v:       uv,
-        channel: 1,
-    }));
-    let down = net.push(Node::OneMinus(down));
-    let scale = net.push(Node::ObjectScale);
-    let tall_now = net.push(Node::Extract(ExtractOp {
-        v:       scale,
-        channel: 1,
-    }));
-    let top = net.push(Node::Mul(binary(down, tall_now)));
-    let front = net.push(Node::Mul(binary(Port::Input(PANE_OPEN), tall_now)));
-    let unrolled = net.push(Node::Step(StepOp {
-        edge: top,
-        x:    front,
-    }));
-    let behind = net.push(Node::Sub(binary(front, top)));
-    let past_front = net.push(Node::Smoothstep(SmoothstepOp {
-        low:  edge.0,
-        high: edge.1,
-        x:    behind,
-    }));
-    let near_front = net.push(Node::OneMinus(past_front));
-    let opening = net.push(Node::OneMinus(Port::Input(PANE_OPEN)));
-    let opening = net.push(Node::Step(StepOp {
-        edge: cf(1.0e-3),
-        x:    opening,
-    }));
-    let sweep = net.push(Node::Mul(binary(near_front, opening)));
-    let painted = net.push(Node::Lerp(LerpOp {
-        a: painted,
-        b: Port::Const(GraphValue::Color(Color::WHITE)),
-        t: sweep,
-    }));
-    let covered = net.push(Node::Mul(binary(covered, unrolled)));
-    (painted, covered)
-}
-
 /// Submits [`shell`] to `prim`. Cheap and repeatable: the host shares one
 /// compiled program across every prim submitting the same graph, so this is
 /// paid once per slot rather than built into a hidden template.
@@ -845,58 +607,11 @@ pub fn set_ring(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn set_pane(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
-    set_graph(doc, prim, Layer::Local, Some(&pane()))?;
-    Ok(())
-}
-
-/// What a pane is handed per prim: its accent, if it has one, and the scale
-/// its shape is drawn at.
-pub fn set_pane_look(
-    doc: &Document,
-    prim: (u64, u64),
-    accent: Option<Color>,
-    unit: f32,
-) -> anyhow::Result<()> {
-    set_overrides(
-        doc,
-        prim,
-        Layer::Local,
-        &[
-            (PANE_ACCENT, GraphValue::Color(accent_input(accent))),
-            (PANE_UNIT, GraphValue::Float(unit)),
-        ],
-    )?;
-    Ok(())
-}
-
-/// How far `prim`'s pane has unrolled; see [`PANE_OPEN`].
-pub fn set_pane_open(doc: &Document, prim: (u64, u64), open: f32) -> anyhow::Result<()> {
-    set_overrides(
-        doc,
-        prim,
-        Layer::Local,
-        &[(PANE_OPEN, GraphValue::Float(open.clamp(0.0, 1.0)))],
-    )?;
-    Ok(())
-}
-
-/// The accent as the pane reads it: whole alpha for a colour, none for no tab.
-const fn accent_input(accent: Option<Color>) -> Color {
-    match accent {
-        Some(color) => Color { a: 1.0, ..color },
-        None => Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 0.0,
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
+
+    use wired_guest::style;
 
     use super::*;
 
@@ -1007,88 +722,28 @@ mod tests {
     }
 
     #[test]
-    fn the_pane_is_well_formed() {
-        assert_well_formed(&pane(), "pane");
-    }
-
-    /// Frost is the room behind the pane, so it has to be sampled in the phase
-    /// that fills it, and several times or it is not blurred at all.
-    #[test]
-    fn the_pane_blurs_the_room_in_the_transmissive_phase() {
-        let pane = pane();
-        assert!(matches!(pane.surface.blend, BlendMode::Opaque));
-        assert!(matches!(pane.surface.output, SurfaceOutput::Unlit(_)));
-        let taps = pane
-            .surface
-            .nodes
-            .iter()
-            .filter(|node| matches!(node, Node::SceneColor(_)))
-            .count();
-        assert!((5..=9).contains(&taps), "{taps} taps");
+    fn the_slab_is_well_formed() {
+        assert_well_formed(&slab::slab(), "slab");
     }
 
     #[test]
-    fn the_pane_border_is_a_white_rim() {
-        let rim = pane().surface.nodes.iter().any(|node| {
-            matches!(
-                node,
-                Node::Lerp(LerpOp { b: Port::Const(GraphValue::Color(color)), .. })
-                    if *color == Color::WHITE
-            )
-        });
-        assert!(rim, "the line is mixed toward white");
-    }
-
-    /// The corners are cut, not drawn, so the pane has to clip, and to do it
-    /// without leaving the phase its frost is sampled in.
-    #[test]
-    fn the_pane_cuts_its_shape_by_clipping_and_stays_opaque() {
-        let pane = pane();
-        assert!(matches!(pane.surface.blend, BlendMode::Opaque));
-        let SurfaceOutput::Unlit(unlit) = pane.surface.output else {
-            panic!("the pane is unlit");
-        };
-        assert!(unlit.alpha_clip_threshold.is_some());
-    }
-
-    /// The shape is measured in metres through the object's scale, not in
-    /// uv, which would stretch the corner with the pane.
-    #[test]
-    fn the_pane_measures_its_shape_in_metres() {
-        let nodes = pane().surface.nodes;
-        assert!(nodes.iter().any(|node| matches!(node, Node::ObjectScale)));
-        assert!(nodes.iter().any(|node| matches!(node, Node::Uv)));
+    fn the_picture_is_well_formed_and_leaves_room_for_the_look() {
+        let picture = picture::picture();
+        assert_well_formed(&picture, "picture");
+        assert_eq!(
+            picture
+                .surface
+                .nodes
+                .iter()
+                .filter(|node| matches!(node, Node::TextureSample(_)))
+                .count(),
+            2
+        );
     }
 
     #[test]
-    fn the_pane_takes_an_accent_and_a_unit_per_prim() {
-        let inputs = pane().public_inputs;
-        assert_eq!(inputs.len(), 2);
-        assert!(matches!(
-            inputs[usize::from(PANE_ACCENT)],
-            GraphValue::Color(Color { a, .. }) if a.abs() < f32::EPSILON
-        ));
-        assert!(matches!(
-            inputs[usize::from(PANE_UNIT)],
-            GraphValue::Float(unit) if (unit - 1.0).abs() < f32::EPSILON
-        ));
-    }
-
-    #[test]
-    fn no_accent_means_no_tab_and_an_accent_is_whole() {
-        assert!(accent_input(None).a.abs() < f32::EPSILON);
-        let accent = accent_input(Some(Color::rgba(0.2, 0.4, 0.8, 0.3)));
-        assert_eq!((accent.r, accent.g, accent.b), (0.2, 0.4, 0.8));
-        assert!((accent.a - 1.0).abs() < f32::EPSILON);
-    }
-
-    /// The tab sits inside the cut-away triangle with room to spare, or the
-    /// gap would eat it.
-    #[test]
-    fn the_tab_has_room_inside_the_chamfer() {
-        let leg = TAB_GAP.mul_add(-std::f32::consts::SQRT_2, CHAMFER);
-        assert!(leg > CHAMFER / 2.0, "a tab leg of {leg} m is a speck");
-        assert!(CORNER < CHAMFER);
+    fn the_meter_is_well_formed() {
+        assert_well_formed(&meter::meter(), "meter");
     }
 
     /// Luminance, reading the colour as the linear value the shader works in:
@@ -1101,22 +756,31 @@ mod tests {
         (a.max(b) + 0.05) / (a.min(b) + 0.05)
     }
 
-    /// The pane over the worst backdrop there is, black: the room adds
-    /// nothing and only the frost is left.
-    fn darkest_pane() -> f32 {
-        FROST_LIFT * luminance(FROST)
+    /// The slab over the worst backdrop there is, black: the room adds
+    /// nothing, and the frost's ground and fill are all that is left.
+    fn darkest_slab() -> f32 {
+        let ground = luminance(style::FROST_GROUND) * style::FROST_GROUND_ALPHA;
+        ground.mul_add(
+            1.0 - style::FROST_FILL_ALPHA,
+            luminance(style::FROST_FILL) * style::FROST_FILL_ALPHA,
+        )
     }
 
+    /// Ink reads at 4.5:1 on the darkest slab. The quieter two sit lower,
+    /// because a 56% white ground over black is itself only mid grey.
     #[test]
-    fn every_ink_reads_on_the_pane_over_any_backdrop() {
+    fn every_ink_reads_on_the_slab_over_any_backdrop() {
         let palette = crate::palette::Palette::DEFAULT;
-        for (name, ink) in [
-            ("ink", palette.ink),
-            ("muted", palette.muted_ink),
-            ("warning", palette.warning),
+        for (name, ink, floor) in [
+            ("ink", palette.ink, 4.5),
+            ("muted", palette.muted_ink, 2.5),
+            ("warning", palette.warning, 2.5),
         ] {
-            let ratio = contrast(darkest_pane(), luminance(ink));
-            assert!(ratio >= 4.5, "{name} ink is {ratio}:1 on the darkest pane");
+            let ratio = contrast(darkest_slab(), luminance(ink));
+            assert!(
+                ratio >= floor,
+                "{name} ink is {ratio}:1 on the darkest slab, under {floor}:1"
+            );
         }
         assert!(
             luminance(palette.muted_ink) > luminance(palette.ink),
@@ -1164,8 +828,10 @@ mod tests {
         for (graph, name) in [
             (shell(), "shell"),
             (ring(), "ring"),
-            (pane(), "pane"),
+            (slab::slab(), "slab"),
             (matrix::matrix(), "matrix"),
+            (picture::picture(), "picture"),
+            (meter::meter(), "meter"),
         ] {
             let networks = graph.surface.nodes.iter().chain(
                 graph

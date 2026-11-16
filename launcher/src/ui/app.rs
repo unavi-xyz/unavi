@@ -7,6 +7,7 @@ use super::{
     settings::Settings,
 };
 
+const TOKEN_STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/tokens.css"));
 const BASE_STYLES: &str = include_str!("../../assets/base.css");
 const BUTTON_STYLES: &str = include_str!("../../assets/buttons.css");
 const COMPONENT_STYLES: &str = include_str!("../../assets/components.css");
@@ -34,6 +35,7 @@ pub fn Title() -> Element {
     rsx! {
         div { class: "container",
             img { class: "logo", src: LOGO }
+            div { class: "wordmark", "UNAVI" }
             div { class: "content", Outlet::<Route> {} }
         }
     }
@@ -43,6 +45,7 @@ pub fn Title() -> Element {
 pub fn App() -> Element {
     rsx! {
         document::Title { "UNAVI Launcher" }
+        document::Style { {TOKEN_STYLES} }
         document::Style { {BASE_STYLES} }
         document::Style { {LAYOUT_STYLES} }
         document::Style { {BUTTON_STYLES} }

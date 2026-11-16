@@ -1,0 +1,85 @@
+/* UNAVI design tokens, shared by the website and the docs site.
+   This file is the source; crates/docs/static/tokens.css links to it.
+   The rules for using these are in design-system.md at the repo root. */
+
+:root {
+  /* ─── Color ───────────────────────────────────────── */
+
+  --bg:       #F8F8F5;  /* off-white ground, never pure white */
+  --bg-dark:  #0A0A0A;
+  --fg:       #0F0F0F;
+  --fg-2:     #3A3A3A;  /* secondary text that must still read as text */
+  --muted:    #666666;  /* labels, metadata */
+  --light:    #E8E8E3;  /* text on dark */
+  --panel:    #FFFFFF;  /* raised surfaces: inputs, asides */
+  --tint:     #EEEEE8;  /* hover rows, inline code, code blocks */
+  --rule:     #DCDCD5;  /* hairlines on light ground */
+
+  --blue:     #2563EB;  /* Explore, About, the hero seal */
+  --red:      #DC2626;  /* Build */
+
+  --fg-rgb:    15, 15, 15;
+  --light-rgb: 232, 232, 227;
+
+  /* ─── Type ─────────────────────────────────────────── */
+
+  --sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --text-2xs:     0.6875rem;                    /* 11px caps labels */
+  --text-xs:      0.75rem;                      /* 12px caps UI, metadata */
+  --text-sm:      0.875rem;                     /* 14px secondary text, lists */
+  --text-md:      1rem;                         /* 16px body */
+  --text-lg:      1.1875rem;                    /* 19px lede */
+  --text-xl:      1.375rem;                     /* 22px section heading */
+  --text-2xl:     2.25rem;                      /* 36px page title */
+  --text-display: clamp(2.25rem, 4vw, 3.5rem);  /* closing headline, page titles */
+  --text-hero:    clamp(3rem, 7vw, 7rem);       /* the wordmark */
+  --text-poster:  clamp(3rem, 12vw, 7rem);      /* a dithered page title */
+
+  --track-caps:  0.14em;   /* every uppercase label, button, and nav link */
+  --track-mark:  0.04em;   /* the wordmark and display signage */
+  --track-tight: -0.02em;  /* large headings in sentence case */
+
+  --lead-body:  1.65;
+  --lead-tight: 1.1;
+
+  /* ─── Space (4px steps) ────────────────────────────── */
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  /* Wider than 8vw on large screens; the max() keeps the content column from
+     running past 72rem however wide the window gets. */
+  --gutter: max(10vw, calc((100vw - 72rem) / 2));
+
+  /* ─── Imagery ──────────────────────────────────────── */
+
+  --dither-cell: 3;        /* CSS pixels per dither cell in color-panel images */
+
+  /* ─── Motion ───────────────────────────────────────── */
+
+  --ease:      cubic-bezier(0.2, 0, 0, 1);  /* ease-out, no overshoot */
+  --dur-press: 100ms;                       /* :active feedback */
+  --dur-hover: 180ms;                       /* color and underline changes */
+  --press:     scale(0.97);
+}
+
+@media (max-width: 768px) {
+  :root { --gutter: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 0ms;
+    --dur-hover: 0ms;
+    --press: none;
+  }
+}

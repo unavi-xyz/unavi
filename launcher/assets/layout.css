@@ -2,7 +2,7 @@
   width: 100%;
   max-width: 400px;
   height: 500px;
-  padding: 40px 50px;
+  padding: var(--space-6) var(--space-7);
   text-align: center;
   position: relative;
   display: flex;
@@ -15,21 +15,23 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
-h1 {
-  margin: 0 0 40px 0;
-  color: var(--text-primary);
-  font-size: 32px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.wordmark {
+  margin: 0 0 var(--space-5) 0;
+  color: var(--fg);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: var(--track-mark);
+  line-height: var(--lead-tight);
   flex-shrink: 0;
 }
 
 .logo {
-  width: 256px;
-  height: 256px;
-  margin: -40px 0 30px 0;
+  width: 192px;
+  height: 192px;
+  margin: calc(-1 * var(--space-4)) 0 var(--space-3) 0;
   flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;

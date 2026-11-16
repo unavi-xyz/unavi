@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use super::app::Route;
+use super::{
+    app::Route,
+    cells::Cells,
+};
 use crate::update::{
     UpdateStatus,
     launcher,
@@ -47,7 +50,7 @@ pub fn SelfUpdate() -> Element {
         UpdateStatus::Downloading { version, progress } => {
             return rsx! {
                 div { class: "status",
-                    span { class: "loading" }
+                    Cells { progress }
                     {
                         progress.map_or_else(
                             || format!("downloading launcher v{version}..."),
@@ -87,7 +90,7 @@ pub fn SelfUpdate() -> Element {
 
     rsx! {
         div { class: "status",
-            span { class: "loading" }
+            Cells { progress: None }
             {status_text}
         }
     }

@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use super::app::Route;
+use super::{
+    app::Route,
+    cells::Cells,
+};
 use crate::update::{
     UpdateStatus,
     app,
@@ -49,7 +52,7 @@ pub fn AppUpdate() -> Element {
         Some(UpdateStatus::Downloading { version, progress }) => {
             return rsx! {
                 div { class: "status",
-                    span { class: "loading" }
+                    Cells { progress: *progress }
                     {
                         progress.map_or_else(
                             || format!("downloading v{version}..."),
@@ -82,7 +85,7 @@ pub fn AppUpdate() -> Element {
 
     rsx! {
         div { class: "status",
-            span { class: "loading" }
+            Cells { progress: None }
             {status_text}
         }
     }

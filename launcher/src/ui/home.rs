@@ -1,10 +1,8 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use crate::{
-    CONFIG,
-    update::app,
-};
+use super::xr_toggle::XrToggle;
+use crate::update::app;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -12,7 +10,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn Home() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut app_running = use_signal(|| crate::APP_PROCESS.is_running());
-    let mut xr_mode = use_signal(|| CONFIG.get().xr_mode);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         loop {
@@ -38,16 +35,6 @@ pub fn Home() -> Element {
         }
     };
 
-    let toggle_xr = move |_| {
-        if let Err(e) = CONFIG.update(|c| {
-            c.xr_mode = !c.xr_mode;
-        }) {
-            error!("Failed to save config: {e}");
-        } else {
-            xr_mode.set(!xr_mode());
-        }
-    };
-
     rsx! {
         button {
             class: if app_running() { "home-button running" } else { "home-button" },
@@ -56,19 +43,10 @@ pub fn Home() -> Element {
                     handle_launch(e);
                 }
             },
-            {if app_running() { "⟨  connected  ⟩" } else { "Enter" }}
+            {if app_running() { "Connected" } else { "Enter" }}
         }
 
-        div { class: "settings",
-            label {
-                input {
-                    r#type: "checkbox",
-                    checked: xr_mode,
-                    onchange: toggle_xr,
-                }
-                " XR mode"
-            }
-        }
+        XrToggle {}
 
         // Unreachable from the UI; no button currently links here.
         /*
@@ -82,18 +60,17 @@ pub fn Home() -> Element {
         }
         */
 
-        div { style: "min-height: 40px;",
+        div { class: "error-slot",
             if let Some(ref err) = *launch_error.read() {
                 div { class: "error", {err.as_str()} }
             }
         }
 
         div { class: "version",
-            div { "launcher v{VERSION}" }
             {
                 app::installed_app_version().map_or_else(
-                    || rsx! { div { "app not found" } },
-                    |app_ver| rsx! { div { "app v{app_ver}" } }
+                    || format!("launcher {VERSION} · app not found"),
+                    |app_ver| format!("launcher {VERSION} · app {app_ver}")
                 )
             }
         }

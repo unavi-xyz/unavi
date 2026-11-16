@@ -1,53 +1,34 @@
-.settings label {
+.settings {
+  margin-bottom: var(--space-5);
+}
+
+/* Two cells and a label. The lit cell shows the state: left off, right on. */
+.xr-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: var(--text-label);
-  font-size: 14px;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  background: var(--bg);
+  border: none;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
   cursor: pointer;
+  transition: color var(--dur-hover) var(--ease);
 }
 
-.settings input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  /* blitz-paint fills the checked box with the checkbox's own computed
-     `color` as a stand-in for the unimplemented `accent-color`, then draws
-     a solid white tick on top - a light color here is invisible against it. */
-  color: var(--bg-disabled);
-  transition: all 0.2s ease;
-  position: relative;
-  flex-shrink: 0;
+.xr-toggle:hover {
+  color: var(--fg);
 }
 
-.settings input[type="checkbox"]:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+.xr-toggle .cells {
+  gap: var(--space-1);
 }
 
-.settings input[type="checkbox"]:checked {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.3) 0%,
-    rgba(255, 255, 255, 0.2) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.settings input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 5px;
-  height: 9px;
-  border: solid rgba(255, 255, 255, 0.9);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.xr-toggle .cell.on {
+  background: var(--blue);
 }

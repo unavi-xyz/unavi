@@ -1,82 +1,69 @@
-.loading {
-  width: 16px;
-  height: 16px;
-  position: relative;
+/* A row of twelve square cells. Off is --tint, lit is --fg, the attended
+   cell is --blue. */
+.cells {
+  display: flex;
+  gap: var(--space-1);
 }
 
-.loading::before,
-.loading::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 3px;
-  background: linear-gradient(
-    45deg,
-    var(--text-primary),
-    var(--text-secondary)
-  );
-  animation: morph-shape 2s ease-in-out infinite;
+.cell {
+  width: var(--space-2);
+  height: var(--space-2);
+  background: var(--tint);
 }
 
-.loading::after {
-  animation-delay: -1s;
-  opacity: 0.5;
+.cell.lit {
+  background: var(--fg);
 }
 
-@keyframes morph-shape {
+.cell.attended {
+  background: var(--blue);
+}
+
+.cells.chase .cell {
+  animation: cell-attend 1800ms steps(1, end) infinite;
+}
+
+@keyframes cell-attend {
   0%,
+  8.3% {
+    background: var(--blue);
+  }
+  8.4%,
   100% {
-    border-radius: 3px;
-    transform: rotate(0deg);
-  }
-  33% {
-    border-radius: 50%;
-    transform: rotate(120deg);
-  }
-  66% {
-    border-radius: 0%;
-    transform: rotate(240deg);
+    background: var(--tint);
   }
 }
 
 .status {
-  margin: 20px 0;
-  color: var(--text-secondary);
-  font-size: 14px;
+  margin: var(--space-5) 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 20px;
+  gap: var(--space-4);
+  min-height: var(--space-5);
 }
 
 .error {
-  position: relative;
-  background: var(--glass-bg-error);
-  border: 1px solid rgba(255, 100, 100, 0.25);
-  border-radius: var(--glass-radius);
-  color: rgba(255, 150, 150, 0.95);
-  padding: 14px 20px;
-  margin: 16px 0 20px 0;
-  font-size: 12px;
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  box-shadow:
-    0 4px 16px rgba(255, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 100, 100, 0.2);
+  border-top: 1px solid var(--red);
+  color: var(--red);
+  padding: var(--space-2) 0 0 0;
+  margin: var(--space-4) 0 var(--space-5) 0;
+  font-size: var(--text-xs);
+  line-height: var(--lead-body);
+}
+
+.error-slot {
+  min-height: var(--space-7);
 }
 
 .version {
-  color: var(--text-version);
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.5px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--glass-radius-small);
-  backdrop-filter: var(--glass-blur-light);
-  -webkit-backdrop-filter: var(--glass-blur-light);
+  margin-top: auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--text-xs);
 }

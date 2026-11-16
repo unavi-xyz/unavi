@@ -1,6 +1,5 @@
-/* UNAVI design tokens, shared by the website and the docs site.
-   This file is the source; crates/docs/static/tokens.css links to it.
-   The rules for using these are in design-system.md at the repo root. */
+/* UNAVI design tokens for the app, the launcher and the in-world library.
+   Started as a copy of the website's and kept here on its own. */
 
 :root {
   /* ─── Color ───────────────────────────────────────── */

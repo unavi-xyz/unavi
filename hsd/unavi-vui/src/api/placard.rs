@@ -11,22 +11,22 @@ use crate::{
     api::{
         drive,
         put_up,
+        vui::Vui,
+    },
+    component::{
+        placard::{
+            Paragraph,
+            Placard,
+            Tone,
+        },
+        stand::StandId,
     },
     exports::unavi::vui::api::{
         GuestPlacard,
         PlacardLine,
         Tone as ScriptTone,
     },
-    glyph::Glyph,
-    placard::{
-        Paragraph,
-        Placard,
-        Tone,
-    },
-    render::{
-        Vui,
-        stand::StandId,
-    },
+    material::glyph::Glyph,
     wired::core::error::Error,
 };
 

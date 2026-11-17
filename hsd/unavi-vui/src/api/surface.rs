@@ -1,5 +1,5 @@
 //! The `orbit` and `grid` resources: thin WIT handles onto a [`SurfaceId`]
-//! each, the surface itself drawn and driven by [`crate::render::Vui`].
+//! each, the surface itself drawn and driven by [`crate::api::vui::Vui`].
 
 use crate::{
     api::{
@@ -13,6 +13,7 @@ use crate::{
         remove,
         shown,
         summon,
+        vui::SurfaceId,
     },
     exports::unavi::vui::api::{
         Event,
@@ -23,7 +24,6 @@ use crate::{
         Mount,
         Orbit as OrbitHandle,
     },
-    render::SurfaceId,
     wired::core::error::Error,
 };
 

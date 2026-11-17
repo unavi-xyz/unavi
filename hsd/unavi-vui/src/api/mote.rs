@@ -4,6 +4,8 @@ use wired_guest::math::Color;
 
 use super::VUI;
 use crate::{
+    api::vui::Vui,
+    component::tree,
     exports::unavi::vui::api::{
         Arrange,
         Glyph as GlyphRecord,
@@ -12,13 +14,11 @@ use crate::{
         Mote as Handle,
         MoteBorrow,
     },
-    glyph::Glyph,
-    mote,
-    render::{
-        Vui,
+    material::glyph::Glyph,
+    part::{
         draw,
+        spec,
     },
-    tree,
     wired::{
         core::error::Error,
         scene::{
@@ -138,15 +138,15 @@ impl GuestMote for MoteRes {
 
     fn arrange(&self) -> Arrange {
         match self.0.arrange() {
-            mote::Arrange::Orbit => Arrange::Orbit,
-            mote::Arrange::Grid => Arrange::Grid,
+            spec::Arrange::Orbit => Arrange::Orbit,
+            spec::Arrange::Grid => Arrange::Grid,
         }
     }
 
     fn set_arrange(&self, value: Arrange) {
         self.0.set_arrange(match value {
-            Arrange::Orbit => mote::Arrange::Orbit,
-            Arrange::Grid => mote::Arrange::Grid,
+            Arrange::Orbit => spec::Arrange::Orbit,
+            Arrange::Grid => spec::Arrange::Grid,
         });
     }
 

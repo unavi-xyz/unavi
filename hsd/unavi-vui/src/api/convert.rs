@@ -2,6 +2,7 @@
 
 use crate::{
     api::mote::handle,
+    component::event,
     exports::unavi::vui::api::{
         Bearing,
         Event,
@@ -10,10 +11,7 @@ use crate::{
         Page,
         Planted,
     },
-    render::{
-        event,
-        mount,
-    },
+    machinery::mount,
 };
 
 pub const fn mount(mount: Mount) -> mount::Mount {

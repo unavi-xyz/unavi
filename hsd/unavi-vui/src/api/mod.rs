@@ -4,13 +4,13 @@ use std::cell::RefCell;
 
 use crate::{
     World,
+    api::vui::{
+        SurfaceId,
+        Vui,
+    },
     exports::unavi::vui::api::{
         Event,
         Guest,
-    },
-    render::{
-        SurfaceId,
-        Vui,
     },
     wired::core::error::Error,
 };
@@ -20,6 +20,7 @@ mod mote;
 mod placard;
 mod slate;
 mod surface;
+pub mod vui;
 
 thread_local! {
     /// Every surface this script has put up, built on the first one.

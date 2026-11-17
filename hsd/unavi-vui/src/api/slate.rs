@@ -11,24 +11,24 @@ use crate::{
     api::{
         drive,
         put_up,
+        vui::Vui,
+    },
+    component::slate::{
+        Kind,
+        Row,
+        slates::{
+            SlateEvent,
+            SlateId,
+        },
+        {
+            self,
+        },
     },
     exports::unavi::vui::api::{
         GuestSlate,
         Row as ScriptRow,
         RowKind,
         SlateEvent as ScriptEvent,
-    },
-    render::{
-        Vui,
-        slate::{
-            SlateEvent,
-            SlateId,
-        },
-    },
-    slate::{
-        self,
-        Kind,
-        Row,
     },
     wired::core::error::Error,
 };

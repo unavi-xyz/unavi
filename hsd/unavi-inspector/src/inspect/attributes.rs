@@ -114,6 +114,13 @@ fn transform(at: &Transform, key: &PropertyKey) -> Card {
         .field("Scale", scale)
 }
 
+/// A variant of a generated enum as words. The generated `Debug` names the
+/// type before the variant.
+fn variant_words(value: &impl std::fmt::Debug) -> String {
+    let debug = format!("{value:?}");
+    words(debug.rsplit("::").next().unwrap_or(&debug))
+}
+
 /// Degrees, without a negative zero.
 fn degrees(radians: f32) -> f32 {
     let degrees = radians.to_degrees();
@@ -129,7 +136,7 @@ fn mesh(stated: &[(PropertyKey, Property)]) -> Option<Card> {
         match property {
             Property::MeshTopology(kind) => topology = Some(*kind),
             Property::MeshVertices(stream) => {
-                streams.push(words(&format!("{:?}", stream.attribute)));
+                streams.push(variant_words(&stream.attribute));
                 if stream.attribute == VertexAttribute::Position {
                     position = Some((key, stream.values.len() / 3));
                 }
@@ -283,7 +290,7 @@ fn other(key: &PropertyKey, property: &Property) -> Option<Card> {
         ),
         Property::Spawn(spawn) => Card::new("Spawn", format!("r {:.2}", spawn.radius), key),
         Property::Relation((relation, _)) => Card::new(
-            &capitalised(&words(&format!("{relation:?}"))),
+            &capitalised(&variant_words(relation)),
             "linked".to_owned(),
             key,
         ),

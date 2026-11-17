@@ -1,15 +1,15 @@
 //! Which things in the world the viewer is attending to.
 //!
 //! A thing is attended when it is close and the viewer is looking at its
-//! placard. An attended thing keeps its place until the viewer has clearly
+//! tag. An attended thing keeps its place until the viewer has clearly
 //! moved on, so a gaze drifting across the edge of the cone does not make a
-//! placard flicker.
+//! tag flicker.
 
 use std::f32::consts::PI;
 
 use wired_guest::math::Vec3;
 
-/// Radians between the gaze and the placard within which a thing may become
+/// Radians between the gaze and the tag within which a thing may become
 /// attended.
 pub const ENTER_ANGLE: f32 = 20.0 * PI / 180.0;
 
@@ -47,14 +47,14 @@ pub struct Candidate<K> {
     pub key:    K,
     /// Where the thing is.
     pub centre: Vec3,
-    /// Where its placard would stand.
+    /// Where its tag would stand.
     pub anchor: Vec3,
 }
 
 /// The candidates attended from `eye` looking along `gaze`, at most [`CAP`]
 /// of them. `held` are those attended last time, which are held to the looser
 /// limits and come ahead of any newcomer, so a crowd at the cap cannot push
-/// out a placard the viewer is already reading. Within each group the smallest
+/// out a tag the viewer is already reading. Within each group the smallest
 /// angle comes first.
 impl Reach {
     #[must_use]
@@ -205,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn the_angle_is_measured_to_the_placard_not_the_centre() {
+    fn the_angle_is_measured_to_the_tag_not_the_centre() {
         let tall = Candidate {
             key:    1_u8,
             centre: Vec3::new(0.0, 0.0, -4.0),

@@ -69,7 +69,10 @@ const LOREM: &str = "The quick brown fox jumps over the lazy dog and keeps runni
                      through the meadow until the light fails.";
 
 fn many(lines: usize) -> String {
-    (0..lines).map(|n| format!("line {n}")).collect::<Vec<_>>().join("\n")
+    (0..lines)
+        .map(|n| format!("line {n}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[test]
@@ -80,7 +83,10 @@ fn text_wraps_to_the_pane() {
     let room = pane.width() - 2.0 * PAD_X;
     for row in &block.rows {
         for item in &row.items {
-            let Item::Text { text: line, width, .. } = item else {
+            let Item::Text {
+                text: line, width, ..
+            } = item
+            else {
                 continue;
             };
             assert!((text::width(line) - width).abs() < 1.0e-3);
@@ -101,13 +107,20 @@ fn a_form_row_puts_its_label_left_and_its_control_right() {
         )],
     );
     let items = &pane.laid().blocks[0].rows[0].items;
-    let (Item::Text { x: label, width, .. }, Item::Control { x: control, .. }) =
-        (&items[0], &items[1])
+    let (
+        Item::Text {
+            x: label, width, ..
+        },
+        Item::Control { x: control, .. },
+    ) = (&items[0], &items[1])
     else {
         panic!("a label then a control: {items:?}");
     };
     assert!((label - PAD_X).abs() < 1.0e-4, "the label starts the row");
-    assert!(label + width <= *control, "the control starts past the label");
+    assert!(
+        label + width <= *control,
+        "the control starts past the label"
+    );
 }
 
 #[test]
@@ -122,9 +135,19 @@ fn a_shared_block_gets_what_the_fixed_ones_leave() {
             prose(4, Height::Lines(1), "foot"),
         ],
     );
-    let heights = pane.laid().blocks.iter().map(|block| block.lines).collect::<Vec<_>>();
+    let heights = pane
+        .laid()
+        .blocks
+        .iter()
+        .map(|block| block.lines)
+        .collect::<Vec<_>>();
     assert_eq!(heights, [2, 4, 4, 1], "the first sharer takes the odd line");
-    let tops = pane.laid().blocks.iter().map(|block| block.top).collect::<Vec<_>>();
+    let tops = pane
+        .laid()
+        .blocks
+        .iter()
+        .map(|block| block.top)
+        .collect::<Vec<_>>();
     assert_eq!(tops, [0, 2, 6, 10]);
 }
 
@@ -139,7 +162,12 @@ fn a_fixed_block_is_held_to_what_the_pane_has_left() {
             prose(3, Height::Share, "c"),
         ],
     );
-    let heights = pane.laid().blocks.iter().map(|block| block.lines).collect::<Vec<_>>();
+    let heights = pane
+        .laid()
+        .blocks
+        .iter()
+        .map(|block| block.lines)
+        .collect::<Vec<_>>();
     assert_eq!(heights, [2, 1, 0]);
 }
 
@@ -176,8 +204,13 @@ fn overflow_scrolls_and_clamps() {
     };
     assert_eq!(at_end, [0, 1, 2, 3, 4], "the window stays full at the end");
 
-    pane.set_blocks(vec![prose(1, Height::Share, &many(6))]).expect("blocks");
-    assert_eq!(pane.scroll_of(1), 1, "shrinking the content reclamps the offset");
+    pane.set_blocks(vec![prose(1, Height::Share, &many(6))])
+        .expect("blocks");
+    assert_eq!(
+        pane.scroll_of(1),
+        1,
+        "shrinking the content reclamps the offset"
+    );
 }
 
 #[test]
@@ -199,7 +232,10 @@ fn the_bead_shrinks_with_the_content_and_stays_on_the_rail() {
         assert!(thumb.start >= 0.0 && thumb.start + thumb.len <= 1.0 + 1.0e-5);
     }
     let whole = scroll::thumb(0, 4, 5);
-    assert!((whole.len - 1.0).abs() < f32::EPSILON, "nothing to scroll fills the rail");
+    assert!(
+        (whole.len - 1.0).abs() < f32::EPSILON,
+        "nothing to scroll fills the rail"
+    );
 }
 
 #[test]
@@ -215,11 +251,11 @@ fn a_tables_header_stays_while_its_rows_scroll() {
         24,
         Some(5),
         vec![Block {
-            id: 1,
+            id:     1,
             height: Height::Share,
-            kind: Kind::Table(Table {
+            kind:   Kind::Table(Table {
                 columns: vec![Column {
-                    title: s("Name"),
+                    title:   s("Name"),
                     columns: 12,
                 }],
                 rows,
@@ -244,28 +280,28 @@ fn a_tables_header_stays_while_its_rows_scroll() {
 fn everything() -> Pane {
     let tree = (0..4)
         .map(|id| Node {
-            id: 40 + id,
-            label: s(&format!("node {id}")),
-            depth: id % 3,
-            open: (id % 2 == 0).then_some(id == 0),
+            id:       40 + id,
+            label:    s(&format!("node {id}")),
+            depth:    id % 3,
+            open:     (id % 2 == 0).then_some(id == 0),
             selected: id == 3,
         })
         .collect();
     let table = Table {
         columns: vec![
             Column {
-                title: s("Layer"),
+                title:   s("Layer"),
                 columns: 14,
             },
             Column {
-                title: s("Size"),
+                title:   s("Size"),
                 columns: 8,
             },
         ],
-        rows: (0..3)
+        rows:    (0..3)
             .map(|id| TableRow {
-                id: 30 + id,
-                cells: vec![s(&format!("layer {id}")), s("12")],
+                id:       30 + id,
+                cells:    vec![s(&format!("layer {id}")), s("12")],
                 selected: id == 1,
             })
             .collect(),
@@ -275,24 +311,24 @@ fn everything() -> Pane {
         Some(30),
         vec![
             Block {
-                id: 1,
+                id:     1,
                 height: Height::Lines(1),
-                kind: Kind::Bar(vec![
+                kind:   Kind::Bar(vec![
                     BarItem {
-                        id: 10,
+                        id:      10,
                         control: Control::Action {
-                            label: s("Apply"),
+                            label:   s("Apply"),
                             primary: true,
                         },
                     },
                     BarItem {
-                        id: 11,
+                        id:      11,
                         control: Control::Toggle(false),
                     },
                     BarItem {
-                        id: 12,
+                        id:      12,
                         control: Control::Choice {
-                            options: vec![s("One"), s("Two"), s("Three")],
+                            options:  vec![s("One"), s("Two"), s("Three")],
                             selected: 1,
                         },
                     },
@@ -306,26 +342,47 @@ fn everything() -> Pane {
                     row(21, "On", Control::Toggle(true)),
                     row(22, "Opacity", Control::Slider(0.4)),
                     row(23, "Load", Control::Meter(0.7)),
-                    row(24, "X", Control::Number { value: 1.25, per_column: 0.1 }),
+                    row(
+                        24,
+                        "X",
+                        Control::Number {
+                            value:      1.25,
+                            per_column: 0.1,
+                        },
+                    ),
                     row(25, "Where", Control::Link(s("Home"))),
-                    row(26, "Mode", Control::Choice { options: vec![s("A"), s("B")], selected: 0 }),
-                    row(27, "Go", Control::Action { label: s("Run"), primary: false }),
+                    row(
+                        26,
+                        "Mode",
+                        Control::Choice {
+                            options:  vec![s("A"), s("B")],
+                            selected: 0,
+                        },
+                    ),
+                    row(
+                        27,
+                        "Go",
+                        Control::Action {
+                            label:   s("Run"),
+                            primary: false,
+                        },
+                    ),
                 ],
             ),
             Block {
-                id: 3,
+                id:     3,
                 height: Height::Lines(4),
-                kind: Kind::Table(table),
+                kind:   Kind::Table(table),
             },
             Block {
-                id: 4,
+                id:     4,
                 height: Height::Lines(4),
-                kind: Kind::Tree(tree),
+                kind:   Kind::Tree(tree),
             },
             Block {
-                id: 5,
+                id:     5,
                 height: Height::Share,
-                kind: Kind::Text(vec![Span {
+                kind:   Kind::Text(vec![Span {
                     text: s("See the docs for more."),
                     tone: Tone::Muted,
                     link: Some(50),
@@ -363,7 +420,13 @@ fn every_targeted_run_is_hit(pane: &Pane) -> usize {
     for run in &runs.rects {
         let Some(id) = run.target else { continue };
         let hit = pane.hit(centre(run.rect));
-        assert_eq!(hit.and_then(|hit| hit.id), Some(id), "{:?} at {:?}", run.fill, run.rect);
+        assert_eq!(
+            hit.and_then(|hit| hit.id),
+            Some(id),
+            "{:?} at {:?}",
+            run.fill,
+            run.rect
+        );
         checked += 1;
     }
     checked
@@ -372,7 +435,10 @@ fn every_targeted_run_is_hit(pane: &Pane) -> usize {
 #[test]
 fn every_controls_run_is_what_a_press_on_it_answers_for() {
     let pane = everything();
-    assert!(every_targeted_run_is_hit(&pane) > 20, "the pane draws its controls");
+    assert!(
+        every_targeted_run_is_hit(&pane) > 20,
+        "the pane draws its controls"
+    );
 }
 
 #[test]
@@ -384,7 +450,16 @@ fn the_runs_a_scrolled_pane_draws_are_still_what_it_hits() {
             1,
             Height::Share,
             (0..12)
-                .map(|id| row(id, "Row", Control::Action { label: s("Go"), primary: false }))
+                .map(|id| {
+                    row(
+                        id,
+                        "Row",
+                        Control::Action {
+                            label:   s("Go"),
+                            primary: false,
+                        },
+                    )
+                })
                 .collect(),
         )],
     );
@@ -437,7 +512,7 @@ fn pressing_along_a_slider_asks_for_the_fraction_pressed() {
 #[test]
 fn pressing_an_option_of_a_choice_chooses_that_option() {
     let choice = Control::Choice {
-        options: vec![s("One"), s("Two")],
+        options:  vec![s("One"), s("Two")],
         selected: 0,
     };
     let segments = control::segments(&[s("One"), s("Two")]);
@@ -466,7 +541,11 @@ fn tab_visits_each_control_in_reading_order_and_wraps() {
     }
     assert_eq!(visited, order);
     assert_eq!(pane.focus_step(false), Some(order[0]), "wraps forward");
-    assert_eq!(pane.focus_step(true), Some(*order.last().expect("stops")), "wraps back");
+    assert_eq!(
+        pane.focus_step(true),
+        Some(*order.last().expect("stops")),
+        "wraps back"
+    );
 }
 
 #[test]
@@ -486,7 +565,11 @@ fn tab_scrolls_the_control_it_lands_on_into_view() {
         pane.focus_step(false);
     }
     assert_eq!(pane.focus(), Some(5));
-    assert_eq!(pane.scroll_of(1), 3, "the sixth row is the last of three on view");
+    assert_eq!(
+        pane.scroll_of(1),
+        3,
+        "the sixth row is the last of three on view"
+    );
     pane.focus_step(true);
     pane.focus_step(true);
     pane.focus_step(true);
@@ -522,7 +605,10 @@ fn too_many_blocks_rows_or_bytes_are_refused_and_the_old_blocks_kept() {
     let blocks = (0..=MAX_BLOCKS as u32)
         .map(|id| prose(id, Height::Share, "x"))
         .collect();
-    assert_eq!(pane.set_blocks(blocks), Err(Refused::Blocks(MAX_BLOCKS + 1)));
+    assert_eq!(
+        pane.set_blocks(blocks),
+        Err(Refused::Blocks(MAX_BLOCKS + 1))
+    );
     let long = "x".repeat(MAX_TEXT_BYTES + 1);
     assert_eq!(
         pane.set_blocks(vec![prose(1, Height::Share, &long)]),
@@ -536,7 +622,10 @@ fn too_many_blocks_rows_or_bytes_are_refused_and_the_old_blocks_kept() {
         Err(Refused::Rows(MAX_ROWS + 1))
     );
     assert_eq!(pane.laid().blocks.len(), 1);
-    assert_eq!(pane.set_blocks(vec![prose(1, Height::Share, "kept")]), Ok(false));
+    assert_eq!(
+        pane.set_blocks(vec![prose(1, Height::Share, "kept")]),
+        Ok(false)
+    );
 }
 
 #[test]
@@ -551,7 +640,11 @@ fn a_frame_holds_the_title_above_the_body_and_the_status_below() {
     assert!(status >= framed.frame().body_top + 4.0 * LINE);
 
     let runs = framed.runs();
-    let texts = runs.text.iter().map(|run| run.text.as_str()).collect::<Vec<_>>();
+    let texts = runs
+        .text
+        .iter()
+        .map(|run| run.text.as_str())
+        .collect::<Vec<_>>();
     assert_eq!(texts, ["Title", "status"]);
 }
 
@@ -577,7 +670,11 @@ fn an_unchanged_pane_writes_nothing_and_a_changed_line_writes_one_prim() {
     let mut pool = Pool::default();
     let first = writes(&mut pool, &pane.runs());
     assert_eq!(first, 12, "a label and a value for each row");
-    assert_eq!(writes(&mut pool, &pane.runs()), 0, "at rest it writes nothing");
+    assert_eq!(
+        writes(&mut pool, &pane.runs()),
+        0,
+        "at rest it writes nothing"
+    );
 
     pane.set_blocks(vec![form(
         1,
@@ -598,7 +695,13 @@ fn hover_redraws_only_the_marks() {
     let mut pane = everything();
     let mut rects = Pool::default();
     let plan = |pool: &mut Pool<(draw::RectRun, u8)>, pane: &Pane| {
-        pool.plan(pane.runs().rects.iter().map(|run| (run.clone(), 8)).collect())
+        pool.plan(
+            pane.runs()
+                .rects
+                .iter()
+                .map(|run| (run.clone(), 8))
+                .collect(),
+        )
     };
     plan(&mut rects, &pane);
     assert!(plan(&mut rects, &pane).writes.is_empty());
@@ -625,9 +728,9 @@ fn an_eighty_by_forty_pane_of_text_writes_one_prim_per_line_at_most() {
         80,
         Some(40),
         vec![Block {
-            id: 1,
+            id:     1,
             height: Height::Share,
-            kind: Kind::Text(spans),
+            kind:   Kind::Text(spans),
         }],
     );
     pane.set_title("Notes").expect("title");
@@ -637,5 +740,8 @@ fn an_eighty_by_forty_pane_of_text_writes_one_prim_per_line_at_most() {
     assert_eq!(first, 41, "forty lines and the title");
     assert_eq!(writes(&mut pool, &runs), 0);
     pane.scroll_by(1, 1);
-    assert!(writes(&mut pool, &pane.runs()) <= 41, "a scroll rewrites the lines, never more");
+    assert!(
+        writes(&mut pool, &pane.runs()) <= 41,
+        "a scroll rewrites the lines, never more"
+    );
 }

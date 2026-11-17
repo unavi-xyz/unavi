@@ -1,5 +1,5 @@
 //! The Documents lens: corner brackets around each document near the viewer,
-//! in its author's colour, and a placard over the one looked at.
+//! in its author's colour, and a tag over the one looked at.
 //!
 //! Documents are found by following reference sites from the current space,
 //! and boxed from their prims' meshes and colliders. Boxes are cached in each
@@ -75,10 +75,10 @@ const CAP: f32 = 0.25;
 /// Metres from the eye within which a document may become attended.
 const ATTEND_REACH: f32 = 12.0;
 
-/// Metres above a document's highest corner its placard stands.
+/// Metres above a document's highest corner its tag stands.
 const ABOVE: f32 = 0.15;
 
-/// Fixed ticks between rereads of what the placard says, about half a second.
+/// Fixed ticks between rereads of what the tag says, about half a second.
 const FACTS_TICKS: u32 = 32;
 
 pub struct Documents {
@@ -141,7 +141,7 @@ impl Documents {
         self.tell();
     }
 
-    /// Poses every set of brackets and the placard against where the
+    /// Poses every set of brackets and the tag against where the
     /// documents are now.
     pub fn update(&mut self) {
         if !self.worn {
@@ -208,7 +208,7 @@ impl Documents {
 
     /// The smallest document the viewer's gaze enters from outside. The space
     /// the viewer is in is never attended: its box is often flat ground under
-    /// the eye, which a gaze enters from above, and its placard would stand
+    /// the eye, which a gaze enters from above, and its tag would stand
     /// over the space's middle, not over anything looked at.
     fn attend(&self, eye: &Transform, near: &[usize]) -> Option<DocumentId> {
         let gaze = eye.forward();
@@ -232,7 +232,7 @@ impl Documents {
         best.map(|(_, id)| id)
     }
 
-    /// Gives the placard to the attended document and rereads what it says.
+    /// Gives the tag to the attended document and rereads what it says.
     fn tell(&mut self) {
         let Some(id) = self.attended else {
             self.label.hide();
@@ -260,8 +260,7 @@ impl Documents {
             author_name: author_name.as_deref(),
             author: entry.author.as_deref(),
         });
-        let color = entry.color;
-        self.label.say(text, color);
+        self.label.say(text);
     }
 
     fn draw(&self, id: DocumentId) -> Option<Drawn> {

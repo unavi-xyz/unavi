@@ -21,7 +21,6 @@ use wired_guest::{
         document_seed,
         generate_color,
     },
-    glyph::PERSON,
     math::{
         Color,
         Transform,
@@ -405,9 +404,6 @@ fn build(listing: &Listing, icon: Option<(u64, u64)>) -> Option<Space> {
     let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
     let people = people(listing);
     group.set_description(&people).ok()?;
-    if let Err(err) = group.set_description_icon(Some(&glyph::from_rows(&PERSON))) {
-        eprintln!("halo: occupancy icon: {err:?}");
-    }
     group.set_tint(Some(color));
     // The space wears its beacon's mark: in the grid it reads as the marker
     // it is, and opening it still shows the cast and beacon motes beneath.
@@ -470,13 +466,16 @@ fn label(listing: &Listing) -> Option<String> {
     Some(label)
 }
 
-/// How many people are in a space, set after the person icon, and how long
-/// it has been quiet once that is worth saying. Only occupancy: the title is
+/// How many people are in a space, and how long it has been quiet once that
+/// is worth saying. Only occupancy: the title is
 /// already the label.
 fn people(listing: &Listing) -> String {
-    let count = listing.occupants;
+    let count = match listing.occupants {
+        1 => String::from("1 person"),
+        count => format!("{count} people"),
+    };
     if listing.idle_secs < 60 {
-        count.to_string()
+        count
     } else {
         format!("{count} · {} min quiet", listing.idle_secs / 60)
     }
@@ -724,14 +723,21 @@ mod tests {
     }
 
     #[test]
-    fn a_description_is_the_bare_count() {
-        assert_eq!(people(&listing("A long title")), "3");
+    fn a_description_is_the_count_of_people() {
+        assert_eq!(people(&listing("A long title")), "3 people");
         assert_eq!(
             people(&Listing {
                 occupants: 0,
                 ..listing("")
             }),
-            "0"
+            "0 people"
+        );
+        assert_eq!(
+            people(&Listing {
+                occupants: 1,
+                ..listing("")
+            }),
+            "1 person"
         );
     }
 
@@ -741,8 +747,8 @@ mod tests {
             idle_secs,
             ..listing("")
         };
-        assert_eq!(people(&at(59)), "3");
-        assert_eq!(people(&at(60)), "3 · 1 min quiet");
-        assert_eq!(people(&at(310)), "3 · 5 min quiet");
+        assert_eq!(people(&at(59)), "3 people");
+        assert_eq!(people(&at(60)), "3 people · 1 min quiet");
+        assert_eq!(people(&at(310)), "3 people · 5 min quiet");
     }
 }

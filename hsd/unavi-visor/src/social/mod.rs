@@ -27,11 +27,11 @@ use crate::{
         Candidate,
     },
     slots,
-    unavi::vui::api::{
-        Placard,
-        PlacardLine,
-        Tone,
+    tag::{
+        Line,
+        Tag,
     },
+    unavi::vui::api::Tone,
     wired::perception::perception::{
         self,
         Agent,
@@ -52,7 +52,10 @@ const OVER_BODY: f32 = 2.0;
 
 /// The size a plate is taken to be before it has text, so attention can
 /// measure to where one would stand.
-const NOMINAL: Vec2 = Vec2::new(0.6, 0.2);
+const NOMINAL: Vec2 = Vec2::new(0.67, 0.2);
+
+/// Columns a plate is laid out in.
+const COLUMNS: u32 = 40;
 
 /// A user, by a hash of their DID.
 type Key = u64;
@@ -92,14 +95,13 @@ fn found(agent: Agent) -> Found {
     }
 }
 
-fn plate_lines(plate: &Plate) -> Vec<PlacardLine> {
+fn plate_lines(plate: &Plate) -> Vec<Line> {
     plate
         .line
         .iter()
-        .map(|text| PlacardLine {
+        .map(|text| Line {
             text: text.clone(),
             tone: Tone::Muted,
-            icon: None,
         })
         .collect()
 }
@@ -119,18 +121,18 @@ fn describe(user: &str) -> Plate {
 }
 
 struct Slot {
-    placard: Placard,
-    key:     Option<Key>,
+    tag:   Tag,
+    key:   Option<Key>,
     /// What the plate says now.
-    text:    Option<Plate>,
+    text:  Option<Plate>,
     /// Whether the text has been tried since the slot was given its person or
     /// since the facts were last reread, so a refused text is not retried and
     /// logged every tick.
-    tried:   bool,
-    at:      Option<Vec3>,
+    tried: bool,
+    at:    Option<Vec3>,
     /// Its laid-out size, read back once its text is set.
-    size:    Vec2,
-    shown:   bool,
+    size:  Vec2,
+    shown: bool,
 }
 
 impl Slot {
@@ -145,7 +147,7 @@ impl Slot {
     fn hide(&mut self) {
         self.claim(None);
         if self.shown {
-            self.placard.set_shown(false);
+            self.tag.set_shown(false);
             self.shown = false;
         }
     }
@@ -156,12 +158,12 @@ impl Slot {
             return;
         }
         match self
-            .placard
+            .tag
             .set_text(&text.title, text.kicker.as_deref(), &plate_lines(&text))
         {
             Ok(()) => {
                 self.text = Some(text);
-                self.size = self.placard.size();
+                self.size = self.tag.size();
             }
             Err(err) => eprintln!("visor: nameplate text: {err:?}"),
         }
@@ -169,7 +171,7 @@ impl Slot {
 
     fn stand(&mut self, at: Vec3) {
         if self.at != Some(at) {
-            self.placard.set_position(at);
+            self.tag.stand(at, None);
             self.at = Some(at);
         }
     }
@@ -187,13 +189,13 @@ impl Social {
         let slots = (0..attention::CAP)
             .map(|_| {
                 Ok(Slot {
-                    placard: Placard::new()?,
-                    key:     None,
-                    text:    None,
-                    tried:   false,
-                    at:      None,
-                    size:    NOMINAL,
-                    shown:   false,
+                    tag:   Tag::new(COLUMNS)?,
+                    key:   None,
+                    text:  None,
+                    tried: false,
+                    at:    None,
+                    size:  NOMINAL,
+                    shown: false,
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -267,7 +269,7 @@ impl Social {
             }
             slot.stand(person.at);
             if slot.text.is_some() && !slot.shown {
-                slot.placard.set_shown(true);
+                slot.tag.set_shown(true);
                 slot.shown = true;
             }
         }

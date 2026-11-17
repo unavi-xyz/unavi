@@ -28,10 +28,8 @@ use crate::{
             Marks,
             SlotPrims,
         },
-        placard::{
-            PlacardView,
-            prims::PlacardPrims,
-        },
+        pane::prims::PanePrims,
+        placard::PlacardView,
         tree::Mote,
     },
     face::marks::Chevrons,
@@ -169,36 +167,38 @@ pub struct Drawing<'a> {
 /// grown to what is actually shown, and the placard riding whichever of them
 /// holds attention.
 pub struct Bodies {
-    root:     (u64, u64),
+    root:       (u64, u64),
     /// The surface's face and its only resting collider. A mote is a drawing
     /// until it is taken, so only this can be hit.
-    field:    (u64, u64),
-    surface:  Collider,
+    field:      (u64, u64),
+    surface:    Collider,
     /// Grabs against this surface; anything landing elsewhere belongs to
     /// whatever it hit.
-    input:    InputSubscription,
+    input:      InputSubscription,
     /// Where an icon waits while the mote holding it is not drawn. Scale zero
     /// rather than unparented: `wired:scene` has no detached prim, and a
     /// removed child would reappear at the document root.
-    park:     (u64, u64),
+    park:       (u64, u64),
     /// A readout's face at the surface's centre, drawn apart from the slots.
-    readout:  Face,
+    readout:    Face,
     /// What the way back and the page tabs wear.
-    chevrons: Chevrons,
+    chevrons:   Chevrons,
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
-    slots:    RefCell<Vec<SlotPrims>>,
-    capacity: usize,
-    unit:     mesh::MeshData,
-    placard:  PlacardPrims,
-    tuning:   Tuning,
+    slots:      RefCell<Vec<SlotPrims>>,
+    capacity:   usize,
+    unit:       mesh::MeshData,
+    placard:    RefCell<PanePrims>,
+    /// Where the placard last stood, which it shrinks away from.
+    placard_at: Cell<Vec3>,
+    tuning:     Tuning,
     /// Radians the drawn icons have turned, accumulated per frame so the
     /// spin is smooth however fast the tick.
-    spin:     Cell<f32>,
+    spin:       Cell<f32>,
     /// Whether the surface is up. A dismissed one keeps every prim — the
     /// meshes are paid for once, and a summon that re-uploaded them would
     /// spend a `Flow::BlobUpload` per body every time.
-    shown:    Cell<bool>,
+    shown:      Cell<bool>,
 }
 
 impl Bodies {
@@ -227,7 +227,7 @@ impl Bodies {
             .flush()?;
         let input = listen(doc, field)?;
 
-        let placard = PlacardPrims::new(doc, root)?;
+        let placard = PanePrims::new(doc, root)?;
 
         let park = doc.create_prim(Layer::Local, Some(root))?;
         doc.local()
@@ -250,7 +250,8 @@ impl Bodies {
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
-            placard,
+            placard: RefCell::new(placard),
+            placard_at: Cell::new(Vec3::ZERO),
             tuning: *tuning,
             spin: Cell::new(0.0),
             shown: Cell::new(true),

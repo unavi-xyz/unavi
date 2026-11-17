@@ -1,6 +1,6 @@
-//! One inspected prim: what the slate says about it, and the edits its rows
-//! make. The edits are to the prim itself; how the element it belongs to is
-//! placed is read from what it stands for as a whole (a referenced
+//! One inspected prim: what the pane says about it, and the edits its
+//! controls make. The edits are to the prim itself; how the element it belongs
+//! to is placed is read from what it stands for as a whole (a referenced
 //! document's site, a prim of the space, a loose document's root).
 
 use std::collections::HashSet;
@@ -16,7 +16,7 @@ use self::edit::{
 };
 use crate::{
     element_of,
-    unavi::vui::api::SlateEvent,
+    unavi::vui::api::PaneEvent,
     wired::{
         core::ids::PrimRef,
         scene::{
@@ -33,25 +33,20 @@ use crate::{
 };
 
 mod attributes;
+mod blocks;
 mod edit;
 mod format;
-mod rows;
+mod hierarchy;
+mod layers;
 
-/// Most children the tree card lists.
-const MAX_CHILDREN: usize = 8;
-
+/// The ids a pane's controls and rows report by.
 mod row {
-    pub const NAME: u32 = 0;
-    pub const DOCUMENT: u32 = 1;
     pub const LOCKED: u32 = 4;
-    /// The position as a vector, then the turn and the scale.
+    /// The position as three numbers, then the turn and the scale.
     pub const POSITION: u32 = 10;
+    pub const POSITION_Z: u32 = 12;
     pub const TURN: u32 = 13;
     pub const SCALE: u32 = 14;
-    /// The tree card's heading, its parent and its children.
-    pub const TREE: u32 = 30;
-    pub const PARENT: u32 = 31;
-    pub const CHILD: u32 = 32;
     pub const DELETE: u32 = 48;
     pub const MAKE_LOCAL: u32 = 49;
     pub const CLOSE: u32 = 50;
@@ -59,19 +54,28 @@ mod row {
     /// heading, then its fields.
     pub const CARD: u32 = 200;
     pub const CARD_STRIDE: u32 = 16;
+    /// Prim hierarchy nodes count up from here, by their place in the list.
+    pub const NODE: u32 = 1000;
+    /// Layers count up from here.
+    pub const LAYER: u32 = 2000;
 }
 
 /// The cards open on a new inspection: where it is.
 const OPEN_AT_FIRST: [&str; 1] = [attributes::TRANSFORM];
-/// The name the tree card is kept open by.
-const TREE: &str = "Tree";
 
-/// What a row press asked of the tool rather than of the element.
+/// What a press asked of the tool rather than of the element.
 pub enum Asked {
     Nothing,
     Close,
-    /// Inspect this prim instead: a parent or a child chosen from the rows.
+    /// Inspect this prim instead: one chosen in the hierarchy.
     Inspect(PrimRef),
+}
+
+/// What an inspection has unfolded, carried to the next prim inspected from
+/// the same pane.
+pub struct Folds {
+    cards: HashSet<String>,
+    prims: HashSet<(u64, u64)>,
 }
 
 pub struct Inspection {
@@ -83,11 +87,15 @@ pub struct Inspection {
     site:      Option<(u64, u64)>,
     hit_doc:   Document,
     hit_prim:  (u64, u64),
-    /// The point inspected, in the prim's own frame, which the slate's
-    /// tether runs to as the prim moves.
+    /// The point inspected, in the prim's own frame, which the pane's tether
+    /// runs to as the prim moves.
     anchor:    Vec3,
     /// The cards shown open, by name.
     open:      HashSet<String>,
+    /// The prims of the hierarchy shown unfolded.
+    unfolded:  HashSet<(u64, u64)>,
+    /// The prim each hierarchy node stands for, as last built.
+    nodes:     Vec<(u64, u64)>,
     /// The transform edit a scrub has open.
     held:      Option<Held>,
 }
@@ -107,7 +115,7 @@ impl Inspection {
                 Some(local_point(&pose, point))
             })
             .unwrap_or(Vec3::ZERO);
-        Some(Self {
+        let mut inspection = Self {
             placed_in,
             loose,
             site,
@@ -118,8 +126,12 @@ impl Inspection {
                 .iter()
                 .map(|name| (*name).to_owned())
                 .collect(),
+            unfolded: HashSet::new(),
+            nodes: Vec::new(),
             held: None,
-        })
+        };
+        inspection.unfold_to_here();
+        Some(inspection)
     }
 
     /// The prim inspected.
@@ -128,15 +140,18 @@ impl Inspection {
         self.at(self.hit_prim)
     }
 
-    /// Which cards are open, carried over to the next prim inspected from
-    /// this slate.
+    /// What is unfolded, to carry to the next prim inspected from this pane.
     #[must_use]
-    pub fn open_cards(&self) -> HashSet<String> {
-        self.open.clone()
+    pub fn folds(&self) -> Folds {
+        Folds {
+            cards: self.open.clone(),
+            prims: self.unfolded.clone(),
+        }
     }
 
-    pub fn set_open_cards(&mut self, open: HashSet<String>) {
-        self.open = open;
+    pub fn set_folds(&mut self, folds: Folds) {
+        self.open = folds.cards;
+        self.unfolded.extend(folds.prims);
     }
 
     /// Folds the card named `name` if it is open, else opens it.
@@ -153,11 +168,11 @@ impl Inspection {
         Some(pose.transform_point(self.anchor))
     }
 
-    /// Answers what a row did.
-    pub fn apply(&mut self, event: &SlateEvent) -> Asked {
+    /// Answers what a control did.
+    pub fn apply(&mut self, event: &PaneEvent) -> Asked {
         match *event {
-            SlateEvent::Pressed(row::CLOSE) => return Asked::Close,
-            SlateEvent::Pressed(row::DELETE) => {
+            PaneEvent::Pressed(row::CLOSE) => return Asked::Close,
+            PaneEvent::Pressed(row::DELETE) => {
                 if let Err(err) = self.delete() {
                     eprintln!("inspector: delete: {err}");
                 }
@@ -165,54 +180,63 @@ impl Inspection {
             }
             // The site opens the copy in place of what it showed, so this
             // inspection's document is gone.
-            SlateEvent::Pressed(row::MAKE_LOCAL) => {
+            PaneEvent::Pressed(row::MAKE_LOCAL) => {
                 match self.make_local() {
                     Ok(()) => println!("inspector: made local"),
                     Err(err) => eprintln!("inspector: make local: {err}"),
                 }
                 return Asked::Close;
             }
-            SlateEvent::Pressed(row::PARENT) => {
-                if let Some(parent) = self.parent_ref() {
-                    return Asked::Inspect(parent);
-                }
-            }
-            SlateEvent::Pressed(id)
-                if (row::CHILD..row::CHILD + MAX_CHILDREN as u32).contains(&id) =>
-            {
-                if let Some(child) = self.child_ref((id - row::CHILD) as usize) {
-                    return Asked::Inspect(child);
-                }
-            }
-            SlateEvent::Pressed(row::TREE) => self.flip(TREE),
-            SlateEvent::Pressed(id)
-                if id >= row::CARD && (id - row::CARD).is_multiple_of(row::CARD_STRIDE) =>
-            {
+            PaneEvent::Selected(id) | PaneEvent::Folded((id, _)) if is_card(id) => {
                 let index = ((id - row::CARD) / row::CARD_STRIDE) as usize;
                 if let Some(card) = self.cards().into_iter().nth(index) {
                     self.finish();
                     self.flip(&card.name);
                 }
             }
-            SlateEvent::Toggled((row::LOCKED, on)) => {
+            PaneEvent::Selected(id) => {
+                if let Some(prim) = self.node(id).filter(|prim| *prim != self.hit_prim) {
+                    return Asked::Inspect(self.at(prim));
+                }
+            }
+            PaneEvent::Folded((id, open)) => {
+                if let Some(prim) = self.node(id) {
+                    if open {
+                        self.unfolded.insert(prim);
+                    } else {
+                        self.unfolded.remove(&prim);
+                    }
+                }
+            }
+            PaneEvent::Toggled((row::LOCKED, on)) => {
                 if let Err(err) = self.lock(on) {
                     eprintln!("inspector: lock: {err}");
                 }
             }
-            SlateEvent::Scrubbed((id, part, by)) => {
-                if let Some(nudge) = Nudge::of(id, part, by)
+            PaneEvent::Scrubbed((id, by)) => {
+                if let Some(nudge) = Nudge::of(id, by)
                     && let Err(err) = self.nudge(nudge)
                 {
                     eprintln!("inspector: nudge: {err:?}");
                 }
             }
-            SlateEvent::Released(_) => self.finish(),
-            SlateEvent::Pressed(_) | SlateEvent::Toggled(_) | SlateEvent::Picked(_) => {}
+            PaneEvent::Released(_) => self.finish(),
+            PaneEvent::Pressed(_)
+            | PaneEvent::Toggled(_)
+            | PaneEvent::Slid(_)
+            | PaneEvent::Chosen(_)
+            | PaneEvent::Followed(_) => {}
         }
         Asked::Nothing
     }
 
-    /// Whether the transform rows may change this prim.
+    /// The prim hierarchy node `id` stands for.
+    fn node(&self, id: u32) -> Option<(u64, u64)> {
+        let index = id.checked_sub(row::NODE)?;
+        self.nodes.get(index as usize).copied()
+    }
+
+    /// Whether the transform controls may change this prim.
     fn editable(&self) -> bool {
         self.hit_doc.may_write()
             && !self.locked()
@@ -222,19 +246,8 @@ impl Inspection {
             )
     }
 
-    pub fn parent_ref(&self) -> Option<PrimRef> {
-        self.parent().map(|parent| self.at(parent))
-    }
-
-    pub fn child_ref(&self, index: usize) -> Option<PrimRef> {
-        self.hit_doc
-            .children(self.hit_prim)
-            .get(index)
-            .map(|child| self.at(*child))
-    }
-
-    fn parent(&self) -> Option<(u64, u64)> {
-        match self.hit_doc.get(self.hit_prim, &PropertyKey::Parent) {
+    fn parent_of(&self, prim: (u64, u64)) -> Option<(u64, u64)> {
+        match self.hit_doc.get(prim, &PropertyKey::Parent) {
             Some(Property::Parent(parent)) => parent,
             _ => None,
         }
@@ -247,6 +260,11 @@ impl Inspection {
             prim,
         }
     }
+}
+
+/// Whether `id` names the heading of a component card.
+const fn is_card(id: u32) -> bool {
+    id >= row::CARD && id < row::NODE && (id - row::CARD).is_multiple_of(row::CARD_STRIDE)
 }
 
 /// `point` in the frame `pose` places, exactly for any scale: what
@@ -284,5 +302,17 @@ mod tests {
         let point = Vec3::new(2.0, 2.5, 2.0);
         let back = pose.transform_point(local_point(&pose, point));
         assert!((back - point).length() < 1.0e-4, "{back}");
+    }
+
+    #[test]
+    fn a_card_is_named_by_the_first_id_of_its_stride() {
+        assert!(is_card(row::CARD));
+        assert!(is_card(row::CARD + row::CARD_STRIDE));
+        assert!(
+            !is_card(row::CARD + 1),
+            "a field of a card is not its heading"
+        );
+        assert!(!is_card(row::NODE), "a hierarchy node is not a card");
+        assert!(!is_card(row::CLOSE));
     }
 }

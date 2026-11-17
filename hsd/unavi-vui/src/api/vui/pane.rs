@@ -2,6 +2,7 @@
 //! script puts it.
 
 use wired_guest::math::{
+    Color,
     Vec2,
     Vec3,
 };
@@ -38,11 +39,19 @@ impl Vui {
     /// The pane, width by height in metres.
     #[must_use]
     pub fn pane_size(&self, id: PaneId) -> Vec2 {
-        self.panes.size(id, self.tuning.pane_em)
+        self.panes.size(id, &self.tuning)
     }
 
-    pub fn pane_standing(&mut self, id: PaneId, at: Vec3, tether: Option<Vec3>) {
-        self.panes.set_mount(id, Mount::Standing { at, tether });
+    pub fn pane_standing(&mut self, id: PaneId, at: Vec3) {
+        self.panes.set_mount(id, Mount::Standing { at });
+    }
+
+    pub fn pane_tether(&mut self, id: PaneId, to: Option<Vec3>) {
+        self.panes.set_tether(id, to);
+    }
+
+    pub fn pane_hue(&mut self, id: PaneId, hue: Option<Color>) {
+        self.panes.set_hue(id, hue);
     }
 
     pub fn pane_floating(&mut self, id: PaneId, at: Vec3) {

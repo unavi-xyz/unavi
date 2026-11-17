@@ -84,17 +84,16 @@ impl Surface {
             .filter(|(_, remaining)| *remaining > 0)
             .map(|(forward, remaining)| {
                 let spec = MoteSpec {
-                    role:             Role::Page { forward, remaining },
-                    label:            SmolStr::default(),
-                    description:      None,
-                    description_icon: None,
-                    condition:        Condition::default(),
-                    icon:             false,
-                    glyph:            None,
-                    tint:             None,
-                    film:             palette::FILM,
-                    frost:            0.0,
-                    notice:           None,
+                    role:        Role::Page { forward, remaining },
+                    label:       SmolStr::default(),
+                    description: None,
+                    condition:   Condition::default(),
+                    icon:        false,
+                    glyph:       None,
+                    tint:        None,
+                    film:        palette::FILM,
+                    frost:       0.0,
+                    notice:      None,
                 };
                 (spec, layout.tab(forward, &self.tuning))
             })

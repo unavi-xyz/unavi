@@ -1,4 +1,4 @@
-//! How a trust rung reads on a placard.
+//! How a trust rung reads on a tag.
 
 use crate::wired::perception::perception::TrustRung;
 

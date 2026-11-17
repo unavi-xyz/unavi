@@ -70,7 +70,13 @@ impl Pane {
                 );
             }
             Control::Number { value, .. } => {
-                runs.text(&format_number(*value), baseline(area.x), 1.0, Tone::Body, target);
+                runs.text(
+                    &format_number(*value),
+                    baseline(area.x),
+                    1.0,
+                    Tone::Body,
+                    target,
+                );
             }
             Control::Action { label, primary } => {
                 let fill = if *primary { Fill::Accent } else { Fill::Tint };

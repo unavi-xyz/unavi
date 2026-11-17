@@ -41,7 +41,7 @@ use crate::{
     },
     clearance::Clearance,
     slots,
-    unavi::vui::api::Placard,
+    tag::Tag,
     wired::{
         peer::authority,
         perception::perception::{
@@ -57,17 +57,20 @@ use crate::{
 /// Metres around the viewer searched for portals.
 const RADIUS: f32 = 16.0;
 
-/// Fixed ticks between rereads of what a placard says, about half a second.
+/// Fixed ticks between rereads of what a tag says, about half a second.
 const FACTS_TICKS: u32 = 32;
 
 /// The size a tag is taken to be before it has text, so attention can measure
 /// to where one would stand.
-const NOMINAL: Vec2 = Vec2::new(0.84, 0.3);
+const NOMINAL: Vec2 = Vec2::new(0.67, 0.25);
+
+/// Columns a tag is laid out in.
+const COLUMNS: u32 = 40;
 
 /// A portal, by its prim.
 type Key = (DocumentId, (u64, u64));
 
-/// A portal worth a placard.
+/// A portal worth a tag.
 #[derive(Clone, Copy)]
 struct Found {
     key:         Key,
@@ -78,22 +81,22 @@ struct Found {
 }
 
 struct Slot {
-    placard: Placard,
-    key:     Option<Key>,
-    /// What the placard says now.
-    text:    Option<Content>,
+    tag:    Tag,
+    key:    Option<Key>,
+    /// What the tag says now.
+    text:   Option<Content>,
     /// Whether the text has been tried since the slot was given its portal or
     /// since the facts were last reread, so a refused text is not retried and
     /// logged every tick.
-    tried:   bool,
+    tried:  bool,
     /// Where it stands and what its tether reaches for, as last sent.
-    at:      Option<Placement>,
+    at:     Option<Placement>,
     /// Which post of its portal it stands by, once it has stood by one.
-    side:    Option<Side>,
+    side:   Option<Side>,
     /// Its laid-out size, read back once its text is set.
-    size:    Vec2,
-    accent:  Option<Color>,
-    shown:   bool,
+    size:   Vec2,
+    accent: Option<Color>,
+    shown:  bool,
 }
 
 impl Slot {
@@ -113,12 +116,11 @@ impl Slot {
         let mut placed = portal.frame.place(eye, side, self.size);
         placed.at = clearance.clear(eye, placed.at, self.size, &[]);
         if self.at != Some(placed) {
-            self.placard.set_position(placed.at);
-            self.placard.set_tether(placed.tether);
+            self.tag.stand(placed.at, placed.tether);
             self.at = Some(placed);
         }
         if self.accent != Some(portal.hue) {
-            self.placard.set_accent(Some(portal.hue));
+            self.tag.set_hue(Some(portal.hue));
             self.accent = Some(portal.hue);
         }
     }
@@ -126,7 +128,7 @@ impl Slot {
     fn hide(&mut self) {
         self.claim(None);
         if self.shown {
-            self.placard.set_shown(false);
+            self.tag.set_shown(false);
             self.shown = false;
         }
     }
@@ -150,15 +152,15 @@ impl Travel {
         let slots = (0..attention::CAP)
             .map(|_| {
                 Ok(Slot {
-                    placard: Placard::new()?,
-                    key:     None,
-                    text:    None,
-                    tried:   false,
-                    at:      None,
-                    side:    None,
-                    size:    NOMINAL,
-                    accent:  None,
-                    shown:   false,
+                    tag:    Tag::new(COLUMNS)?,
+                    key:    None,
+                    text:   None,
+                    tried:  false,
+                    at:     None,
+                    side:   None,
+                    size:   NOMINAL,
+                    accent: None,
+                    shown:  false,
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -174,7 +176,7 @@ impl Travel {
     }
 
     /// Moves attention to what the viewer is looking at, while the lens is
-    /// worn. Unworn, or with no eye, nothing is attended and every placard is
+    /// worn. Unworn, or with no eye, nothing is attended and every tag is
     /// put away.
     /// Leaves the user's shell out of what a tag is pulled clear of.
     pub const fn set_shell(&mut self, shell: Option<DocumentId>) {
@@ -248,21 +250,18 @@ impl Travel {
                 let text = describe(&self.listings, portal);
                 if slot.text.as_ref() != Some(&text) {
                     let lines = tag_lines(&text);
-                    match slot
-                        .placard
-                        .set_text(&text.title, Some(&text.kicker), &lines)
-                    {
+                    match slot.tag.set_text(&text.title, Some(&text.kicker), &lines) {
                         Ok(()) => {
                             slot.text = Some(text);
-                            slot.size = slot.placard.size();
+                            slot.size = slot.tag.size();
                         }
-                        Err(err) => eprintln!("visor: placard text: {err:?}"),
+                        Err(err) => eprintln!("visor: tag text: {err:?}"),
                     }
                 }
             }
             slot.stand(portal, eye.translation, &mut self.clearance);
             if slot.text.is_some() && !slot.shown {
-                slot.placard.set_shown(true);
+                slot.tag.set_shown(true);
                 slot.shown = true;
             }
         }

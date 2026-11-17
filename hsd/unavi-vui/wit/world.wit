@@ -79,9 +79,6 @@ interface api {
     description: func() -> option<string>;
     /// At most 1024 bytes.
     set-description: func(value: string) -> result<_, error>;
-    /// Dots drawn before the description on its placard, as a placard line's
-    /// icon is. A glyph is refused as `set-glyph` refuses one.
-    set-description-icon: func(value: option<glyph>) -> result<_, error>;
 
     /// Tells the viewer something about this mote: a short card on its body,
     /// shown for a few seconds whether or not the mote is attended, in place
@@ -315,7 +312,7 @@ interface api {
     held: func() -> bool;
   }
 
-  /// How a line of a placard is set.
+  /// How a paragraph of a `text` block is set.
   enum tone {
     /// Plain ink.
     body,
@@ -323,184 +320,6 @@ interface api {
     muted,
     /// The warning colour.
     warning,
-  }
-
-  record placard-line {
-    text: string,
-    tone: tone,
-    /// Drawn as dots before the line's text, at the line's text height and in
-    /// the line's tone. The text is set after it, and a line that wraps keeps
-    /// the icon on its first row. A glyph is refused as `set-glyph` refuses
-    /// one, and the cells outside its clip circle are not drawn.
-    icon: option<glyph>,
-  }
-
-  /// Text on a pane, standing where the script puts it rather than on a
-  /// mote: a label for something in the world. The same pane, type and pop
-  /// as a mote's placard, laid out larger because it is read from metres
-  /// away rather than at arm's length.
-  resource placard {
-    /// Nothing shows until it has text and is shown.
-    constructor() -> result<placard, error>;
-
-    /// `kicker` is a small muted line above the title (an id, a category).
-    /// `title` and `kicker` are at most 256 bytes each, and there are at most
-    /// 7 `lines` of at most 1024 bytes each. Over any of them is
-    /// `invalid-argument`, and the previous text is kept. Lines wrap to the
-    /// pane's width.
-    set-text: func(
-      title: string,
-      kicker: option<string>,
-      lines: list<placard-line>,
-    ) -> result<_, error>;
-
-    /// The laid-out pane, width by height in metres, as it will stand. Zero
-    /// before any text. Set text first, then read this to place it.
-    size: func() -> vec2;
-
-    /// Where its bottom centre stands, in the calling script's document
-    /// frame, so it stands on that point however tall its text lays out. It
-    /// turns about the vertical axis to face the viewer on its own.
-    set-position: func(at: vec3);
-
-    /// Its size, as a multiple of the size it is laid out at, which reads
-    /// from a few metres away. Held to 0.25 to 1: one read at arm's length
-    /// wants about 0.4. Applies to the text it has and any set after.
-    set-scale: func(scale: f32);
-
-    /// Colours the corner tab and the tether. `none` draws neither in colour
-    /// (no tab; a neutral tether).
-    set-accent: func(color: option<color>);
-
-    /// A line from the pane's side nearer `to`, at the pane's vertical
-    /// middle, to `to`, ending in a small dot at `to`. `none` removes it. In
-    /// the calling script's document frame.
-    set-tether: func(to: option<vec3>);
-
-    /// Eases it in or out.
-    set-shown: func(value: bool);
-  }
-
-  /// A number on a slate, changed by pressing on it and dragging sideways.
-  record number {
-    value:     f32,
-    /// How much `value` changes per metre the pointer travels across the
-    /// pane. Negative runs the other way.
-    per-metre: f32,
-  }
-
-  /// Three numbers side by side, such as a position, each changed by
-  /// pressing on it and dragging sideways.
-  record vector {
-    values:    tuple<f32, f32, f32>,
-    /// How much a value changes per metre the pointer travels across the
-    /// pane.
-    per-metre: f32,
-  }
-
-  /// A card's heading.
-  record section {
-    /// Whether the card's rows are shown beneath it.
-    open:    bool,
-    /// What the card says in brief, drawn at the heading's end; at most
-    /// 128 bytes.
-    summary: string,
-  }
-
-  /// A row of up to 4 tabs, each label at most 16 bytes. The tab at
-  /// `selected` is drawn the way a toggle that is on is; pressing another
-  /// reports `picked`, and the consumer sets `selected`.
-  record tabs {
-    labels:   list<string>,
-    selected: u32,
-  }
-
-  /// What a slate row shows, and what pressing it does.
-  variant row-kind {
-    /// A heading over the rows beneath it. Pressing does nothing.
-    header,
-    /// A value to read, at most 128 bytes. Pressing does nothing.
-    field(string),
-    /// Pressing and dragging sideways reports `scrubbed`.
-    number(number),
-    /// Pressing reports `toggled` with the other state.
-    toggle(bool),
-    /// Pressing reports `pressed`.
-    action,
-    /// Pressing a tab reports `picked`.
-    tabs(tabs),
-    /// The heading of a card of rows beneath it, set off from the card above
-    /// by a rule. Pressing reports `pressed`, for a consumer that folds the
-    /// card away or open.
-    section(section),
-    /// Pressing one of its numbers and dragging sideways reports `scrubbed`
-    /// for that part.
-    vector(vector),
-  }
-
-  record row {
-    /// The consumer's own name for the row, which events report. Keep it
-    /// stable across `set-rows` so a drag in progress follows its row.
-    id:    u32,
-    /// At most 64 bytes.
-    label: string,
-    kind:  row-kind,
-    /// A coloured dot before the label: what the row names, such as a
-    /// document in its own colour.
-    dot:   option<color>,
-    /// A coloured dot at the row's end: where its value comes from, such
-    /// as the layer that states it.
-    mark:  option<color>,
-  }
-
-  /// What a slate's rows did.
-  variant slate-event {
-    /// An action row was pressed.
-    pressed(u32),
-    /// A toggle row was pressed, asking for this state. The slate draws the
-    /// state the consumer sets, not this one.
-    toggled(tuple<u32, bool>),
-    /// A number row, or one part of a vector row (0 to 2; 0 for a number),
-    /// was dragged sideways by this much of its value since the last report.
-    /// The slate draws the value the consumer sets.
-    scrubbed(tuple<u32, u32, f32>),
-    /// The drag on a number or vector row ended: the place to keep the value.
-    released(u32),
-    /// A tab on a tabs row was pressed: the row id and the tab index. The
-    /// slate draws the tab the consumer selects, not this one.
-    picked(tuple<u32, u32>),
-  }
-
-  /// A pane of labelled rows standing where the script puts it, read and
-  /// worked with any pointer: for the information that is a list of values
-  /// rather than a thing to hold, such as settings or an object's properties.
-  /// It is a weightless thing in the world: a grip picks it up and carries
-  /// it like any body, and let go it drifts to a stop, floats there and turns
-  /// to face the viewer.
-  resource slate {
-    /// Nothing shows until it has rows and is shown.
-    constructor() -> result<slate, error>;
-    /// At most 24 rows; more, or a label or field over its limit, is
-    /// `invalid-argument` and the previous rows are kept.
-    set-rows: func(rows: list<row>) -> result<_, error>;
-    /// The pane, width by height in metres.
-    size: func() -> vec2;
-    /// Moves its top centre here, in the calling script's document frame,
-    /// upright and facing the viewer. It floats there until moved again or
-    /// carried off.
-    set-position: func(at: vec3);
-    /// Where its top centre is now: where it was put, or where it floats.
-    position: func() -> vec3;
-    /// A line from the pane's side nearer `to`, at the pane's vertical
-    /// middle, to `to`, ending in a small dot at `to`. `none` removes it. In
-    /// the calling script's document frame.
-    set-tether: func(to: option<vec3>);
-    /// Colours the row a pointer is over. `none` uses the shell's accent.
-    set-accent: func(color: option<color>);
-    /// Eases it in or out.
-    set-shown: func(value: bool);
-    /// Everything its rows did since the last call.
-    events: func() -> list<slate-event>;
   }
 
   /// A paragraph of a `text` block.
@@ -695,10 +514,19 @@ interface api {
     /// Eases it in or out.
     set-shown: func(value: bool);
     /// Stands it with its bottom centre on `at`, in the calling script's
-    /// document frame, turned about the vertical axis to face the viewer. A
-    /// line runs from its side nearer `tether` to `tether`, ending in a dot
-    /// there; none draws no line.
-    set-standing: func(at: vec3, tether: option<vec3>);
+    /// document frame, turned about the vertical axis to face the viewer.
+    ///
+    /// A standing pane is laid out larger than a floating one, since it labels
+    /// something in the room and is read from further away. `size` answers
+    /// for the mount the pane has, so mount it before reading its size.
+    set-standing: func(at: vec3);
+    /// A line from the pane's side nearer `to`, at the pane's vertical
+    /// middle, to `to`, ending in a small dot there; none draws no line. In
+    /// the calling script's document frame, for a standing or a floating
+    /// pane.
+    set-tether: func(to: option<vec3>);
+    /// The colour of the tether line, or none for the neutral one.
+    set-hue: func(hue: option<color>);
     /// Floats it centred on `at`, in the calling script's document frame. A
     /// grip picks it up and carries it like any body, and let go it drifts to
     /// a stop, floats there and turns to face the viewer.

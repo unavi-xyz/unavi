@@ -1,4 +1,4 @@
-//! Which placard stands over which attended thing.
+//! Which tag stands over which attended thing.
 
 /// What a pass over the slots changed.
 #[derive(Debug, Default, PartialEq, Eq)]

@@ -113,17 +113,16 @@ impl Tree {
     /// way in to it.
     fn back(&mut self, depth: usize) -> MoteSpec {
         MoteSpec {
-            role:             Role::Parent { depth },
-            label:            SmolStr::new_static("Back"),
-            description:      Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
-            description_icon: None,
-            condition:        Condition::default(),
-            icon:             false,
-            glyph:            None,
-            tint:             None,
-            film:             crate::tokens::palette::FILM,
-            frost:            0.0,
-            notice:           None,
+            role:        Role::Parent { depth },
+            label:       SmolStr::new_static("Back"),
+            description: Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
+            condition:   Condition::default(),
+            icon:        false,
+            glyph:       None,
+            tint:        None,
+            film:        crate::tokens::palette::FILM,
+            frost:       0.0,
+            notice:      None,
         }
     }
 

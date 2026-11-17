@@ -1,4 +1,4 @@
-//! How a slate floats: a weightless body the host's grab carries like any
+//! How a pane floats: a weightless body the host's grab carries like any
 //! other, which once let go coasts to a stop, holds where it stopped, and
 //! turns upright to face the viewer.
 
@@ -10,7 +10,7 @@ use wired_guest::math::{
 
 use crate::wired::input::types::PointerKind;
 
-/// Metres per second under which a let-go slate counts as stopped, and over
+/// Metres per second under which a let-go pane counts as stopped, and over
 /// which a held-still one counts as pushed off again.
 const STOPPED: f32 = 0.03;
 const PUSHED: f32 = 0.4;
@@ -29,7 +29,7 @@ pub struct Float {
     rest:        Option<Vec3>,
 }
 
-/// The velocities a free slate is set to: `None` leaves one as it is.
+/// The velocities a free pane is set to: `None` leaves one as it is.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Steer {
     pub linear:  Option<Vec3>,
@@ -56,14 +56,14 @@ impl Float {
         }
     }
 
-    /// What to set a slate posed `body` and moving at `velocity` to, so it
+    /// What to set a pane posed `body` and moving at `velocity` to, so it
     /// floats facing `eye`. `None` while a hand holds it, since the grab
     /// drives it then.
     pub fn steer(&mut self, body: &Transform, velocity: Vec3, eye: Vec3) -> Option<Steer> {
         if self.held_by.is_some() {
             return None;
         }
-        // Moving fast, something else drives it: a grab the slate did not
+        // Moving fast, something else drives it: a grab the pane did not
         // hear, a beam, a shove. It is left to that until it slows.
         let speed = velocity.length();
         if speed > PUSHED {
@@ -117,14 +117,14 @@ mod tests {
     }
 
     #[test]
-    fn a_held_slate_is_left_to_the_hand() {
+    fn a_held_pane_is_left_to_the_hand() {
         let mut float = Float::default();
         float.grab(PointerKind::RightHand);
         assert_eq!(float.steer(&at(Vec3::ZERO), Vec3::ZERO, EYE), None);
     }
 
     #[test]
-    fn a_let_go_slate_coasts_then_holds_where_it_stopped() {
+    fn a_let_go_pane_coasts_then_holds_where_it_stopped() {
         let mut float = Float::default();
         float.grab(PointerKind::LeftHand);
         float.release(PointerKind::LeftHand);
@@ -140,14 +140,14 @@ mod tests {
     }
 
     #[test]
-    fn a_slate_something_else_moves_fast_is_left_to_it() {
+    fn a_pane_something_else_moves_fast_is_left_to_it() {
         let mut float = Float::default();
         float.rest_at(Vec3::ZERO);
         assert_eq!(float.steer(&at(Vec3::X), Vec3::X * 2.0, EYE), None);
     }
 
     #[test]
-    fn moving_a_held_slate_takes_it_out_of_the_hand() {
+    fn moving_a_held_pane_takes_it_out_of_the_hand() {
         let mut float = Float::default();
         float.grab(PointerKind::RightHand);
         float.rest_at(Vec3::ZERO);
@@ -163,14 +163,14 @@ mod tests {
     }
 
     #[test]
-    fn a_slate_facing_away_turns_toward_the_eye_about_the_vertical() {
+    fn a_pane_facing_away_turns_toward_the_eye_about_the_vertical() {
         let mut float = Float::default();
         let body = Transform {
             rotation: Quat::from_rotation_y(1.0),
             ..at(Vec3::new(0.0, 1.6, -1.0))
         };
         let Some(steer) = float.steer(&body, Vec3::ZERO, EYE) else {
-            panic!("a free slate is steered");
+            panic!("a free pane is steered");
         };
         assert!(
             steer.angular.y < 0.0 && steer.angular.x.abs() < 1.0e-4,
@@ -180,10 +180,10 @@ mod tests {
     }
 
     #[test]
-    fn a_slate_facing_the_eye_is_not_turned() {
+    fn a_pane_facing_the_eye_is_not_turned() {
         let mut float = Float::default();
         let Some(steer) = float.steer(&at(Vec3::new(0.5, 1.6, -1.0)), Vec3::ZERO, EYE) else {
-            panic!("a free slate is steered");
+            panic!("a free pane is steered");
         };
         assert_eq!(steer.angular, Vec3::ZERO);
     }

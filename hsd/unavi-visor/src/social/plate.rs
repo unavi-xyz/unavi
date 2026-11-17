@@ -10,8 +10,7 @@ const NAME_MAX: usize = 32;
 /// Characters of a description kept before it is cut with an ellipsis.
 const DESCRIPTION_MAX: usize = 96;
 
-/// Characters of a title that fit one line of a standing placard, by VUI's
-/// own estimate of its pane width over its title advance.
+/// Characters of a title kept to one line of a nameplate.
 const TITLE_WIDTH: usize = 21;
 
 /// Everything known about a user.

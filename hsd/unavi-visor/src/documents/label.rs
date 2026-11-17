@@ -1,18 +1,15 @@
-//! The placard over the attended document.
+//! The tag over the attended document.
 
 use unavi_lens::DocumentId;
 use wired_guest::{
     color::short_id,
-    math::{
-        Color,
-        Vec3,
-    },
+    math::Vec3,
 };
 
-use crate::unavi::vui::api::Placard;
+use crate::tag::Tag;
 
-/// A placard's size as a multiple of the size it is laid out at.
-const SCALE: f32 = 0.5;
+/// Columns the tag is laid out in.
+const COLUMNS: u32 = 24;
 
 /// Characters of a DID kept at its end when it is shortened.
 const DID_TAIL: usize = 6;
@@ -20,7 +17,7 @@ const DID_TAIL: usize = 6;
 /// DIDs this short or shorter are shown whole.
 const DID_WHOLE: usize = 12;
 
-/// What the placard says.
+/// What the tag says.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Text {
     pub title:  String,
@@ -62,30 +59,26 @@ pub fn describe(facts: &Facts) -> Text {
 }
 
 pub struct Label {
-    placard: Placard,
+    tag:     Tag,
     /// The document it is over.
     pub key: Option<DocumentId>,
     text:    Option<Text>,
-    accent:  Option<Color>,
     at:      Option<Vec3>,
     shown:   bool,
 }
 
 impl Label {
     pub fn new() -> anyhow::Result<Self> {
-        let placard = Placard::new()?;
-        placard.set_scale(SCALE);
         Ok(Self {
-            placard,
-            key: None,
-            text: None,
-            accent: None,
-            at: None,
+            tag:   Tag::new(COLUMNS)?,
+            key:   None,
+            text:  None,
+            at:    None,
             shown: false,
         })
     }
 
-    /// Moves the placard to another document, forgetting what it said.
+    /// Moves the tag to another document, forgetting what it said.
     pub fn claim(&mut self, key: DocumentId) {
         if self.key == Some(key) {
             return;
@@ -97,37 +90,32 @@ impl Label {
     pub fn hide(&mut self) {
         self.key = None;
         self.text = None;
-        self.accent = None;
         self.at = None;
         if self.shown {
-            self.placard.set_shown(false);
+            self.tag.set_shown(false);
             self.shown = false;
         }
     }
 
-    /// Sets what it says and the colour of its tab, changing only what differs.
-    pub fn say(&mut self, text: Text, accent: Color) {
-        if self.accent != Some(accent) {
-            self.placard.set_accent(Some(accent));
-            self.accent = Some(accent);
-        }
+    /// Sets what it says, changing only what differs.
+    pub fn say(&mut self, text: Text) {
         if self.text.as_ref() == Some(&text) {
             return;
         }
-        match self.placard.set_text(&text.title, Some(&text.kicker), &[]) {
+        match self.tag.set_text(&text.title, Some(&text.kicker), &[]) {
             Ok(()) => self.text = Some(text),
-            Err(err) => eprintln!("visor: document placard text: {err:?}"),
+            Err(err) => eprintln!("visor: document tag text: {err:?}"),
         }
     }
 
     /// Stands it with its bottom centre at `at`, and shows it once it has text.
     pub fn stand(&mut self, at: Vec3) {
         if self.at != Some(at) {
-            self.placard.set_position(at);
+            self.tag.stand(at, None);
             self.at = Some(at);
         }
         if self.text.is_some() && !self.shown {
-            self.placard.set_shown(true);
+            self.tag.set_shown(true);
             self.shown = true;
         }
     }

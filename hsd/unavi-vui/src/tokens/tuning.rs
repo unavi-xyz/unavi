@@ -4,11 +4,11 @@ use wired_guest::style;
 
 /// Metres from the eye at which a mote's label is read.
 const READING: f32 = 0.7;
-/// Metres at which a placard on its mote is read. A standing placard is
-/// that many times larger, which makes its title 28 mrad read from two metres.
+/// Metres at which a placard on its mote is read.
 const PLACARD_READING: f32 = 0.57;
-/// Metres from the eye at which a slate's text is read.
-const SLATE_READING: f32 = 0.85;
+/// Metres at which a standing pane is read, since it labels something in the
+/// room rather than being worked at arm's length.
+const STAND_READING: f32 = 1.4;
 /// Metres from the eye at which a pane's body type is read.
 const PANE_READING: f32 = 0.85;
 
@@ -45,35 +45,24 @@ pub struct Tuning {
     /// How near the pointer must come to a page tab to attend it.
     pub tab_hit:      f32,
 
-    pub attend_scale:     f32,
-    pub seize_scale:      f32,
+    pub attend_scale:  f32,
+    pub seize_scale:   f32,
     /// Seconds of unbroken attention before a placard appears.
-    pub placard_delay:    f32,
+    pub placard_delay: f32,
     /// Clearance between the attended mote's surface and the placard's lower
     /// edge.
-    pub placard_gap:      f32,
+    pub placard_gap:   f32,
     /// How far in front of its mote the placard stands.
-    pub placard_lift:     f32,
-    pub placard_title:    f32,
-    /// Em height of the small line above a placard's title.
-    pub placard_kicker:   f32,
-    pub placard_row:      f32,
-    /// Baseline-to-baseline spacing, as a multiple of the row size.
-    pub placard_line:     f32,
-    pub placard_pad:      f32,
-    pub placard_width:    f32,
-    /// Average glyph width, in ems, that placard wrapping assumes.
-    pub advance_estimate: f32,
-    /// How many times larger than a mote's a standing placard is laid out,
-    /// since it is read from metres away rather than at arm's length.
-    pub stand_scale:      f32,
-    /// Thickness of the bar tethering a standing placard to what it labels.
-    pub tether_width:     f32,
+    pub placard_lift:  f32,
+    /// Metres in one em of a placard's type.
+    pub placard_em:    f32,
+    /// Thickness of the bar tethering a standing pane to what it labels.
+    pub tether_width:  f32,
     /// Radius of the dot a tether ends in.
-    pub tether_dot:       f32,
-    /// How fast a standing placard eases toward where its script puts it, per
+    pub tether_dot:    f32,
+    /// How fast a standing pane eases toward where its script puts it, per
     /// second.
-    pub stand_speed:      f32,
+    pub stand_speed:   f32,
 
     /// Seconds a notice stays on its mote.
     pub notice_duration: f32,
@@ -156,18 +145,11 @@ pub struct Tuning {
     /// Most interior bodies a group draws; beyond this it reports overflow.
     pub pip_cap:      usize,
 
-    /// Metres across a slate's pane.
-    pub slate_width:  f32,
-    /// Metres per slate row.
-    pub slate_row:    f32,
-    /// Em height of a slate row's label and value.
-    pub slate_text:   f32,
-    /// Em height of a slate header.
-    pub slate_header: f32,
-
     /// Metres in one em of a pane's body type. Every length a pane lays out
     /// is in ems, so this is the whole of its size.
     pub pane_em:   f32,
+    /// The same for a pane that stands.
+    pub stand_em:  f32,
     /// Metres its type and rules stand proud of the pane.
     pub pane_lift: f32,
 }
@@ -187,22 +169,15 @@ impl Tuning {
         tab_gap:      0.12,
         tab_hit:      0.035,
 
-        attend_scale:     1.18,
-        seize_scale:      1.30,
-        placard_delay:    0.25,
-        placard_gap:      0.018,
-        placard_lift:     0.012,
-        placard_title:    em(style::MRAD_TITLE, PLACARD_READING),
-        placard_kicker:   em(style::MRAD_SMALL, PLACARD_READING),
-        placard_row:      em(style::MRAD_BODY, PLACARD_READING),
-        placard_line:     1.5,
-        placard_pad:      0.013,
-        placard_width:    0.24,
-        advance_estimate: 0.62,
-        stand_scale:      3.5,
-        tether_width:     0.004,
-        tether_dot:       0.0125,
-        stand_speed:      18.0,
+        attend_scale:  1.18,
+        seize_scale:   1.30,
+        placard_delay: 0.25,
+        placard_gap:   0.018,
+        placard_lift:  0.012,
+        placard_em:    em(style::MRAD_BODY, PLACARD_READING),
+        tether_width:  0.004,
+        tether_dot:    0.0125,
+        stand_speed:   18.0,
 
         notice_duration: 3.0,
 
@@ -243,12 +218,8 @@ impl Tuning {
         tab_scale:    0.6,
         pip_cap:      9,
 
-        slate_width:  0.46,
-        slate_row:    0.036,
-        slate_text:   em(style::MRAD_BODY, SLATE_READING),
-        slate_header: em(style::MRAD_TITLE, SLATE_READING),
-
         pane_em:   em(style::MRAD_BODY, PANE_READING),
+        stand_em:  em(style::MRAD_BODY, STAND_READING),
         pane_lift: 0.0015,
     };
 }
@@ -308,8 +279,12 @@ mod tests {
     #[test]
     fn a_label_reads_smaller_than_the_placard_it_expands_into() {
         let tuning = Tuning::DEFAULT;
-        assert!(tuning.label_size < tuning.placard_title);
-        assert!(tuning.placard_row < tuning.placard_title);
-        assert!(tuning.placard_kicker < tuning.placard_row);
+        assert!(tuning.label_size < tuning.placard_em);
+    }
+
+    #[test]
+    fn a_pane_that_stands_reads_larger_than_one_that_floats() {
+        let tuning = Tuning::DEFAULT;
+        assert!(tuning.stand_em > tuning.pane_em);
     }
 }

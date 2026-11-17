@@ -17,11 +17,10 @@ use crate::{
         Event,
         control::Press,
     },
+    tokens::tuning::Tuning,
     wired::{
         input::{
-            device::{
-                pointers,
-            },
+            device::pointers,
             types::{
                 Action,
                 Button,
@@ -42,7 +41,7 @@ const SLIDE_STEP: f32 = 1.0e-4;
 impl Panes {
     /// Reads presses, drags, grabs, hover and keys, and keeps floating panes
     /// afloat. Call from `fixed_update`.
-    pub fn fixed_update(&mut self, doc: &Document, em: f32) {
+    pub fn fixed_update(&mut self, doc: &Document, tuning: &Tuning) {
         self.steer(doc);
         let pointers = pointers().unwrap_or_default();
         let mut pressed = None;
@@ -50,7 +49,7 @@ impl Panes {
             let Some(mounted) = slot else {
                 continue;
             };
-            if mounted.read(doc, &pointers, em) {
+            if mounted.read(doc, &pointers, mounted.em(tuning)) {
                 pressed = Some(index);
             }
         }
@@ -82,7 +81,8 @@ impl Panes {
                 Action::KeyReleased(Key::ShiftLeft | Key::ShiftRight) => self.shift = false,
                 Action::KeyPressed(Key::Escape) => self.release_focus(),
                 Action::KeyPressed(key @ (Key::Tab | Key::Enter)) => {
-                    let Some(Some(mounted)) = self.focus.and_then(|index| self.slots.get_mut(index))
+                    let Some(Some(mounted)) =
+                        self.focus.and_then(|index| self.slots.get_mut(index))
                     else {
                         continue;
                     };
@@ -140,7 +140,9 @@ impl Mounted {
                     }
                 }
                 Action::Released(Button::Trigger)
-                    if self.drag.is_some_and(|(pointer, _)| pointer == event.pointer) =>
+                    if self
+                        .drag
+                        .is_some_and(|(pointer, _)| pointer == event.pointer) =>
                 {
                     self.end_drag();
                 }
@@ -244,7 +246,14 @@ impl Mounted {
             .find(|candidate| candidate.kind == pointer && candidate.active)
             .and_then(|pointer| self.across(pointer.ray.origin, pointer.ray.direction, em));
         let next = match (drag, at) {
-            (Drag::Scrub { id, per_column, last }, at) => {
+            (
+                Drag::Scrub {
+                    id,
+                    per_column,
+                    last,
+                },
+                at,
+            ) => {
                 if let (Some(at), Some(last)) = (at, last)
                     && (at.x - last).abs() > f32::EPSILON
                 {
@@ -256,7 +265,15 @@ impl Mounted {
                     last: at.map(|at| at.x),
                 }
             }
-            (Drag::Slide { id, left, wide, last }, Some(at)) => {
+            (
+                Drag::Slide {
+                    id,
+                    left,
+                    wide,
+                    last,
+                },
+                Some(at),
+            ) => {
                 let value = ((at.x - left) / wide).clamp(0.0, 1.0);
                 if (value - last).abs() > SLIDE_STEP {
                     self.push(Event::Slid(id, value));

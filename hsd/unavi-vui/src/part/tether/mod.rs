@@ -1,4 +1,4 @@
-//! Where a standing placard's tether lies: a bar from the pane's side to a
+//! Where a pane's tether lies: a bar from the pane's side to a
 //! dot at the thing it labels.
 
 use wired_guest::math::{

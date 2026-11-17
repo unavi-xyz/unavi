@@ -33,8 +33,7 @@ pub mod pool;
 pub mod prims;
 pub mod scroll;
 
-#[cfg(test)]
-mod tests;
+#[cfg(test)] mod tests;
 
 /// Ems across one column.
 pub const COLUMN: f32 = style::MONO_ADVANCE;
@@ -76,9 +75,14 @@ impl std::fmt::Display for Refused {
             Self::Width(columns) => write!(f, "{columns} columns, not one of {WIDTHS:?}"),
             Self::Lines(lines) => write!(f, "{lines} lines, not from 1 to {MAX_LINES}"),
             Self::Blocks(count) => write!(f, "{count} blocks, over the limit of {MAX_BLOCKS}"),
-            Self::Rows(count) => write!(f, "a block has {count} rows, over the limit of {MAX_ROWS}"),
+            Self::Rows(count) => {
+                write!(f, "a block has {count} rows, over the limit of {MAX_ROWS}")
+            }
             Self::Text(len) => {
-                write!(f, "a string is {len} bytes, over the limit of {MAX_TEXT_BYTES}")
+                write!(
+                    f,
+                    "a string is {len} bytes, over the limit of {MAX_TEXT_BYTES}"
+                )
             }
         }
     }
@@ -252,7 +256,10 @@ impl Pane {
         let body_top = PAD_Y + title;
         let body_end = LINE.mul_add(self.laid.lines as f32, body_top);
         let (status_top, bottom) = if self.status.is_some() {
-            (Some(body_end + PAD_Y), LINE.mul_add(SMALL_SCALE, body_end + PAD_Y))
+            (
+                Some(body_end + PAD_Y),
+                LINE.mul_add(SMALL_SCALE, body_end + PAD_Y),
+            )
         } else {
             (None, body_end)
         };

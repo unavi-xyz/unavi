@@ -223,10 +223,10 @@ impl Pane {
                     if link.is_some() {
                         runs.rect(
                             Rect {
-                                x:  *x,
-                                y:  baseline.y + UNDERLINE_DROP,
-                                w:  *width,
-                                h:  HAIRLINE,
+                                x: *x,
+                                y: baseline.y + UNDERLINE_DROP,
+                                w: *width,
+                                h: HAIRLINE,
                             },
                             Fill::Underline,
                             *link,
@@ -235,19 +235,30 @@ impl Pane {
                 }
                 Item::Fold { id, x, open, .. } => {
                     let mark = if *open { "\u{2212}" } else { "+" };
-                    runs.text(mark, Vec2::new(*x, BASELINE + y), 1.0, Tone::Muted, Some(*id));
+                    runs.text(
+                        mark,
+                        Vec2::new(*x, BASELINE + y),
+                        1.0,
+                        Tone::Muted,
+                        Some(*id),
+                    );
                 }
                 Item::Control {
                     id,
                     x,
                     width,
                     control,
-                } => self.draw_control(runs, *id, control, Rect {
-                    x:  *x,
-                    y,
-                    w:  *width,
-                    h:  LINE,
-                }),
+                } => self.draw_control(
+                    runs,
+                    *id,
+                    control,
+                    Rect {
+                        x: *x,
+                        y,
+                        w: *width,
+                        h: LINE,
+                    },
+                ),
             }
         }
     }

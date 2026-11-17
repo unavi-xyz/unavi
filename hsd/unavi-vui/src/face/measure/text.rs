@@ -172,7 +172,10 @@ mod tests {
     #[test]
     fn words_wrap_at_the_width() {
         let widest = width("the quick").max(width("brown fox"));
-        assert_eq!(wrap("the quick brown fox", widest), ["the quick", "brown fox"]);
+        assert_eq!(
+            wrap("the quick brown fox", widest),
+            ["the quick", "brown fox"]
+        );
         assert_eq!(wrap("a b", 24.0), ["a b"]);
     }
 

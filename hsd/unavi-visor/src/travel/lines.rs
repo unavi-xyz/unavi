@@ -1,41 +1,34 @@
 //! The lines under a tag's title.
 
-use wired_guest::glyph::{
-    PERSON,
-    pack,
-};
-
 use super::content::Content;
-use crate::unavi::vui::api::{
-    Glyph,
-    PlacardLine,
-    Tone,
+use crate::{
+    tag::Line,
+    unavi::vui::api::Tone,
 };
 
-/// The lines under a tag's title: the head count after a person, who made it,
-/// and a warning when there is no way back. All but the warning are muted.
-pub fn tag_lines(text: &Content) -> Vec<PlacardLine> {
+/// The lines under a tag's title: the head count, who made it, and a warning
+/// when there is no way back. All but the warning are muted.
+pub fn tag_lines(text: &Content) -> Vec<Line> {
     let mut lines = Vec::new();
     if let Some(count) = text.occupants {
-        let (size, bits) = pack(&PERSON);
-        lines.push(PlacardLine {
-            text: count.to_string(),
+        lines.push(Line {
+            text: match count {
+                1 => String::from("1 person"),
+                count => format!("{count} people"),
+            },
             tone: Tone::Muted,
-            icon: Some(Glyph { size, bits }),
         });
     }
     if let Some(rung) = &text.rung {
-        lines.push(PlacardLine {
+        lines.push(Line {
             text: rung.clone(),
             tone: Tone::Muted,
-            icon: None,
         });
     }
     if text.one_way {
-        lines.push(PlacardLine {
+        lines.push(Line {
             text: String::from("One way"),
             tone: Tone::Warning,
-            icon: None,
         });
     }
     lines
@@ -55,9 +48,19 @@ mod tests {
             one_way:   false,
         });
         assert_eq!(lines.len(), 2);
-        assert_eq!(lines[0].text, "3");
-        assert!(lines[0].icon.is_some());
+        assert_eq!(lines[0].text, "3 people");
         assert_eq!(lines[1].text, "Trusted");
-        assert!(lines[1].icon.is_none());
+    }
+
+    #[test]
+    fn one_person_is_not_people() {
+        let lines = tag_lines(&Content {
+            kicker:    String::new(),
+            title:     String::new(),
+            occupants: Some(1),
+            rung:      None,
+            one_way:   false,
+        });
+        assert_eq!(lines[0].text, "1 person");
     }
 }

@@ -146,10 +146,13 @@ pub fn lay_out(blocks: &[Block], width: f32, lines: Option<u32>) -> Laid {
         .collect::<Vec<_>>();
 
     let lines = lines.unwrap_or_else(|| {
-        let wanted = blocks.iter().zip(&rows).map(|(block, (rows, _))| match block.height {
-            Height::Lines(lines) => lines as usize,
-            Height::Share => rows.len(),
-        });
+        let wanted = blocks
+            .iter()
+            .zip(&rows)
+            .map(|(block, (rows, _))| match block.height {
+                Height::Lines(lines) => lines as usize,
+                Height::Share => rows.len(),
+            });
         wanted.sum::<usize>().clamp(1, MAX_LINES as usize) as u32
     });
 
@@ -223,9 +226,9 @@ fn block_rows(block: &Block, width: f32) -> (Vec<LaidRow>, usize) {
                 let room = (PAD_X + width - x).max(0.0);
                 let item_width = item.control.width(room);
                 row.push(Item::Control {
-                    id:      item.id,
+                    id: item.id,
                     x,
-                    width:   item_width,
+                    width: item_width,
                     control: item.control.clone(),
                 });
                 x += item_width + COLUMN;
@@ -300,7 +303,11 @@ fn table_rows(table: &Table, width: f32) -> (Vec<LaidRow>, usize) {
     let mut rows = Vec::with_capacity(table.rows.len() + 1);
     let pinned = usize::from(!table.columns.is_empty());
     if pinned == 1 {
-        let titles = table.columns.iter().map(|column| column.title.clone()).collect::<Vec<_>>();
+        let titles = table
+            .columns
+            .iter()
+            .map(|column| column.title.clone())
+            .collect::<Vec<_>>();
         rows.push(LaidRow::of(cells(&titles, Tone::Muted)));
     }
     for row in &table.rows {
@@ -327,7 +334,12 @@ fn tree_row(node: &Node, width: f32) -> LaidRow {
         });
     }
     let label_x = x + FOLD_EM;
-    items.push(shown(&node.label, (PAD_X + width - label_x).max(0.0), label_x, Tone::Body));
+    items.push(shown(
+        &node.label,
+        (PAD_X + width - label_x).max(0.0),
+        label_x,
+        Tone::Body,
+    ));
     LaidRow {
         items,
         select: Some(Select {

@@ -1,4 +1,4 @@
-//! Where the slate stands for what it describes: on the line from the eye to
+//! Where a pane floats for what it describes: on the line from the eye to
 //! it, no farther than reading distance, a little to the viewer's right so it
 //! does not cover it, and clear of the floor and of anything in front.
 
@@ -19,20 +19,20 @@ use crate::wired::{
     },
 };
 
-/// Metres from the eye a slate stands at most, and at least.
+/// Metres from the eye a pane stands at most, and at least.
 const READING: f32 = 0.9;
 const NEAREST: f32 = 0.55;
-/// Metres short of what it describes a slate stands, when that is nearer than
+/// Metres short of what it describes a pane stands, when that is nearer than
 /// reading distance.
 const SHORT: f32 = 0.3;
 /// Metres the pane's near edge stands right of the line to what it describes.
 const ASIDE: f32 = 0.08;
-/// Metres the pane's top stands above the eye, so its rows sit just below the
-/// line of sight.
+/// Metres the pane's top stands above the eye, so its first rows sit just
+/// below the line of sight.
 const RISE: f32 = 0.06;
 
-/// The top centre of a `size` slate describing `subject`, as seen from `eye`.
-/// Colliders of `own`, the slate's document, do not count.
+/// The centre of a `size` pane describing `subject`, as seen from `eye`.
+/// Colliders of `own`, the pane's document, do not count.
 pub fn stand(eye: Vec3, subject: Vec3, size: Vec2, own: DocumentId) -> Vec3 {
     let foot = wanted(eye, subject, size);
     let filter = RayFilter {
@@ -40,10 +40,10 @@ pub fn stand(eye: Vec3, subject: Vec3, size: Vec2, own: DocumentId) -> Vec3 {
         exclude_documents:   vec![own],
     };
     let foot = clearance::clear(eye, foot, size, |from, to| cast(from, to, &filter));
-    foot + Vec3::Y * size.y
+    foot + Vec3::Y * (size.y / 2.0)
 }
 
-/// The bottom centre a slate asks for before anything is in its way.
+/// The bottom centre a pane asks for before anything is in its way.
 fn wanted(eye: Vec3, subject: Vec3, size: Vec2) -> Vec3 {
     let flat = Vec3::new(subject.x - eye.x, 0.0, subject.z - eye.z);
     let distance = flat.length();
@@ -85,7 +85,7 @@ mod tests {
     const EYE: Vec3 = Vec3::new(0.0, 1.6, 0.0);
 
     #[test]
-    fn a_far_subject_gets_its_slate_at_reading_distance() {
+    fn a_far_subject_gets_its_pane_at_reading_distance() {
         let foot = wanted(EYE, Vec3::new(0.0, 0.0, -10.0), SIZE);
         assert!((foot.z + READING).abs() < 1.0e-5, "{foot:?}");
         assert!(
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn the_slate_stands_to_the_right_of_the_line_to_its_subject() {
+    fn the_pane_stands_to_the_right_of_the_line_to_its_subject() {
         let foot = wanted(EYE, Vec3::new(0.0, 0.0, -10.0), SIZE);
         assert!(
             (foot.x - SIZE.x / 2.0 - ASIDE).abs() < 1.0e-5,
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn a_near_subject_gets_its_slate_short_of_it_but_not_in_the_face() {
+    fn a_near_subject_gets_its_pane_short_of_it_but_not_in_the_face() {
         let foot = wanted(EYE, Vec3::new(0.0, 0.5, -1.0), SIZE);
         assert!((foot.z + 0.7).abs() < 1.0e-5, "{foot:?}");
         let foot = wanted(EYE, Vec3::new(0.0, 0.5, -0.2), SIZE);

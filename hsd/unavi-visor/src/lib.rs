@@ -1,7 +1,7 @@
 //! Visor: the shell the user perceives through.
 //!
 //! Where the halo is what the user acts through, the visor draws what the
-//! world is not saying for itself: a placard over each portal being looked
+//! world is not saying for itself: a tag beside each portal being looked
 //! at, and a nameplate over each person. It is a registry of lenses, each a
 //! layer that is worn or not, announced to the halo so the halo can offer
 //! them.
@@ -37,6 +37,7 @@ mod protocol;
 mod rung;
 mod slots;
 mod social;
+mod tag;
 mod travel;
 
 wired_guest::generate_script!(Script);

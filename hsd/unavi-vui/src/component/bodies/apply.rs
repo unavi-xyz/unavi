@@ -40,7 +40,10 @@ use crate::{
             Style,
         },
     },
-    tokens::palette::Palette,
+    tokens::{
+        palette::Palette,
+        tuning::Tuning,
+    },
     wired::{
         scene::{
             document::{
@@ -132,7 +135,21 @@ impl Bodies {
             held,
             eye,
         } = *drawing;
-        self.placard.update(doc, placard, palette, delta)?;
+        if let Some(view) = placard {
+            self.placard_at.set(view.position);
+        }
+        let tuning = Tuning {
+            pane_em: self.tuning.placard_em,
+            ..self.tuning
+        };
+        self.placard.borrow_mut().update(
+            doc,
+            placard.map(|view| (&view.sheet.runs, view.sheet.size)),
+            self.placard_at.get(),
+            palette,
+            &tuning,
+            delta,
+        )?;
 
         self.ensure(doc, views.len())?;
         let slots = self.slots.borrow();

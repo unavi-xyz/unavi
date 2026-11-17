@@ -100,8 +100,7 @@ pub const fn beam(color: Color, glow: f32) -> Material {
     }
 }
 
-/// Flat ink fading with `alpha`: the dots of a placard's icon, which wear the
-/// colour of the text beside them and do not glow.
+/// Flat ink fading with `alpha`: a pane's rules and fills, which do not glow.
 pub const fn ink(color: Color, alpha: f32) -> Material {
     Material {
         alpha_cutoff: None,

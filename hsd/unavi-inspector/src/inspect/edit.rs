@@ -1,4 +1,4 @@
-//! The edits an inspection makes: nudging the transform from its rows,
+//! The edits an inspection makes: nudging the transform from its controls,
 //! locking, making a reference local and deleting. Each is undoable.
 
 use wired_guest::math::{
@@ -52,12 +52,12 @@ pub enum Nudge {
 }
 
 impl Nudge {
-    /// The nudge a scrub of `by` on part `part` of row `id` asks for, if it
-    /// is a transform row.
+    /// The nudge a scrub of `by` on the control `id` asks for, if it is a
+    /// transform control.
     #[must_use]
-    pub const fn of(id: u32, part: u32, by: f32) -> Option<Self> {
+    pub const fn of(id: u32, by: f32) -> Option<Self> {
         match id {
-            row::POSITION if part < 3 => Some(Self::Move(part as usize, by)),
+            row::POSITION..=row::POSITION_Z => Some(Self::Move((id - row::POSITION) as usize, by)),
             row::TURN => Some(Self::Turn(by)),
             row::SCALE => Some(Self::Grow(by)),
             _ => None,
@@ -123,7 +123,7 @@ struct Paused {
 }
 
 impl Inspection {
-    /// The prim's transform as the rows show it: where a dynamic body is
+    /// The prim's transform as the controls show it: where a dynamic body is
     /// now, since physics carries it from its stated pose, else as stated.
     #[must_use]
     pub fn pose(&self) -> Option<Transform> {
@@ -368,8 +368,8 @@ mod tests {
 
     #[test]
     fn each_position_row_moves_along_its_own_axis() {
-        assert_eq!(Nudge::of(row::POSITION, 1, 0.5), Some(Nudge::Move(1, 0.5)));
-        assert_eq!(Nudge::of(row::POSITION, 3, 0.5), None);
+        assert_eq!(Nudge::of(row::POSITION + 1, 0.5), Some(Nudge::Move(1, 0.5)));
+        assert_eq!(Nudge::of(row::POSITION - 1, 0.5), None);
         let moved = Nudge::Move(1, 0.5).apply(Transform::IDENTITY);
         assert_eq!(moved.translation, Vec3::new(0.0, 0.5, 0.0));
     }

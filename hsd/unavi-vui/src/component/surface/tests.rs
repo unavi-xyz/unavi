@@ -8,6 +8,7 @@ use wired_guest::math::{
 
 use super::*;
 use crate::{
+    component::pane::block::Tone,
     machinery::layout::{
         Centre,
         Layout,
@@ -31,7 +32,6 @@ fn spec(role: Role) -> MoteSpec {
         role,
         label: SmolStr::new_static("Citrus"),
         description: None,
-        description_icon: None,
         condition: Condition::default(),
         icon: false,
         glyph: None,
@@ -44,17 +44,16 @@ fn spec(role: Role) -> MoteSpec {
 
 fn named(label: &str) -> MoteSpec {
     MoteSpec {
-        role:             Role::Action,
-        label:            SmolStr::new(label),
-        description:      None,
-        description_icon: None,
-        condition:        Condition::default(),
-        icon:             false,
-        glyph:            None,
-        tint:             None,
-        film:             crate::tokens::palette::FILM,
-        frost:            0.0,
-        notice:           None,
+        role:        Role::Action,
+        label:       SmolStr::new(label),
+        description: None,
+        condition:   Condition::default(),
+        icon:        false,
+        glyph:       None,
+        tint:        None,
+        film:        crate::tokens::palette::FILM,
+        frost:       0.0,
+        notice:      None,
     }
 }
 
@@ -423,7 +422,10 @@ fn only_a_mote_that_has_held_attention_earns_a_placard() {
 
     dwell(&mut surface, &specs, aim);
     let placard = surface.placard().expect("attended long enough");
-    assert_eq!(placard.lines[0].text, "Citrus", "titled with its own name");
+    assert_eq!(
+        placard.sheet.runs.text[0].text, "Citrus",
+        "it says its own name"
+    );
 }
 
 #[test]
@@ -434,9 +436,11 @@ fn a_mote_told_nothing_is_just_its_name() {
 
     let placard = surface.placard().expect("placard");
     let texts = placard
-        .lines
+        .sheet
+        .runs
+        .text
         .iter()
-        .map(|line| line.text.as_str())
+        .map(|run| run.text.as_str())
         .collect::<Vec<_>>();
     assert_eq!(texts, vec!["Citrus"]);
 }
@@ -1211,11 +1215,8 @@ fn a_notice_shows_on_its_mote_without_attention() {
     assert_eq!(surface.attended(), None);
 
     let notice = surface.placard().expect("a notice needs no attention");
-    assert_eq!(notice.lines[0].text, "No home.");
-    assert_eq!(
-        notice.lines[0].emphasis,
-        crate::component::placard::Emphasis::Warning
-    );
+    assert_eq!(notice.sheet.runs.text[0].text, "No home.");
+    assert_eq!(notice.sheet.runs.text[0].tone, Tone::Warning);
     assert!(
         (notice.position.x - surface.views()[1].position.x).abs() < 1.0e-5,
         "on the body of the mote that posted it"
@@ -1230,7 +1231,7 @@ fn a_notice_takes_precedence_over_the_hover_placard() {
 
     assert_eq!(surface.attended(), Some(0));
     let shown = surface.placard().expect("placard");
-    assert_eq!(shown.lines[0].text, "Nope.");
+    assert_eq!(shown.sheet.runs.text[0].text, "Nope.");
 }
 
 #[test]

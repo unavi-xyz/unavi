@@ -11,7 +11,14 @@ use crate::unavi::{
         Step,
         Way,
     },
-    vui::api::Placard,
+    vui::api::{
+        Block,
+        BlockHeight,
+        BlockKind,
+        Pane,
+        Span,
+        Tone,
+    },
 };
 
 /// Seconds a notice stays up.
@@ -20,21 +27,22 @@ const SHOWN: f32 = 1.6;
 const DISTANCE: f32 = 1.4;
 /// Degrees below level that a notice's middle sits from the eye.
 const DIP_DEGREES: f32 = 17.0;
-/// A notice's size, as a multiple of a placard read across a room: its
-/// title about 2 cm tall, a glance below the line of sight.
-const SCALE: f32 = 0.4;
+/// Columns a notice is laid out in.
+const COLUMNS: u32 = 24;
+/// The notice's one block.
+const TEXT: u32 = 0;
 
 pub struct Notice {
-    placard: Placard,
+    pane: Pane,
     /// Seconds until it goes, zero while it is down.
-    left:    f32,
+    left: f32,
 }
 
 impl Notice {
     pub fn new() -> anyhow::Result<Self> {
-        let placard = Placard::new()?;
-        placard.set_scale(SCALE);
-        Ok(Self { placard, left: 0.0 })
+        let pane = Pane::new(COLUMNS, None)?;
+        pane.set_standing(Vec3::ZERO);
+        Ok(Self { pane, left: 0.0 })
     }
 
     /// Puts up what `step` did.
@@ -44,17 +52,34 @@ impl Notice {
             Way::Redo => ("Redone", "Nothing to redo"),
         };
         match &step.label {
-            Some(label) => self.show(label, Some(done)),
+            Some(label) => self.show(done, Some(label)),
             None => self.show(none, None),
         }
     }
 
-    fn show(&mut self, title: &str, kicker: Option<&str>) {
-        if let Err(err) = self.placard.set_text(title, kicker, &[]) {
+    /// Says `title`, over `line` when there is one.
+    fn show(&mut self, title: &str, line: Option<&str>) {
+        let span = |text: &str| Span {
+            text: text.to_owned(),
+            tone: Tone::Body,
+            link: None,
+        };
+        let (title, spans) = match line {
+            Some(line) => (title, vec![span(line)]),
+            None => ("", vec![span(title)]),
+        };
+        let said = self.pane.set_title(title).and_then(|()| {
+            self.pane.set_blocks(&[Block {
+                id:     TEXT,
+                height: BlockHeight::Share,
+                kind:   BlockKind::Text(spans),
+            }])
+        });
+        if let Err(err) = said {
             eprintln!("halo: notice: {err:?}");
             return;
         }
-        self.placard.set_shown(true);
+        self.pane.set_shown(true);
         self.left = SHOWN;
     }
 
@@ -66,11 +91,10 @@ impl Notice {
         }
         self.left -= dt;
         if self.left <= 0.0 {
-            self.placard.set_shown(false);
+            self.pane.set_shown(false);
             return;
         }
-        self.placard
-            .set_position(stand_at(eye, self.placard.size().y));
+        self.pane.set_standing(stand_at(eye, self.pane.size().y));
     }
 }
 

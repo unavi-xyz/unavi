@@ -8,7 +8,10 @@ use wired_guest::math::{
 };
 
 use crate::{
-    component::placard::PlacardView,
+    component::placard::{
+        Cache,
+        PlacardView,
+    },
     machinery::{
         assist,
         attention::Tracker,
@@ -71,6 +74,7 @@ pub struct Surface {
     views:    Vec<SlotView>,
     drawn:    Vec<usize>,
     placard:  Option<PlacardView>,
+    sheets:   Cache,
     page:     PageView,
     /// Leading slots held on every page, and how many slots remain for the
     /// window; both settled by the last [`Surface::update`].
@@ -94,6 +98,7 @@ impl Surface {
             views: Vec::with_capacity(slots),
             drawn: Vec::with_capacity(capacity),
             placard: None,
+            sheets: Cache::default(),
             page: PageView::default(),
             pinned: 0,
             per_page: capacity,

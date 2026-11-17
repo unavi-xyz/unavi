@@ -86,8 +86,8 @@ mod tests {
         assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
-    /// The dwell this accumulates is what a placard fades in against
-    /// (`placard::opacity`).
+    /// The dwell this accumulates is what a placard waits out
+    /// (`placard::earned`).
     #[test]
     fn a_mote_reacts_before_it_has_dwelt_at_all() {
         let mut tracker = Tracker::new();

@@ -18,8 +18,6 @@ use crate::{
         event::Event,
         pane::panes::Panes,
         panel::Panel,
-        slate::slates::Slates,
-        stand::Stands,
         tree::Mote,
     },
     machinery::{
@@ -36,8 +34,6 @@ use crate::{
 
 mod pane;
 mod place;
-mod slate;
-mod stand;
 
 /// Events a panel holds for a consumer that has not asked. Past this the
 /// oldest go: an unread queue is a script that stopped listening, not a log.
@@ -68,10 +64,6 @@ pub struct Vui {
     palette: Palette,
     slots:   Vec<Option<Slot>>,
     free:    Vec<usize>,
-    /// Placards standing where a script put them.
-    stands:  Stands,
-    /// Panes of rows standing where a script put them.
-    slates:  Slates,
     /// Framed pages of blocks, standing or floating where a script put them.
     panes:   Panes,
     /// Seconds of updates so far, which notices are timed against.
@@ -88,8 +80,6 @@ impl Vui {
             palette: Palette::DEFAULT,
             slots:   Vec::new(),
             free:    Vec::new(),
-            stands:  Stands::default(),
-            slates:  Slates::default(),
             panes:   Panes::default(),
             now:     0.0,
             jumps:   Watch::default(),
@@ -242,8 +232,7 @@ impl Vui {
             self.carry(&by)?;
         }
         let gaze = Gaze::read(&eye);
-        self.slates.fixed_update(&self.doc);
-        self.panes.fixed_update(&self.doc, self.tuning.pane_em);
+        self.panes.fixed_update(&self.doc, &self.tuning);
 
         for index in 0..self.slots.len() {
             let Some(slot) = &self.slots[index] else {
@@ -292,10 +281,6 @@ impl Vui {
                 .update(&self.doc, &gaze, anchor, delta, self.now)?;
             self.report(index, events);
         }
-        self.stands
-            .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
-        self.slates
-            .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         self.panes
             .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         Ok(())

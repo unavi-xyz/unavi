@@ -1,68 +1,28 @@
-//! How rows and values read: the row constructors, a document as a coloured
-//! dot and its name or short id, and where a value comes from as a dot.
+//! How values read: a document by its name or short id, who authors it, and
+//! which layer a value comes from.
 
-use wired_guest::{
-    color::{
-        document_color,
-        short_id,
-    },
-    math::Color,
-};
+use wired_guest::color::short_id;
 
-use crate::{
-    unavi::vui::api::{
-        Row,
-        RowKind,
+use crate::wired::{
+    peer::authority::{
+        author,
+        is_author,
     },
-    wired::{
-        peer::authority::{
-            author,
-            is_author,
+    perception::perception::meta,
+    scene::{
+        document::{
+            Document,
+            LayerSource,
         },
-        perception::perception::meta,
-        scene::{
-            document::{
-                Document,
-                LayerSource,
-            },
-            properties::{
-                Property,
-                PropertyKey,
-            },
+        properties::{
+            Property,
+            PropertyKey,
         },
     },
 };
 
-/// The dot of a value this peer states for itself only.
-const RUNTIME: Color = Color::rgb(0.12, 0.16, 0.26);
-/// The dot of a value this peer states for everyone, live.
-const OWN_SESSION: Color = Color::rgb(0.03, 0.30, 0.12);
-/// The dot of a value another peer states, live.
-const PEER_SESSION: Color = Color::rgb(0.30, 0.10, 0.60);
-/// The dot of a value a reference site overrides.
-const OVERRIDE: Color = Color::rgb(0.50, 0.18, 0.0);
-
-pub fn row(id: u32, label: &str, kind: RowKind) -> Row {
-    Row {
-        id,
-        label: clip(label, 64),
-        kind,
-        dot: None,
-        mark: None,
-    }
-}
-
-pub fn header(id: u32, label: &str) -> Row {
-    row(id, label, RowKind::Header)
-}
-
-pub fn action(id: u32, label: &str) -> Row {
-    row(id, label, RowKind::Action)
-}
-
-pub fn field(id: u32, label: &str, value: &str) -> Row {
-    row(id, label, RowKind::Field(clip(value, 128)))
-}
+/// Characters of a peer's endpoint id a layer is named by.
+const PEER_TAIL: usize = 6;
 
 /// `text` cut to at most `max` bytes, at a character boundary.
 pub fn clip(text: &str, max: usize) -> String {
@@ -84,17 +44,13 @@ pub fn name(doc: &Document, prim: (u64, u64)) -> Option<String> {
     }
 }
 
-/// A document as a row names it: its name, else its short id, beside a dot
-/// in its own colour.
-pub fn document(doc: &Document) -> (String, Color) {
-    let label = match meta(doc.id()) {
+/// A document as it is named: its name, else its short id.
+pub fn document(doc: &Document) -> String {
+    let name = match meta(doc.id()) {
         Ok(Some(meta)) => meta.name.filter(|name| !name.is_empty()),
         Ok(None) | Err(_) => None,
     };
-    (
-        label.unwrap_or_else(|| short_id(doc.id())),
-        document_color(doc.id()),
-    )
+    name.unwrap_or_else(|| short_id(doc.id()))
 }
 
 pub fn author_of(doc: &Document) -> String {
@@ -111,15 +67,32 @@ pub fn author_of(doc: &Document) -> String {
     }
 }
 
-/// The dot saying where a value comes from, or `None` for the document
-/// itself, as most values do.
-pub const fn provenance(source: Option<&LayerSource>) -> Option<Color> {
+/// The name of the layer a value comes from.
+pub fn layer_name(source: &LayerSource) -> String {
     match source {
-        Some(LayerSource::Override) => Some(OVERRIDE),
-        Some(LayerSource::Runtime) => Some(RUNTIME),
-        Some(LayerSource::OwnSession) => Some(OWN_SESSION),
-        Some(LayerSource::Session(_)) => Some(PEER_SESSION),
-        Some(LayerSource::Document) | None => None,
+        LayerSource::Document => "Document".to_owned(),
+        LayerSource::Override => "Override".to_owned(),
+        LayerSource::Runtime => "Runtime".to_owned(),
+        LayerSource::OwnSession => "Your session".to_owned(),
+        LayerSource::Session(peer) => {
+            let start = peer
+                .char_indices()
+                .rev()
+                .nth(PEER_TAIL - 1)
+                .map_or(0, |(index, _)| index);
+            format!("Peer …{}", &peer[start..])
+        }
+    }
+}
+
+/// Where a layer sorts in a list of them: the document's own content first.
+pub const fn layer_rank(source: &LayerSource) -> u8 {
+    match source {
+        LayerSource::Document => 0,
+        LayerSource::Override => 1,
+        LayerSource::Runtime => 2,
+        LayerSource::OwnSession => 3,
+        LayerSource::Session(_) => 4,
     }
 }
 
@@ -148,20 +121,7 @@ pub fn words(debug: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use wired_guest::{
-        color::contrast,
-        style::BG,
-    };
-
     use super::*;
-
-    #[test]
-    fn every_provenance_dot_reads_on_the_ground() {
-        for dot in [RUNTIME, OWN_SESSION, PEER_SESSION, OVERRIDE] {
-            let ratio = contrast(dot, BG);
-            assert!(ratio >= 3.0, "{dot:?} reads at {ratio} on the ground");
-        }
-    }
 
     #[test]
     fn a_key_reads_as_words() {
@@ -171,9 +131,21 @@ mod tests {
     }
 
     #[test]
-    fn a_value_the_document_states_has_no_dot() {
-        assert_eq!(provenance(Some(&LayerSource::Document)), None);
-        assert_eq!(provenance(None), None);
-        assert!(provenance(Some(&LayerSource::Runtime)).is_some());
+    fn a_peer_layer_is_named_by_the_end_of_its_endpoint_id() {
+        let named = layer_name(&LayerSource::Session("abcdef123456".to_owned()));
+        assert_eq!(named, "Peer …123456");
+    }
+
+    #[test]
+    fn the_documents_own_layer_sorts_before_every_other() {
+        let others = [
+            LayerSource::Override,
+            LayerSource::Runtime,
+            LayerSource::OwnSession,
+            LayerSource::Session(String::new()),
+        ];
+        for other in &others {
+            assert!(layer_rank(&LayerSource::Document) < layer_rank(other));
+        }
     }
 }

@@ -28,7 +28,7 @@ impl Default for Registry {
                 Lens {
                     id:          TRAVEL.to_owned(),
                     name:        "Travel".to_owned(),
-                    description: "Placards beside the portals you look at.".to_owned(),
+                    description: "Tags beside the portals you look at.".to_owned(),
                     worn:        true,
                 },
                 Lens {

@@ -2,28 +2,28 @@
 //! the body that carries its pose and takes its input.
 
 use wired_guest::math::{
+    Color,
     Transform,
     Vec2,
     Vec3,
 };
 
 use crate::{
-    component::{
-        pane::{
-            Event,
-            Pane,
-            Refused,
-            block::Block,
-            draw::Runs,
-            prims::PanePrims,
-        },
-        slate::slates::float::Float,
+    component::pane::{
+        Event,
+        Pane,
+        Refused,
+        block::Block,
+        draw::Runs,
+        prims::PanePrims,
     },
+    machinery::float::Float,
     part::{
         draw,
         shadow::Shadow,
         tether::prims::TetherPrims,
     },
+    tokens::tuning::Tuning,
     wired::{
         input::{
             device,
@@ -57,8 +57,8 @@ const EVENT_CAPACITY: usize = 64;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mount {
     /// Stands with its bottom centre on `at`, turned about the vertical
-    /// axis to face the viewer, with a line to `tether` if there is one.
-    Standing { at: Vec3, tether: Option<Vec3> },
+    /// axis to face the viewer.
+    Standing { at: Vec3 },
     /// A weightless body centred on `at` that a grip carries, which once
     /// let go drifts to a stop and turns to face the viewer.
     Floating { at: Vec3 },
@@ -87,35 +87,39 @@ enum Drag {
 
 struct Mounted {
     /// Carries the pose and the collider, at the pane's middle.
-    body:      (u64, u64),
-    prims:     PanePrims,
-    tether:    TetherPrims,
-    input:     InputSubscription,
-    pane:      Pane,
-    mount:     Option<Mount>,
-    shown:     bool,
-    events:    Vec<Event>,
+    body:       (u64, u64),
+    prims:      PanePrims,
+    tether:     TetherPrims,
+    /// Where the tether ends, in the script's document frame.
+    tether_to:  Option<Vec3>,
+    /// What the tether is coloured, or none for the neutral one.
+    hue:        Option<Color>,
+    input:      InputSubscription,
+    pane:       Pane,
+    mount:      Option<Mount>,
+    shown:      bool,
+    events:     Vec<Event>,
     /// What the pane draws, until something changes it.
-    runs:      Option<Runs>,
+    runs:       Option<Runs>,
     /// The body as last written or read, which input is read against.
-    pose:      Option<Transform>,
+    pose:       Option<Transform>,
     /// Where the standing pose is eased from.
-    drawn:     Option<Transform>,
-    written:   Shadow<Transform>,
+    drawn:      Option<Transform>,
+    written:    Shadow<Transform>,
     /// Whether the body is in the simulation, which it is while floating.
-    simulated: bool,
-    float:     Float,
+    simulated:  bool,
+    float:      Float,
     /// Where the script last put a floating pane, until it is moved there.
-    put:       Option<Vec3>,
-    collider:  Shadow<Vec2>,
+    put:        Option<Vec3>,
+    collider:   Shadow<Vec2>,
     /// Whether the body has been posed and given its collider.
-    placed:    bool,
+    placed:     bool,
     /// Seconds of bobbing, for its phase.
-    bob:       f32,
+    bob:        f32,
     /// How far the pane is drawn above its body, which input is read
     /// against.
     bob_offset: f32,
-    drag:      Option<(PointerKind, Drag)>,
+    drag:       Option<(PointerKind, Drag)>,
 }
 
 /// Every pane a script holds, as a free list like the panels.
@@ -146,6 +150,8 @@ impl Panes {
             body,
             prims: PanePrims::new(doc, body)?,
             tether: TetherPrims::new(doc)?,
+            tether_to: None,
+            hue: None,
             input: crate::wired::input::targeted::listen(doc, body)?,
             pane,
             mount: None,
@@ -221,11 +227,13 @@ impl Panes {
 
     /// The pane, width by height in metres.
     #[must_use]
-    pub fn size(&self, id: PaneId, em: f32) -> Vec2 {
+    pub fn size(&self, id: PaneId, tuning: &Tuning) -> Vec2 {
         self.slots
             .get(id.0)
             .and_then(Option::as_ref)
-            .map_or(Vec2::ZERO, |mounted| mounted.pane.size() * em)
+            .map_or(Vec2::ZERO, |mounted| {
+                mounted.pane.size() * mounted.em(tuning)
+            })
     }
 
     pub fn set_mount(&mut self, id: PaneId, mount: Mount) {
@@ -234,6 +242,18 @@ impl Panes {
                 mounted.put = Some(at);
             }
             mounted.mount = Some(mount);
+        }
+    }
+
+    pub fn set_tether(&mut self, id: PaneId, to: Option<Vec3>) {
+        if let Some(mounted) = self.get_mut(id) {
+            mounted.tether_to = to;
+        }
+    }
+
+    pub fn set_hue(&mut self, id: PaneId, hue: Option<Color>) {
+        if let Some(mounted) = self.get_mut(id) {
+            mounted.hue = hue;
         }
     }
 
@@ -261,6 +281,15 @@ impl Panes {
 }
 
 impl Mounted {
+    /// Metres in one em of the pane, which a standing pane has more of since
+    /// it is read from further away.
+    const fn em(&self, tuning: &Tuning) -> f32 {
+        match self.mount {
+            Some(Mount::Standing { .. }) => tuning.stand_em,
+            Some(Mount::Floating { .. }) | None => tuning.pane_em,
+        }
+    }
+
     fn push(&mut self, event: Event) {
         self.events.push(event);
         let overrun = self.events.len().saturating_sub(EVENT_CAPACITY);

@@ -7,18 +7,10 @@ use std::f32::consts::{
     TAU,
 };
 
-use crate::{
-    material::glyph::Glyph,
-    part::spec::{
-        Arrange,
-        MAX_PIPS,
-    },
+use crate::part::spec::{
+    Arrange,
+    MAX_PIPS,
 };
-
-/// Corners of the polygon a lit dot is drawn as.
-const DOT_SIDES: usize = 8;
-/// A lit dot's radius, as a fraction of its cell.
-const DOT_RADIUS: f32 = 0.42;
 
 /// Positions, normals, texture coordinates and indices, in the shape the scene
 /// API's mesh streams take.
@@ -397,53 +389,9 @@ pub fn annulus(inner: f32, outer: f32, segments: usize) -> MeshData {
     mesh
 }
 
-/// The lit dots of `glyph` on a unit square facing +Z and centred on the
-/// origin, row 0 at the top. Unlit dots have no geometry.
-#[must_use]
-pub fn dots(glyph: &Glyph) -> MeshData {
-    let size = glyph.size();
-    let cell = 1.0 / size as f32;
-    let radius = cell * DOT_RADIUS;
-    let mut mesh = MeshData::default();
-    for row in 0..size {
-        for column in 0..size {
-            if !glyph.lit(column, row) {
-                continue;
-            }
-            let x = (column as f32 + 0.5).mul_add(cell, -0.5);
-            let y = (row as f32 + 0.5).mul_add(-cell, 0.5);
-            let first = (mesh.positions.len() / 3) as u32;
-            mesh.positions.extend_from_slice(&[x, y, 0.0]);
-            mesh.uvs.extend_from_slice(&[x + 0.5, 0.5 - y]);
-            for side in 0..DOT_SIDES {
-                let (sin, cos) = (TAU * side as f32 / DOT_SIDES as f32).sin_cos();
-                let (px, py) = (radius.mul_add(cos, x), radius.mul_add(sin, y));
-                mesh.positions.extend_from_slice(&[px, py, 0.0]);
-                mesh.uvs.extend_from_slice(&[px + 0.5, 0.5 - py]);
-                let this = first + 1 + side as u32;
-                let next = first + 1 + ((side + 1) % DOT_SIDES) as u32;
-                mesh.indices.extend_from_slice(&[first, this, next]);
-            }
-            mesh.normals.extend([0.0, 0.0, 1.0].repeat(DOT_SIDES + 1));
-        }
-    }
-    mesh
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn only_lit_dots_have_geometry_and_they_stay_inside_the_square() {
-        let glyph = Glyph::new(3, &[0b0001_0001, 0b0000_0001]).expect("a three grid");
-        let mesh = dots(&glyph);
-        assert_eq!(vertex_count(&mesh), 3 * (DOT_SIDES + 1), "cells 0, 4 and 8");
-        assert_eq!(mesh.indices.len(), 3 * DOT_SIDES * 3);
-        assert_eq!(mesh.normals.len(), mesh.positions.len());
-        assert_eq!(mesh.uvs.len() / 2, vertex_count(&mesh));
-        assert!(mesh.positions.iter().all(|v| v.abs() <= 0.5));
-    }
 
     const SPREAD: f32 = 0.5;
     const RADIUS: f32 = 0.2;
@@ -489,7 +437,7 @@ mod tests {
         let ys = panel.positions.chunks(3).map(|p| p[1]).collect::<Vec<_>>();
         assert!(
             ys.iter().all(|y| *y <= 0.0),
-            "a placard's layout descends from its top, so the mesh must too"
+            "a pane hangs down from its top edge, so the mesh must too"
         );
         assert!(ys.iter().any(|y| (*y + 1.0).abs() < 1.0e-6));
     }

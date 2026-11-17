@@ -15,17 +15,9 @@ use super::{
     Panes,
 };
 use crate::{
-    component::{
-        slate::slates::{
-            body::{
-                BOB_HEIGHT,
-                BOB_PERIOD,
-                BODY,
-                DEPTH,
-            },
-            float::facing,
-        },
-        stand::{
+    machinery::{
+        float::facing,
+        standing::{
             eased,
             turned_toward,
         },
@@ -55,9 +47,29 @@ use crate::{
                 Collider,
                 Property,
                 PropertyKey,
+                RigidBody,
+                RigidBodyKind,
             },
         },
     },
+};
+
+/// Metres of collider through the pane.
+const DEPTH: f32 = 0.01;
+/// How far a floating pane bobs, in metres, and how long one bob takes, in
+/// seconds.
+const BOB_HEIGHT: f32 = 0.004;
+const BOB_PERIOD: f32 = 4.5;
+
+/// Light, and slowed quickly, so a let-go pane drifts a little and stops
+/// rather than sailing off.
+const BODY: RigidBody = RigidBody {
+    kind:            RigidBodyKind::Dynamic,
+    mass:            Some(0.3),
+    friction:        Some(0.3),
+    restitution:     Some(0.1),
+    linear_damping:  Some(3.0),
+    angular_damping: Some(5.0),
 };
 
 impl Panes {
@@ -127,7 +139,11 @@ impl Mounted {
         tuning: &Tuning,
         delta: f32,
     ) -> anyhow::Result<()> {
-        let em = tuning.pane_em;
+        let em = self.em(tuning);
+        let tuning = &Tuning {
+            pane_em: em,
+            ..*tuning
+        };
         let size = self.pane.size();
         let metres = size * em;
         let visible = self.shown && self.mount.is_some();
@@ -145,13 +161,16 @@ impl Mounted {
         if self.runs.is_none() {
             self.runs = Some(self.pane.runs());
         }
-        let shown = self.runs.as_ref().filter(|_| visible).map(|runs| (runs, size));
-        self.prims.update(doc, shown, origin, palette, tuning, delta)?;
+        let shown = self
+            .runs
+            .as_ref()
+            .filter(|_| visible)
+            .map(|runs| (runs, size));
+        self.prims
+            .update(doc, shown, origin, palette, tuning, delta)?;
 
-        let tether = match self.mount {
-            Some(Mount::Standing {
-                tether: Some(to), ..
-            }) if self.prims.progress() > 0.0 => self.pose.map(|pose| {
+        let tether = match self.tether_to {
+            Some(to) if self.prims.progress() > 0.0 => self.pose.map(|pose| {
                 let body = Body {
                     centre:     pose.translation,
                     rotation:   pose.rotation,
@@ -159,10 +178,14 @@ impl Mounted {
                 };
                 tether::tether(&body, to, tuning)
             }),
-            _ => None,
+            None | Some(_) => None,
         };
-        self.tether
-            .update(doc, tether, palette.tether, palette.tether_glow)
+        self.tether.update(
+            doc,
+            tether,
+            self.hue.unwrap_or(palette.tether),
+            palette.tether_glow,
+        )
     }
 
     /// Poses the body for `mount` and returns where the pane's top centre is
@@ -179,7 +202,7 @@ impl Mounted {
         let mut batch = doc.local();
         let mut bob = 0.0;
         match mount {
-            Mount::Standing { at, .. } => {
+            Mount::Standing { at } => {
                 if self.simulated {
                     self.simulated = false;
                     self.float = super::Float::default();
@@ -237,7 +260,8 @@ impl Mounted {
                 if placed.is_some() && !fresh {
                     batch.flush()?;
                     batch = doc.local();
-                    if let Err(err) = set_velocity(doc, self.body, Some(Vec3::ZERO), Some(Vec3::ZERO))
+                    if let Err(err) =
+                        set_velocity(doc, self.body, Some(Vec3::ZERO), Some(Vec3::ZERO))
                     {
                         eprintln!("vui: pane stop: {err:?}");
                     }

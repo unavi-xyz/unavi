@@ -128,7 +128,10 @@ impl PanePrims {
         delta: f32,
     ) -> anyhow::Result<()> {
         if let Some((runs, size)) = pane
-            && self.kept.as_ref().is_none_or(|(kept, was)| kept != runs || *was != size)
+            && self
+                .kept
+                .as_ref()
+                .is_none_or(|(kept, was)| kept != runs || *was != size)
         {
             self.kept = Some((runs.clone(), size));
         }
@@ -309,7 +312,11 @@ impl PanePrims {
             .set(
                 prim,
                 Property::Transform(Transform {
-                    translation: Vec3::new(run.at.x.mul_add(em, -width / 2.0), -run.at.y * em, lift),
+                    translation: Vec3::new(
+                        run.at.x.mul_add(em, -width / 2.0),
+                        -run.at.y * em,
+                        lift,
+                    ),
                     rotation:    Quat::IDENTITY,
                     scale:       Vec3::ONE,
                 }),

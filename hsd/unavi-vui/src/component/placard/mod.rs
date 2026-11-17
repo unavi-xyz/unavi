@@ -1,6 +1,8 @@
-//! A mote's expanded text, laid out as lines a renderer can place directly.
+//! The pane beside a mote that says what it does, or what went wrong with
+//! it.
 
-use arrayvec::ArrayVec;
+use std::rc::Rc;
+
 use smol_str::SmolStr;
 use wired_guest::math::{
     Vec2,
@@ -8,307 +10,160 @@ use wired_guest::math::{
 };
 
 use crate::{
-    component::placard::lines::{
-        lay_out,
-        mount,
+    component::pane::{
+        Pane,
+        block::{
+            Block,
+            Height,
+            Kind,
+            Span,
+            Tone,
+        },
+        draw::Runs,
     },
-    material::glyph::Glyph,
     part::spec::MoteSpec,
     tokens::tuning::Tuning,
 };
 
-mod lines;
-pub mod prims;
+/// Columns a placard is laid out in.
+const COLUMNS: u32 = 40;
+/// The one block of a placard.
+const BLOCK: u32 = 0;
 
-/// Lines a placard may draw, kicker and title included.
-pub const MAX_LINES: usize = 9;
-
-/// Longest title a script may set on a standing placard.
-pub const MAX_TITLE_BYTES: usize = 256;
-/// Longest kicker a script may set on a standing placard.
-pub const MAX_KICKER_BYTES: usize = 256;
-/// Most paragraphs a script may set under the title.
-pub const MAX_PARAGRAPHS: usize = 7;
-/// Longest paragraph a script may set on a standing placard.
-pub const MAX_PARAGRAPH_BYTES: usize = 1024;
-
-/// How a paragraph is set.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub enum Tone {
-    #[default]
-    Body,
-    /// Ink at reduced contrast.
-    Muted,
-    Warning,
-}
-
-/// Height and width of a paragraph's icon, in the paragraph's text sizes.
-pub const ICON_EM: f32 = 0.8;
-/// Space between an icon and the text after it, in the paragraph's text
-/// sizes.
-const ICON_GAP_EM: f32 = 0.35;
-
-/// One paragraph under the title.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Paragraph {
-    /// Prose, without line breaks; [`view`] wraps it.
-    pub text: SmolStr,
-    pub tone: Tone,
-    /// Dots drawn before the first line of the text.
-    pub icon: Option<Glyph>,
-}
-
-/// The width an icon takes before text set at `size`, gap included.
-#[must_use]
-pub fn icon_advance(size: f32) -> f32 {
-    size * (ICON_EM + ICON_GAP_EM)
-}
-
-/// Why a script's text was refused.
+/// What a placard says.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Refused {
-    Title(usize),
-    Kicker(usize),
-    Paragraphs(usize),
-    Paragraph(usize),
+pub enum Content {
+    /// A message about a mote, set as a warning.
+    Notice(SmolStr),
+    /// A mote's name, over what it does when it has said.
+    Describing {
+        label:       SmolStr,
+        description: Option<SmolStr>,
+    },
 }
 
-impl std::fmt::Display for Refused {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Title(len) => {
-                write!(
-                    f,
-                    "title is {len} bytes, over the limit of {MAX_TITLE_BYTES}"
-                )
-            }
-            Self::Kicker(len) => {
-                write!(
-                    f,
-                    "kicker is {len} bytes, over the limit of {MAX_KICKER_BYTES}"
-                )
-            }
-            Self::Paragraphs(count) => {
-                write!(f, "{count} lines, over the limit of {MAX_PARAGRAPHS}")
-            }
-            Self::Paragraph(len) => {
-                write!(
-                    f,
-                    "a line is {len} bytes, over the limit of {MAX_PARAGRAPH_BYTES}"
-                )
-            }
-        }
-    }
-}
-
-/// Mounted text: a title and what there is to say under it.
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Placard {
-    /// A small muted line above the title: an id, a category.
-    pub kicker:  Option<SmolStr>,
-    pub title:   SmolStr,
-    pub body:    ArrayVec<Paragraph, MAX_LINES>,
-    /// Whether this is a notice, which sets its title as a warning.
-    pub warning: bool,
-}
-
-impl Placard {
-    #[must_use]
-    pub fn new(title: impl Into<SmolStr>) -> Self {
-        Self {
-            kicker:  None,
-            title:   title.into(),
-            body:    ArrayVec::new(),
-            warning: false,
-        }
-    }
-
-    /// A notice: `message` set as a warning title, with nothing under it.
-    #[must_use]
-    pub fn notice(message: impl Into<SmolStr>) -> Self {
-        Self {
-            warning: true,
-            ..Self::new(message)
-        }
-    }
-
-    /// Paragraphs past [`MAX_LINES`] are dropped rather than panicking.
-    #[must_use]
-    pub fn line(self, line: impl Into<SmolStr>) -> Self {
-        self.toned(line, Tone::Body)
-    }
-
-    /// [`Placard::line`], set in `tone`.
-    #[must_use]
-    pub fn toned(self, line: impl Into<SmolStr>, tone: Tone) -> Self {
-        self.paragraph(Paragraph {
-            text: line.into(),
-            tone,
-            icon: None,
-        })
-    }
-
-    /// Dropped past [`MAX_LINES`], like [`Placard::line`].
-    #[must_use]
-    pub fn paragraph(mut self, paragraph: Paragraph) -> Self {
-        let _ = self.body.try_push(paragraph);
-        self
-    }
-
-    #[must_use]
-    pub fn kicker(mut self, kicker: impl Into<SmolStr>) -> Self {
-        self.kicker = Some(kicker.into());
-        self
-    }
-
-    /// A script's text, held to the limits a standing placard has.
-    pub fn from_script(
-        title: &str,
-        kicker: Option<&str>,
-        lines: &[Paragraph],
-    ) -> Result<Self, Refused> {
-        if title.len() > MAX_TITLE_BYTES {
-            return Err(Refused::Title(title.len()));
-        }
-        if let Some(kicker) = kicker.filter(|kicker| kicker.len() > MAX_KICKER_BYTES) {
-            return Err(Refused::Kicker(kicker.len()));
-        }
-        if lines.len() > MAX_PARAGRAPHS {
-            return Err(Refused::Paragraphs(lines.len()));
-        }
-        if let Some(long) = lines
-            .iter()
-            .map(|line| line.text.len())
-            .find(|&len| len > MAX_PARAGRAPH_BYTES)
-        {
-            return Err(Refused::Paragraph(long));
-        }
-        let placard = lines.iter().fold(Self::new(title), |placard, line| {
-            placard.paragraph(line.clone())
-        });
-        Ok(match kicker {
-            Some(kicker) => placard.kicker(kicker),
-            None => placard,
-        })
-    }
-
+impl Content {
     /// The standard placard for a mote: its name and its description.
     #[must_use]
     pub fn describing(spec: &MoteSpec) -> Self {
-        let placard = Self::new(spec.label.clone());
-        match (&spec.description, &spec.description_icon) {
-            (Some(description), Some(icon)) => placard.paragraph(Paragraph {
-                text: description.clone(),
-                tone: Tone::Body,
-                icon: Some(icon.clone()),
-            }),
-            (Some(description), None) => placard.line(description.clone()),
-            (None, _) => placard,
+        Self::Describing {
+            label:       spec.label.clone(),
+            description: spec.description.clone(),
+        }
+    }
+
+    fn spans(&self) -> (Option<&str>, Vec<Span>) {
+        let span = |text: &SmolStr, tone| Span {
+            text: text.clone(),
+            tone,
+            link: None,
+        };
+        match self {
+            Self::Notice(message) => (None, vec![span(message, Tone::Warning)]),
+            Self::Describing {
+                label,
+                description: Some(description),
+            } => (Some(label.as_str()), vec![span(description, Tone::Body)]),
+            Self::Describing {
+                label,
+                description: None,
+            } => (None, vec![span(label, Tone::Body)]),
         }
     }
 }
 
-/// How strongly a line is set.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Emphasis {
-    Title,
-    /// The small line above the title.
-    Kicker,
-    /// A notice's message, or a warning line, which wears a colour of its own.
-    Warning,
-    Body,
-    /// A line set in ink at reduced contrast.
-    Muted,
-}
-
+/// A laid-out placard: what its pane draws, and how big it is in ems.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PlacardLine {
-    pub text:     SmolStr,
-    /// Placard-local, from the left inner edge, y descending.
-    pub offset:   Vec2,
-    pub size:     f32,
-    pub emphasis: Emphasis,
-    /// Dots drawn before the text: a square [`ICON_EM`] times `size` across,
-    /// its bottom edge on the baseline and its right edge a gap before
-    /// `offset.x`.
-    pub icon:     Option<Glyph>,
+pub struct Sheet {
+    pub runs: Runs,
+    pub size: Vec2,
 }
 
-/// Everything a renderer needs to draw one placard.
+impl Sheet {
+    /// `None` when the pane refuses the text, which a mote's limits keep from
+    /// happening.
+    fn of(content: &Content) -> Option<Self> {
+        let (title, spans) = content.spans();
+        let built = Pane::new(COLUMNS, None).and_then(|mut pane| {
+            pane.set_title(title.unwrap_or_default())?;
+            pane.set_blocks(vec![Block {
+                id:     BLOCK,
+                height: Height::Share,
+                kind:   Kind::Text(spans),
+            }])?;
+            Ok(pane)
+        });
+        match built {
+            Ok(pane) => Some(Self {
+                runs: pane.runs(),
+                size: pane.size(),
+            }),
+            Err(why) => {
+                eprintln!("vui: placard text: {why}");
+                None
+            }
+        }
+    }
+}
+
+/// The sheet last laid out, so a placard that says the same thing is not laid
+/// out again every frame.
+#[derive(Debug, Default)]
+pub struct Cache {
+    last: Option<(Content, Option<Rc<Sheet>>)>,
+}
+
+impl Cache {
+    /// The sheet for `content`, laid out if it is not the last one asked for.
+    pub fn sheet(&mut self, content: Content) -> Option<Rc<Sheet>> {
+        if let Some((last, sheet)) = &self.last
+            && *last == content
+        {
+            return sheet.clone();
+        }
+        let sheet = Sheet::of(&content).map(Rc::new);
+        self.last = Some((content, sheet.clone()));
+        sheet
+    }
+}
+
+/// A placard on its mote's body.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlacardView {
-    /// Orbit-local, at the placard's top centre.
+    /// Orbit-local, at the pane's top centre.
     pub position: Vec3,
-    /// Backing panel extents, sized to the laid-out lines.
-    pub size:     Vec2,
-    pub lines:    ArrayVec<PlacardLine, MAX_LINES>,
+    pub sheet:    Rc<Sheet>,
 }
 
 /// Whether attention has been held long enough to earn a placard. How it
-/// arrives is the renderer's: it eases in once this is true.
+/// arrives is the pane's: it grows in once this is true.
 #[must_use]
 pub fn earned(dwell: f32, tuning: &Tuning) -> bool {
     dwell >= tuning.placard_delay
 }
 
-/// Lays a placard out, top-centre origin, y descending. Wrapping happens
-/// here, not in the renderer.
-#[must_use]
-pub fn view(placard: &Placard, mote: Vec3, radius: f32, tuning: &Tuning) -> PlacardView {
-    let (size, lines) = lay_out(placard, tuning);
-    PlacardView {
-        position: mount(mote, radius, size.y, tuning),
-        size,
-        lines,
-    }
-}
-
-/// Smallest and largest a standing placard is drawn, as a multiple of its
-/// size read from a few metres away.
-pub const MIN_STAND_SCALE: f32 = 0.25;
-pub const MAX_STAND_SCALE: f32 = 1.0;
-
-/// `scale` held to what a standing placard may be drawn at. Not a number is
-/// the default size.
-#[must_use]
-pub const fn standing_scale(scale: f32) -> f32 {
-    if scale.is_nan() {
-        return MAX_STAND_SCALE;
-    }
-    scale.clamp(MIN_STAND_SCALE, MAX_STAND_SCALE)
-}
-
-/// Lays a placard out standing on the origin by its bottom centre, for one
-/// that stands where it is put rather than on a mote.
+/// Mounts `sheet` clear of the body at `mote`.
 ///
-/// Laid out as a mote's is and then scaled as a whole by
-/// [`Tuning::stand_scale`] times `scale`, so the wrapping and the proportions
-/// are the same and only the reading distance differs.
+/// The pane hangs down from its top edge, so the mount is a whole height above
+/// the mote rather than resting on it. Above rather than beside, because the
+/// mote's own name is already below it and a placard that picked a side would
+/// leave the surface at the edge slots.
 #[must_use]
-pub fn standing(placard: &Placard, tuning: &Tuning, scale: f32) -> PlacardView {
-    let (size, mut lines) = lay_out(placard, tuning);
-    let scale = tuning.stand_scale * standing_scale(scale);
-    for line in &mut lines {
-        line.offset *= scale;
-        line.size *= scale;
-    }
-    let size = size * scale;
+pub fn view(sheet: Rc<Sheet>, mote: Vec3, radius: f32, tuning: &Tuning) -> PlacardView {
+    let height = sheet.size.y * tuning.placard_em;
     PlacardView {
-        position: Vec3::new(0.0, size.y, 0.0),
-        size,
-        lines,
+        position: Vec3::new(
+            mote.x,
+            mote.y + radius + tuning.placard_gap + height,
+            mote.z + tuning.placard_lift,
+        ),
+        sheet,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        lines::{
-            budget,
-            wrap,
-        },
-        *,
-    };
+    use super::*;
     use crate::{
         part::spec::{
             Arrange,
@@ -321,50 +176,36 @@ mod tests {
         Tuning::DEFAULT
     }
 
-    fn spec(role: Role) -> MoteSpec {
+    fn spec(description: Option<&'static str>) -> MoteSpec {
         MoteSpec {
-            role,
-            label: SmolStr::new_static("Citrus"),
-            description: Some(SmolStr::new_static("Sharp and bright")),
-            description_icon: None,
-            condition: Condition::default(),
-            icon: false,
-            glyph: None,
-            tint: None,
-            film: crate::tokens::palette::FILM,
-            frost: 0.0,
-            notice: None,
+            role:        Role::Group {
+                children: 4,
+                groups:   1,
+                arrange:  Arrange::Orbit,
+            },
+            label:       SmolStr::new_static("Citrus"),
+            description: description.map(SmolStr::new_static),
+            condition:   Condition::default(),
+            icon:        false,
+            glyph:       None,
+            tint:        None,
+            film:        crate::tokens::palette::FILM,
+            frost:       0.0,
+            notice:      None,
         }
     }
 
-    fn group() -> MoteSpec {
-        spec(Role::Group {
-            children: 4,
-            groups:   1,
-            arrange:  Arrange::Orbit,
-        })
+    fn sheet(content: &Content) -> Rc<Sheet> {
+        Cache::default().sheet(content.clone()).expect("a sheet")
     }
 
-    fn view_of(placard: &Placard) -> PlacardView {
-        view(placard, Vec3::ZERO, 0.03, &tuning())
-    }
-
-    fn script(text: &str, tone: Tone) -> Paragraph {
-        Paragraph {
-            text: SmolStr::new(text),
-            tone,
-            icon: None,
-        }
-    }
-
-    fn texts(view: &PlacardView) -> Vec<&str> {
-        view.lines.iter().map(|line| line.text.as_str()).collect()
-    }
-
-    fn wrapped(text: &str, budget: usize) -> Vec<String> {
-        let mut out = ArrayVec::new();
-        wrap(text, budget, &mut out);
-        out.iter().map(ToString::to_string).collect()
+    fn texts(sheet: &Sheet) -> Vec<&str> {
+        sheet
+            .runs
+            .text
+            .iter()
+            .map(|run| run.text.as_str())
+            .collect()
     }
 
     #[test]
@@ -381,15 +222,17 @@ mod tests {
         let tuning = tuning();
         let radius = 0.03;
         let mote = Vec3::new(0.1, 0.2, 0.0);
-        let view = view(&Placard::describing(&group()), mote, radius, &tuning);
+        let sheet = sheet(&Content::describing(&spec(Some("Sharp and bright"))));
+        let height = sheet.size.y * tuning.placard_em;
+        let view = view(sheet, mote, radius, &tuning);
 
         assert!(
             (view.position.x - mote.x).abs() < 1.0e-5,
             "centred on the mote"
         );
         assert!(
-            view.position.y - view.size.y >= mote.y + radius,
-            "the panel hangs down from its mount, so its whole height has to \
+            view.position.y - height >= mote.y + radius,
+            "the pane hangs down from its mount, so its whole height has to \
              clear the body or it is drawn across it"
         );
         assert!(
@@ -398,318 +241,52 @@ mod tests {
         );
     }
 
-    fn near(a: f32, b: f32) -> bool {
-        (a - b).abs() < 1.0e-5
-    }
-
-    #[test]
-    fn a_standing_placard_stands_on_the_origin_and_lays_out_like_a_mote_s_but_larger() {
-        let tuning = tuning();
-        let placard = Placard::describing(&group());
-        let standing = standing(&placard, &tuning, 1.0);
-        let on_mote = view_of(&placard);
-        let scale = tuning.stand_scale;
-
-        assert_eq!(standing.position, Vec3::new(0.0, standing.size.y, 0.0));
-        assert!(near(standing.size.x, on_mote.size.x * scale));
-        assert!(near(standing.size.y, on_mote.size.y * scale));
-        assert_eq!(standing.lines.len(), on_mote.lines.len());
-        for (large, small) in standing.lines.iter().zip(&on_mote.lines) {
-            assert_eq!(large.text, small.text, "wrapped the same");
-            assert_eq!(large.emphasis, small.emphasis);
-            assert!(near(large.size, small.size * scale));
-            assert!(near(large.offset.x, small.offset.x * scale));
-            assert!(near(large.offset.y, small.offset.y * scale));
-        }
-    }
-
-    #[test]
-    fn a_standing_title_reads_at_the_size_the_plan_asks_for() {
-        let title = standing(&Placard::new("t"), &tuning(), 1.0).lines[0].size;
-        assert!((0.05..0.06).contains(&title), "{title} m");
-    }
-
-    #[test]
-    fn a_smaller_standing_placard_is_the_same_layout_shrunk_within_its_bounds() {
-        let tuning = tuning();
-        let placard = Placard::new("Undo").line("Moved the crate");
-        let full = standing(&placard, &tuning, 1.0);
-        let small = standing(&placard, &tuning, 0.4);
-        assert!(near(small.size.x, full.size.x * 0.4));
-        assert!(near(small.lines[0].size, full.lines[0].size * 0.4));
-        let floor = standing(&placard, &tuning, 0.0);
-        assert!(near(floor.size.x, full.size.x * MIN_STAND_SCALE));
-        assert!(near(
-            standing(&placard, &tuning, f32::NAN).size.x,
-            full.size.x
-        ));
-    }
-
-    #[test]
-    fn the_kicker_is_a_smaller_muted_line_above_the_title() {
-        let view = view_of(&Placard::new("Title").kicker("A3F9").line("body"));
-        assert_eq!(texts(&view), vec!["A3F9", "Title", "body"]);
-        assert_eq!(view.lines[0].emphasis, Emphasis::Kicker);
-        assert!(view.lines[0].size < view.lines[2].size);
-        assert!(view.lines[0].size < view.lines[1].size);
-    }
-
-    #[test]
-    fn a_kicker_earns_panel_height_and_none_costs_nothing() {
-        let bare = view_of(&Placard::new("Title"));
-        let kicked = view_of(&Placard::new("Title").kicker("A3F9"));
-        assert!(kicked.size.y > bare.size.y);
-        assert_eq!(bare, view_of(&Placard::new("Title")));
-        assert_eq!(
-            view_of(&Placard::new("Title").kicker("")).size,
-            bare.size,
-            "an empty kicker is no line"
-        );
-    }
-
-    #[test]
-    fn each_line_is_set_in_its_own_tone() {
-        let view = view_of(
-            &Placard::new("Title")
-                .line("plain")
-                .toned("quiet", Tone::Muted)
-                .toned("careful", Tone::Warning),
-        );
-        let emphasis = view
-            .lines
-            .iter()
-            .map(|line| line.emphasis)
-            .collect::<Vec<_>>();
-        assert_eq!(
-            emphasis,
-            vec![
-                Emphasis::Title,
-                Emphasis::Body,
-                Emphasis::Muted,
-                Emphasis::Warning
-            ]
-        );
-    }
-
-    #[test]
-    fn a_kicker_and_a_full_body_still_fit_the_line_budget() {
-        let placard = Placard::from_script(
-            "t",
-            Some("k"),
-            &vec![script("x", Tone::Body); MAX_PARAGRAPHS],
-        )
-        .unwrap();
-        assert_eq!(view_of(&placard).lines.len(), MAX_LINES);
-    }
-
-    #[test]
-    fn script_text_at_the_limits_is_taken() {
-        let lines = vec![script(&"x".repeat(MAX_PARAGRAPH_BYTES), Tone::Muted); MAX_PARAGRAPHS];
-        let placard = Placard::from_script(
-            &"t".repeat(MAX_TITLE_BYTES),
-            Some(&"k".repeat(MAX_KICKER_BYTES)),
-            &lines,
-        )
-        .unwrap();
-        assert_eq!(placard.body.len(), MAX_PARAGRAPHS);
-        assert_eq!(placard.body[0].tone, Tone::Muted);
-        assert_eq!(
-            placard.kicker.map(|kicker| kicker.len()),
-            Some(MAX_KICKER_BYTES)
-        );
-    }
-
-    #[test]
-    fn script_text_over_a_limit_is_refused() {
-        let one = vec![script("x", Tone::Body)];
-        assert_eq!(
-            Placard::from_script(&"t".repeat(MAX_TITLE_BYTES + 1), None, &one),
-            Err(Refused::Title(MAX_TITLE_BYTES + 1))
-        );
-        assert_eq!(
-            Placard::from_script("t", Some(&"k".repeat(MAX_KICKER_BYTES + 1)), &one),
-            Err(Refused::Kicker(MAX_KICKER_BYTES + 1))
-        );
-        assert_eq!(
-            Placard::from_script("t", None, &vec![script("", Tone::Body); MAX_PARAGRAPHS + 1]),
-            Err(Refused::Paragraphs(MAX_PARAGRAPHS + 1))
-        );
-        assert_eq!(
-            Placard::from_script(
-                "t",
-                None,
-                &[script(&"x".repeat(MAX_PARAGRAPH_BYTES + 1), Tone::Body)]
-            ),
-            Err(Refused::Paragraph(MAX_PARAGRAPH_BYTES + 1))
-        );
-    }
-
-    #[test]
-    fn a_notice_is_its_message_set_as_a_warning_with_nothing_under_it() {
-        let view = view_of(&Placard::notice("No home."));
-        assert_eq!(texts(&view), vec!["No home."]);
-        assert_eq!(view.lines[0].emphasis, Emphasis::Warning);
-        assert_ne!(
-            view_of(&Placard::new("Citrus")).lines[0].emphasis,
-            Emphasis::Warning
-        );
-    }
-
     #[test]
     fn a_mote_explains_itself_without_being_told_to() {
-        let view = view_of(&Placard::describing(&group()));
-        assert_eq!(view.lines[0].text, "Citrus");
-        assert_eq!(view.lines[0].emphasis, Emphasis::Title);
-        assert_eq!(texts(&view), vec!["Citrus", "Sharp and bright"]);
-    }
-
-    #[test]
-    fn it_says_nothing_the_body_already_shows() {
-        let view = view_of(&Placard::describing(&group()));
-        for noise in ["Kind", "Group", "Holds", "4", "Groups", "1"] {
-            assert!(!texts(&view).contains(&noise), "{noise:?} is noise");
-        }
+        let sheet = sheet(&Content::describing(&spec(Some("Sharp and bright"))));
+        assert_eq!(texts(&sheet), vec!["Citrus", "Sharp and bright"]);
     }
 
     #[test]
     fn a_mote_with_nothing_to_add_is_just_its_name() {
-        let view = view_of(&Placard::describing(&MoteSpec {
-            description: None,
-            description_icon: None,
-            ..spec(Role::Action)
-        }));
-        assert_eq!(texts(&view), vec!["Citrus"]);
+        let sheet = sheet(&Content::describing(&spec(None)));
+        assert_eq!(texts(&sheet), vec!["Citrus"]);
     }
 
     #[test]
-    fn prose_wraps_without_the_author_asking() {
-        assert_eq!(
-            wrapped("one two three four", 9),
-            vec!["one two", "three", "four"]
-        );
+    fn it_says_nothing_the_body_already_shows() {
+        let sheet = sheet(&Content::describing(&spec(Some("Sharp and bright"))));
+        for noise in ["Kind", "Group", "Holds", "4", "Groups", "1"] {
+            assert!(!texts(&sheet).contains(&noise), "{noise:?} is noise");
+        }
     }
 
     #[test]
-    fn a_word_longer_than_the_line_is_split_rather_than_left_hanging() {
-        let lines = wrapped("a supercalifragilistic word", 8);
-        assert!(
-            lines.iter().all(|line| line.chars().count() <= 8),
-            "{lines:?}"
-        );
-        assert_eq!(lines.concat().replace(' ', ""), "asupercalifragilisticword");
+    fn a_notice_is_its_message_set_as_a_warning() {
+        let notice = sheet(&Content::Notice(SmolStr::new_static("No home.")));
+        assert_eq!(texts(&notice), vec!["No home."]);
+        assert_eq!(notice.runs.text[0].tone, Tone::Warning);
+        let described = sheet(&Content::describing(&spec(None)));
+        assert_ne!(described.runs.text[0].tone, Tone::Warning);
     }
 
     #[test]
-    fn an_author_may_still_break_a_line_by_hand() {
-        assert_eq!(wrapped("a\nb", 40), vec!["a", "b"]);
-    }
-
-    #[test]
-    fn the_budget_errs_toward_breaking_early() {
-        let tuning = tuning();
-        let inner = tuning.placard_pad.mul_add(-2.0, tuning.placard_width);
-        let chars = budget(inner, tuning.placard_row, &tuning);
-        assert!(
-            (chars as f32) * tuning.placard_row * 0.5 < inner,
-            "a line of average lowercase must not fill the card, or the \
-             estimate has no headroom for wider text"
-        );
-    }
-
-    #[test]
-    fn a_degenerate_size_does_not_hang() {
-        assert_eq!(budget(0.2, 0.0, &tuning()), usize::MAX);
-    }
-
-    #[test]
-    fn every_wrapped_line_earns_panel_height() {
-        let short = view_of(&Placard::new("t").line("one"));
-        let long = view_of(&Placard::new("t").line(
+    fn a_long_description_wraps_and_earns_height() {
+        let short = sheet(&Content::describing(&spec(Some("one"))));
+        let long = sheet(&Content::describing(&spec(Some(
             "a description long enough that it certainly has to break across \
-             more than a single line of this card",
-        ));
-        assert!(long.lines.len() > short.lines.len());
-        assert!(
-            long.size.y > short.size.y,
-            "the backdrop grows with what wrapping produced, which is the \
-             whole reason wrapping happens here and not in the renderer"
-        );
+             more than a single line of this pane",
+        ))));
+        assert!(long.runs.text.len() > short.runs.text.len());
+        assert!(long.size.y > short.size.y);
     }
 
     #[test]
-    fn every_line_stays_within_the_panel() {
-        let view = view_of(&Placard::describing(&group()));
-        let half = view.size.x / 2.0;
-        for line in &view.lines {
-            assert!(line.offset.x.abs() <= half, "{:?} escapes", line.text);
-            assert!(-line.offset.y <= view.size.y);
-        }
-    }
-
-    #[test]
-    fn everything_shares_a_left_edge() {
-        let view = view_of(&Placard::describing(&group()));
-        let left = view.lines[0].offset.x;
-        for line in &view.lines {
-            assert!(
-                (line.offset.x - left).abs() < 1.0e-6,
-                "{:?} does not line up with the title",
-                line.text
-            );
-        }
-    }
-
-    #[test]
-    fn lines_descend() {
-        let view = view_of(&Placard::describing(&group()));
-        for pair in view.lines.windows(2) {
-            assert!(pair[0].offset.y > pair[1].offset.y);
-        }
-    }
-
-    #[test]
-    fn a_titleless_placard_starts_with_its_first_line() {
-        let view = view_of(&Placard::default().line("bare"));
-        assert_eq!(view.lines.len(), 1);
-        assert_ne!(view.lines[0].emphasis, Emphasis::Title);
-    }
-
-    #[test]
-    fn more_lines_than_the_budget_are_dropped_rather_than_panicking() {
-        let mut placard = Placard::new("t");
-        for index in 0..MAX_LINES + 4 {
-            placard = placard.line(index.to_string());
-        }
-        assert_eq!(placard.body.len(), MAX_LINES);
-        assert!(view_of(&placard).lines.len() <= MAX_LINES);
-    }
-
-    #[test]
-    fn an_icon_takes_room_before_the_text_and_rides_the_first_line_only() {
-        let icon = Glyph::new(3, &[0b0000_0010, 0]).expect("a three grid");
-        let tuning = tuning();
-        let placard = Placard::new("t").paragraph(Paragraph {
-            text: SmolStr::new("word ".repeat(12)),
-            tone: Tone::Body,
-            icon: Some(icon.clone()),
-        });
-        let view = view_of(&placard);
-        let body = &view.lines[1..];
-        assert!(body.len() > 1, "long enough to wrap");
-        assert_eq!(body[0].icon, Some(icon));
-        assert!(body[1..].iter().all(|line| line.icon.is_none()));
-        let left = -tuning.placard_pad.mul_add(-2.0, tuning.placard_width) / 2.0;
-        for line in body {
-            assert!(
-                (line.offset.x - left - icon_advance(tuning.placard_row)).abs() < 1.0e-6,
-                "every wrapped line clears the icon"
-            );
-        }
-    }
-
-    #[test]
-    fn a_paragraph_that_wraps_past_the_budget_is_truncated_not_overrun() {
-        let placard = Placard::new("t").line("word ".repeat(200));
-        assert!(view_of(&placard).lines.len() <= MAX_LINES);
+    fn the_same_content_is_laid_out_once() {
+        let mut cache = Cache::default();
+        let content = Content::describing(&spec(Some("Sharp")));
+        let first = cache.sheet(content.clone()).expect("a sheet");
+        let again = cache.sheet(content).expect("a sheet");
+        assert!(Rc::ptr_eq(&first, &again));
     }
 }

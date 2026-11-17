@@ -44,7 +44,7 @@ use crate::{
     },
     clearance::Clearance,
     slots,
-    unavi::vui::api::Placard,
+    tag::Tag,
     wired::{
         event::messaging::{
             self,
@@ -70,7 +70,10 @@ const REACH: Reach = Reach {
 const FORGET_RADIUS: f32 = 12.0;
 
 /// The size a tag is taken to be before it has text.
-const NOMINAL: Vec2 = Vec2::new(0.84, 0.3);
+const NOMINAL: Vec2 = Vec2::new(0.67, 0.25);
+
+/// Columns a tag is laid out in.
+const COLUMNS: u32 = 40;
 
 /// Fixed ticks between rereads of what a tag says.
 const FACTS_TICKS: u32 = 16;
@@ -98,7 +101,7 @@ struct HeardSocket {
 }
 
 struct Slot {
-    placard:  Placard,
+    tag:      Tag,
     key:      Option<Key>,
     text:     Option<Content>,
     /// Where it stands and what its tether reaches for, as last sent.
@@ -117,11 +120,11 @@ impl Slot {
             return;
         }
         match self
-            .placard
+            .tag
             .set_text(&text.title, Some(&text.kicker), &tag_lines(&text))
         {
             Ok(()) => {
-                self.size = self.placard.size();
+                self.size = self.tag.size();
                 self.text = Some(text);
             }
             Err(err) => eprintln!("visor: beacon tag text: {err:?}"),
@@ -134,8 +137,7 @@ impl Slot {
         let own = self.key;
         placed.at = clearance.clear(eye, placed.at, self.size, own.as_slice());
         if self.at != Some(placed) {
-            self.placard.set_position(placed.at);
-            self.placard.set_tether(placed.tether);
+            self.tag.stand(placed.at, placed.tether);
             self.at = Some(placed);
         }
     }
@@ -148,7 +150,7 @@ impl Slot {
         self.accent = None;
         self.size = NOMINAL;
         if self.shown {
-            self.placard.set_shown(false);
+            self.tag.set_shown(false);
             self.shown = false;
         }
     }
@@ -172,7 +174,7 @@ impl Beacons {
         let slots = (0..attention::CAP)
             .map(|_| {
                 Ok(Slot {
-                    placard:  Placard::new()?,
+                    tag:      Tag::new(COLUMNS)?,
                     key:      None,
                     text:     None,
                     at:       None,
@@ -255,12 +257,12 @@ impl Beacons {
             }
             let accent = generate_color(document_seed(seen.space));
             if slot.accent != Some(accent) {
-                slot.placard.set_accent(Some(accent));
+                slot.tag.set_hue(Some(accent));
                 slot.accent = Some(accent);
             }
             slot.stand(eye.translation, seen.at, &mut self.clearance);
             if slot.text.is_some() && !slot.shown {
-                slot.placard.set_shown(true);
+                slot.tag.set_shown(true);
                 slot.shown = true;
             }
         }

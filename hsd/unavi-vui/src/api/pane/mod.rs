@@ -2,6 +2,7 @@
 //! the script puts it.
 
 use wired_guest::math::{
+    Color,
     Vec2,
     Vec3,
 };
@@ -97,12 +98,30 @@ impl GuestPane for PaneRes {
         }
     }
 
-    fn set_standing(&self, at: Vec3, tether: Option<Vec3>) {
+    fn set_standing(&self, at: Vec3) {
         if let Err(err) = drive(|vui| {
-            vui.pane_standing(self.0, at, tether);
+            vui.pane_standing(self.0, at);
             Ok(())
         }) {
             eprintln!("vui: pane standing: {err:?}");
+        }
+    }
+
+    fn set_tether(&self, to: Option<Vec3>) {
+        if let Err(err) = drive(|vui| {
+            vui.pane_tether(self.0, to);
+            Ok(())
+        }) {
+            eprintln!("vui: pane tether: {err:?}");
+        }
+    }
+
+    fn set_hue(&self, hue: Option<Color>) {
+        if let Err(err) = drive(|vui| {
+            vui.pane_hue(self.0, hue);
+            Ok(())
+        }) {
+            eprintln!("vui: pane hue: {err:?}");
         }
     }
 

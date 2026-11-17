@@ -13,7 +13,10 @@ use bevy::{
         Tonemapping,
     },
     light::Atmosphere,
-    pbr::AtmosphereSettings,
+    pbr::{
+        AtmosphereSettings,
+        ScreenSpaceTransmission,
+    },
     post_process::dof::DepthOfField,
     prelude::*,
     render::{
@@ -242,6 +245,9 @@ pub(crate) fn copy_viewer_camera_extras(
         world.entity_mut(view_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Exposure>(viewer_camera).copied() {
+        world.entity_mut(view_camera_ent).insert(v);
+    }
+    if let Some(v) = world.get::<ScreenSpaceTransmission>(viewer_camera).cloned() {
         world.entity_mut(view_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Hdr>(viewer_camera).copied() {

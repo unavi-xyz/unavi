@@ -39,14 +39,8 @@ use crate::wired::{
         SurfaceOutput,
         UnlitOutput,
         set_graph,
-        set_overrides,
     },
 };
-
-/// How far a slab has unrolled from its top edge, 0 for not at all and 1 for
-/// whole. Drawn as a front sweeping down it, so a slab opens and closes like a
-/// blind rather than fading, which opaque glass cannot.
-pub const SLAB_OPEN: u16 = 0;
 
 /// How far the blur's diagonal taps sit from the centre, against the axis
 /// ones, so the nine taps cover a disc.
@@ -199,11 +193,10 @@ pub fn slab() -> ShaderGraph {
         t: edge_t,
     }));
 
-    let (painted, covered) = net.unroll(painted, body, (half_edge, edge));
-    let color = with_alpha(&mut net, painted, covered);
+    let color = with_alpha(&mut net, painted, body);
 
     ShaderGraph {
-        public_inputs: vec![GraphValue::Float(1.0)],
+        public_inputs: Vec::new(),
         surface:       SurfaceGraph {
             nodes:        net.nodes,
             // Clipping composes with the opaque blend, so the cut shape does
@@ -220,67 +213,9 @@ pub fn slab() -> ShaderGraph {
     }
 }
 
-impl Net {
-    /// Unrolls a slab drawn as `painted` over `covered` down to
-    /// [`SLAB_OPEN`]: everything nearer the top edge than the front shows,
-    /// and while it moves, a bright line `edge` metres wide runs along the
-    /// front.
-    fn unroll(&mut self, painted: Port, covered: Port, edge: (Port, Port)) -> (Port, Port) {
-        // Metres below the top edge, measured as the shape is.
-        let uv = self.push(Node::Uv);
-        let down = self.push(Node::Extract(ExtractOp {
-            v:       uv,
-            channel: 1,
-        }));
-        let down = self.push(Node::OneMinus(down));
-        let scale = self.push(Node::ObjectScale);
-        let tall = self.push(Node::Extract(ExtractOp {
-            v:       scale,
-            channel: 1,
-        }));
-        let top = self.push(Node::Mul(binary(down, tall)));
-        let front = self.push(Node::Mul(binary(Port::Input(SLAB_OPEN), tall)));
-        let unrolled = self.push(Node::Step(StepOp {
-            edge: top,
-            x:    front,
-        }));
-        let behind = self.push(Node::Sub(binary(front, top)));
-        let past_front = self.push(Node::Smoothstep(SmoothstepOp {
-            low:  edge.0,
-            high: edge.1,
-            x:    behind,
-        }));
-        let near_front = self.push(Node::OneMinus(past_front));
-        let opening = self.push(Node::OneMinus(Port::Input(SLAB_OPEN)));
-        let opening = self.push(Node::Step(StepOp {
-            edge: cf(1.0e-3),
-            x:    opening,
-        }));
-        let sweep = self.push(Node::Mul(binary(near_front, opening)));
-        let painted = self.push(Node::Lerp(LerpOp {
-            a: painted,
-            b: colour(style::FROST_EDGE),
-            t: sweep,
-        }));
-        let covered = self.push(Node::Mul(binary(covered, unrolled)));
-        (painted, covered)
-    }
-}
-
 /// Submits [`slab`] to `prim`.
 pub fn set_slab(doc: &Document, prim: (u64, u64)) -> anyhow::Result<()> {
     set_graph(doc, prim, Layer::Local, Some(&slab()))?;
-    Ok(())
-}
-
-/// How far `prim`'s slab has unrolled; see [`SLAB_OPEN`].
-pub fn set_slab_open(doc: &Document, prim: (u64, u64), open: f32) -> anyhow::Result<()> {
-    set_overrides(
-        doc,
-        prim,
-        Layer::Local,
-        &[(SLAB_OPEN, GraphValue::Float(open.clamp(0.0, 1.0)))],
-    )?;
     Ok(())
 }
 
@@ -304,10 +239,9 @@ mod tests {
         (to - from).mul_add(by, from)
     }
 
-    fn shade_at(open: f32, scene: f32, uv: [f32; 2]) -> Shaded {
+    fn shade_at(scene: f32, uv: [f32; 2]) -> Shaded {
         let graph = slab();
-        let mut values = graph.public_inputs.clone();
-        values[usize::from(SLAB_OPEN)] = GraphValue::Float(open);
+        let values = graph.public_inputs.clone();
         let context = Context {
             scale: [WIDE, TALL, 1.0],
             scene: [scene, scene, scene, 1.0],
@@ -318,7 +252,7 @@ mod tests {
 
     /// The slab at a point `metres` in from the left edge, mid height.
     fn from_left(metres: f32, scene: f32) -> Shaded {
-        shade_at(1.0, scene, [metres / WIDE, 0.5])
+        shade_at(scene, [metres / WIDE, 0.5])
     }
 
     #[test]
@@ -348,7 +282,7 @@ mod tests {
     #[test]
     fn the_interior_is_the_room_under_the_frost_ground_and_fill() {
         for scene in [0.0, 1.0] {
-            let seen = shade_at(1.0, scene, [0.5, 0.5]);
+            let seen = shade_at(scene, [0.5, 0.5]);
             assert!(!seen.discarded());
             let ground = lift(scene, style::FROST_GROUND.r, style::FROST_GROUND_ALPHA);
             let expected = lift(ground, style::FROST_FILL.r, style::FROST_FILL_ALPHA);
@@ -363,7 +297,7 @@ mod tests {
     #[test]
     fn the_corners_are_round_at_the_token_radius() {
         let radius = style::FROST_RADIUS * TALL;
-        let near = |x: f32, y: f32| shade_at(1.0, 0.0, [x / WIDE, y / TALL]).discarded();
+        let near = |x: f32, y: f32| shade_at(0.0, [x / WIDE, y / TALL]).discarded();
         assert!(near(0.0005, 0.0005), "a hair from both borders is cut away");
         assert!(!near(radius, radius), "the circle's centre is inside");
         // On the arc, 45 degrees out from the centre.
@@ -385,25 +319,5 @@ mod tests {
             (interior - from_left(0.1, 0.0).color.c[0]).abs() < 1.0e-6,
             "and the interior is flat"
         );
-    }
-
-    #[test]
-    fn the_slab_unrolls_from_its_top_edge() {
-        let at = |open: f32, y: f32| shade_at(open, 0.0, [0.5, y]).discarded();
-        assert!(at(0.0, 0.5), "closed, nothing shows");
-        assert!(!at(1.0, 0.5) && !at(1.0, 0.1), "open, all of it shows");
-        assert!(!at(0.5, 0.9), "half open, the top half shows");
-        assert!(at(0.5, 0.1), "and the bottom half not yet");
-    }
-
-    #[test]
-    fn a_line_runs_along_the_front_only_while_it_moves() {
-        let edge = style::FROST_EDGE_WIDTH * TALL;
-        // Half open: the front is at mid height.
-        let front = shade_at(0.5, 0.0, [0.5, 0.5 + edge / TALL / 4.0]).color.c[0];
-        let well_behind = shade_at(0.5, 0.0, [0.5, 0.9]).color.c[0];
-        assert!(front > well_behind, "the front is bright, {front}");
-        let settled = shade_at(1.0, 0.0, [0.5, 0.5]).color.c[0];
-        assert!((settled - well_behind).abs() < 1.0e-6, "open, no line");
     }
 }

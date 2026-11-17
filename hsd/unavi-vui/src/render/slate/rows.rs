@@ -16,10 +16,7 @@ use super::{
 };
 use crate::{
     palette::Palette,
-    render::{
-        draw,
-        pop,
-    },
+    render::draw,
     slate::{
         self,
         DOT,
@@ -46,13 +43,12 @@ const RULE_INK: f32 = 0.35;
 
 impl Slate {
     /// Writes each row's label and value into `batch`, and hides the rest.
-    /// A row shows as far as the pane has unrolled past it, `reached` metres
-    /// below the top edge.
+    /// Type is drawn at `shown` opacity, which follows the pane in and out.
     pub(super) fn draw_rows<'a>(
         &self,
         mut batch: crate::Batch<'a>,
         palette: &Palette,
-        reached: f32,
+        shown: f32,
     ) -> crate::Batch<'a> {
         let mut tabs_drawn = false;
         for (index, ((label, value), extras)) in self
@@ -70,7 +66,6 @@ impl Slate {
                 continue;
             };
             let y = slate::row_centre(index);
-            let shown = pop::line(reached, -y - ROW_HEIGHT / 2.0, ROW_HEIGHT);
             if let Kind::Tabs { labels, selected } = &row.kind {
                 batch = batch
                     .set(*label, Property::Transform(draw::hidden()))

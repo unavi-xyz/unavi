@@ -767,7 +767,8 @@ mod tests {
     }
 
     /// Ink reads at 4.5:1 on the darkest slab. The quieter two sit lower,
-    /// because a 56% white ground over black is itself only mid grey.
+    /// because the frost's part-white ground over black is itself only a
+    /// light grey.
     #[test]
     fn every_ink_reads_on_the_slab_over_any_backdrop() {
         let palette = crate::palette::Palette::DEFAULT;

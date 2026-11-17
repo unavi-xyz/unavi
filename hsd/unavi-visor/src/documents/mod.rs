@@ -32,6 +32,7 @@ use self::{
         Catalog,
         Entry,
     },
+    find::Kind,
     geometry::{
         Aabb,
         brackets as bracket_bars,
@@ -205,14 +206,18 @@ impl Documents {
         nearest(&candidates, RANGE, MAX_DRAWN)
     }
 
-    /// The smallest document the viewer's gaze enters from outside. A
-    /// document the viewer stands in is never attended, so a space is only
-    /// attended from outside it.
+    /// The smallest document the viewer's gaze enters from outside. The space
+    /// the viewer is in is never attended: its box is often flat ground under
+    /// the eye, which a gaze enters from above, and its placard would stand
+    /// over the space's middle, not over anything looked at.
     fn attend(&self, eye: &Transform, near: &[usize]) -> Option<DocumentId> {
         let gaze = eye.forward();
         let mut best: Option<(f32, DocumentId)> = None;
         for &index in near {
             let entry = &self.catalog.entries()[index];
+            if entry.kind == Kind::Space {
+                continue;
+            }
             let Some((aabb, root)) = self.world_box(entry) else {
                 continue;
             };
@@ -254,7 +259,6 @@ impl Documents {
             name: name.as_deref(),
             author_name: author_name.as_deref(),
             author: entry.author.as_deref(),
-            kind: entry.kind,
         });
         let color = entry.color;
         self.label.say(text, color);

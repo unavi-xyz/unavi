@@ -294,6 +294,11 @@ impl Mote {
         self.0.borrow_mut().arrange = arrange;
     }
 
+    #[must_use]
+    pub fn tint(&self) -> Option<Color> {
+        self.0.borrow().tint
+    }
+
     pub fn set_tint(&self, tint: Option<Color>) {
         self.0.borrow_mut().tint = tint;
     }

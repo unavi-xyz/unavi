@@ -3,12 +3,14 @@
 use std::cell::Cell;
 
 use wired_guest::math::{
+    Color,
     Quat,
     Transform,
     Vec3,
 };
 
 use crate::{
+    attention::Attention,
     cast::{
         self,
         State,
@@ -63,6 +65,8 @@ pub struct Site {
     progress: Cell<Option<f32>>,
     /// How much of the ring an abandoned cast has left to unwind.
     recoil:   Cell<Option<f32>>,
+    /// The colour the ring fills in, kept so an unwinding ring keeps it.
+    color:    Cell<Color>,
     speed:    f32,
     palette:  Palette,
 }
@@ -87,6 +91,7 @@ impl Site {
             prim,
             progress: Cell::new(None),
             recoil: Cell::new(None),
+            color: Cell::new(palette.accent),
             speed: tuning.cast_recoil,
             palette,
         })
@@ -102,8 +107,16 @@ impl Site {
     }
 
     /// `at` is the mote being cast on, in the surface's own coordinates, and
-    /// `radius` is its body's.
-    pub fn apply(&self, doc: &Document, at: Vec3, radius: f32, state: State) -> anyhow::Result<()> {
+    /// `radius` is its body's. A mote with a hue of its own fills its ring in
+    /// that hue, lit as it is when engaged.
+    pub fn apply(
+        &self,
+        doc: &Document,
+        at: Vec3,
+        radius: f32,
+        state: State,
+        tint: Option<Color>,
+    ) -> anyhow::Result<()> {
         match state {
             // The ring stays where it stood and unwinds from there, so what
             // draws is the fill running backwards.
@@ -117,6 +130,7 @@ impl Site {
             State::Committed => return self.hide(doc),
             State::Filling(_) => self.recoil.set(None),
         }
+        self.color.set(ring_color(&self.palette, tint));
 
         doc.local()
             .set(self.prim, Property::Transform(ring_pose(at, radius)))
@@ -143,14 +157,12 @@ impl Site {
             return Ok(());
         }
         self.progress.set(Some(progress));
-        // The accent is spent here rather than on hover: a cast is rare, and
-        // it is the one thing that must not be missed.
         set_overrides(
             doc,
             self.prim,
             Layer::Local,
             &[
-                (graphs::RING_TINT, GraphValue::Color(self.palette.accent)),
+                (graphs::RING_TINT, GraphValue::Color(self.color.get())),
                 (graphs::RING_PROGRESS, GraphValue::Float(progress)),
             ],
         )?;
@@ -158,9 +170,28 @@ impl Site {
     }
 }
 
+/// The mote's own hue, lit as engaged, or the accent for a mote with none.
+/// The accent is spent here rather than on hover: a cast is rare, and it is
+/// the one thing that must not be missed.
+fn ring_color(palette: &Palette, tint: Option<Color>) -> Color {
+    tint.map_or(palette.accent, |tint| {
+        palette.tinted(tint, Attention::Engaged)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_tinted_mote_fills_its_ring_in_its_own_hue() {
+        let palette = Palette::DEFAULT;
+        let red = Color::rgb(0.9, 0.1, 0.1);
+        let ring = ring_color(&palette, Some(red));
+        assert_ne!(ring, palette.accent);
+        assert!(ring.r > ring.b, "stays red, {ring:?}");
+        assert_eq!(ring_color(&palette, None), palette.accent);
+    }
 
     /// The radii the ring is actually drawn at: its mesh through its pose.
     fn drawn_radii(radius: f32) -> (f32, f32) {

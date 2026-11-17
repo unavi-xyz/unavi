@@ -7,6 +7,7 @@ use bevy::{
         Hdr,
     },
     light::ShadowFilteringMethod,
+    pbr::ScreenSpaceTransmission,
     post_process::bloom::Bloom,
     prelude::*,
 };
@@ -60,6 +61,9 @@ pub fn apply_camera_effects(
         Hdr,
         Bloom::OLD_SCHOOL,
         Exposure::SUNLIGHT,
+        // Without it every graph that reads the scene behind it, frost
+        // panes and mote glass, reads black.
+        ScreenSpaceTransmission::default(),
         ShadowFilteringMethod::Gaussian,
         DistanceFog {
             color: sky.palette().fog().into(),

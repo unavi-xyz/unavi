@@ -547,7 +547,7 @@ pub fn drive_cast(
         || (Vec3::ZERO, surface.tuning().mote_radius),
         |view| (view.position, view.radius),
     );
-    site.apply(doc, at, radius, state)?;
+    site.apply(doc, at, radius, state, active.mote.tint())?;
 
     if !state.is_settled() {
         return Ok(());

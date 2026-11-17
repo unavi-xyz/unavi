@@ -9,7 +9,6 @@ use wired_guest::{
     },
 };
 
-use super::find::Kind;
 use crate::unavi::vui::api::Placard;
 
 /// A placard's size as a multiple of the size it is laid out at.
@@ -36,7 +35,6 @@ pub struct Facts<'a> {
     /// The name its author gives themselves.
     pub author_name: Option<&'a str>,
     pub author:      Option<&'a str>,
-    pub kind:        Kind,
 }
 
 #[must_use]
@@ -49,8 +47,7 @@ pub fn short_did(did: &str) -> String {
     format!("…{tail}")
 }
 
-/// The document's name, else its short id; and who authors it and what it is
-/// to the space.
+/// The document's name, else its short id; and who authors it.
 #[must_use]
 pub fn describe(facts: &Facts) -> Text {
     let author = facts
@@ -58,13 +55,9 @@ pub fn describe(facts: &Facts) -> Text {
         .map(str::to_owned)
         .or_else(|| facts.author.map(short_did))
         .unwrap_or_else(|| "no author".to_owned());
-    let kind = match facts.kind {
-        Kind::Space => "this space",
-        Kind::Referenced => "referenced",
-    };
     Text {
         title:  facts.name.map_or_else(|| short_id(facts.id), str::to_owned),
-        kicker: format!("{author} · {kind}"),
+        kicker: author,
     }
 }
 
@@ -157,7 +150,6 @@ mod tests {
             name,
             author_name: None,
             author,
-            kind: Kind::Referenced,
         }
     }
 
@@ -168,23 +160,17 @@ mod tests {
     }
 
     #[test]
-    fn the_kicker_names_author_and_kind() {
+    fn the_kicker_names_the_author() {
         let text = describe(&facts(None, Some("did:key:z6Mkabcdefgh123456")));
-        assert_eq!(text.kicker, "…123456 · referenced");
-        assert_eq!(
-            describe(&facts(None, None)).kicker,
-            "no author · referenced"
-        );
-        let mut space = facts(None, None);
-        space.kind = Kind::Space;
-        assert!(describe(&space).kicker.ends_with("this space"));
+        assert_eq!(text.kicker, "…123456");
+        assert_eq!(describe(&facts(None, None)).kicker, "no author");
     }
 
     #[test]
     fn an_authors_own_name_stands_in_for_their_did() {
         let mut named = facts(None, Some("did:key:z6Mkabcdefgh123456"));
         named.author_name = Some("Mira");
-        assert_eq!(describe(&named).kicker, "Mira · referenced");
+        assert_eq!(describe(&named).kicker, "Mira");
     }
 
     #[test]

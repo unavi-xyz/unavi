@@ -56,6 +56,7 @@ use crate::{
             remote_agents::RemoteAgents,
             sites::Sites,
             transforms::TransformSnapshots,
+            viewport::Viewport,
         },
         storage::{
             PendingEntries,
@@ -95,6 +96,7 @@ pub struct SharedState {
     pub link_intents:    LinkIntents,
     pub claims:          Claims,
     pub sites:           Sites,
+    pub viewport:        Viewport,
 }
 
 /// Reads the [`SharedState`] resources.
@@ -112,6 +114,7 @@ pub struct SharedResources<'w> {
     link_intents:    Res<'w, LinkIntents>,
     claims:          Res<'w, Claims>,
     sites:           Res<'w, Sites>,
+    viewport:        Res<'w, Viewport>,
 }
 
 impl SharedResources<'_> {
@@ -130,6 +133,7 @@ impl SharedResources<'_> {
             link_intents:    self.link_intents.clone(),
             claims:          self.claims.clone(),
             sites:           self.sites.clone(),
+            viewport:        self.viewport.clone(),
         }
     }
 }
@@ -329,6 +333,7 @@ impl Plugin for HostPlugin {
             .init_resource::<RemoteAgents>()
             .init_resource::<Sites>()
             .init_resource::<TransformSnapshots>()
+            .init_resource::<Viewport>()
             .add_observer(input::bridge::bridge_press)
             .add_observer(input::bridge::bridge_enter)
             .add_observer(input::bridge::bridge_leave)
@@ -343,6 +348,7 @@ impl Plugin for HostPlugin {
                 Update,
                 (
                     shared_state::agents::track_local_agent,
+                    shared_state::viewport::track_viewport,
                     shared_state::current_space::track_current_space,
                     shared_state::pointers::snapshot_pointers,
                     input::bridge::bridge_buttons,

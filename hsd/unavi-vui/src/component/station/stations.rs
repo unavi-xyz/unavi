@@ -4,6 +4,7 @@ use wired_guest::math::Transform;
 
 use super::{
     Station,
+    dock::Screen,
     tiling::Tiling,
 };
 use crate::{
@@ -72,10 +73,30 @@ impl Stations {
         }
     }
 
+    /// Lays it against the local screen, which a headset has none of.
+    pub fn dock(&mut self, id: StationId) {
+        if let Some(station) = self.get_mut(id) {
+            station.dock();
+        }
+    }
+
+    /// Stands it on the arc again.
+    pub fn stand(&mut self, id: StationId) {
+        if let Some(station) = self.get_mut(id) {
+            station.stand();
+        }
+    }
+
     /// Reads what happened to each station's panes and lays them out again.
-    pub fn step(&mut self, panes: &mut Panes, eye: &Transform, tuning: &Tuning) {
+    pub fn step(
+        &mut self,
+        panes: &mut Panes,
+        eye: &Transform,
+        tuning: &Tuning,
+        screen: Option<Screen>,
+    ) {
         for station in self.slots.iter_mut().flatten() {
-            station.step(panes, eye, tuning);
+            station.step(panes, eye, tuning, screen);
         }
     }
 

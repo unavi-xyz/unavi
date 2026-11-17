@@ -89,4 +89,25 @@ interface local {
   /// `wired:scene/document.place`, which detaches it again. `offset` is
   /// checked as `place` checks it.
   attach: func(document: borrow<document>, to: attachment, offset: transform) -> result<_, error>;
+
+  /// The local user's screen: how many pixels it is across and down, and the
+  /// vertical field of view it is drawn with. The screen's size is what
+  /// decides whether a pane laid against its edges keeps its text a whole
+  /// number of pixels, which is why a script that docks is given it.
+  ///
+  /// `none` in a headset, where there is no screen to lay anything against.
+  /// Fails with `forbidden` for a document the local user does not author:
+  /// what a script draws on the glass is that author's choice, not a
+  /// visitor's.
+  viewport: func() -> result<option<screen>, error>;
+
+  /// A screen a script can lay panes against.
+  record screen {
+    /// Pixels across.
+    width:  u32,
+    /// Pixels down.
+    height: u32,
+    /// Vertical field of view, in radians.
+    fov:    f32,
+  }
 }

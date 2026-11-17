@@ -13,7 +13,10 @@ use crate::{
             Anchor,
             place,
         },
-        shared_state::agents::Tracked,
+        shared_state::{
+            agents::Tracked,
+            viewport::Screen,
+        },
     },
 };
 
@@ -39,6 +42,17 @@ pub fn camera_transform(host: &ScriptHost) -> Result<Transform, ScriptError> {
     host.require(HostApi::LocalAgent)?;
     let camera = host.shared.agents.camera().ok_or(ScriptError::NotReady)?;
     script_transform(host, camera)
+}
+
+/// `agent.viewport`: the screen the local user is looking at, or `None` in a
+/// headset. A document the local user does not author may not ask: what a
+/// script draws on the glass is its author's choice.
+pub fn viewport(host: &ScriptHost) -> Result<Option<Screen>, ScriptError> {
+    host.require(HostApi::LocalAgent)?;
+    if !host.view.is_mine(host.doc) {
+        return Err(ScriptError::Forbidden);
+    }
+    Ok(host.shared.viewport.get())
 }
 
 /// `None` when the avatar lacks `bone`.

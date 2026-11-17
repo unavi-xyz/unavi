@@ -19,7 +19,11 @@ use crate::{
         pane::panes::Panes,
         panel::Panel,
         placard::Content,
-        station::stations::Stations,
+        station::{
+            dock,
+            stations::Stations,
+            tiling::Cells,
+        },
         tree::Mote,
     },
     machinery::{
@@ -37,6 +41,17 @@ use crate::{
 mod pane;
 mod place;
 mod station;
+
+/// The local screen, where a station may lay its panes against it.
+fn screen() -> Option<dock::Screen> {
+    crate::viewport().map(|screen| dock::Screen {
+        pixels: Cells {
+            w: screen.width,
+            h: screen.height,
+        },
+        fov: screen.fov,
+    })
+}
 
 /// Events a panel holds for a consumer that has not asked. Past this the
 /// oldest go: an unread queue is a script that stopped listening, not a log.
@@ -247,7 +262,8 @@ impl Vui {
         }
         let gaze = Gaze::read(&eye);
         self.panes.fixed_update(&self.doc, &self.tuning);
-        self.stations.step(&mut self.panes, &eye, &self.tuning);
+        self.stations
+            .step(&mut self.panes, &eye, &self.tuning, screen());
 
         for index in 0..self.slots.len() {
             let Some(slot) = &self.slots[index] else {

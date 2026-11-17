@@ -143,6 +143,14 @@ macro_rules! generate {
             wired::agent::local::camera_transform().ok()
         }
 
+        /// The screen the local user is at: its size in pixels and the field of
+        /// view it is drawn with, or `None` in a headset or for a document the
+        /// local user does not author.
+        #[must_use]
+        pub fn viewport() -> ::core::option::Option<wired::agent::local::Screen> {
+            wired::agent::local::viewport().ok().flatten()
+        }
+
         /// Where pointer `kind` is this frame, or `None` while it is not
         /// tracked.
         #[must_use]

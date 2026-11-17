@@ -22,6 +22,14 @@ impl Vui {
         self.stations.dismiss(id);
     }
 
+    pub fn station_dock(&mut self, id: StationId) {
+        self.stations.dock(id);
+    }
+
+    pub fn station_stand(&mut self, id: StationId) {
+        self.stations.stand(id);
+    }
+
     #[must_use]
     pub fn station_shown(&self, id: StationId) -> bool {
         self.stations.is_shown(id)

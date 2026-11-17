@@ -11,6 +11,7 @@ use super::{
             Attachment,
             Host,
             HumanoidBone,
+            Screen,
         },
         core::math::Transform,
     },
@@ -30,6 +31,14 @@ impl Host for HostCtx {
 
     fn bone_transform(&mut self, bone: HumanoidBone) -> Result<Option<Transform>, ScriptError> {
         Ok(agent::bone_transform(&self.host, bone_name(bone))?.map(convert::wit_transform))
+    }
+
+    fn viewport(&mut self) -> Result<Option<Screen>, ScriptError> {
+        Ok(agent::viewport(&self.host)?.map(|screen| Screen {
+            width:  screen.width,
+            height: screen.height,
+            fov:    screen.fov,
+        }))
     }
 
     async fn attach(

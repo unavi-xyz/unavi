@@ -13,7 +13,10 @@ use super::{
 };
 use crate::{
     error::ScriptError,
-    host::agent,
+    host::{
+        agent,
+        shared_state::viewport::Screen,
+    },
 };
 
 /// The two lists are the same VRM set, matched by name except for the thumb,
@@ -81,8 +84,7 @@ fn bone_name(value: &str) -> Result<HumanBoneName, ScriptError> {
 
 #[wasm_bindgen]
 impl Runtime {
-    #[wasm_bindgen(js_name = "cameraTransform")]
-    pub fn camera_transform(&self) -> Result<JsValue, JsValue> {
+    #[wasm_bindgen(js_name = "cameraTransform")]    pub fn camera_transform(&self) -> Result<JsValue, JsValue> {
         agent::camera_transform(&self.host.borrow())
             .map(convert::wit_transform)
             .map_err(convert::raise)
@@ -93,6 +95,14 @@ impl Runtime {
         let bone = bone_name(bone).map_err(convert::raise)?;
         agent::bone_transform(&self.host.borrow(), bone)
             .map(|t| t.map_or(JsValue::UNDEFINED, convert::wit_transform))
+            .map_err(convert::raise)
+    }
+
+    /// The screen the local user is looking at, or `undefined` in a headset.
+    #[wasm_bindgen(js_name = "viewport")]
+    pub fn viewport(&self) -> Result<JsValue, JsValue> {
+        agent::viewport(&self.host.borrow())
+            .map(|screen| screen.map_or(JsValue::UNDEFINED, wit_screen))
             .map_err(convert::raise)
     }
 
@@ -130,4 +140,15 @@ impl Runtime {
                 .map_err(convert::raise)
         })
     }
+}
+
+fn wit_screen(screen: Screen) -> JsValue {
+    let object = js_sys::Object::new();
+    let set = |key: &str, value: &JsValue| {
+        js_sys::Reflect::set(&object, &JsValue::from_str(key), value).ok();
+    };
+    set("width", &JsValue::from(screen.width));
+    set("height", &JsValue::from(screen.height));
+    set("fov", &JsValue::from_f64(f64::from(screen.fov)));
+    object.into()
 }

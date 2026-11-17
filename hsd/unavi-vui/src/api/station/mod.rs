@@ -45,6 +45,20 @@ impl GuestStation for StationRes {
         })
     }
 
+    fn dock(&self) -> Result<(), Error> {
+        drive(|vui| {
+            vui.station_dock(self.0);
+            Ok(())
+        })
+    }
+
+    fn stand(&self) -> Result<(), Error> {
+        drive(|vui| {
+            vui.station_stand(self.0);
+            Ok(())
+        })
+    }
+
     fn shown(&self) -> bool {
         VUI.with_borrow(|vui| {
             vui.as_ref()

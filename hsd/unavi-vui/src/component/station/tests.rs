@@ -10,9 +10,11 @@ use wired_guest::math::{
 
 use super::{
     Station,
+    dock::Screen,
     stage::Stage,
     tiling::{
         Axis,
+        Cells,
         Node,
         Part,
         Tiling,
@@ -95,7 +97,7 @@ fn row() -> Station<u32> {
 }
 
 fn step(station: &mut Station<u32>, stage: &mut Fake) {
-    station.step(stage, &eye(), &Tuning::DEFAULT);
+    station.step(stage, &eye(), &Tuning::DEFAULT, None);
 }
 
 fn grip() -> PointerKind {
@@ -140,6 +142,7 @@ fn a_dismissed_station_hides_its_panes_and_a_summoned_one_is_planted_afresh() {
         &mut stage,
         &Transform::from_translation(Vec3::new(-5.0, 1.6, 0.0)),
         &Tuning::DEFAULT,
+        None,
     );
     assert!((stage.hung[&2].translation.x - first.translation.x).abs() > 1.0);
     assert!(stage.shown[&2]);
@@ -280,4 +283,50 @@ fn clearing_a_station_takes_its_panes_off_their_mounts_but_not_those_afloat() {
     station.clear(&mut stage);
 
     assert_eq!(stage.unmapped, HashSet::from([1, 3]));
+}
+
+#[test]
+fn docking_lays_the_panes_against_the_screens_edges_and_they_follow_the_eye() {
+    let screen = Screen {
+        pixels: Cells {
+            w: 2560,
+            h: 1440,
+        },
+        fov:    1.0,
+    };
+    let mut station = row();
+    let mut stage = Fake::default();
+    station.dock();
+    station.step(&mut stage, &eye(), &Tuning::DEFAULT, Some(screen));
+
+    let eye = eye().translation;
+    for id in 1..=3 {
+        assert!(stage.shown[&id]);
+        let at = stage.hung[&id].translation;
+        assert!(at.z < eye.z, "pane {id} is in front of the eye");
+        assert!((at.y - eye.y).abs() < 0.2, "pane {id} is level with the eye");
+    }
+    let (left, right) = (
+        stage.hung[&1].translation.x,
+        stage.hung[&3].translation.x,
+    );
+    assert!(left < eye.x && right > eye.x, "one either side of the middle");
+
+    // The station follows the eye rather than staying where it was summoned.
+    let elsewhere = Transform::from_translation(Vec3::new(-4.0, 1.6, -2.0));
+    station.step(&mut stage, &elsewhere, &Tuning::DEFAULT, Some(screen));
+    let at = stage.hung[&2].translation;
+    assert!((at.x - elsewhere.translation.x).abs() < 0.2);
+    assert!((at.z - (elsewhere.translation.z - Tuning::DEFAULT.pane_reading)).abs() < 0.3);
+}
+
+#[test]
+fn a_docked_station_stands_on_the_arc_in_a_headset() {
+    let mut station = row();
+    let mut stage = Fake::default();
+    station.dock();
+    station.step(&mut stage, &eye(), &Tuning::DEFAULT, None);
+    let away = stage.hung[&1].translation - eye().translation;
+    let reach = Tuning::DEFAULT.station_reach;
+    assert!((away.x.hypot(away.z) - reach).abs() < 1.0e-3);
 }

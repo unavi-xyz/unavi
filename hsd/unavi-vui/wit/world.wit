@@ -635,6 +635,13 @@ interface api {
     summon: func() -> result<_, error>;
     /// Takes every pane down, including any pulled out.
     dismiss: func() -> result<_, error>;
+    /// Lays its panes against the edges of the local screen: the left, the
+    /// right and the bottom of it, leaving the middle to the world. A headset
+    /// has no screen, so there it stands on the arc as before. A pane is a
+    /// whole number of pixels across, so one cell of a rule stays a whole dot.
+    dock: func() -> result<_, error>;
+    /// Stands its panes on the arc again, around where it was summoned.
+    stand: func() -> result<_, error>;
     /// Whether it is up.
     shown: func() -> bool;
   }

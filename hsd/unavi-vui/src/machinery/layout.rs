@@ -1,7 +1,10 @@
 //! Slot geometry for a surface's own plane: where each slot sits, and which
 //! one a pointer falls in.
 
-use std::f32::consts::TAU;
+use std::{
+    cmp::Ordering,
+    f32::consts::TAU,
+};
 
 use wired_guest::math::Vec2;
 
@@ -317,12 +320,10 @@ impl Layout {
             _ => return Some(cell),
         };
         let centre = centre_cell(columns, rows);
-        Some(if cell == centre {
-            0
-        } else if cell < centre {
-            cell + 1
-        } else {
-            cell
+        Some(match cell.cmp(&centre) {
+            Ordering::Equal => 0,
+            Ordering::Less => cell + 1,
+            Ordering::Greater => cell,
         })
     }
 

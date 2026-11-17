@@ -85,7 +85,7 @@ impl Control {
     pub fn width(&self, room: f32) -> f32 {
         let natural = match self {
             Self::Value(text) | Self::Link(text) => text::width(text),
-            Self::Action { label, .. } => text::width(label) + 2.0 * PAD,
+            Self::Action { label, .. } => 2.0f32.mul_add(PAD, text::width(label)),
             Self::Toggle(_) => TOGGLE_EM,
             Self::Slider(_) | Self::Meter(_) => room,
             Self::Number { value, .. } => text::width(&format_number(*value)),
@@ -145,7 +145,7 @@ pub fn segments(options: &[SmolStr]) -> Vec<(f32, f32)> {
     options
         .iter()
         .map(|option| {
-            let width = text::width(option) + 2.0 * PAD;
+            let width = 2.0f32.mul_add(PAD, text::width(option));
             let segment = (start, width);
             start += width;
             segment

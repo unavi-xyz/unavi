@@ -139,7 +139,7 @@ impl LaidBlock {
 /// lines as they need.
 #[must_use]
 pub fn lay_out(blocks: &[Block], width: f32, lines: Option<u32>) -> Laid {
-    let content = width - 2.0 * PAD_X;
+    let content = 2.0f32.mul_add(-PAD_X, width);
     let mut rows = blocks
         .iter()
         .map(|block| block_rows(block, content))
@@ -323,7 +323,7 @@ fn table_rows(table: &Table, width: f32) -> (Vec<LaidRow>, usize) {
 }
 
 fn tree_row(node: &Node, width: f32) -> LaidRow {
-    let x = PAD_X + node.depth as f32 * INDENT;
+    let x = (node.depth as f32).mul_add(INDENT, PAD_X);
     let mut items = Vec::new();
     if let Some(open) = node.open {
         items.push(Item::Fold {

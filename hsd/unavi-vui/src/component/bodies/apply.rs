@@ -23,6 +23,7 @@ use super::{
     },
 };
 use crate::{
+    component::placard::PlacardView,
     material::{
         glyph::Glyph,
         graphs,
@@ -123,6 +124,32 @@ fn apply_run(batch: crate::Batch<'_>, prim: (u64, u64), run: Run) -> crate::Batc
 }
 
 impl Bodies {
+    /// Draws the placard over whatever holds attention, at the placard's own
+    /// text size.
+    fn apply_placard(
+        &self,
+        doc: &Document,
+        placard: Option<&PlacardView>,
+        palette: &Palette,
+        delta: f32,
+    ) -> anyhow::Result<()> {
+        if let Some(view) = placard {
+            self.placard_at.set(view.position);
+        }
+        let tuning = Tuning {
+            pane_em: self.tuning.placard_em,
+            ..self.tuning
+        };
+        self.placard.borrow_mut().update(
+            doc,
+            placard.map(|view| (&view.sheet.runs, view.sheet.size)),
+            self.placard_at.get(),
+            palette,
+            &tuning,
+            delta,
+        )
+    }
+
     pub fn apply(&self, doc: &Document, drawing: &Drawing<'_>) -> anyhow::Result<()> {
         let Drawing {
             motes,
@@ -138,21 +165,7 @@ impl Bodies {
             held,
             eye,
         } = *drawing;
-        if let Some(view) = placard {
-            self.placard_at.set(view.position);
-        }
-        let tuning = Tuning {
-            pane_em: self.tuning.placard_em,
-            ..self.tuning
-        };
-        self.placard.borrow_mut().update(
-            doc,
-            placard.map(|view| (&view.sheet.runs, view.sheet.size)),
-            self.placard_at.get(),
-            palette,
-            &tuning,
-            delta,
-        )?;
+        self.apply_placard(doc, placard, palette, delta)?;
 
         self.ensure(doc, views.len())?;
         let slots = self.slots.borrow();

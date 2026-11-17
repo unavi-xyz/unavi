@@ -64,10 +64,10 @@ impl Notice {
             tone: Tone::Body,
             link: None,
         };
-        let (title, spans) = match line {
-            Some(line) => (title, vec![span(line)]),
-            None => ("", vec![span(title)]),
-        };
+        let (title, spans) = line.map_or_else(
+            || ("", vec![span(title)]),
+            |line| (title, vec![span(line)]),
+        );
         let said = self.pane.set_title(title).and_then(|()| {
             self.pane.set_blocks(&[Block {
                 id:     TEXT,

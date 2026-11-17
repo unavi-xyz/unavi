@@ -114,7 +114,7 @@ impl Pane {
     pub fn runs(&self) -> Runs {
         let mut runs = Runs::default();
         let frame = self.frame();
-        let inner = frame.width - 2.0 * PAD_X;
+        let inner = 2.0f32.mul_add(-PAD_X, frame.width);
 
         if !self.title().is_empty() {
             let title = text::truncate(self.title(), inner / TITLE_SCALE);
@@ -160,7 +160,7 @@ impl Pane {
         let offset = self.scroll_of(block.id);
         let top = LINE.mul_add(block.top as f32, frame.body_top);
         let rail = if block.rail { COLUMN } else { 0.0 };
-        let inner = frame.width - 2.0 * PAD_X - rail;
+        let inner = 2.0f32.mul_add(-PAD_X, frame.width) - rail;
 
         for (line, row) in block.visible(offset) {
             let y = LINE.mul_add(line as f32, top);

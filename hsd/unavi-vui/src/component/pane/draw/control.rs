@@ -51,7 +51,7 @@ impl Pane {
 
         let inset = Rect {
             y: LINE.mul_add(INSET, area.y),
-            h: LINE * (1.0 - 2.0 * INSET),
+            h: LINE * 2.0f32.mul_add(-INSET, 1.0),
             ..area
         };
         let baseline = |x: f32| Vec2::new(x, BASELINE + area.y);

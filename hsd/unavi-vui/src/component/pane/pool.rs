@@ -5,7 +5,7 @@
 //! one prim.
 
 /// What to do to the slots this tick.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Plan<T> {
     pub writes: Vec<(usize, T)>,
     /// Slots that held a run and no longer do.

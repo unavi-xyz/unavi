@@ -33,6 +33,7 @@ use crate::{
             },
         },
         view::{
+            Aim,
             BedView,
             Body,
             Frame,
@@ -331,36 +332,7 @@ impl Surface {
             let is_seized = seized == Some(slot);
 
             let attention = self.tracker.state(slot, is_seized);
-
-            // A mote that has not been chosen warms by how near the pointer
-            // has come, topping out at `Near`. A flat lift for every sibling
-            // says only that the surface is in use, and says it as loudly on
-            // the mote furthest from the hand as on the one beside it.
-            let want = match attention {
-                Attention::Attended | Attention::Engaged => attention.heat(),
-                Attention::Idle | Attention::Near => {
-                    let near = approaching
-                        .map_or(0.0, |aim| assist::proximity(world, aim.world, &self.tuning));
-                    Attention::Near.heat() * near
-                }
-            };
-            self.heat[slot] = assist::approach_scalar(
-                self.heat[slot],
-                want,
-                self.tuning.heat_speed,
-                frame.delta,
-                self.tuning.heat_settle,
-            );
-            let heat = self.heat[slot];
-
-            // The field recedes around whatever is chosen, so the attended
-            // mote stands out by everything else giving way rather than by
-            // burning brighter still.
-            let crowd = if attended.is_some_and(|held| held != slot) {
-                self.tuning.sibling_dim
-            } else {
-                1.0
-            };
+            let (heat, crowd) = self.settle(slot, attention, attended, approaching, world, frame);
 
             let target = frame.aim.map_or(Vec3::ZERO, |aim| {
                 frame.anchor.rotation.inverse()
@@ -429,6 +401,55 @@ impl Surface {
             bloom:   self.reveal.form(),
         });
         self.placard = self.build_placard(specs, &layout);
+    }
+
+    /// Settles how lit `slot` is and how far it leans, returning the heat and
+    /// how far the rest of the field gives way to it.
+    fn settle(
+        &mut self,
+        slot: usize,
+        attention: Attention,
+        attended: Option<usize>,
+        approaching: Option<Aim>,
+        world: Vec3,
+        frame: &Frame,
+    ) -> (f32, f32) {
+        // A mote that has not been chosen warms by how near the pointer has
+        // come, topping out at `Near`. A flat lift for every sibling says only
+        // that the surface is in use, and says it as loudly on the mote
+        // furthest from the hand as on the one beside it.
+        let want = match attention {
+            Attention::Attended | Attention::Engaged => attention.heat(),
+            Attention::Idle | Attention::Near => {
+                let near = approaching
+                    .map_or(0.0, |aim| assist::proximity(world, aim.world, &self.tuning));
+                Attention::Near.heat() * near
+            }
+        };
+        self.heat[slot] = assist::approach_scalar(
+            self.heat[slot],
+            want,
+            self.tuning.heat_speed,
+            frame.delta,
+            self.tuning.heat_settle,
+        );
+
+        let target = frame.aim.map_or(Vec3::ZERO, |aim| {
+            frame.anchor.rotation.inverse()
+                * assist::lean(world, aim.world, attention, &self.tuning)
+        });
+        self.lean[slot] =
+            assist::approach(self.lean[slot], target, self.tuning.lean_speed, frame.delta);
+
+        // The field recedes around whatever is chosen, so the attended mote
+        // stands out by everything else giving way rather than by burning
+        // brighter still.
+        let crowd = if attended.is_some_and(|held| held != slot) {
+            self.tuning.sibling_dim
+        } else {
+            1.0
+        };
+        (self.heat[slot], crowd)
     }
 
     /// The slot under `local`: a tab if the pointer is over one, else

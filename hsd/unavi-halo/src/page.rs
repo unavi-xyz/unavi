@@ -27,9 +27,7 @@ impl Rest {
     /// time and who is in the space.
     #[must_use]
     pub fn of(time: Option<String>, presence: &Presence) -> Self {
-        let title = if !presence.in_space {
-            BETWEEN.to_owned()
-        } else {
+        let title = if presence.in_space {
             presence
                 .title
                 .as_deref()
@@ -37,6 +35,8 @@ impl Rest {
                 .filter(|title| !title.is_empty())
                 .unwrap_or(HERE)
                 .to_owned()
+        } else {
+            BETWEEN.to_owned()
         };
         Self {
             title,

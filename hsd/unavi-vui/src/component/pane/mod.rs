@@ -324,7 +324,7 @@ impl Pane {
     }
 }
 
-fn check_text(text: &str) -> Result<(), Refused> {
+const fn check_text(text: &str) -> Result<(), Refused> {
     if text.len() > MAX_TEXT_BYTES {
         return Err(Refused::Text(text.len()));
     }

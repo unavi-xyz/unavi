@@ -42,7 +42,7 @@ impl Pane {
             let whole = Rect {
                 x: PAD_X,
                 y: top,
-                w: frame.width - 2.0 * PAD_X,
+                w: 2.0f32.mul_add(-PAD_X, frame.width),
                 h: height,
             };
             if block.rail {
@@ -125,13 +125,13 @@ fn over(block: &LaidBlock, row: &LaidRow, x: f32, row_top: f32, whole: Rect) -> 
             };
         }
     }
-    match row.select {
-        Some(select) => Hit {
+    row.select.map_or_else(
+        || nothing(block, whole),
+        |select| Hit {
             block: block.id,
             id:    Some(select.id),
             press: Press::Select,
             area:  line(whole.x, whole.w),
         },
-        None => nothing(block, whole),
-    }
+    )
 }

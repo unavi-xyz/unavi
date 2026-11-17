@@ -79,7 +79,7 @@ pub struct Column {
     pub columns: u32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Table {
     pub columns: Vec<Column>,
     pub rows:    Vec<TableRow>,

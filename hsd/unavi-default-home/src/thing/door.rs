@@ -22,10 +22,22 @@ pub fn parts() -> Vec<Part> {
     let jamb = Vec3::new(FRAME_WIDTH, jamb_height, FRAME_DEPTH);
 
     vec![
-        Part::solid(jamb, Vec3::new(-jamb_x, jamb_height / 2.0, 0.0), Paint::White),
-        Part::solid(jamb, Vec3::new(jamb_x, jamb_height / 2.0, 0.0), Paint::White),
         Part::solid(
-            Vec3::new(FRAME_WIDTH.mul_add(2.0, OPENING_WIDTH), FRAME_WIDTH, FRAME_DEPTH),
+            jamb,
+            Vec3::new(-jamb_x, jamb_height / 2.0, 0.0),
+            Paint::White,
+        ),
+        Part::solid(
+            jamb,
+            Vec3::new(jamb_x, jamb_height / 2.0, 0.0),
+            Paint::White,
+        ),
+        Part::solid(
+            Vec3::new(
+                FRAME_WIDTH.mul_add(2.0, OPENING_WIDTH),
+                FRAME_WIDTH,
+                FRAME_DEPTH,
+            ),
             Vec3::new(0.0, OPENING_HEIGHT + FRAME_WIDTH / 2.0, 0.0),
             Paint::White,
         ),

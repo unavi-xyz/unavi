@@ -49,7 +49,11 @@ mod tests {
 
     #[test]
     fn each_step_rises_by_one_rise() {
-        let heights: Vec<f32> = parts().iter().filter(|p| p.solid).map(|p| p.size.y).collect();
+        let heights: Vec<f32> = parts()
+            .iter()
+            .filter(|p| p.solid)
+            .map(|p| p.size.y)
+            .collect();
         for pair in heights.windows(2) {
             assert!((pair[1] - pair[0] - RISE).abs() < 1.0e-5);
         }

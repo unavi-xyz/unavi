@@ -152,8 +152,8 @@ impl Sheet {
                     text: "A pane lays itself out in columns and lines, so nothing on it \
                            waits on the host to be measured."
                         .to_owned(),
-                    tone:  Tone::Muted,
-                    link:  None,
+                    tone: Tone::Muted,
+                    link: None,
                 }]),
             ),
         ];

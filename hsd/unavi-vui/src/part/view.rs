@@ -22,9 +22,27 @@ pub struct Style {
     pub emissive: f32,
 }
 
+/// What shape a slot's body is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Body {
+    /// A glass sphere.
+    Orb,
+    /// A rounded square cap in a bed.
+    Key,
+}
+
+/// The slab a bed of keys stands on, and how far it has arrived.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BedView {
+    /// Half its width and height, in surface-local metres.
+    pub extents: Vec2,
+    pub bloom:   f32,
+}
+
 /// Everything a renderer needs for one slot, in concrete values.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SlotView {
+    pub body:         Body,
     /// Surface-local, lean already applied.
     pub position:     Vec3,
     pub radius:       f32,

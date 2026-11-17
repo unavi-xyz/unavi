@@ -22,7 +22,10 @@ use crate::{
             Arrange,
             PipPlacement,
         },
-        view::Style,
+        view::{
+            Body,
+            Style,
+        },
     },
     tokens::state::Attention,
     wired::scene::properties::Property,
@@ -108,6 +111,9 @@ pub(super) struct SlotPrims {
     pub(super) root_xform:  Shadow<Transform>,
     pub(super) body:        (u64, u64),
     pub(super) body_xform:  Shadow<Transform>,
+    /// The shape the body's mesh was last written as. A slot is made an orb
+    /// and becomes a key when a bed first puts one there.
+    pub(super) body_shape:  Shadow<Body>,
     /// Container children, drawn see-through.
     pub(super) nested:      (u64, u64),
     /// Leaf children, or depth marks, drawn solid.
@@ -139,6 +145,7 @@ impl SlotPrims {
     pub(super) fn forget(&self) {
         self.root_xform.clear();
         self.body_xform.clear();
+        self.body_shape.clear();
         self.marked.set(false);
         self.label_xform.clear();
         self.shell.clear();

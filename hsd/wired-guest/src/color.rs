@@ -70,7 +70,10 @@ pub fn desaturate(color: Color, amount: f32) -> Color {
 #[must_use]
 pub fn contrast(a: Color, b: Color) -> f32 {
     let luminance = |c: Color| 0.0722f32.mul_add(c.b, 0.2126f32.mul_add(c.r, 0.7152 * c.g));
-    let (high, low) = (luminance(a).max(luminance(b)), luminance(a).min(luminance(b)));
+    let (high, low) = (
+        luminance(a).max(luminance(b)),
+        luminance(a).min(luminance(b)),
+    );
     (high + 0.05) / (low + 0.05)
 }
 

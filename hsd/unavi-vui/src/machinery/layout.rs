@@ -40,9 +40,52 @@ pub enum Layout {
         pitch:   Vec2,
         held:    bool,
     },
+    /// A bed of nine keys, three by three. The root level (`cross`) fills
+    /// five of them: slot 0 in the middle, then up, right, down and left.
+    /// A level inside it holds slot 0 in the middle and fills the other
+    /// eight row-major around it, as a held grid does.
+    Bed { pitch: Vec2, cross: bool },
 }
 
+/// Keys along each side of a bed.
+const BED_SIDE: usize = 3;
+
+/// The cell, row-major from the top left, each slot of a bed's root level
+/// takes: the middle, then clockwise from the top.
+const CROSS: [usize; 5] = [4, 1, 5, 7, 3];
+
 impl Layout {
+    #[must_use]
+    pub const fn bed(pitch: Vec2, cross: bool) -> Self {
+        Self::Bed { pitch, cross }
+    }
+
+    /// Whether this is a bed, which stands a page above its keys.
+    #[must_use]
+    pub const fn is_bed(&self) -> bool {
+        matches!(*self, Self::Bed { .. })
+    }
+
+    /// Whether this is the root level of a bed.
+    #[must_use]
+    pub const fn is_cross(&self) -> bool {
+        matches!(*self, Self::Bed { cross: true, .. })
+    }
+
+    /// The cells a grid-like layout is cut into: columns, rows and pitch.
+    const fn cells(&self) -> Option<(usize, usize, Vec2)> {
+        match *self {
+            Self::Grid {
+                columns,
+                rows,
+                pitch,
+                ..
+            } => Some((columns, rows, pitch)),
+            Self::Bed { pitch, .. } => Some((BED_SIDE, BED_SIDE, pitch)),
+            Self::Star { .. } | Self::Centred { .. } => None,
+        }
+    }
+
     #[must_use]
     pub const fn star(points: usize, radius: f32) -> Self {
         Self::Star { points, radius }
@@ -116,6 +159,8 @@ impl Layout {
             Self::Star { points, .. } => points,
             Self::Centred { points, .. } => points + 1,
             Self::Grid { columns, rows, .. } => columns.saturating_mul(rows),
+            Self::Bed { cross: true, .. } => CROSS.len(),
+            Self::Bed { cross: false, .. } => BED_SIDE * BED_SIDE,
         }
     }
 
@@ -134,7 +179,7 @@ impl Layout {
     pub const fn orbit_len(&self) -> usize {
         match *self {
             Self::Star { points, .. } | Self::Centred { points, .. } => points,
-            Self::Grid { .. } => 0,
+            Self::Grid { .. } | Self::Bed { .. } => 0,
         }
     }
 
@@ -147,12 +192,10 @@ impl Layout {
             Self::Star { radius, .. } | Self::Centred { radius, .. } => {
                 Vec2::splat(radius * tuning.reach_frac)
             }
-            Self::Grid {
-                columns,
-                rows,
-                pitch,
-                ..
-            } => Vec2::new(columns as f32 * pitch.x, rows as f32 * pitch.y) * 0.5,
+            Self::Grid { .. } | Self::Bed { .. } => {
+                let (columns, rows, pitch) = self.cells().unwrap_or((0, 0, Vec2::ZERO));
+                Vec2::new(columns as f32 * pitch.x, rows as f32 * pitch.y) * 0.5
+            }
         }
     }
 
@@ -176,7 +219,7 @@ impl Layout {
         let extents = self.extents(tuning);
         let slots = match *self {
             Self::Star { .. } | Self::Centred { .. } => extents.x,
-            Self::Grid { .. } => extents.length(),
+            Self::Grid { .. } | Self::Bed { .. } => extents.length(),
         };
         slots.max(tab.length() + tuning.tab_hit)
     }
@@ -187,7 +230,10 @@ impl Layout {
     pub fn tab(&self, forward: bool, tuning: &Tuning) -> Vec2 {
         let outermost = match *self {
             Self::Star { radius, .. } | Self::Centred { radius, .. } => radius,
-            Self::Grid { columns, pitch, .. } => (columns.saturating_sub(1)) as f32 * 0.5 * pitch.x,
+            Self::Grid { .. } | Self::Bed { .. } => {
+                let (columns, _, pitch) = self.cells().unwrap_or((0, 0, Vec2::ZERO));
+                columns.saturating_sub(1) as f32 * 0.5 * pitch.x
+            }
         };
         let x = outermost + tuning.tab_gap;
         Vec2::new(if forward { x } else { -x }, 0.0)
@@ -204,12 +250,8 @@ impl Layout {
                 0 => Some(Vec2::ZERO),
                 _ => Some(orbit_position(index - 1, points, radius)),
             },
-            Self::Grid {
-                columns,
-                rows,
-                pitch,
-                ..
-            } => {
+            Self::Grid { .. } | Self::Bed { .. } => {
+                let (columns, rows, pitch) = self.cells()?;
                 let (column, row) = (self.cell_of(index) % columns, self.cell_of(index) / columns);
                 Some(Vec2::new(
                     ((columns - 1) as f32).mul_add(-0.5, column as f32) * pitch.x,
@@ -230,22 +272,25 @@ impl Layout {
         }
         match *self {
             Self::Star { .. } | Self::Centred { .. } => self.resolve_radial(local, current, tuning),
-            Self::Grid { .. } => self.resolve_grid(local, current, tuning),
+            Self::Grid { .. } | Self::Bed { .. } => self.resolve_grid(local, current, tuning),
         }
     }
 
-    /// The grid cell, row-major from the top left, a slot occupies. Only a
-    /// held grid reorders: slot 0 takes the centre cell and the slots after
-    /// it fill the others in order.
+    /// The grid cell, row-major from the top left, a slot occupies. A held
+    /// grid and a bed reorder: slot 0 takes the centre cell and the slots
+    /// after it fill the others in order, or on a bed's root level the
+    /// cross.
     const fn cell_of(&self, slot: usize) -> usize {
-        let Self::Grid {
-            columns,
-            rows,
-            held: true,
-            ..
-        } = *self
-        else {
-            return slot;
+        let (columns, rows) = match *self {
+            Self::Bed { cross: true, .. } => return CROSS[slot],
+            Self::Grid {
+                columns,
+                rows,
+                held: true,
+                ..
+            } => (columns, rows),
+            Self::Bed { cross: false, .. } => (BED_SIDE, BED_SIDE),
+            _ => return slot,
         };
         let centre = centre_cell(columns, rows);
         match slot {
@@ -255,37 +300,34 @@ impl Layout {
         }
     }
 
-    /// The inverse of [`Layout::cell_of`].
-    const fn slot_of(&self, cell: usize) -> usize {
-        let Self::Grid {
-            columns,
-            rows,
-            held: true,
-            ..
-        } = *self
-        else {
-            return cell;
+    /// The inverse of [`Layout::cell_of`]: the slot in `cell`, or none for
+    /// a cell the layout leaves empty, as the corners of a cross are.
+    fn slot_of(&self, cell: usize) -> Option<usize> {
+        let (columns, rows) = match *self {
+            Self::Bed { cross: true, .. } => {
+                return CROSS.iter().position(|taken| *taken == cell);
+            }
+            Self::Grid {
+                columns,
+                rows,
+                held: true,
+                ..
+            } => (columns, rows),
+            Self::Bed { cross: false, .. } => (BED_SIDE, BED_SIDE),
+            _ => return Some(cell),
         };
         let centre = centre_cell(columns, rows);
-        if cell == centre {
+        Some(if cell == centre {
             0
         } else if cell < centre {
             cell + 1
         } else {
             cell
-        }
+        })
     }
 
     fn resolve_grid(&self, local: Vec2, current: Option<usize>, tuning: &Tuning) -> Option<usize> {
-        let Self::Grid {
-            columns,
-            rows,
-            pitch,
-            ..
-        } = *self
-        else {
-            return None;
-        };
+        let (columns, rows, pitch) = self.cells()?;
         if pitch.x <= f32::EPSILON || pitch.y <= f32::EPSILON {
             return None;
         }
@@ -299,7 +341,7 @@ impl Layout {
 
         // The attended cell keeps the pointer until it is well inside a
         // neighbour, the same hysteresis a ring gets from `Tuning::stick`.
-        if let Some(index) = current.filter(|index| *index < columns * rows) {
+        if let Some(index) = current.filter(|index| *index < self.len()) {
             let held = cell(self.cell_of(index));
             let stuck = 0.5 + tuning.grid_stick;
             if (unit.x - held.x).abs() <= stuck && (unit.y - held.y).abs() <= stuck {
@@ -312,7 +354,8 @@ impl Layout {
         if column < 0.0 || column >= columns as f32 || row < 0.0 || row >= rows as f32 {
             return None;
         }
-        Some(self.slot_of(row as usize * columns + column as usize))
+        self.slot_of(row as usize * columns + column as usize)
+            .filter(|slot| *slot < self.len())
     }
 
     fn resolve_radial(
@@ -357,7 +400,7 @@ impl Layout {
     const fn radius(&self) -> Option<f32> {
         match *self {
             Self::Star { radius, .. } | Self::Centred { radius, .. } => Some(radius),
-            Self::Grid { .. } => None,
+            Self::Grid { .. } | Self::Bed { .. } => None,
         }
     }
 }
@@ -597,6 +640,77 @@ mod tests {
     fn a_degenerate_grid_pitch_resolves_to_nothing() {
         let layout = Layout::grid(2, 2, Vec2::ZERO);
         assert_eq!(layout.resolve(Vec2::ZERO, None, &tuning()), None);
+    }
+
+    #[test]
+    fn a_bed_root_is_a_cross_with_the_first_slot_in_the_middle() {
+        let bed = Layout::bed(PITCH, true);
+        assert_eq!(bed.len(), 5);
+        assert_eq!(bed.slot(0), Some(Vec2::ZERO));
+        let up = bed.slot(1).expect("up");
+        let right = bed.slot(2).expect("right");
+        let down = bed.slot(3).expect("down");
+        let left = bed.slot(4).expect("left");
+        assert!(close(up.x, 0.0) && close(up.y, PITCH.y));
+        assert!(close(right.x, PITCH.x) && close(right.y, 0.0));
+        assert!(close(down.x, 0.0) && close(down.y, -PITCH.y));
+        assert!(close(left.x, -PITCH.x) && close(left.y, 0.0));
+        assert_eq!(bed.slot(5), None, "the corners are not slots");
+    }
+
+    #[test]
+    fn a_bed_root_answers_for_its_keys_and_not_its_corners() {
+        let bed = Layout::bed(PITCH, true);
+        let tuning = tuning();
+        for (slot, at) in [
+            (0, Vec2::ZERO),
+            (1, Vec2::new(0.0, PITCH.y)),
+            (2, Vec2::new(PITCH.x, 0.0)),
+            (3, Vec2::new(0.0, -PITCH.y)),
+            (4, Vec2::new(-PITCH.x, 0.0)),
+        ] {
+            assert_eq!(bed.resolve(at, None, &tuning), Some(slot), "slot {slot}");
+        }
+        assert_eq!(
+            bed.resolve(Vec2::new(PITCH.x, PITCH.y), None, &tuning),
+            None,
+            "a corner holds no key"
+        );
+    }
+
+    #[test]
+    fn a_bed_level_holds_the_way_back_in_the_middle_and_eight_around_it() {
+        let bed = Layout::bed(PITCH, false);
+        assert_eq!(bed.len(), 9);
+        assert_eq!(bed.slot(0), Some(Vec2::ZERO));
+        let held = Layout::held_grid(3, 3, PITCH);
+        for slot in 0..9 {
+            assert_eq!(bed.slot(slot), held.slot(slot), "slot {slot}");
+            let at = bed.slot(slot).expect("a slot");
+            assert_eq!(bed.resolve(at, None, &tuning()), Some(slot));
+        }
+    }
+
+    #[test]
+    fn a_bed_is_as_big_at_the_root_as_inside_a_level() {
+        let root = Layout::bed(PITCH, true);
+        let level = Layout::bed(PITCH, false);
+        let tuning = tuning();
+        assert_eq!(root.extents(&tuning), level.extents(&tuning));
+        assert!(close(root.extents(&tuning).y, PITCH.y * 1.5));
+        assert_eq!(root.tab(true, &tuning), level.tab(true, &tuning));
+        assert!(root.is_bed() && root.is_cross());
+        assert!(level.is_bed() && !level.is_cross());
+        assert!(!Layout::grid(3, 3, PITCH).is_bed());
+    }
+
+    #[test]
+    fn a_cross_never_resolves_past_its_five_slots() {
+        let bed = Layout::bed(PITCH, true);
+        assert_eq!(
+            bed.resolve(Vec2::new(PITCH.x, 0.0), Some(7), &tuning()),
+            Some(2)
+        );
     }
 
     #[test]

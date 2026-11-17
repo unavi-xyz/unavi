@@ -61,7 +61,10 @@ mod tests {
         let edge = GROUND_SIZE / 2.0 - 2.0;
         for id in ids() {
             let at = placement(id).position;
-            assert!(at.x.abs() <= edge && at.z.abs() <= edge, "{id:?} stands at {at}");
+            assert!(
+                at.x.abs() <= edge && at.z.abs() <= edge,
+                "{id:?} stands at {at}"
+            );
             assert!(at.length() > SPAWN_RADIUS + 1.5, "{id:?} stands at {at}");
             assert!(at.distance(GATE_AT) > 6.0, "{id:?} stands at {at}");
         }

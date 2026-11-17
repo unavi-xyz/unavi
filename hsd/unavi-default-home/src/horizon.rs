@@ -35,34 +35,34 @@ pub fn graph(color: Color, metallic: f32, roughness: f32) -> ShaderGraph {
             b: Port::Node(1),
         }),
         Node::Smoothstep(SmoothstepOp {
-            low: Port::Const(GraphValue::Float(FADE_START)),
+            low:  Port::Const(GraphValue::Float(FADE_START)),
             high: Port::Const(GraphValue::Float(FADE_END)),
-            x: Port::Node(2),
+            x:    Port::Node(2),
         }),
         Node::OneMinus(Port::Node(3)),
     ];
 
     ShaderGraph {
         public_inputs: vec![GraphValue::Color(color)],
-        surface: SurfaceGraph {
+        surface:       SurfaceGraph {
             nodes,
             output: SurfaceOutput::Lit(LitOutput {
-                base_color: Some(Port::Input(COLOR)),
-                emissive: None,
-                metallic: Some(Port::Const(GraphValue::Float(metallic))),
-                roughness: Some(Port::Const(GraphValue::Float(roughness))),
-                normal: None,
-                alpha: Some(Port::Node(4)),
-                alpha_clip_threshold: None,
+                base_color:            Some(Port::Input(COLOR)),
+                emissive:              None,
+                metallic:              Some(Port::Const(GraphValue::Float(metallic))),
+                roughness:             Some(Port::Const(GraphValue::Float(roughness))),
+                normal:                None,
+                alpha:                 Some(Port::Node(4)),
+                alpha_clip_threshold:  None,
                 specular_transmission: None,
-                diffuse_transmission: None,
-                thickness: None,
-                ior: None,
+                diffuse_transmission:  None,
+                thickness:             None,
+                ior:                   None,
             }),
             blend: BlendMode::Blend,
             cull: CullMode::Back,
             cast_shadows: false,
         },
-        displacement: None,
+        displacement:  None,
     }
 }

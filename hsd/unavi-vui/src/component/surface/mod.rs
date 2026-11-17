@@ -10,6 +10,7 @@ use wired_guest::math::{
 use crate::{
     component::placard::{
         Cache,
+        Content,
         PlacardView,
     },
     machinery::{
@@ -23,13 +24,17 @@ use crate::{
         reveal::Reveal,
     },
     part::{
+        mesh,
         spec::{
             MoteSpec,
+            Pips,
             {
                 self,
             },
         },
         view::{
+            BedView,
+            Body,
             Frame,
             PageView,
             SlotView,
@@ -74,6 +79,12 @@ pub struct Surface {
     views:    Vec<SlotView>,
     drawn:    Vec<usize>,
     placard:  Option<PlacardView>,
+    /// What a bed's page keeps saying once the last key pressed is no longer
+    /// attended. A level change clears it.
+    kept:     Option<Content>,
+    /// What the root of a bed says while nothing is attended or kept.
+    resting:  Option<Content>,
+    bed:      Option<BedView>,
     sheets:   Cache,
     page:     PageView,
     /// Leading slots held on every page, and how many slots remain for the
@@ -98,6 +109,9 @@ impl Surface {
             views: Vec::with_capacity(slots),
             drawn: Vec::with_capacity(capacity),
             placard: None,
+            kept: None,
+            resting: None,
+            bed: None,
             sheets: Cache::default(),
             page: PageView::default(),
             pinned: 0,
@@ -131,6 +145,23 @@ impl Surface {
     #[must_use]
     pub const fn centre_bloom(&self) -> f32 {
         self.reveal.centre()
+    }
+
+    /// The slab under a bed of keys, or none for a level that is not one.
+    #[must_use]
+    pub const fn bed(&self) -> Option<BedView> {
+        self.bed
+    }
+
+    /// Makes `spec`'s page stay once it is no longer attended. What was kept
+    /// before is let go.
+    pub fn keep(&mut self, spec: &MoteSpec) {
+        self.kept = Some(Content::describing(spec));
+    }
+
+    /// Sets what a bed's root says while nothing is attended or kept.
+    pub fn set_resting(&mut self, content: Option<Content>) {
+        self.resting = content;
     }
 
     pub fn views(&self) -> &[SlotView] {
@@ -348,21 +379,42 @@ impl Surface {
             };
 
             let presentation = spec::present(spec, heat, &self.tuning);
+            // The middle of a bed is the orb; every other place in it is a
+            // key, one size whatever it holds, which previews nothing: its
+            // glyph says what it is.
+            let key = layout.is_bed() && slot < level && slot != 0;
+            let (body, radius, pips) = if key {
+                (Body::Key, spec::key_half(heat, &self.tuning), Pips::NONE)
+            } else {
+                (Body::Orb, presentation.radius, presentation.pips)
+            };
+            // A key's name rides inside its lower edge, since the gap between
+            // keys has no room for it.
+            let label_offset = if key {
+                Vec3::new(
+                    0.0,
+                    -radius * self.tuning.key_label_drop,
+                    radius.mul_add(mesh::KEY_HALF_DEPTH, self.tuning.label_lift),
+                )
+            } else {
+                Vec3::new(
+                    0.0,
+                    -(radius + self.tuning.label_gap),
+                    self.tuning.label_lift,
+                )
+            };
 
             self.views.push(SlotView {
+                body,
                 position,
-                radius: presentation.radius,
+                radius,
                 style: self.style_at(spec.role, heat, spec.condition, spec.tint, crowd),
                 role: spec.role,
                 attention,
                 heat,
-                pips: presentation.pips,
+                pips,
                 seized: is_seized && dragging,
-                label_offset: Vec3::new(
-                    0.0,
-                    -(presentation.radius + self.tuning.label_gap),
-                    self.tuning.label_lift,
-                ),
+                label_offset,
                 label_size: self.tuning.label_size,
                 bloom: if is_seized && dragging {
                     1.0
@@ -372,7 +424,11 @@ impl Surface {
             });
         }
 
-        self.placard = self.build_placard(specs);
+        self.bed = layout.is_bed().then(|| BedView {
+            extents: layout.extents(&self.tuning),
+            bloom:   self.reveal.form(),
+        });
+        self.placard = self.build_placard(specs, &layout);
     }
 
     /// The slot under `local`: a tab if the pointer is over one, else
@@ -402,4 +458,5 @@ impl Surface {
     }
 }
 
+#[cfg(test)] mod bed_tests;
 #[cfg(test)] mod tests;

@@ -1,6 +1,8 @@
 //! The `orbit` and `grid` resources: thin WIT handles onto a [`SurfaceId`]
 //! each, the surface itself drawn and driven by [`crate::api::vui::Vui`].
 
+use smol_str::SmolStr;
+
 use crate::{
     api::{
         convert,
@@ -15,6 +17,7 @@ use crate::{
         summon,
         vui::SurfaceId,
     },
+    component::placard::Content,
     exports::unavi::vui::api::{
         Event,
         Grid as GridHandle,
@@ -23,6 +26,7 @@ use crate::{
         MoteBorrow,
         Mount,
         Orbit as OrbitHandle,
+        Resting,
     },
     wired::core::error::Error,
 };
@@ -33,6 +37,9 @@ const MAX_ORBIT_CAPACITY: u32 = 64;
 const MAX_GRID_CELLS: u32 = 256;
 /// `orbit.set-readout`: at most 64 bytes.
 const MAX_READOUT_BYTES: usize = 64;
+/// `orbit.set-resting`: at most 256 bytes a title or line, and eight lines.
+const MAX_RESTING_BYTES: usize = 256;
+const MAX_RESTING_LINES: usize = 8;
 
 pub struct Orbit(SurfaceId);
 
@@ -67,6 +74,14 @@ impl GuestOrbit for Orbit {
         })
     }
 
+    fn set_resting(&self, page: Option<Resting>) -> Result<(), Error> {
+        let content = page.map(resting).transpose()?;
+        drive(|vui| {
+            vui.set_resting(self.0, content);
+            Ok(())
+        })
+    }
+
     fn summon(&self) -> Result<(), Error> {
         summon(self.0)
     }
@@ -82,6 +97,35 @@ impl GuestOrbit for Orbit {
     fn held(&self) -> bool {
         held(self.0)
     }
+}
+
+/// A resting page as the content a bed's page draws, or why it was refused.
+fn resting(page: Resting) -> Result<Content, Error> {
+    let over = |what: &str, len: usize| {
+        Error::InvalidArgument(format!(
+            "resting {what} is {len} bytes, over the limit of {MAX_RESTING_BYTES}"
+        ))
+    };
+    if page.title.len() > MAX_RESTING_BYTES {
+        return Err(over("title", page.title.len()));
+    }
+    if page.lines.len() > MAX_RESTING_LINES {
+        return Err(Error::InvalidArgument(format!(
+            "resting page has {} lines, over the limit of {MAX_RESTING_LINES}",
+            page.lines.len()
+        )));
+    }
+    if let Some(line) = page
+        .lines
+        .iter()
+        .find(|line| line.len() > MAX_RESTING_BYTES)
+    {
+        return Err(over("line", line.len()));
+    }
+    Ok(Content::Resting {
+        title: SmolStr::new(page.title),
+        lines: page.lines.into_iter().map(SmolStr::new).collect(),
+    })
 }
 
 /// Frees the surface's prims once nothing holds this handle, rather than

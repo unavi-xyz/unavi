@@ -1,7 +1,7 @@
 //! Nav: the spaces you can go to.
 //!
-//! A level that opens as a grid, so the listing gets pagination, attention and
-//! placards for free.
+//! A level that opens as a bed, so the listing gets pagination, attention and
+//! a page for free.
 //!
 //! The first entry is always "This space", standing for the space the user is
 //! in. The listed spaces follow, minus the one the user is in.
@@ -40,6 +40,7 @@ use crate::{
         },
         shapes::api::Cuboid,
         vui::api::{
+            Arrange,
             Kind,
             Landing,
             Mote,
@@ -103,6 +104,8 @@ struct Space {
     hex:    String,
     /// The listing title as the registry wrote it; may be blank.
     title:  String,
+    /// Who is in it, as its mote says.
+    people: String,
     group:  Mote,
     cast:   Mote,
     beacon: Mote,
@@ -131,7 +134,30 @@ pub struct Nav {
     icon_retry_in: u32,
 }
 
+/// Where the user is, as far as the registries say.
+pub struct Presence {
+    /// Whether the user is in a space at all.
+    pub in_space: bool,
+    /// The space's listing title, when a registry has shown it.
+    pub title:    Option<String>,
+    /// Who is in it, when a registry has shown it.
+    pub people:   Option<String>,
+}
+
 impl Nav {
+    /// Where the user is now.
+    #[must_use]
+    pub fn presence(&self) -> Presence {
+        let listed = self
+            .here
+            .and_then(|ns| self.spaces.iter().find(|space| space.ns == ns));
+        Presence {
+            in_space: self.here.is_some(),
+            title:    listed.map(|space| space.title.clone()),
+            people:   listed.map(|space| space.people.clone()),
+        }
+    }
+
     /// Asks every registry what is live. Called when the branch opens, so a
     /// halo that is never opened costs nothing.
     pub fn refresh(&mut self) {
@@ -404,6 +430,7 @@ fn build(listing: &Listing, icon: Option<(u64, u64)>) -> Option<Space> {
     let group = Mote::new(Kind::Group, &label(listing)?).ok()?;
     let people = people(listing);
     group.set_description(&people).ok()?;
+    group.set_arrange(Arrange::Bed);
     group.set_tint(Some(color));
     // The space wears its beacon's mark: in the grid it reads as the marker
     // it is, and opening it still shows the cast and beacon motes beneath.
@@ -442,6 +469,7 @@ fn build(listing: &Listing, icon: Option<(u64, u64)>) -> Option<Space> {
         ns: listing.ns,
         hex: listing.hex.clone(),
         title: listing.title.clone(),
+        people,
         group,
         cast,
         beacon,

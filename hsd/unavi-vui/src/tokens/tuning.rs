@@ -136,14 +136,20 @@ pub struct Tuning {
     pub land_high: f32,
 
     /// Role-driven body sizes, applied before attention scaling.
-    pub group_scale:  f32,
-    pub action_scale: f32,
-    pub parent_scale: f32,
+    pub group_scale:    f32,
+    pub action_scale:   f32,
+    pub parent_scale:   f32,
     /// A page tab's body, smaller than a mote so it reads as a control for the
     /// level rather than as part of it.
-    pub tab_scale:    f32,
+    pub tab_scale:      f32,
+    /// A key in a bed, as a multiple of `mote_radius`: its half-width. Sized
+    /// so a key grown by attention still clears its neighbour across the
+    /// gap `grid_pitch` leaves.
+    pub key_scale:      f32,
+    /// How far down a key its name hangs, as a fraction of its half-width.
+    pub key_label_drop: f32,
     /// Most interior bodies a group draws; beyond this it reports overflow.
-    pub pip_cap:      usize,
+    pub pip_cap:        usize,
 
     /// Metres in one em of a pane's body type. Every length a pane lays out
     /// is in ems, so this is the whole of its size.
@@ -212,11 +218,13 @@ impl Tuning {
         land_low:  -0.85,
         land_high: 0.10,
 
-        group_scale:  1.25,
-        action_scale: 1.0,
-        parent_scale: 0.8,
-        tab_scale:    0.6,
-        pip_cap:      9,
+        group_scale:    1.25,
+        action_scale:   1.0,
+        parent_scale:   0.8,
+        tab_scale:      0.6,
+        key_scale:      1.25,
+        key_label_drop: 0.52,
+        pip_cap:        9,
 
         pane_em:   em(style::MRAD_BODY, PANE_READING),
         stand_em:  em(style::MRAD_BODY, STAND_READING),
@@ -274,6 +282,18 @@ mod tests {
                  mote's, and floats in front of the whole dial"
             );
         }
+    }
+
+    #[test]
+    fn a_key_grown_by_attention_still_clears_its_neighbour() {
+        let tuning = Tuning::DEFAULT;
+        let grown = tuning.mote_radius * tuning.key_scale * tuning.seize_scale;
+        assert!(
+            grown * 2.0 < tuning.grid_pitch,
+            "a pressed key is {} wide in a bed whose cells are {}",
+            grown * 2.0,
+            tuning.grid_pitch
+        );
     }
 
     #[test]

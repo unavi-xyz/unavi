@@ -29,6 +29,7 @@ use crate::{
             Landing,
             Released,
         },
+        placard,
         site::Site,
         surface::Surface,
         tree::{
@@ -141,6 +142,14 @@ impl Content {
                         capacity,
                         tuning.orbit_radius,
                     )
+                }
+                Arrange::Bed => {
+                    let pitch = Vec2::splat(tuning.grid_pitch);
+                    if tree.is_nested() {
+                        (Layout::bed(pitch, false), 1)
+                    } else {
+                        (Layout::bed(pitch, true), 0)
+                    }
                 }
                 Arrange::Grid => {
                     let pitch = Vec2::splat(tuning.grid_pitch);
@@ -312,6 +321,12 @@ impl Panel {
     /// it already shows changes nothing: a flip only runs for a new face.
     pub fn set_readout(&mut self, text: Option<&str>) {
         self.readout = text.map(|text| Rc::new(font::readout(text)));
+    }
+
+    /// Sets what the page over a bed says at the root while nothing is
+    /// attended or kept, or takes it down.
+    pub fn set_resting(&mut self, content: Option<placard::Content>) {
+        self.surface.set_resting(content);
     }
 
     pub const fn mount(&self) -> Mount {
@@ -495,6 +510,7 @@ impl Panel {
                 readout,
                 readout_bloom: self.surface.centre_bloom(),
                 delta,
+                bed: self.surface.bed(),
                 views: self.surface.views(),
                 specs: &specs,
                 drawn: self.surface.drawn(),
@@ -617,6 +633,14 @@ impl Panel {
                 // next frame draws it; it is no mote to activate or open.
                 if self.surface.turn_tab(slot) {
                     return Ok(());
+                }
+                // A key that holds one thing keeps its page up once the
+                // pointer leaves it. A level opening clears it again.
+                if let Some(mote) = self
+                    .mote_in(slot)
+                    .filter(|mote| !mote.kind().holds_children())
+                {
+                    self.surface.keep(&mote.spec());
                 }
                 // Delivery is the mote's kind, not whether a pose could be
                 // read: an item that cannot be placed is not selected instead.

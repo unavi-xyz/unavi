@@ -15,18 +15,20 @@ use wired_guest::{
 use crate::{
     horizon,
     unavi::shapes::api::Cuboid,
-    wired::scene::{
-        document::{
-            Document,
-            Layer,
+    wired::{
+        scene::{
+            document::{
+                Document,
+                Layer,
+            },
+            properties::{
+                Material,
+                Property,
+                RigidBody,
+            },
         },
-        properties::{
-            Material,
-            Property,
-            RigidBody,
-        },
+        shading::graph::set_graph,
     },
-    wired::shading::graph::set_graph,
 };
 
 pub const GROUND_SIZE: f32 = 30.0;
@@ -109,7 +111,10 @@ mod tests {
         for id in ids() {
             let color = tint(id);
             for (got, ground) in [(color.r, BG.r), (color.g, BG.g), (color.b, BG.b)] {
-                assert!((got - ground).abs() <= LEAN, "{id:?} leans {got} from {ground}");
+                assert!(
+                    (got - ground).abs() <= LEAN,
+                    "{id:?} leans {got} from {ground}"
+                );
             }
         }
     }

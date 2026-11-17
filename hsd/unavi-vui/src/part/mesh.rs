@@ -81,7 +81,7 @@ fn pip_position(index: usize, total: usize, arrange: Arrange, spread: f32) -> [f
             let (sin, cos) = angle.sin_cos();
             [spread * sin, spread * cos, 0.0]
         }
-        Arrange::Grid => {
+        Arrange::Grid | Arrange::Bed => {
             let columns = grid_columns(total);
             let rows = total.div_ceil(columns);
             // The longer side spans the spread, so a grid of any shape sits
@@ -117,7 +117,7 @@ pub fn overflow_marker(radius: f32) -> MeshData {
 pub fn overflow_at(arrange: Arrange, total: usize, spread: f32) -> [f32; 3] {
     match arrange {
         Arrange::Orbit => [0.0; 3],
-        Arrange::Grid => pip_position(total, total, arrange, spread),
+        Arrange::Grid | Arrange::Bed => pip_position(total, total, arrange, spread),
     }
 }
 
@@ -219,6 +219,44 @@ fn bounds(outline: &[[f32; 2]]) -> ([f32; 2], [f32; 2]) {
                 [max[0].max(point[0]), max[1].max(point[1])],
             )
         })
+}
+
+/// How far a key's corners are rounded, as a fraction of its half-width.
+const KEY_CORNER: f32 = 0.3;
+/// Segments in each of a key's rounded corners.
+const KEY_CORNER_SEGMENTS: usize = 6;
+/// Half a key's thickness, as a fraction of its half-width.
+pub const KEY_HALF_DEPTH: f32 = 0.25;
+
+/// A key's cap: a rounded square of half-width one, facing +Z, with its own
+/// thickness behind the face. Scaled by a key's half-width it stands on the
+/// bed it sits in.
+#[must_use]
+pub fn key() -> MeshData {
+    let inner = 1.0 - KEY_CORNER;
+    let mut outline = Vec::with_capacity(4 * (KEY_CORNER_SEGMENTS + 1));
+    // Counter-clockwise from the bottom right corner, each corner an arc
+    // centred on its own inner corner.
+    for (centre, start) in [
+        ([inner, -inner], -0.5 * PI),
+        ([inner, inner], 0.0),
+        ([-inner, inner], 0.5 * PI),
+        ([-inner, -inner], PI),
+    ] {
+        for step in 0..=KEY_CORNER_SEGMENTS {
+            let angle = start + 0.5 * PI * step as f32 / KEY_CORNER_SEGMENTS as f32;
+            let (sin, cos) = angle.sin_cos();
+            outline.push([
+                KEY_CORNER.mul_add(cos, centre[0]),
+                KEY_CORNER.mul_add(sin, centre[1]),
+            ]);
+        }
+    }
+    // A convex outline fills as a fan from its first point.
+    let triangles = (1..outline.len() - 1)
+        .map(|index| [0, index, index + 1])
+        .collect::<Vec<_>>();
+    prism(&outline, &triangles, KEY_HALF_DEPTH)
 }
 
 /// A unit quad facing +Z, its top edge on the origin, descending.
@@ -788,6 +826,54 @@ mod tests {
                 (CAST_RING_INNER - 1.0e-4..=CAST_RING_OUTER + 1.0e-4).contains(&radius),
                 "{radius}: outside the shell and inside the cast site's ring"
             );
+        }
+    }
+
+    #[test]
+    fn a_key_is_a_rounded_square_of_half_width_one() {
+        let mesh = key();
+        assert_well_formed(&mesh);
+        assert_unit_normals(&mesh);
+        let points = mesh.positions.as_chunks::<3>().0;
+        let reach = |axis: usize| points.iter().fold(0.0_f32, |far, p| far.max(p[axis].abs()));
+        assert!((reach(0) - 1.0).abs() < 1.0e-5, "as wide as its half-width");
+        assert!((reach(1) - 1.0).abs() < 1.0e-5, "and as tall");
+        assert!(
+            (reach(2) - KEY_HALF_DEPTH).abs() < 1.0e-5,
+            "as thick as its depth"
+        );
+        assert!(
+            points
+                .iter()
+                .all(|p| p[0].hypot(p[1]) < 2.0_f32.sqrt() - 0.05),
+            "the corners are rounded off, not square"
+        );
+    }
+
+    #[test]
+    fn a_keys_face_winds_toward_the_viewer() {
+        let mesh = key();
+        let at = |index: u32| {
+            let base = index as usize * 3;
+            [
+                mesh.positions[base],
+                mesh.positions[base + 1],
+                mesh.positions[base + 2],
+            ]
+        };
+        let front = mesh
+            .indices
+            .chunks(3)
+            .filter(|tri| {
+                tri.iter()
+                    .all(|index| (at(*index)[2] - KEY_HALF_DEPTH).abs() < 1.0e-6)
+            })
+            .collect::<Vec<_>>();
+        assert!(!front.is_empty(), "a face to look at");
+        for tri in front {
+            let [a, b, c] = [at(tri[0]), at(tri[1]), at(tri[2])];
+            let area = (b[0] - a[0]).mul_add(c[1] - a[1], -((b[1] - a[1]) * (c[0] - a[0])));
+            assert!(area > 0.0, "counter-clockwise seen from +Z");
         }
     }
 

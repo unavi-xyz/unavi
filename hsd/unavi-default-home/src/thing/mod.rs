@@ -82,7 +82,10 @@ pub fn build(doc: &Document, id: (u64, u64, u64, u64)) -> anyhow::Result<()> {
         batch = batch
             .set(prim, Property::Parent(Some(root)))
             .set(prim, Property::Material(part.paint.material(hue)))
-            .set(prim, Property::Transform(Transform::from_translation(part.centre)));
+            .set(
+                prim,
+                Property::Transform(Transform::from_translation(part.centre)),
+            );
         if part.solid {
             batch = batch
                 .set(prim, Property::Collider(shape.collider()))

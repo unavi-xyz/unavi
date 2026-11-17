@@ -131,6 +131,7 @@ impl GuestMote for MoteRes {
         match self.0.arrange() {
             spec::Arrange::Orbit => Arrange::Orbit,
             spec::Arrange::Grid => Arrange::Grid,
+            spec::Arrange::Bed => Arrange::Bed,
         }
     }
 
@@ -138,6 +139,7 @@ impl GuestMote for MoteRes {
         self.0.set_arrange(match value {
             Arrange::Orbit => spec::Arrange::Orbit,
             Arrange::Grid => spec::Arrange::Grid,
+            Arrange::Bed => spec::Arrange::Bed,
         });
     }
 

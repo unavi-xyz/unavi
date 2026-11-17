@@ -13,6 +13,7 @@ use super::{
     Drawing,
     face::{
         Look,
+        Shape,
         Wear,
     },
     prims::{
@@ -36,6 +37,7 @@ use crate::{
             Role,
         },
         view::{
+            Body,
             SlotView,
             Style,
         },
@@ -131,6 +133,7 @@ impl Bodies {
             specs,
             drawn,
             placard,
+            bed,
             palette,
             held,
             eye,
@@ -169,6 +172,15 @@ impl Bodies {
             }
             if let Some(xform) = slot.body_xform.diff(draw::placed(Vec3::ZERO, view.radius)) {
                 batch = batch.set(slot.body, Property::Transform(xform));
+            }
+            if let Some(body) = slot.body_shape.diff(view.body) {
+                let data = match body {
+                    Body::Orb => &self.unit,
+                    Body::Key => &self.key,
+                };
+                batch = draw::mesh(data)
+                    .into_iter()
+                    .fold(batch, |batch, property| batch.set(slot.body, property));
             }
 
             let spec = drawn.get(index).and_then(|index| specs.get(*index));
@@ -225,7 +237,7 @@ impl Bodies {
             } else {
                 eye
             };
-            let look = Look::of_slot(view, seen_from, palette);
+            let look = Look::of_slot(view, seen_from, palette, &self.tuning);
             self.apply_face(doc, &slot.face, look, Wear { owner, glyph }, delta)?;
         }
 
@@ -243,6 +255,7 @@ impl Bodies {
             }
         }
         batch.flush()?;
+        self.apply_bed(doc, bed)?;
         self.apply_readout(doc, readout, palette, readout_bloom, delta)
     }
 
@@ -259,6 +272,7 @@ impl Bodies {
     ) -> anyhow::Result<()> {
         let up = self.shown.get();
         let look = Look {
+            shape: Shape::Quad,
             pose: draw::placed(Vec3::ZERO, 2.0 * self.tuning.readout_radius),
             color: palette.glyph,
             heat: 0.0,
@@ -400,7 +414,12 @@ impl Bodies {
         view: &SlotView,
         icon: bool,
     ) -> crate::Batch<'a> {
-        let on = |wanted: bool| wanted.then(|| draw::placed(Vec3::ZERO, view.radius));
+        // A key has no round body for a ring to hug, and its glyph is
+        // where a bar would go: what it is shows in its glyph, and whether
+        // it is on in its light.
+        let on = |wanted: bool| {
+            (wanted && view.body == Body::Orb).then(|| draw::placed(Vec3::ZERO, view.radius))
+        };
         let marks = &slot.marks;
         let batch = marks.bar.apply(
             batch,

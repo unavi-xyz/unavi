@@ -24,13 +24,15 @@ use wired_guest::math::{
     Vec2,
 };
 
-use crate::sheet::Sheet;
-use crate::fruit::{
-    Fruit,
-    Shape,
-    Throw,
-    Variety,
-    rgb,
+use crate::{
+    fruit::{
+        Fruit,
+        Shape,
+        Throw,
+        Variety,
+        rgb,
+    },
+    sheet::Sheet,
 };
 
 mod fruit;

@@ -43,7 +43,11 @@ use crate::{
         mesh,
         shadow::Shadow,
         spec::MoteSpec,
-        view::SlotView,
+        view::{
+            BedView,
+            Body,
+            SlotView,
+        },
     },
     tokens::{
         palette::Palette,
@@ -74,11 +78,13 @@ use crate::{
 };
 
 mod apply;
+mod bed;
 mod dock;
 mod face;
 mod hitbox;
 mod prims;
 
+use bed::BedPrim;
 use face::{
     Face,
     Shape,
@@ -156,6 +162,8 @@ pub struct Drawing<'a> {
     pub views:         &'a [SlotView],
     pub specs:         &'a [MoteSpec],
     pub drawn:         &'a [usize],
+    /// The slab under a bed of keys, when the level is one.
+    pub bed:           Option<BedView>,
     pub placard:       Option<&'a PlacardView>,
     pub palette:       &'a Palette,
     pub held:          Option<usize>,
@@ -188,6 +196,9 @@ pub struct Bodies {
     slots:      RefCell<Vec<SlotPrims>>,
     capacity:   usize,
     unit:       mesh::MeshData,
+    /// A key's cap, which a slot in a bed wears in place of the sphere.
+    key:        mesh::MeshData,
+    bed:        BedPrim,
     placard:    RefCell<PanePrims>,
     /// Where the placard last stood, which it shrinks away from.
     placard_at: Cell<Vec3>,
@@ -229,6 +240,11 @@ impl Bodies {
 
         let placard = PanePrims::new(doc, root)?;
 
+        let bed = doc.create_prim(Layer::Local, Some(root))?;
+        doc.local()
+            .set(bed, Property::Transform(draw::hidden()))
+            .flush()?;
+
         let park = doc.create_prim(Layer::Local, Some(root))?;
         doc.local()
             .set(park, Property::Transform(draw::hidden()))
@@ -250,6 +266,8 @@ impl Bodies {
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
+            key: mesh::key(),
+            bed: BedPrim::new(bed),
             placard: RefCell::new(placard),
             placard_at: Cell::new(Vec3::ZERO),
             tuning: *tuning,
@@ -306,6 +324,7 @@ impl Bodies {
                 root_xform: Shadow::new(),
                 body,
                 body_xform: Shadow::new(),
+                body_shape: Shadow::holding(Body::Orb),
                 nested,
                 plain,
                 overflow,

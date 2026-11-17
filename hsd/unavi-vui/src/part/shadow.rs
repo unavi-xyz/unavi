@@ -18,6 +18,11 @@ impl<T: Clone + PartialEq> Shadow<T> {
         Self(RefCell::new(None))
     }
 
+    /// A shadow that already holds `value`, for a prim created with it.
+    pub const fn holding(value: T) -> Self {
+        Self(RefCell::new(Some(value)))
+    }
+
     /// `value`, once it differs from what this shadow last held; `None` once
     /// a caller has already written it.
     pub fn diff(&self, value: T) -> Option<T> {
@@ -57,6 +62,13 @@ mod tests {
     fn a_changed_value_is_written() {
         let shadow = Shadow::new();
         shadow.diff(1);
+        assert_eq!(shadow.diff(2), Some(2));
+    }
+
+    #[test]
+    fn a_shadow_holding_a_value_does_not_write_it_again() {
+        let shadow = Shadow::holding(1);
+        assert_eq!(shadow.diff(1), None);
         assert_eq!(shadow.diff(2), Some(2));
     }
 

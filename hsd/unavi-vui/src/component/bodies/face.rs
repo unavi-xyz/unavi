@@ -32,9 +32,15 @@ use crate::{
         draw,
         mesh,
         shadow::Shadow,
-        view::SlotView,
+        view::{
+            Body,
+            SlotView,
+        },
     },
-    tokens::palette::Palette,
+    tokens::{
+        palette::Palette,
+        tuning::Tuning,
+    },
     wired::{
         scene::{
             document::{
@@ -51,6 +57,13 @@ use crate::{
 /// outside the glass, so the dots read as its surface and never z-fight it,
 /// and close enough that they are not a pane standing in front.
 const FACE_LIFT: f32 = 1.005;
+
+/// A key's glyph, as a fraction of the key's half-width across, and how far
+/// above the key's middle it is centred, leaving the lower part for its name.
+const KEY_FACE_SIZE: f32 = 1.2;
+const KEY_FACE_RISE: f32 = 0.22;
+/// How far in front of the cap's face, as a fraction of its half-width.
+const KEY_FACE_LIFT: f32 = 0.02;
 
 /// Steps a face's direction is snapped to along each axis of the unit
 /// vector, about a degree apart near the pole.
@@ -75,8 +88,8 @@ pub(super) struct Face {
     ready:  Cell<bool>,
     pose:   Shadow<Option<Transform>>,
     flip:   RefCell<Flip>,
-    /// The surface the dots sit on.
-    shape:  Shape,
+    /// The surface the dots sit on, and what it was last carved as.
+    shape:  Cell<Shape>,
     /// The mote this face last belonged to, held rather than remembered by
     /// address so a new mote can never be mistaken for the old one.
     owner:  RefCell<Option<Mote>>,
@@ -95,7 +108,7 @@ impl Face {
             ready: Cell::new(false),
             pose: Shadow::new(),
             flip: RefCell::new(Flip::new()),
-            shape,
+            shape: Cell::new(shape),
             owner: RefCell::new(None),
             epoch: Cell::new(0),
             seen: Cell::new(false),
@@ -143,6 +156,8 @@ pub(super) struct Wear<'a> {
 /// How a face is drawn this frame: where it stands and what lights it.
 #[derive(Clone, Copy)]
 pub(super) struct Look {
+    /// The surface the dots are drawn on.
+    pub shape: Shape,
     /// Where the face stands while it wears a glyph.
     pub pose:  Transform,
     /// The lit dots' colour.
@@ -154,13 +169,24 @@ pub(super) struct Look {
 impl Look {
     /// A slot's face, on the shell of the mote it belongs to, turned toward
     /// `eye`, which is in the space the slot's position is.
-    pub(super) fn of_slot(view: &SlotView, eye: Vec3, palette: &Palette) -> Self {
+    pub(super) fn of_slot(view: &SlotView, eye: Vec3, palette: &Palette, tuning: &Tuning) -> Self {
+        let (shape, pose) = match view.body {
+            Body::Orb => (
+                Shape::Dome {
+                    fill:  tuning.icon_fill,
+                    reach: tuning.icon_fill * 1.05,
+                },
+                face_pose(view, eye),
+            ),
+            Body::Key => (Shape::Quad, key_pose(view)),
+        };
         Self {
-            pose:  face_pose(view, eye),
+            shape,
+            pose,
             // Colour is spent on the shell, so every glyph is the same
             // off-white and reads against whatever hue the mote wears.
             color: palette.glyph,
-            heat:  view.heat,
+            heat: view.heat,
             bloom: view.bloom,
         }
     }
@@ -198,10 +224,15 @@ impl Bodies {
 
         let pose = shown.map(|_| look.pose);
         let mut batch = doc.local();
+        // A slot that changes body changes the surface its dots sit on, which
+        // is carved afresh.
+        if face.shape.replace(look.shape) != look.shape {
+            face.ready.set(false);
+        }
         let carve = pose.is_some() && !face.ready.get();
         if carve {
             matrix::set_matrix(doc, face.prim)?;
-            let shape = match face.shape {
+            let shape = match look.shape {
                 Shape::Dome { fill, reach } => mesh::dome(fill, reach),
                 Shape::Quad => mesh::face(),
             };
@@ -247,6 +278,21 @@ impl Bodies {
     }
 }
 
+/// Where a key's face stands: flat on the front of the cap, above its name,
+/// square, and never turned toward the eye, since a key is a place in a
+/// plane and its glyph reads upright from wherever the plane is.
+fn key_pose(view: &SlotView) -> Transform {
+    Transform {
+        translation: Vec3::new(
+            0.0,
+            view.radius * KEY_FACE_RISE,
+            view.radius * (mesh::KEY_HALF_DEPTH + KEY_FACE_LIFT),
+        ),
+        rotation:    Quat::IDENTITY,
+        scale:       Vec3::splat(view.radius * KEY_FACE_SIZE),
+    }
+}
+
 /// Where a slot's face stands and how big it is.
 ///
 /// The cap is centred on the body, at [`FACE_LIFT`] of its radius, so the dots
@@ -287,6 +333,7 @@ mod tests {
 
     fn view(radius: f32) -> SlotView {
         SlotView {
+            body: Body::Orb,
             position: Vec3::ZERO,
             radius,
             style: Style {

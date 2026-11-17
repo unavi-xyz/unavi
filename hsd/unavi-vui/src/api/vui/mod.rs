@@ -18,6 +18,7 @@ use crate::{
         event::Event,
         pane::panes::Panes,
         panel::Panel,
+        placard::Content,
         tree::Mote,
     },
     machinery::{
@@ -155,6 +156,14 @@ impl Vui {
     pub fn set_readout(&mut self, surface: SurfaceId, text: Option<&str>) {
         if let Some(slot) = self.slot_mut(surface) {
             slot.panel.set_readout(text);
+        }
+    }
+
+    /// Sets what a bed's page says at the root while nothing is attended or
+    /// kept, or takes it down.
+    pub fn set_resting(&mut self, surface: SurfaceId, content: Option<Content>) {
+        if let Some(slot) = self.slot_mut(surface) {
+            slot.panel.set_resting(content);
         }
     }
 

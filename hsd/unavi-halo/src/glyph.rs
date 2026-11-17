@@ -28,6 +28,19 @@ pub const HOME: Rows = [
     ".........",
 ];
 
+/// What you carry: a pocket.
+pub const POCKET: Rows = [
+    ".........",
+    ".#######.",
+    ".#######.",
+    ".#.....#.",
+    ".#.....#.",
+    ".#.....#.",
+    ".#.....#.",
+    "..#####..",
+    ".........",
+];
+
 pub const NAV: Rows = [
     ".........",
     "...###...",
@@ -235,6 +248,7 @@ mod tests {
         for (name, rows) in [
             ("HOME", HOME),
             ("NAV", NAV),
+            ("POCKET", POCKET),
             ("TOOLS", TOOLS),
             ("SELF", SELF),
             ("VISOR", VISOR),
@@ -255,6 +269,7 @@ mod tests {
         for rows in [
             HOME,
             NAV,
+            POCKET,
             TOOLS,
             SELF,
             VISOR,

@@ -4,11 +4,11 @@
 //! tools, the spaces you can go to, and the lenses you see the world through —
 //! and nothing belonging to the one you happen to be standing in.
 //!
-//! Everything in the halo itself is `unavi:vui`'s: halo builds motes, mounts an
-//! orbit over them, and reads back what happened, holding no prim and doing no
-//! hit-testing. What it draws for itself is only what VUI has no business
-//! knowing about — the glyphs inside its motes, and the body of whatever tool
-//! is in hand.
+//! Everything in the halo itself is `unavi:vui`'s: halo builds motes, mounts a
+//! bed of keys over them, and reads back what happened, holding no prim and
+//! doing no hit-testing. What it draws for itself is only what VUI has no
+//! business knowing about — the glyphs inside its motes, and the body of
+//! whatever tool is in hand.
 
 use wired_guest::{
     math::Transform,
@@ -27,8 +27,11 @@ use crate::{
         },
         visor::Visor,
     },
-    clock::Clock,
     notice::Notice,
+    page::{
+        Page,
+        Rest,
+    },
     root::Root,
     shortcuts::{
         Shortcut,
@@ -71,6 +74,7 @@ mod branch;
 mod clock;
 mod glyph;
 mod notice;
+mod page;
 mod palette;
 mod root;
 mod shortcuts;
@@ -90,8 +94,8 @@ struct Script {
     body:      Body,
     /// The space last tick, so a respawn, travel or home can close the halo.
     space:     Residence,
-    /// The time on the root's face.
-    clock:     Clock,
+    /// What the root's page says while no key is attended.
+    page:      Page,
     /// The body of whatever is in hand, and the physgun's muzzle.
     artifact:  Artifact,
     /// The menu button, and the buttons halo forwards to the tool in hand.
@@ -109,15 +113,12 @@ struct Script {
 }
 
 impl Script {
-    /// Turns the root's face over when the minute does. Written while the
-    /// halo is down too, so it is already right the moment it is summoned.
-    fn show_time(&mut self) {
-        let Some(text) = self.clock.tick() else {
-            return;
-        };
-        if let Err(err) = self.root.orbit.set_readout(Some(&text)) {
-            eprintln!("halo: readout: {err:?}");
-        }
+    /// Keeps the root's page current: the time, and where you are. Written
+    /// while the halo is down too, so it is already right the moment it is
+    /// summoned.
+    fn show_page(&mut self) {
+        let rest = Rest::of(clock::time(), &self.nav.presence());
+        self.page.show(&self.root.orbit, rest);
     }
 
     fn apply(&self, command: Option<Command>) -> anyhow::Result<()> {
@@ -297,7 +298,7 @@ impl ScriptBehavior for Script {
             summon:    Summon::default(),
             body:      Body::default(),
             space:     Residence::default(),
-            clock:     Clock::default(),
+            page:      Page::default(),
             artifact:  Artifact::new()?,
             input:     device::listen()?,
             aim:       PointerKind::Screen,
@@ -323,7 +324,7 @@ impl ScriptBehavior for Script {
         self.hand.fixed_update(&self.root.tools);
         self.nav.fixed_update(&self.root.nav);
         self.visor.fixed_update(&self.root.visor);
-        self.show_time();
+        self.show_page();
 
         // A respawn, a travel or home changes the space; a menu opened in the
         // one the user left no longer belongs to them.

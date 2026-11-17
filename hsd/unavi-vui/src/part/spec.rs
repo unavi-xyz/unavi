@@ -32,6 +32,8 @@ pub enum Arrange {
     Orbit,
     /// In rows, filling from the top left.
     Grid,
+    /// Keys in a three by three bed under a page.
+    Bed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -202,6 +204,24 @@ const fn scale_at(attention: Attention, tuning: &Tuning) -> f32 {
     }
 }
 
+/// How far attention has grown a body at `heat`, eased rather than stepped.
+fn attention_scale(heat: f32, tuning: &Tuning) -> f32 {
+    let (low, high, t) = state::bracket(heat);
+    let (from, to) = (scale_at(low, tuning), scale_at(high, tuning));
+    if t >= 1.0 {
+        to
+    } else {
+        (to - from).mul_add(t, from)
+    }
+}
+
+/// The half-width of a key at `heat`. A key is one size whatever its role,
+/// so a bed of them reads as a grid and not as a ring of unequal things.
+#[must_use]
+pub fn key_half(heat: f32, tuning: &Tuning) -> f32 {
+    tuning.mote_radius * tuning.key_scale * attention_scale(heat, tuning)
+}
+
 /// How a mote is drawn at `heat`.
 ///
 /// A heat rather than a state, so a body grows into its attended size instead
@@ -209,13 +229,7 @@ const fn scale_at(attention: Attention, tuning: &Tuning) -> f32 {
 /// change because a pointer is near it.
 #[must_use]
 pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
-    let (low, high, t) = state::bracket(heat);
-    let (from, to) = (scale_at(low, tuning), scale_at(high, tuning));
-    let attention_scale = if t >= 1.0 {
-        to
-    } else {
-        (to - from).mul_add(t, from)
-    };
+    let attention_scale = attention_scale(heat, tuning);
     let role_scale = match spec.role {
         Role::Group { .. } => tuning.group_scale,
         Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => tuning.action_scale,

@@ -40,6 +40,9 @@ pub enum Content {
         label:       SmolStr,
         description: Option<SmolStr>,
     },
+    /// What a bed's page says while nothing is attended or kept: a title over
+    /// paragraphs.
+    Resting { title: SmolStr, lines: Vec<SmolStr> },
 }
 
 impl Content {
@@ -68,6 +71,10 @@ impl Content {
                 label,
                 description: None,
             } => (None, vec![span(label, Tone::Body)]),
+            Self::Resting { title, lines } => (
+                Some(title.as_str()),
+                lines.iter().map(|line| span(line, Tone::Body)).collect(),
+            ),
         }
     }
 }
@@ -161,6 +168,21 @@ pub fn view(sheet: Rc<Sheet>, mote: Vec3, radius: f32, tuning: &Tuning) -> Placa
     }
 }
 
+/// Mounts `sheet` as the page of a bed whose slab reaches `top` above the
+/// surface's centre.
+///
+/// The pane hangs down from its mount, so the mount is the pane's own height
+/// above the clearance: a page grows upward from the bed and never moves a
+/// key. It stands on the middle, where the bed itself is symmetric.
+#[must_use]
+pub fn page(sheet: Rc<Sheet>, top: f32, tuning: &Tuning) -> PlacardView {
+    let height = sheet.size.y * tuning.placard_em;
+    PlacardView {
+        position: Vec3::new(0.0, top + tuning.placard_gap + height, tuning.placard_lift),
+        sheet,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +261,49 @@ mod tests {
             view.position.z < tuning.mote_radius,
             "a placard further out than the mote is wide stops reading as its"
         );
+    }
+
+    #[test]
+    fn a_page_grows_upward_from_the_bed_whatever_its_height() {
+        let tuning = tuning();
+        let top = 0.165;
+        let short = page(
+            sheet(&Content::describing(&spec(Some("one")))),
+            top,
+            &tuning,
+        );
+        let tall = page(
+            sheet(&Content::describing(&spec(Some(
+                "a description long enough that it certainly has to break across \
+                 more than a single line of this pane",
+            )))),
+            top,
+            &tuning,
+        );
+        for view in [&short, &tall] {
+            let height = view.sheet.size.y * tuning.placard_em;
+            assert!(
+                (view.position.y - height - top - tuning.placard_gap).abs() < 1.0e-5,
+                "the lower edge stays a gap above the bed"
+            );
+            assert!(view.position.x.abs() < 1.0e-6, "centred on the bed");
+        }
+        assert!(
+            tall.position.y > short.position.y,
+            "the taller page reaches higher"
+        );
+    }
+
+    #[test]
+    fn a_resting_page_is_its_title_over_its_lines() {
+        let sheet = sheet(&Content::Resting {
+            title: SmolStr::new_static("Plaza"),
+            lines: vec![
+                SmolStr::new_static("14:07"),
+                SmolStr::new_static("3 people"),
+            ],
+        });
+        assert_eq!(texts(&sheet), vec!["Plaza", "14:07", "3 people"]);
     }
 
     #[test]

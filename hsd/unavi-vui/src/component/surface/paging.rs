@@ -37,6 +37,7 @@ impl Surface {
     pub fn turn_to(&mut self, page: usize) {
         if page != self.page.index {
             self.page.index = page;
+            self.kept = None;
             self.forget_slots();
         }
     }
@@ -70,6 +71,7 @@ impl Surface {
     /// the form stays open.
     pub fn relevel(&mut self) {
         self.page.index = 0;
+        self.kept = None;
         self.forget_slots();
         self.reveal.restage();
     }

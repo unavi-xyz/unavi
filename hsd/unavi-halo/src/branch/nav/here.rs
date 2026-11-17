@@ -1,10 +1,11 @@
-//! The "This space" mote pinned at the head of Nav's grid.
+//! The "This space" mote pinned at the head of Nav's bed.
 
 use wired_guest::math::Color;
 
 use crate::{
     glyph,
     unavi::vui::api::{
+        Arrange,
         Kind,
         Mote,
     },
@@ -45,6 +46,7 @@ impl Here {
     pub(super) fn new() -> anyhow::Result<Self> {
         let group = Mote::new(Kind::Group, "This space")?;
         group.set_description(LIMBO)?;
+        group.set_arrange(Arrange::Bed);
         // A refused glyph is not a reason to lose the mote.
         if let Err(err) = group.set_glyph(Some(&glyph::from_rows(&glyph::HERE))) {
             eprintln!("halo: this space glyph: {err:?}");

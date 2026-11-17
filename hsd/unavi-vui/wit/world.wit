@@ -38,6 +38,13 @@ interface api {
     orbit,
     /// In rows, filling from the top left.
     grid,
+    /// Nine keys in a three by three bed with a page standing above it.
+    /// The root level puts its first child in the middle and the next four
+    /// up, right, down and left of it, leaving the corners empty. A level
+    /// inside it holds the way back in the middle and up to eight children
+    /// around it, paging past that. The page shows the attended key, the
+    /// last key pressed, or at the root the text from `orbit.set-resting`.
+    bed,
   }
 
   /// A face made of dots, the way a dot-matrix display is: a square grid,
@@ -247,6 +254,15 @@ interface api {
     paged(page),
   }
 
+  /// What the page above a bed says while no key is attended and none has
+  /// been pressed.
+  record resting {
+    /// Set in the page's title strip. At most 256 bytes.
+    title: string,
+    /// One paragraph each, at most eight, 256 bytes apiece.
+    lines: list<string>,
+  }
+
   /// A level of motes arranged around an anchor, selected by direction.
   resource orbit {
     /// Puts one up over `root`, drawing `capacity` motes at once and paging
@@ -275,6 +291,15 @@ interface api {
     ///
     /// `invalid-argument` for more than 64 bytes of text.
     set-readout: func(text: option<string>) -> result<_, error>;
+
+    /// What the page above a bed shows at the root level while no key is
+    /// attended and none has been pressed, or nothing on none. Levels inside
+    /// the root have no resting page, and an orbit whose levels are not
+    /// beds shows none.
+    ///
+    /// `invalid-argument` for a title or line over its limit, or more than
+    /// eight lines. The previous page is kept when it is refused.
+    set-resting: func(page: option<resting>) -> result<_, error>;
 
     /// Puts it up where the viewer is standing now. A surface measures its
     /// place once and keeps it, so this is how one comes to be somewhere

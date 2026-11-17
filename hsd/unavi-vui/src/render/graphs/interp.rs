@@ -2,12 +2,15 @@
 //! host's kind rules on the way, which a guest otherwise only learns of from
 //! a refused graph.
 
-use crate::wired::shading::graph::{
-    GraphValue,
-    Node,
-    Port,
-    ShaderGraph,
-    SurfaceOutput,
+use crate::{
+    cells::art::BAYER,
+    wired::shading::graph::{
+        GraphValue,
+        Node,
+        Port,
+        ShaderGraph,
+        SurfaceOutput,
+    },
 };
 
 /// A value the graph computes: its components, and how many it has, which
@@ -24,6 +27,8 @@ pub struct Context<'a> {
     pub time:   f32,
     pub scale:  [f32; 3],
     pub screen: [f32; 2],
+    /// The fragment's pixel position.
+    pub dots:   [f32; 2],
     pub scene:  [f32; 4],
     /// The texel of the image bound at a slot, at a uv.
     pub texel:  &'a dyn Fn(u8, [f32; 2]) -> [f32; 4],
@@ -42,6 +47,7 @@ impl Context<'static> {
             time: 0.0,
             scale: [1.0; 3],
             screen: [0.5; 2],
+            dots: [0.0; 2],
             scene: [0.0; 4],
             texel: &no_texture,
         }
@@ -153,6 +159,13 @@ fn lerp(a: Val, b: Val, t: Val) -> Val {
     })
 }
 
+/// The threshold at a pixel, from the same matrix the cell art dithers with.
+fn bayer_threshold(x: f32, y: f32) -> f32 {
+    let (column, row) = (x.floor() as i32 & 3, y.floor() as i32 & 3);
+    let place = usize::try_from(row * 4 + column).unwrap_or(0);
+    (f32::from(BAYER[place]) + 0.5) / 16.0
+}
+
 /// Runs the fragment network the way the host would, for the subset of nodes
 /// the faces use.
 pub fn shade(graph: &ShaderGraph, inputs: &[GraphValue], context: &Context) -> Shaded {
@@ -168,6 +181,15 @@ pub fn shade(graph: &ShaderGraph, inputs: &[GraphValue], context: &Context) -> S
                 n: 2,
                 c: [context.screen[0], context.screen[1], 0.0, 0.0],
             },
+            Node::ScreenDots => Val {
+                n: 2,
+                c: [context.dots[0], context.dots[1], 0.0, 0.0],
+            },
+            Node::Dither(op) => {
+                let (coord, level) = (at(op.coord), at(op.level));
+                assert!(coord.n == 2 && level.n == 1, "dither takes a vec2 and a float");
+                float(f32::from(level.c[0] > bayer_threshold(coord.c[0], coord.c[1])))
+            }
             Node::Time => float(context.time),
             Node::ObjectScale => Val {
                 n: 3,

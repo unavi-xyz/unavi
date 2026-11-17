@@ -1,6 +1,6 @@
 //! Cell art as data: a grid of three-level cells, one texel each.
 
-mod art;
+pub mod art;
 mod shape;
 
 use std::fmt;

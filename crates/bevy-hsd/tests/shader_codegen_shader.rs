@@ -255,6 +255,34 @@ fn a_graph_can_bend_what_is_drawn_behind_it() {
     assert_surface_valid(&body, "out_color");
 }
 
+/// The dither in the shape a fade uses it: a level sweeping across the screen
+/// position, the result standing in as a colour channel.
+#[test]
+fn a_graph_can_dither_a_level_against_the_screen_pixels() {
+    let graph = graph_with_output(
+        vec![
+            Node::ScreenDots,
+            Node::Time,
+            Node::Dither {
+                coord: node(0),
+                level: node(1),
+            },
+            Node::Combine4 {
+                x: node(2),
+                y: node(2),
+                z: node(2),
+                w: const_f(1.0),
+            },
+        ],
+        unlit(node(3)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated).expect("codegen");
+    assert!(body.contains("= graph_screen_dots;"), "{body}");
+    assert!(body.contains("= graph_dither(n0, n1);"), "{body}");
+    assert_surface_valid(&body, "out_color");
+}
+
 /// A view binds the transmission texture only when it prepares one, so an
 /// unconditional import fails to resolve in a view with no transmissive
 /// surface and takes the whole shader with it.

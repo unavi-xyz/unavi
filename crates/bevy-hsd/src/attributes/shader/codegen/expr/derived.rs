@@ -64,6 +64,13 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
             port_expr(out, public_inputs, radians)?;
             out.push(')');
         }
+        Node::Dither { coord, level } => {
+            out.push_str("graph_dither(");
+            port_expr(out, public_inputs, coord)?;
+            out.push_str(", ");
+            port_expr(out, public_inputs, level)?;
+            out.push(')');
+        }
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
     }
     Ok(())

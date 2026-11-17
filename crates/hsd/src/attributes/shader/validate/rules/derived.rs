@@ -53,6 +53,11 @@ pub(super) fn kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, GraphError> {
             ctx.require("radians", radians, ValueKind::Float)?;
             Ok(ValueKind::Vec2)
         }
+        Node::Dither { coord, level } => {
+            ctx.require("coord", coord, ValueKind::Vec2)?;
+            ctx.require("level", level, ValueKind::Float)?;
+            Ok(ValueKind::Float)
+        }
         _ => unreachable!("only the dispatch match in rules/mod.rs reaches here"),
     }
 }

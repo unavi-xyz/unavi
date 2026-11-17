@@ -228,6 +228,16 @@ pub enum Node {
     SceneColor {
         uv: Port,
     },
+    /// This fragment's position in pixels from the top left of the viewport.
+    /// Surface-only.
+    ScreenDots,
+    /// 1.0 where `level` exceeds the 4×4 Bayer threshold at the pixel `coord`
+    /// falls in, otherwise 0.0. The thresholds are `(n + 0.5) / 16` for the
+    /// matrix `0 8 2 10 / 12 4 14 6 / 3 11 1 9 / 15 7 13 5`, tiled.
+    Dither {
+        coord: Port,
+        level: Port,
+    },
 }
 
 /// Which shader stage a network compiles to.

@@ -58,7 +58,8 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::TriangleWave { .. }
         | Node::Luminance { .. }
         | Node::PolarCoords { .. }
-        | Node::RotateUv { .. } => derived::kind(ctx, node),
+        | Node::RotateUv { .. }
+        | Node::Dither { .. } => derived::kind(ctx, node),
         Node::Combine2 { .. }
         | Node::Combine3 { .. }
         | Node::Combine4 { .. }
@@ -75,6 +76,7 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::ObjectScale
         | Node::ViewDirection
         | Node::ScreenUv
+        | Node::ScreenDots
         | Node::Time => Ok(leaf::kind(ctx, node)),
         Node::Fresnel { .. }
         | Node::Noise { .. }

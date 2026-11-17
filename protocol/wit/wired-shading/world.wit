@@ -71,6 +71,7 @@ interface graph {
   }
   record polar-coords-op { uv: port, center: port }
   record rotate-uv-op { uv: port, center: port, radians: port }
+  record dither-op { coord: port, level: port }
 
   /// One operation in a shading network.
   ///
@@ -80,7 +81,7 @@ interface graph {
   ///
   /// The zero-arity kinds read shader-stage context and are each legal in one
   /// network or both: `uv`/`world-normal`/`world-position`/`vertex-color`/
-  /// `view-direction` are surface-only, `local-position`/`local-normal` are
+  /// `view-direction`/`screen-uv`/`screen-dots` are surface-only, `local-position`/`local-normal` are
   /// displacement-only, and `time`/`instance-random`/`object-position`/
   /// `object-scale` are legal in either.
   variant node {
@@ -155,6 +156,13 @@ interface graph {
 
     polar-coords(polar-coords-op),
     rotate-uv(rotate-uv-op),
+
+    /// This fragment's position in pixels from the top left of the viewport.
+    /// Surface-only.
+    screen-dots,
+    /// 1.0 where `level` exceeds the 4x4 Bayer threshold at the pixel `coord`
+    /// falls in, otherwise 0.0. `coord` is a vec2, `level` a float.
+    dither(dither-op),
   }
 
   /// Fed through the lighting pass. Every terminal is optional and falls back

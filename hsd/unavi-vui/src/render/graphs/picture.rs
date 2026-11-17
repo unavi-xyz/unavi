@@ -286,6 +286,7 @@ mod tests {
                 time:   self.time,
                 scale:  [1.0; 3],
                 screen: [0.5; 2],
+                dots:   [0.0; 2],
                 scene:  [0.0; 4],
                 texel:  &texel,
             };

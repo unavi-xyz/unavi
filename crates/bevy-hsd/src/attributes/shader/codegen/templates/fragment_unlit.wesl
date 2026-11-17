@@ -14,6 +14,7 @@ fn fragment(in: VertexOutput) -> FragmentOutput {
     // `frag_coord_to_uv` inlined rather than imported, since it is two
     // operations and the import path would need to track bevy_render.
     let graph_screen_uv = (in.position.xy - view.viewport.xy) / view.viewport.zw;
+    let graph_screen_dots = in.position.xy - view.viewport.xy;
     let graph_instance_index = in.instance_index;
     let world_from_local = mesh_functions::get_world_from_local(graph_instance_index);
 

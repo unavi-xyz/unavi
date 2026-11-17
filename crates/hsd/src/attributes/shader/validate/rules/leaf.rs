@@ -12,7 +12,7 @@ use crate::attributes::shader::{
 
 pub(super) fn kind(_ctx: &Ctx, node: &Node) -> ValueKind {
     match *node {
-        Node::Uv | Node::ScreenUv => ValueKind::Vec2,
+        Node::Uv | Node::ScreenUv | Node::ScreenDots => ValueKind::Vec2,
         Node::WorldNormal
         | Node::WorldPosition
         | Node::LocalPosition
@@ -40,6 +40,7 @@ pub(super) const fn check_network_leaf(
             | Node::VertexColor
             | Node::ViewDirection
             | Node::ScreenUv
+            | Node::ScreenDots
     ) || matches!(node, Node::Fresnel { .. } | Node::SceneColor { .. });
     let displacement_only = matches!(node, Node::LocalPosition | Node::LocalNormal);
 

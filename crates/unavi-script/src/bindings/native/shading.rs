@@ -341,6 +341,12 @@ const fn node(value: wit::Node) -> Node {
             center:  port(op.center),
             radians: port(op.radians),
         },
+
+        wit::Node::ScreenDots => Node::ScreenDots,
+        wit::Node::Dither(op) => Node::Dither {
+            coord: port(op.coord),
+            level: port(op.level),
+        },
     }
 }
 
@@ -410,6 +416,12 @@ mod tests {
 
         let bend = net.push(wit::Node::Mul(binary(screen, f(0.05))));
         net.push(wit::Node::SceneColor(bend));
+
+        let dots = net.push(wit::Node::ScreenDots);
+        net.push(wit::Node::Dither(wit::DitherOp {
+            coord: dots,
+            level: time,
+        }));
 
         net.push(wit::Node::Add(binary(time, random)));
         net.push(wit::Node::Sub(binary(f(1.0), time)));

@@ -189,6 +189,12 @@ struct WireRotateUvOp {
 }
 
 #[derive(Deserialize, Serialize, Clone, Copy)]
+struct WireDitherOp {
+    coord: WirePort,
+    level: WirePort,
+}
+
+#[derive(Deserialize, Serialize, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 enum WireValueKind {
     Float,
@@ -268,6 +274,9 @@ enum WireNode {
 
     PolarCoords(WirePolarCoordsOp),
     RotateUv(WireRotateUvOp),
+
+    ScreenDots,
+    Dither(WireDitherOp),
 }
 
 #[expect(clippy::too_many_lines, reason = "a 1:1 correspondence, not logic")]
@@ -418,6 +427,12 @@ const fn node(value: WireNode) -> Node {
             uv:      port(op.uv),
             center:  port(op.center),
             radians: port(op.radians),
+        },
+
+        WireNode::ScreenDots => Node::ScreenDots,
+        WireNode::Dither(op) => Node::Dither {
+            coord: port(op.coord),
+            level: port(op.level),
         },
     }
 }

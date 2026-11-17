@@ -112,9 +112,18 @@ fn graticule(d: vec3<f32>) -> vec3<f32> {
     return c;
 }
 
+// Ordered 4x4 Bayer offset of at most half of one 8-bit step, to break up
+// banding in the gradient. The matrix is the one the website dithers with.
+fn dither(pixel: vec2<f32>) -> f32 {
+    var bayer = array<f32, 16>(0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+    let x = u32(pixel.x) & 3u;
+    let y = u32(pixel.y) & 3u;
+    return ((bayer[y * 4u + x] + 0.5) / 16.0 - 0.5) / 255.0;
+}
+
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let d = normalize(in.world_position.xyz - view.world_position);
     let c = overcast(d) + graticule(d) * params.graticule;
-    return vec4(c, 1.0);
+    return vec4(c + vec3(dither(in.position.xy)), 1.0);
 }

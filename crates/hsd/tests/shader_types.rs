@@ -317,6 +317,35 @@ fn the_uv_nodes_take_and_return_a_vec2() {
 }
 
 #[test]
+fn dither_takes_a_pixel_position_and_a_level_and_returns_a_scalar() {
+    let dither = graph(vec![
+        Node::ScreenDots,
+        Node::Dither {
+            coord: node(0),
+            level: const_f(0.5),
+        },
+    ]);
+    assert_eq!(
+        validate(&dither).expect("valid").surface(),
+        [ValueKind::Vec2, ValueKind::Float].as_slice()
+    );
+
+    assert_eq!(
+        validate(&graph(vec![Node::Dither {
+            coord: const_f(0.0),
+            level: const_f(0.5),
+        }])),
+        Err(GraphError::NodeTypeMismatch {
+            network:  Network::Surface,
+            node:     0,
+            port:     "coord",
+            expected: ValueKind::Vec2,
+            found:    ValueKind::Float,
+        })
+    );
+}
+
+#[test]
 fn distance_takes_two_matching_vectors_and_returns_a_scalar() {
     let good = graph(vec![Node::Distance {
         a: const_v3([0.0, 0.0, 0.0]),

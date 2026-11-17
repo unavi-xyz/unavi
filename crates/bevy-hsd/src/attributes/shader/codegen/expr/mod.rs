@@ -122,7 +122,8 @@ pub(super) fn node_expr(
         | Node::TriangleWave { .. }
         | Node::Luminance { .. }
         | Node::PolarCoords { .. }
-        | Node::RotateUv { .. } => derived::emit(out, public_inputs, node),
+        | Node::RotateUv { .. }
+        | Node::Dither { .. } => derived::emit(out, public_inputs, node),
         Node::Combine2 { .. }
         | Node::Combine3 { .. }
         | Node::Combine4 { .. }
@@ -139,6 +140,7 @@ pub(super) fn node_expr(
         | Node::ObjectScale
         | Node::ViewDirection
         | Node::ScreenUv
+        | Node::ScreenDots
         | Node::Time => {
             leaf::emit(out, node);
             Ok(())

@@ -23,6 +23,7 @@ use crate::wired::{
         Combine4Op,
         ConvertOp,
         CullMode,
+        DitherOp,
         ExtractOp,
         GraphValue,
         LerpOp,
@@ -71,9 +72,11 @@ pub const SHELL_FILM: u16 = 4;
 /// in diffuses what shows through its edge rather than refracting it.
 pub const SHELL_FROST: u16 = 5;
 /// How far the mote has arrived, 0 for not yet and 1 for whole. Drawn as a
-/// front sweeping up the body rather than as a fade, so a mote materializes
-/// where it stands.
+/// front sweeping up the body that dissolves in a dot pattern, so a mote
+/// materializes where it stands.
 pub const SHELL_BLOOM: u16 = 6;
+/// The height of the arrival front's dotted edge, as a share of the body.
+const ARRIVAL_FRONT: f32 = 0.4;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
@@ -313,18 +316,26 @@ impl Net {
         }))
     }
 
-    /// Puts the body's own latitude in the alpha, which the terminal's
-    /// threshold then cuts against — a front sweeping up the mote as it
-    /// arrives, so it materializes where it stands rather than inflating or
-    /// fading in.
-    fn latitude_clipped(&mut self, color: Port) -> Port {
+    /// Puts a dot threshold in the alpha, which the terminal's clip then cuts
+    /// against: a front sweeping up the body as `bloom` rises from 0 to 1,
+    /// whose edge dissolves in the 4×4 Bayer pattern over a band
+    /// `ARRIVAL_FRONT` tall. The mote materializes where it stands rather
+    /// than inflating or fading in.
+    fn dissolved(&mut self, color: Port, bloom: Port) -> Port {
         let uv = self.push(Node::Uv);
         let up = self.push(Node::Extract(ExtractOp {
             v:       uv,
             channel: 1,
         }));
-        let below = self.push(Node::OneMinus(up));
-        with_alpha(self, color, below)
+        let reach = self.push(Node::Mul(binary(bloom, cf(1.0 + ARRIVAL_FRONT))));
+        let past = self.push(Node::Sub(binary(reach, up)));
+        let level = self.push(Node::Mul(binary(past, cf(1.0 / ARRIVAL_FRONT))));
+        let dots = self.push(Node::ScreenDots);
+        let kept = self.push(Node::Dither(DitherOp {
+            coord: dots,
+            level,
+        }));
+        with_alpha(self, color, kept)
     }
 }
 
@@ -469,8 +480,7 @@ pub fn shell() -> ShaderGraph {
     // Clipping is the only way to reach `discard` from a graph, and it
     // composes with the opaque blend rather than replacing it — so a mote can
     // arrive without the shell leaving the phase its transmission is drawn in.
-    let front = net.push(Node::OneMinus(Port::Input(SHELL_BLOOM)));
-    let color = net.latitude_clipped(color);
+    let color = net.dissolved(color, Port::Input(SHELL_BLOOM));
 
     ShaderGraph {
         public_inputs: vec![
@@ -491,7 +501,7 @@ pub fn shell() -> ShaderGraph {
             nodes:        net.nodes,
             output:       SurfaceOutput::Unlit(UnlitOutput {
                 color,
-                alpha_clip_threshold: Some(front),
+                alpha_clip_threshold: Some(cf(0.5)),
             }),
             blend:        BlendMode::Opaque,
             cull:         CullMode::Back,
@@ -625,6 +635,7 @@ mod tests {
         match node {
             Node::Uv
             | Node::ScreenUv
+            | Node::ScreenDots
             | Node::WorldNormal
             | Node::WorldPosition
             | Node::VertexColor
@@ -676,6 +687,7 @@ mod tests {
             Node::Convert(op) => vec![op.v],
             Node::PolarCoords(op) => vec![op.uv, op.center],
             Node::RotateUv(op) => vec![op.uv, op.center, op.radians],
+            Node::Dither(op) => vec![op.coord, op.level],
         }
     }
 
@@ -817,6 +829,64 @@ mod tests {
         assert!(
             unlit.alpha_clip_threshold.is_some(),
             "without a threshold the bloom input is carried and never drawn"
+        );
+    }
+
+    /// How many pixels of one 4×4 tile the arrival keeps at a height of the
+    /// body, run through the guest-side interpreter.
+    fn kept_in_tile(bloom: f32, up: f32) -> usize {
+        let mut net = Net::default();
+        let white = Port::Const(GraphValue::Color(Color {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        }));
+        let color = net.dissolved(white, Port::Input(0));
+        let graph = ShaderGraph {
+            public_inputs: vec![GraphValue::Float(bloom)],
+            surface:       SurfaceGraph {
+                nodes:        net.nodes,
+                output:       SurfaceOutput::Unlit(UnlitOutput {
+                    color,
+                    alpha_clip_threshold: Some(cf(0.5)),
+                }),
+                blend:        BlendMode::Opaque,
+                cull:         CullMode::Back,
+                cast_shadows: false,
+            },
+            displacement:  None,
+        };
+
+        let mut kept = 0;
+        for y in 0..4_u8 {
+            for x in 0..4_u8 {
+                let context = interp::Context {
+                    dots: [f32::from(x), f32::from(y)],
+                    ..interp::Context::at([0.5, up])
+                };
+                if !interp::shade(&graph, &graph.public_inputs, &context).discarded() {
+                    kept += 1;
+                }
+            }
+        }
+        kept
+    }
+
+    /// The front is a dot threshold: whole tiles either side of it, and a
+    /// partly kept tile where it passes.
+    #[test]
+    fn the_arrival_front_dissolves_in_the_bayer_pattern() {
+        for up in [0.0, 0.5, 1.0] {
+            assert_eq!(kept_in_tile(0.0, up), 0, "nothing has arrived at {up}");
+            assert_eq!(kept_in_tile(1.0, up), 16, "all has arrived at {up}");
+        }
+        assert_eq!(kept_in_tile(0.6, 0.1), 16, "below the front");
+        assert_eq!(kept_in_tile(0.6, 0.95), 0, "above the front");
+        let on_the_front = kept_in_tile(0.6, 0.7);
+        assert!(
+            (1..16).contains(&on_the_front),
+            "{on_the_front} of 16 kept on the front"
         );
     }
 

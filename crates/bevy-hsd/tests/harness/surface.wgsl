@@ -28,6 +28,7 @@ fn fragment(in: In) -> @location(0) vec4<f32> {
     let V = in.world_normal;
     let graph_world_normal = in.world_normal;
     let graph_screen_uv = in.world_position.xy;
+    let graph_screen_dots = in.world_position.xy;
     let graph_instance_index = in.instance_index;
     let world_from_local = mat4x4<f32>(
         vec4<f32>(1.0, 0.0, 0.0, 0.0),

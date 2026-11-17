@@ -19,6 +19,7 @@ use crate::{
         pane::panes::Panes,
         panel::Panel,
         placard::Content,
+        station::stations::Stations,
         tree::Mote,
     },
     machinery::{
@@ -35,6 +36,7 @@ use crate::{
 
 mod pane;
 mod place;
+mod station;
 
 /// Events a panel holds for a consumer that has not asked. Past this the
 /// oldest go: an unread queue is a script that stopped listening, not a log.
@@ -67,6 +69,8 @@ pub struct Vui {
     free:    Vec<usize>,
     /// Framed pages of blocks, standing or floating where a script put them.
     panes:   Panes,
+    /// Panes arranged together.
+    stations: Stations,
     /// Seconds of updates so far, which notices are timed against.
     now:     f64,
     /// The previous fixed tick's eye, which a respawn is told apart by.
@@ -82,6 +86,7 @@ impl Vui {
             slots:   Vec::new(),
             free:    Vec::new(),
             panes:   Panes::default(),
+            stations: Stations::default(),
             now:     0.0,
             jumps:   Watch::default(),
         })
@@ -242,6 +247,7 @@ impl Vui {
         }
         let gaze = Gaze::read(&eye);
         self.panes.fixed_update(&self.doc, &self.tuning);
+        self.stations.step(&mut self.panes, &eye, &self.tuning);
 
         for index in 0..self.slots.len() {
             let Some(slot) = &self.slots[index] else {

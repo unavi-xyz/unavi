@@ -17,6 +17,7 @@ use super::{
 use crate::{
     machinery::{
         float::facing,
+        mount::held_at,
         standing::{
             eased,
             turned_toward,
@@ -146,16 +147,19 @@ impl Mounted {
         };
         let size = self.pane.size();
         let metres = size * em;
-        let visible = self.shown && self.mount.is_some();
+        let posed = match self.mount {
+            Some(mount) if self.shown => self.pose_for(doc, mount, eye, tuning, metres, delta)?,
+            _ => None,
+        };
+        let visible = posed.is_some();
 
-        let origin = match self.mount {
-            Some(mount) if visible => self.pose_for(doc, mount, eye, tuning, metres, delta)?,
-            _ => {
-                if self.prims.progress() <= 0.0 {
-                    self.put_away(doc)?;
-                }
-                Vec3::new(0.0, metres.y / 2.0, 0.0)
+        let origin = if let Some(origin) = posed {
+            origin
+        } else {
+            if self.prims.progress() <= 0.0 {
+                self.put_away(doc)?;
             }
+            Vec3::new(0.0, metres.y / 2.0, 0.0)
         };
 
         if self.runs.is_none() {
@@ -188,8 +192,39 @@ impl Mounted {
         )
     }
 
+    /// Where a pane that is not afloat stands now, in the script's frame, or
+    /// none while what it hangs from or is held in cannot be found.
+    fn fixed_at(
+        doc: &Document,
+        mount: Mount,
+        eye: &Transform,
+        tuning: &Tuning,
+        height: f32,
+    ) -> Option<Transform> {
+        match mount {
+            Mount::Standing { at } => Some(Transform {
+                translation: at + Vec3::Y * (height / 2.0),
+                rotation:    turned_toward(at, eye),
+                scale:       Vec3::ONE,
+            }),
+            Mount::Hung { to, pose } => to.map_or(Some(pose), |prim| {
+                doc.world_transform(prim).ok().map(|base| base * pose)
+            }),
+            Mount::Held { hand } => {
+                let hand = crate::pointer_pose(hand)?;
+                let at = held_at(eye, hand.translation, tuning.pane_reading);
+                Some(Transform {
+                    translation: at,
+                    rotation:    facing(at, eye.translation),
+                    scale:       Vec3::ONE,
+                })
+            }
+            Mount::Floating { .. } => None,
+        }
+    }
+
     /// Poses the body for `mount` and returns where the pane's top centre is
-    /// in the body's frame.
+    /// in the body's frame, or none when it has nowhere to be drawn.
     fn pose_for(
         &mut self,
         doc: &Document,
@@ -198,11 +233,14 @@ impl Mounted {
         tuning: &Tuning,
         metres: wired_guest::math::Vec2,
         delta: f32,
-    ) -> anyhow::Result<Vec3> {
+    ) -> anyhow::Result<Option<Vec3>> {
         let mut batch = doc.local();
         let mut bob = 0.0;
         match mount {
-            Mount::Standing { at } => {
+            Mount::Standing { .. } | Mount::Hung { .. } | Mount::Held { .. } => {
+                let Some(target) = Self::fixed_at(doc, mount, eye, tuning, metres.y) else {
+                    return Ok(None);
+                };
                 if self.simulated {
                     self.simulated = false;
                     self.float = super::Float::default();
@@ -210,12 +248,13 @@ impl Mounted {
                         .clear(self.body, PropertyKey::RigidBody)
                         .clear(self.body, PropertyKey::GravityScale);
                 }
-                let target = Transform {
-                    translation: at + Vec3::Y * (metres.y / 2.0),
-                    rotation:    turned_toward(at, eye),
-                    scale:       Vec3::ONE,
+                // Only a standing pane eases; one hung or held is exactly
+                // where it is told, so it never trails its anchor.
+                let drawn = if matches!(mount, Mount::Standing { .. }) {
+                    eased(self.drawn, target, tuning.stand_speed, delta)
+                } else {
+                    target
                 };
-                let drawn = eased(self.drawn, target, tuning.stand_speed, delta);
                 self.drawn = Some(drawn);
                 self.pose = Some(drawn);
                 if let Some(pose) = self.written.diff(drawn) {
@@ -251,7 +290,10 @@ impl Mounted {
                             scale:       Vec3::ONE,
                         };
                         batch = batch.set(self.body, Property::Transform(pose));
-                        self.float.rest_at(at);
+                        // A pane pulled out of a station starts in a hand.
+                        if self.float.held_by.is_none() {
+                            self.float.rest_at(at);
+                        }
                         Some(pose)
                     }
                     None => doc.world_transform(self.body).ok().or(self.pose),
@@ -279,7 +321,7 @@ impl Mounted {
         batch.flush()?;
         self.placed = true;
         self.bob_offset = bob;
-        Ok(Vec3::new(0.0, metres.y / 2.0 + bob, 0.0))
+        Ok(Some(Vec3::new(0.0, metres.y / 2.0 + bob, 0.0)))
     }
 
     /// Takes a pane that has shrunk away out of the simulation and out of

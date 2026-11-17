@@ -18,6 +18,7 @@ use crate::{
 mod convert;
 mod mote;
 mod pane;
+mod station;
 mod surface;
 pub mod vui;
 
@@ -31,6 +32,7 @@ impl Guest for World {
     type Mote = mote::MoteRes;
     type Orbit = surface::Orbit;
     type Pane = pane::PaneRes;
+    type Station = station::StationRes;
 
     fn fixed_update() -> Result<(), Error> {
         drive(Vui::fixed_update)

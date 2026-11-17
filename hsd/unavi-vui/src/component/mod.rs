@@ -7,5 +7,6 @@ pub mod pane;
 pub mod panel;
 pub mod placard;
 pub mod site;
+pub mod station;
 pub mod surface;
 pub mod tree;

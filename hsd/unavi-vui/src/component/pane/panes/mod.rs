@@ -43,6 +43,7 @@ use crate::{
 };
 
 mod input;
+mod mounts;
 mod pose;
 
 /// A pane [`Panes`] is drawing.
@@ -62,6 +63,16 @@ pub enum Mount {
     /// A weightless body centred on `at` that a grip carries, which once
     /// let go drifts to a stop and turns to face the viewer.
     Floating { at: Vec3 },
+    /// Fixed at `pose` in the frame of prim `to` of the script's document,
+    /// or of the document itself when there is none: a wall, a machine, or
+    /// a place on a station.
+    Hung {
+        to:   Option<(u64, u64)>,
+        pose: Transform,
+    },
+    /// In `hand`, at reading distance: on the line from the eye to the hand,
+    /// turned to face the eye.
+    Held { hand: PointerKind },
 }
 
 /// A drag that started on a pane and ends where the trigger is released.
@@ -120,6 +131,9 @@ struct Mounted {
     /// against.
     bob_offset: f32,
     drag:       Option<(PointerKind, Drag)>,
+    /// The pointer whose grip last pressed the pane while it was hung, for a
+    /// station to answer by pulling it out.
+    pulled:     Option<PointerKind>,
 }
 
 /// Every pane a script holds, as a free list like the panels.
@@ -169,6 +183,7 @@ impl Panes {
             bob: 0.0,
             bob_offset: 0.0,
             drag: None,
+            pulled: None,
         };
         let index = if let Some(index) = self.free.pop() {
             self.slots[index] = Some(mounted);
@@ -286,7 +301,9 @@ impl Mounted {
     const fn em(&self, tuning: &Tuning) -> f32 {
         match self.mount {
             Some(Mount::Standing { .. }) => tuning.stand_em,
-            Some(Mount::Floating { .. }) | None => tuning.pane_em,
+            Some(Mount::Floating { .. } | Mount::Hung { .. } | Mount::Held { .. }) | None => {
+                tuning.pane_em
+            }
         }
     }
 

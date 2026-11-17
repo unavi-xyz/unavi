@@ -105,6 +105,17 @@ pub fn landed(at: Vec3, eye: &Transform, tuning: &Tuning) -> Transform {
     }
 }
 
+/// Where a pane held in a hand at `hand` stands for an eye at `eye`: on the
+/// line between them, `reach` metres from the eye, so it is read from the
+/// distance its type was sized for however near the hand is.
+#[must_use]
+pub fn held_at(eye: &Transform, hand: Vec3, reach: f32) -> Vec3 {
+    let along = (hand - eye.translation).normalize_or_zero();
+    let along = if along == Vec3::ZERO { eye.forward() } else { along };
+    eye.translation + along * reach
+}
+
+
 #[cfg(test)]
 mod tests {
     use wired_guest::math::Quat;
@@ -236,5 +247,20 @@ mod tests {
             normal.dot(back) > 0.99,
             "a level standing side-on to the viewer is one nobody aimed at"
         );
+    }
+
+    #[test]
+    fn a_held_pane_stands_at_reading_distance_toward_the_hand() {
+        let eye = Transform::from_translation(Vec3::new(0.0, 1.6, 0.0));
+        let at = held_at(&eye, Vec3::new(0.2, 1.2, -0.3), 0.85);
+        assert!(((at - eye.translation).length() - 0.85).abs() < 1.0e-5);
+        assert!(at.x > 0.0 && at.y < 1.6 && at.z < 0.0, "toward the hand");
+    }
+
+    #[test]
+    fn a_hand_at_the_eye_leaves_it_ahead() {
+        let eye = Transform::from_translation(Vec3::ZERO);
+        let at = held_at(&eye, Vec3::ZERO, 0.85);
+        assert!((at - Vec3::new(0.0, 0.0, -0.85)).length() < 1.0e-5);
     }
 }

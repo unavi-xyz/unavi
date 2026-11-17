@@ -9,7 +9,7 @@ world guest {
 /// its update loop.
 interface api {
   use wired:core/error.{error};
-  use wired:core/math.{color, vec2, vec3};
+  use wired:core/math.{color, transform, vec2, vec3};
   use wired:scene/document.{document, prim-id};
 
   /// What a mote is: how it draws, and what selecting it does.
@@ -559,6 +559,84 @@ interface api {
     /// Where a floating pane's centre is now: where it was put, or where it
     /// floats. Zero before it is shown.
     position: func() -> vec3;
+    /// Fixes it at `pose` in the frame of `to`, a prim of the calling
+    /// script's document, or in the document's own frame on none: on a wall,
+    /// a machine or a frame. It is exactly where it is told and never eases,
+    /// at the size of a floating pane. Nothing shows if `to` is not in the
+    /// document.
+    ///
+    /// A pane that hangs is not carried by a grip. A station answers a grip
+    /// by pulling the pane out of it.
+    set-hung: func(to: option<prim-id>, pose: transform);
+    /// Holds it in `hand`, at the distance a pane is read from: on the line
+    /// from the eye to the hand, turned to face the eye, at the size of a
+    /// floating pane. Nothing shows while the hand is not tracked.
+    set-held: func(hand: hand);
+  }
+
+  /// Which hand.
+  enum hand {
+    left,
+    right,
+  }
+
+  /// Which way a split lays its parts.
+  enum axis {
+    /// Side by side, left to right.
+    across,
+    /// Stacked, top to bottom.
+    down,
+  }
+
+  /// One part of a split: a tile of the station, by its index, and how much
+  /// of the split it takes against its siblings.
+  record part {
+    tile:   u32,
+    /// At least 1.
+    weight: u32,
+  }
+
+  /// A tile of a station: a leaf of panes, or a split of other tiles.
+  variant tile {
+    /// Panes as tabs of one leaf, by their index in the station's `panes`.
+    /// The first is shown, and one dropped on the leaf takes its place.
+    tabs(list<u32>),
+    split(split),
+  }
+
+  record split {
+    axis:  axis,
+    /// At least one, each a different tile.
+    parts: list<part>,
+  }
+
+  /// Panes arranged together, which open and close together. They stand on
+  /// an arc around where the station was summoned, at reading distance and
+  /// facing the middle of it: a pane at the left of the tiling stands to the
+  /// left, one at the bottom stands lower.
+  ///
+  /// A grip on a pane of a shown station pulls it out. It floats, carried by
+  /// that hand, leaving its place empty. Let go within reach of the station
+  /// it goes to the nearest place, becoming the pane shown there and tabbing
+  /// whatever was; let go further off it stays where it was left, and can be
+  /// pulled again.
+  ///
+  /// The station owns where its panes are and whether they show, so a script
+  /// does not mount or show them itself. A freed pane leaves its station.
+  resource station {
+    /// `tiles[0]` is the root. Every tile but the root is the part of
+    /// exactly one split, and every pane appears in one leaf at most. At
+    /// most 16 panes and 64 tiles; anything else is `invalid-argument`.
+    constructor(panes: list<borrow<pane>>, tiles: list<tile>) -> result<station, error>;
+
+    /// Puts it up where the viewer is standing now, facing as they face. A
+    /// station measures its place once and keeps it until it is summoned
+    /// again.
+    summon: func() -> result<_, error>;
+    /// Takes every pane down, including any pulled out.
+    dismiss: func() -> result<_, error>;
+    /// Whether it is up.
+    shown: func() -> bool;
   }
 
   /// Reads input and resolves what it did, for every surface at once. Call

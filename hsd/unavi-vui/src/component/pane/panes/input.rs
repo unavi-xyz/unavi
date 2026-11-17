@@ -8,6 +8,7 @@ use wired_guest::math::{
 
 use super::{
     Drag,
+    Mount,
     Mounted,
     Panes,
 };
@@ -132,7 +133,13 @@ impl Mounted {
         let mut pressed = false;
         for event in self.input.drain(64) {
             match event.action {
-                Action::Pressed(Button::Grip) => self.float.grab(event.pointer),
+                Action::Pressed(Button::Grip) => {
+                    if matches!(self.mount, Some(Mount::Hung { .. })) {
+                        self.pulled = Some(event.pointer);
+                    } else {
+                        self.float.grab(event.pointer);
+                    }
+                }
                 Action::Released(Button::Grip) => self.float.release(event.pointer),
                 Action::Pressed(Button::Trigger) => {
                     if let Some(local) = event.hit.and_then(|hit| self.local(hit.position, em)) {

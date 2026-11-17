@@ -158,6 +158,15 @@ pub struct Tuning {
     pub stand_em:  f32,
     /// Metres its type and rules stand proud of the pane.
     pub pane_lift: f32,
+    /// Metres from the eye at which a pane is read, which a held pane is
+    /// kept at.
+    pub pane_reading: f32,
+
+    /// Metres from the planted point at which a station stands its panes.
+    pub station_reach: f32,
+    /// Metres within which a pane let go counts as dropped on the station,
+    /// measured to the nearest place a pane stands.
+    pub station_drop:  f32,
 }
 
 impl Tuning {
@@ -229,6 +238,10 @@ impl Tuning {
         pane_em:   em(style::MRAD_BODY, PANE_READING),
         stand_em:  em(style::MRAD_BODY, STAND_READING),
         pane_lift: 0.0015,
+        pane_reading: PANE_READING,
+
+        station_reach: PANE_READING,
+        station_drop:  0.6,
     };
 }
 

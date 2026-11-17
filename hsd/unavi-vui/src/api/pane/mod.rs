@@ -3,6 +3,7 @@
 
 use wired_guest::math::{
     Color,
+    Transform,
     Vec2,
     Vec3,
 };
@@ -20,14 +21,18 @@ use crate::{
     exports::unavi::vui::api::{
         Block as ScriptBlock,
         GuestPane,
+        Hand,
         PaneEvent,
     },
-    wired::core::error::Error,
+    wired::{
+        core::error::Error,
+        input::types::PointerKind,
+    },
 };
 
 mod convert;
 
-pub struct PaneRes(PaneId);
+pub struct PaneRes(pub PaneId);
 
 fn refused(refused: &Refused) -> Error {
     Error::InvalidArgument(refused.to_string())
@@ -131,6 +136,28 @@ impl GuestPane for PaneRes {
             Ok(())
         }) {
             eprintln!("vui: pane floating: {err:?}");
+        }
+    }
+
+    fn set_hung(&self, to: Option<(u64, u64)>, pose: Transform) {
+        if let Err(err) = drive(|vui| {
+            vui.pane_hung(self.0, to, pose);
+            Ok(())
+        }) {
+            eprintln!("vui: pane hung: {err:?}");
+        }
+    }
+
+    fn set_held(&self, hand: Hand) {
+        let hand = match hand {
+            Hand::Left => PointerKind::LeftHand,
+            Hand::Right => PointerKind::RightHand,
+        };
+        if let Err(err) = drive(|vui| {
+            vui.pane_held(self.0, hand);
+            Ok(())
+        }) {
+            eprintln!("vui: pane held: {err:?}");
         }
     }
 

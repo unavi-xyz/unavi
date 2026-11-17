@@ -3,20 +3,24 @@
 
 use wired_guest::math::{
     Color,
+    Transform,
     Vec2,
     Vec3,
 };
 
 use super::Vui;
-use crate::component::pane::{
-    Event,
-    Pane,
-    Refused,
-    block::Block,
-    panes::{
-        Mount,
-        PaneId,
+use crate::{
+    component::pane::{
+        Event,
+        Pane,
+        Refused,
+        block::Block,
+        panes::{
+            Mount,
+            PaneId,
+        },
     },
+    wired::input::types::PointerKind,
 };
 
 impl Vui {
@@ -54,6 +58,14 @@ impl Vui {
         self.panes.set_hue(id, hue);
     }
 
+    pub fn pane_hung(&mut self, id: PaneId, to: Option<(u64, u64)>, pose: Transform) {
+        self.panes.hang(id, to, pose);
+    }
+
+    pub fn pane_held(&mut self, id: PaneId, hand: PointerKind) {
+        self.panes.hold(id, hand);
+    }
+
     pub fn pane_floating(&mut self, id: PaneId, at: Vec3) {
         self.panes.set_mount(id, Mount::Floating { at });
     }
@@ -72,6 +84,7 @@ impl Vui {
     }
 
     pub fn pane_remove(&mut self, id: PaneId) -> anyhow::Result<()> {
+        self.stations.forget(id);
         self.panes.remove(&self.doc, id)
     }
 }

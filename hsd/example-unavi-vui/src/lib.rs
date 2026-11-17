@@ -24,6 +24,7 @@ use wired_guest::math::{
     Vec2,
 };
 
+use crate::sheet::Sheet;
 use crate::fruit::{
     Fruit,
     Shape,
@@ -33,6 +34,7 @@ use crate::fruit::{
 };
 
 mod fruit;
+mod sheet;
 
 wired_guest::generate_script!(Script);
 
@@ -47,6 +49,8 @@ const MOUNT: Mount = Mount {
 
 struct Script {
     orbit:  Orbit,
+    /// A pane beside the orbit, exercising the pane interface.
+    sheet:  Sheet,
     /// Every fruit, so the one that was just let go can be grown.
     fruit:  Vec<Fruit>,
     /// Throws waiting on the bodies they belong to.
@@ -285,6 +289,7 @@ impl ScriptBehavior for Script {
 
         Ok(Self {
             orbit,
+            sheet: Sheet::new()?,
             fruit,
             thrown: Vec::new(),
         })
@@ -298,6 +303,7 @@ impl ScriptBehavior for Script {
     fn update(&mut self, tick: Tick) -> anyhow::Result<()> {
         api::update(tick.dt)?;
         self.thrown.retain_mut(Throw::apply);
+        self.sheet.update()?;
 
         for event in self.orbit.events() {
             report(&event);

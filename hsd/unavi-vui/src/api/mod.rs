@@ -17,6 +17,7 @@ use crate::{
 
 mod convert;
 mod mote;
+mod pane;
 mod placard;
 mod slate;
 mod surface;
@@ -31,6 +32,7 @@ impl Guest for World {
     type Grid = surface::Grid;
     type Mote = mote::MoteRes;
     type Orbit = surface::Orbit;
+    type Pane = pane::PaneRes;
     type Placard = placard::PlacardRes;
     type Slate = slate::SlateRes;
 

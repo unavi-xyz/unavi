@@ -503,6 +503,211 @@ interface api {
     events: func() -> list<slate-event>;
   }
 
+  /// A paragraph of a `text` block.
+  record span {
+    /// At most 1024 bytes. Wraps to the pane, and `\n` starts a line.
+    text: string,
+    tone: tone,
+    /// The id a press on the paragraph reports as `followed`.
+    link: option<u32>,
+  }
+
+  /// A named, pressable button.
+  record action-control {
+    /// At most 1024 bytes.
+    label: string,
+    /// Drawn in the accent rather than neutral.
+    primary: bool,
+  }
+
+  /// A number on a pane, changed by pressing it and dragging sideways.
+  record number-control {
+    value: f32,
+    /// How much `value` changes per column of the pane the pointer travels
+    /// across. Negative runs the other way.
+    per-column: f32,
+  }
+
+  record choice-control {
+    /// Each at most 1024 bytes. The options sit side by side.
+    options: list<string>,
+    /// The chosen option, drawn filled.
+    selected: u32,
+  }
+
+  /// What a form row, a bar item or a table cell shows, and what pressing it
+  /// does. The pane draws the value the consumer sets, never the one asked
+  /// for.
+  variant control {
+    /// Text to read. Pressing does nothing.
+    value(string),
+    /// Pressing reports `pressed`.
+    action(action-control),
+    /// Two cells, the lit one showing the state. Pressing reports `toggled`
+    /// with the other state.
+    toggle(bool),
+    /// A row of cells lit up to a fraction from 0 to 1. Pressing or dragging
+    /// along it reports `slid`.
+    slider(f32),
+    /// The same row, to read. Pressing does nothing.
+    meter(f32),
+    /// Dragging sideways reports `scrubbed`, and letting go `released`.
+    number(number-control),
+    /// Pressing an option reports `chosen`.
+    choice(choice-control),
+    /// A destination's name, underlined. Pressing reports `followed`.
+    link(string),
+  }
+
+  /// A row of a `form` block: a label at the left and one control at the
+  /// right.
+  record form-row {
+    /// The consumer's own name for the control, which events report. Keep it
+    /// stable across `set-blocks` so a drag in progress follows its row.
+    id: u32,
+    /// At most 1024 bytes.
+    label: string,
+    control: control,
+  }
+
+  record table-column {
+    /// At most 1024 bytes.
+    title: string,
+    /// Width in columns of the pane.
+    columns: u32,
+  }
+
+  /// A row of a `table` block. Pressing it reports `selected`.
+  record table-row {
+    id: u32,
+    /// One per column; cells past the last column are not drawn. Each at
+    /// most 1024 bytes.
+    cells: list<string>,
+    selected: bool,
+  }
+
+  record table {
+    /// The column titles stay at the top while the rows scroll. None draws
+    /// no header.
+    columns: list<table-column>,
+    rows: list<table-row>,
+  }
+
+  /// A row of a `tree` block. Pressing it reports `selected`, and pressing
+  /// its fold mark reports `folded`.
+  record tree-node {
+    id: u32,
+    /// At most 1024 bytes.
+    label: string,
+    /// Levels it is indented.
+    depth: u32,
+    /// Whether it is unfolded, or none for a leaf with no fold mark.
+    open: option<bool>,
+    selected: bool,
+  }
+
+  record bar-item {
+    id: u32,
+    control: control,
+  }
+
+  /// What a block shows. At most 512 rows, items, spans or nodes.
+  variant block-kind {
+    /// Prose, wrapped to the pane. Scrolls.
+    text(list<span>),
+    /// Rows of a label and one control. Scrolls.
+    form(list<form-row>),
+    /// Rows under named columns. Scrolls.
+    table(table),
+    /// Indented rows. The consumer sends the rows that are visible and sets
+    /// what `folded` asks for. Scrolls.
+    tree(list<tree-node>),
+    /// One line of controls, left to right.
+    bar(list<bar-item>),
+  }
+
+  /// How many lines a block takes.
+  variant block-height {
+    /// A fixed number, held to what the blocks above leave.
+    lines(u32),
+    /// What the fixed blocks leave, split evenly with every other sharing
+    /// block.
+    share,
+  }
+
+  record block {
+    /// Identifies the block, so it keeps its scroll across `set-blocks`.
+    id: u32,
+    height: block-height,
+    kind: block-kind,
+  }
+
+  /// What a pane did. Each names the id the consumer gave.
+  variant pane-event {
+    /// An action was pressed.
+    pressed(u32),
+    /// A toggle was pressed, asking for this state.
+    toggled(tuple<u32, bool>),
+    /// A slider was pressed or dragged to this fraction.
+    slid(tuple<u32, f32>),
+    /// A number was dragged sideways by this much of its value since the
+    /// last report.
+    scrubbed(tuple<u32, f32>),
+    /// The drag on a slider or a number ended: the place to keep the value.
+    released(u32),
+    /// An option of a choice was pressed: the control id and the option's
+    /// index.
+    chosen(tuple<u32, u32>),
+    /// A table row or a tree node was pressed.
+    selected(u32),
+    /// A tree node's fold mark was pressed, asking for this state.
+    folded(tuple<u32, bool>),
+    /// A link was pressed.
+    followed(u32),
+  }
+
+  /// A framed page of blocks, for what is read and edited rather than held:
+  /// values, lists, trees, tables and text. Laid out in the pane's own
+  /// columns and lines, so nothing on it waits on the host to be measured.
+  /// Read and worked with any pointer; a long block scrolls with the wheel
+  /// or by dragging the rail at its edge, and Tab, Enter and Escape work the
+  /// controls of the pane last pressed.
+  ///
+  /// Nothing shows until it is mounted and shown.
+  resource pane {
+    /// `columns` is one of 24, 40, 64 or 80. `lines` is the body's height
+    /// from 1 to 40, or none to grow to fit its blocks. Anything else is
+    /// `invalid-argument`.
+    constructor(columns: u32, lines: option<u32>) -> result<pane, error>;
+    /// At most 1024 bytes. Empty draws no title strip.
+    set-title: func(title: string) -> result<_, error>;
+    /// One small line at the bottom, for counts and state, at most 1024
+    /// bytes.
+    set-status: func(status: option<string>) -> result<_, error>;
+    /// Stacks `blocks` down the body, at most 8. A string or a block over its
+    /// limit is `invalid-argument` and the previous blocks are kept. Setting
+    /// equal blocks writes nothing.
+    set-blocks: func(blocks: list<block>) -> result<_, error>;
+    /// The pane, width by height in metres.
+    size: func() -> vec2;
+    /// Everything it did since the last call.
+    events: func() -> list<pane-event>;
+    /// Eases it in or out.
+    set-shown: func(value: bool);
+    /// Stands it with its bottom centre on `at`, in the calling script's
+    /// document frame, turned about the vertical axis to face the viewer. A
+    /// line runs from its side nearer `tether` to `tether`, ending in a dot
+    /// there; none draws no line.
+    set-standing: func(at: vec3, tether: option<vec3>);
+    /// Floats it centred on `at`, in the calling script's document frame. A
+    /// grip picks it up and carries it like any body, and let go it drifts to
+    /// a stop, floats there and turns to face the viewer.
+    set-floating: func(at: vec3);
+    /// Where a floating pane's centre is now: where it was put, or where it
+    /// floats. Zero before it is shown.
+    position: func() -> vec3;
+  }
+
   /// Reads input and resolves what it did, for every surface at once. Call
   /// from the script's `fixed-update`, where state belongs.
   fixed-update: func() -> result<_, error>;

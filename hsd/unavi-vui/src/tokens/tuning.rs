@@ -9,6 +9,8 @@ const READING: f32 = 0.7;
 const PLACARD_READING: f32 = 0.57;
 /// Metres from the eye at which a slate's text is read.
 const SLATE_READING: f32 = 0.85;
+/// Metres from the eye at which a pane's body type is read.
+const PANE_READING: f32 = 0.85;
 
 /// The em height in metres of a type step given in milliradians, read from
 /// `distance` metres.
@@ -162,6 +164,12 @@ pub struct Tuning {
     pub slate_text:   f32,
     /// Em height of a slate header.
     pub slate_header: f32,
+
+    /// Metres in one em of a pane's body type. Every length a pane lays out
+    /// is in ems, so this is the whole of its size.
+    pub pane_em:   f32,
+    /// Metres its type and rules stand proud of the pane.
+    pub pane_lift: f32,
 }
 
 impl Tuning {
@@ -239,6 +247,9 @@ impl Tuning {
         slate_row:    0.036,
         slate_text:   em(style::MRAD_BODY, SLATE_READING),
         slate_header: em(style::MRAD_TITLE, SLATE_READING),
+
+        pane_em:   em(style::MRAD_BODY, PANE_READING),
+        pane_lift: 0.0015,
     };
 }
 

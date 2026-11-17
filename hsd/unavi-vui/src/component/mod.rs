@@ -3,6 +3,7 @@
 pub mod bodies;
 pub mod drive;
 pub mod event;
+pub mod pane;
 pub mod panel;
 pub mod placard;
 pub mod site;

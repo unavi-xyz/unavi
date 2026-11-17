@@ -253,7 +253,7 @@ impl Standing {
 /// Eases a drawn pose toward the one the script puts it at, so a placard
 /// follows the eye between fixed ticks rather than stepping across the view.
 /// The first pose is taken as it is, since arriving is not a move.
-fn eased(from: Option<Transform>, to: Transform, speed: f32, delta: f32) -> Transform {
+pub fn eased(from: Option<Transform>, to: Transform, speed: f32, delta: f32) -> Transform {
     let Some(from) = from else {
         return to;
     };

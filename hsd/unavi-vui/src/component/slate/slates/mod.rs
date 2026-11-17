@@ -49,8 +49,8 @@ use crate::{
     },
 };
 
-mod body;
-mod float;
+pub mod body;
+pub mod float;
 mod input;
 mod rows;
 

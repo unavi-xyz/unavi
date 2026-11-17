@@ -16,6 +16,7 @@ use wired_guest::{
 use crate::{
     component::{
         event::Event,
+        pane::panes::Panes,
         panel::Panel,
         slate::slates::Slates,
         stand::Stands,
@@ -33,6 +34,7 @@ use crate::{
     wired::scene::document::Document,
 };
 
+mod pane;
 mod place;
 mod slate;
 mod stand;
@@ -70,6 +72,8 @@ pub struct Vui {
     stands:  Stands,
     /// Panes of rows standing where a script put them.
     slates:  Slates,
+    /// Framed pages of blocks, standing or floating where a script put them.
+    panes:   Panes,
     /// Seconds of updates so far, which notices are timed against.
     now:     f64,
     /// The previous fixed tick's eye, which a respawn is told apart by.
@@ -86,6 +90,7 @@ impl Vui {
             free:    Vec::new(),
             stands:  Stands::default(),
             slates:  Slates::default(),
+            panes:   Panes::default(),
             now:     0.0,
             jumps:   Watch::default(),
         })
@@ -238,6 +243,7 @@ impl Vui {
         }
         let gaze = Gaze::read(&eye);
         self.slates.fixed_update(&self.doc);
+        self.panes.fixed_update(&self.doc, self.tuning.pane_em);
 
         for index in 0..self.slots.len() {
             let Some(slot) = &self.slots[index] else {
@@ -289,6 +295,8 @@ impl Vui {
         self.stands
             .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         self.slates
+            .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
+        self.panes
             .update(&self.doc, &gaze.eye, &self.palette, &self.tuning, delta)?;
         Ok(())
     }

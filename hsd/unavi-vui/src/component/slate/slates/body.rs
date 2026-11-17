@@ -57,14 +57,14 @@ use crate::{
 };
 
 /// Metres of collider through the pane.
-const DEPTH: f32 = 0.01;
+pub const DEPTH: f32 = 0.01;
 /// How far the face bobs, in metres, and how long one bob takes, in seconds.
-const BOB_HEIGHT: f32 = 0.004;
-const BOB_PERIOD: f32 = 4.5;
+pub const BOB_HEIGHT: f32 = 0.004;
+pub const BOB_PERIOD: f32 = 4.5;
 
 /// Light, and slowed quickly, so a let-go slate drifts a little and stops
 /// rather than sailing off.
-const BODY: RigidBody = RigidBody {
+pub const BODY: RigidBody = RigidBody {
     kind:            RigidBodyKind::Dynamic,
     mass:            Some(0.3),
     friction:        Some(0.3),

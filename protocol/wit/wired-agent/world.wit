@@ -1,5 +1,4 @@
-/// The local user's body: where they look, where their limbs are, and
-/// documents carried with them.
+/// Local user camera, avatar bones, body-attached documents, and viewport.
 package wired:agent;
 
 interface local {
@@ -7,7 +6,7 @@ interface local {
   use wired:core/error.{error};
   use wired:scene/document.{document};
 
-  /// The VRM 1.0 humanoid bone set.
+  /// Standard VRM 1.0 humanoid bones.
   enum humanoid-bone {
     hips,
     spine,
@@ -68,46 +67,38 @@ interface local {
 
   variant attachment {
     camera,
-    /// The agent's position, world-aligned: a document attached here moves
-    /// with the user but does not turn with their heading or head.
+    /// World-aligned agent position (tracks translation without rotating with
+    /// heading or head).
     body,
     bone(humanoid-bone),
   }
 
-  /// The camera's transform this frame, in the calling script's own document
-  /// frame. Fails with `not-ready` until the user's agent has spawned; it
-  /// does not wait for the avatar to load.
+  /// Camera transform this frame in the calling script's document frame. Fails
+  /// with `not-ready` until the user's agent spawns (does not wait for avatar
+  /// loading).
   camera-transform: func() -> result<transform, error>;
 
-  /// A bone's transform this frame, in the calling script's own document
-  /// frame, or `none` when the user's avatar lacks it. Fails with `not-ready`
-  /// until the avatar has loaded.
+  /// Bone transform this frame in the calling script's document frame, or
+  /// `none` if the avatar lacks that bone. Fails with `not-ready` until the
+  /// avatar finishes loading.
   bone-transform: func(bone: humanoid-bone) -> result<option<transform>, error>;
 
-  /// Places a document the script may write at `offset` from the camera or a
-  /// bone, so it moves with the user. Per peer, like
-  /// `wired:scene/document.place`, which detaches it again. `offset` is
-  /// checked as `place` checks it.
+  /// Attaches a writable document at `offset` relative to the camera, body, or
+  /// a bone (local only). Detach by calling `wired:scene/document.place`.
+  /// Applies the same `offset` validation as `place`.
   attach: func(document: borrow<document>, to: attachment, offset: transform) -> result<_, error>;
 
-  /// The local user's screen: how many pixels it is across and down, and the
-  /// vertical field of view it is drawn with. The screen's size is what
-  /// decides whether a pane laid against its edges keeps its text a whole
-  /// number of pixels, which is why a script that docks is given it.
-  ///
-  /// `none` in a headset, where there is no screen to lay anything against.
-  /// Fails with `forbidden` for a document the local user does not author:
-  /// what a script draws on the glass is that author's choice, not a
-  /// visitor's.
+  /// Desktop viewport dimensions and vertical FOV, or `none` in VR. Fails with
+  /// `forbidden` unless the local user authors the calling script's document.
   viewport: func() -> result<option<screen>, error>;
 
-  /// A screen a script can lay panes against.
+  /// Desktop viewport geometry.
   record screen {
-    /// Pixels across.
+    /// Width in pixels.
     width:  u32,
-    /// Pixels down.
+    /// Height in pixels.
     height: u32,
-    /// Vertical field of view, in radians.
+    /// Vertical field of view in radians.
     fov:    f32,
   }
 }

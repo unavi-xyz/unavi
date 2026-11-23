@@ -1,8 +1,8 @@
-/// Pointer input from the local user: aimed at prims, or for the whole
-/// device.
+/// Local pointer and device input, either aimed at specific prims or global to
+/// the device.
 ///
-/// A pointer is the screen cursor on desktop, or a hand in VR. Its trigger
-/// acts on what it points at. Its grip takes hold of it.
+/// A pointer is the desktop cursor or a VR hand. Trigger activates targets;
+/// grip grabs them.
 package wired:input;
 
 interface types {
@@ -10,7 +10,7 @@ interface types {
   use wired:core/ids.{prim-ref};
 
   enum pointer-kind {
-    /// The desktop cursor, aimed from the camera.
+    /// Desktop cursor ray projected from the camera.
     screen,
     left-hand,
     right-hand,
@@ -22,18 +22,17 @@ interface types {
     menu,
   }
 
-  /// Where a pointer's ray met a collider, in the calling script's own
-  /// document frame.
+  /// Collider hit from a pointer ray, in the calling script's document frame.
   record hit {
-    /// The prim whose collider it met, when it belongs to a document.
+    /// Hit prim, if the collider belongs to a document.
     target:   option<prim-ref>,
     position: vec3,
     normal:   vec3,
     distance: f32,
   }
 
-  /// A physical key, named for its place on a US layout whatever the layout
-  /// prints on it. Characters typed are not keys.
+  /// Physical key identified by US keyboard position regardless of active
+  /// layout (not text characters).
   enum key {
     a, b, c, d, e, f, g, h, i, j, k, l, m,
     n, o, p, q, r, s, t, u, v, w, x, y, z,
@@ -49,7 +48,7 @@ interface types {
     semicolon, quote, backquote, comma, period, slash,
   }
 
-  /// What reaches which listener:
+  /// Event routing by listener kind:
   ///
   /// | action               | targeted | device |
   /// |----------------------|----------|--------|
@@ -60,20 +59,19 @@ interface types {
   /// | key                  | no       | yes    |
   variant action {
     pressed(button),
-    /// A targeted listener hears the release of every press it heard,
-    /// wherever the pointer has since moved.
+    /// Targeted listeners receive the matching release for any press they
+    /// received, even if the pointer moved away.
     released(button),
-    /// Notches turned on each axis.
+    /// Scroll wheel delta on each axis.
     scroll(vec2),
     entered,
     left,
-    /// A key went down. A held key does not repeat. The event carries the
-    /// screen pointer's ray and no hit.
+    /// Key pressed (non-repeating). Carries the screen ray with no hit.
     key-pressed(key),
     key-released(key),
   }
 
-  /// The ray and hit are in the calling script's own document frame.
+  /// Input event with `ray` and `hit` in the calling script's document frame.
   record input-event {
     pointer: pointer-kind,
     action:  action,
@@ -81,67 +79,65 @@ interface types {
     hit:     option<hit>,
   }
 
-  /// A pointer's state this frame. The ray and hit are in the calling
-  /// script's own document frame.
+  /// Snapshot of a pointer this frame, with `ray` and `hit` in the calling
+  /// script's document frame.
   record pointer {
     kind:    pointer-kind,
-    /// Whether it is tracked and usable this frame. An inactive pointer's
-    /// other fields are zero.
+    /// `true` when tracked this frame; inactive pointers zero all other fields.
     active:  bool,
-    /// Where it is and which way it faces, roll included. The ray starts at
-    /// its translation and runs along its forward.
+    /// Full pose (including roll); `ray` starts at `translation` along forward.
     pose:    transform,
     ray:     ray,
-    /// How far the trigger is pulled, 0 to 1.
+    /// Trigger pull (`0..1`).
     trigger: f32,
-    /// How far the hand is closed, 0 to 1.
+    /// Grip pull (`0..1`).
     grip:    f32,
-    /// Thumbstick travel, each axis -1 to 1.
+    /// Thumbstick deflection (`-1..1` per axis).
     axis:    vec2,
     hit:     option<hit>,
   }
 
-  /// Holds up to 64 events.
+  /// Queues up to 64 input events.
   resource input-subscription {
     drain:   func(max: u32) -> list<input-event>;
     dropped: func() -> u64;
   }
 }
 
-/// Input aimed at a prim.
+/// Pointer input targeted at a specific prim subtree.
 interface targeted {
   use wired:core/ids.{prim-id};
   use wired:core/error.{error};
   use wired:scene/document.{document};
   use types.{input-subscription};
 
-  /// Input aimed at `prim` or anything beneath it, in a document the script
-  /// may write. Only prims with a collider can be aimed at.
+  /// Subscribes to pointer events hitting `prim` or its descendants in a
+  /// writable document. Requires a collider on the target prims.
   listen: func(document: borrow<document>, prim: prim-id) -> result<input-subscription, error>;
 }
 
-/// Every input of the local user's devices.
+/// Global input from the local user's devices.
 interface device {
   use wired:core/error.{error};
   use types.{input-subscription, pointer, pointer-kind};
 
-  /// A control the host acts on by itself.
+  /// Built-in host control that a script can claim.
   enum control {
-    /// Squeezing picks up what the pointer is on.
+    /// Default object grab.
     grip,
-    /// A hand's stick moves or turns the user.
+    /// Thumbstick locomotion and turning.
     stick,
   }
 
-  /// One pointer's control, taken from the host while this is held. The
-  /// host does not act on a claimed control; listeners and `pointers` still
-  /// report it. Dropping the claim hands the control back, once every claim
-  /// on it is dropped.
+  /// Suppresses default host handling for one pointer control while held.
+  /// Listeners and `pointers` still observe input; host handling resumes once
+  /// all claims on that control are dropped.
   resource claim;
 
   listen:   func() -> result<input-subscription, error>;
-  /// Every pointer kind, active or not.
+  /// Returns every pointer kind, active or inactive.
   pointers: func() -> result<list<pointer>, error>;
-  /// Takes `control` of `pointer` from the host until the claim is dropped.
+  /// Claims `control` on `pointer` from the host until the returned handle is
+  /// dropped.
   take-control: func(pointer: pointer-kind, control: control) -> result<claim, error>;
 }

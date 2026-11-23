@@ -1,3 +1,4 @@
+/// Combined world bundling all `wired:*` interfaces for scripts.
 package wired:prelude;
 
 world imports {

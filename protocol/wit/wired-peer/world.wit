@@ -1,16 +1,15 @@
-/// Who the local user is, and who speaks for each document.
+/// Local identity and per-document authorship and physics authority.
 ///
-/// A document's author is the user holding its write key. Not transferable.
-/// Its holder is the peer currently deciding how it moves, by default the
-/// author's peer. Holding is transferable. Authors and holders are users,
-/// named by DID.
+/// A document's **author** is the DID owning its write key (fixed). Its
+/// **holder** is the peer currently driving its physics simulation (defaults to
+/// the author and can be transferred via `take-hold` and `release-hold`).
 package wired:peer;
 
 interface identity {
   use wired:core/ids.{did};
   use wired:core/error.{error};
 
-  /// The local user's identifier.
+  /// Returns the local user's DID.
   self-did: func() -> result<did, error>;
 }
 
@@ -19,23 +18,21 @@ interface authority {
   use wired:core/error.{error};
   use wired:scene/document.{document};
 
-  /// Who authors `document`, or `none` when no author has proven itself,
-  /// as with a space's own content.
+  /// Returns the author's DID for `document`, or `none` if unauthenticated.
   author: func(document: borrow<document>) -> result<option<did>, error>;
-  /// Who holds `document` now: the latest peer to take hold, else its
-  /// author. `none` outside a space.
+  /// Returns the current holder's DID (the latest peer to call `take-hold`, or
+  /// the author by default). Returns `none` outside a space.
   holder: func(document: borrow<document>) -> result<option<did>, error>;
 
-  /// Whether the local user authors `document`, whose `shared` layer every
-  /// viewer applies in full.
+  /// Returns whether the local user authored `document`.
   is-author: func(document: borrow<document>) -> result<bool, error>;
-  /// Whether this peer holds `document` now.
+  /// Returns whether this peer currently holds `document`.
   is-holder: func(document: borrow<document>) -> result<bool, error>;
 
-  /// Takes hold of a document the script may write, so this peer drives its
-  /// motion. The latest hold taken outranks every earlier one.
+  /// Claims physics authority for a writable document. The most recent claim
+  /// takes precedence over earlier ones.
   take-hold: func(document: borrow<document>) -> result<_, error>;
-  /// Gives up this peer's hold. The next-ranked hold, else the author's
-  /// device, drives the document.
+  /// Releases this peer's hold, falling back to the next-most-recent holder or
+  /// the author.
   release-hold: func(document: borrow<document>) -> result<_, error>;
 }

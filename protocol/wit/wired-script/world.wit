@@ -1,44 +1,42 @@
-/// A script's lifecycle, and what it can ask the host about itself.
+/// Script lifecycle exports and host permission queries.
 package wired:script;
 
-/// Exported by every script. The host calls into it. A script never calls
-/// these itself.
+/// Lifecycle callbacks exported by every script and invoked by the host.
 ///
-/// Calls never overlap. Each export returns before the host makes the next
-/// call into the same script. A call that is still running when its next
-/// turn comes skips that turn rather than queueing it. A script that never
-/// returns is stopped and not called again.
+/// Calls never overlap. If a callback is still running when its next turn
+/// arrives, that turn is skipped rather than queued. Scripts that hang are
+/// terminated.
 interface lifecycle {
-  /// When a call is made, measured on one clock this peer's scripts share.
-  /// The clock is monotonic but is not synchronized with other peers.
+  /// Timing snapshot from the local monotonic clock shared by scripts on this
+  /// peer (not synchronized across peers).
   record tick {
-    /// Seconds since the previous call of the same export, zero for the
-    /// first.
+    /// Seconds elapsed since the previous call to this export (`0` on the
+    /// first call).
     dt:    f32,
-    /// Seconds on the host clock.
+    /// Elapsed seconds on the host clock.
     time:  f64,
-    /// How many calls of this export came before this one.
+    /// Zero-based call count for this export.
     index: u64,
   }
 
-  /// Called once, before any other export. An error retires the script,
-  /// with the message logged.
+  /// Called once before any other export. Returning an error logs the message
+  /// and stops the script.
   init: func() -> result<_, string>;
 
-  /// Called once per rendered frame. Drawing and animation belong here.
+  /// Called once per rendered frame. Use for visual interpolation and
+  /// animation.
   update: func(tick: tick);
 
-  /// Called at a fixed rate the host chooses (currently 20 Hz), carried in
-  /// `tick.dt`. Input, messages and simulation belong here.
+  /// Called on a fixed timestep (currently 20 Hz), with `tick.dt` carrying the
+  /// step duration. Use for input, messaging, and simulation.
   fixed-update: func(tick: tick);
 }
 
-/// What a script can ask the host about itself.
+/// Host queries available to a running script.
 interface host {
   use wired:core/error.{permission};
 
-  /// Whether the script's document holds `permission` now. Grants can
-  /// change while a script runs, as the user decides how far to trust an
-  /// author.
+  /// Returns whether the script's document currently has `permission`. Grants
+  /// can change at runtime if the user updates trust levels.
   granted: func(permission: permission) -> bool;
 }

@@ -1,31 +1,27 @@
-/// The vocabulary every `wired:*` package shares: math, identifiers and the
-/// error type, plus the conventions they are all read by.
+/// Shared types and conventions used across all `wired:*` packages: math,
+/// identifiers, errors, permissions, and time.
 ///
 /// Units: lengths in meters, time in seconds, mass in kilograms, angles in
-/// radians, forces in newtons. Space is right-handed with +Y up and -Z
-/// forward. Rotations are unit quaternions. Colors are linear RGB with
-/// straight (not premultiplied) alpha, each channel nominally 0 to 1. An
-/// `f64` time is seconds on this peer's clock, monotonic but not synchronized
-/// with other peers.
+/// radians, forces in newtons. Coordinate space is right-handed (+Y up, -Z
+/// forward). Rotations are unit quaternions. Colors are linear RGB with
+/// straight (non-premultiplied) alpha, nominally 0..1 per channel. `f64`
+/// timestamps are seconds on the local monotonic clock (not synchronized across
+/// peers).
 ///
-/// Errors: a call that can fail returns `result<_, error>`. Passing a handle
-/// that was already dropped, or one from another script, traps. Every other
-/// failure is an `error`, so a script can always branch on it.
+/// Errors: fallible calls return `result<_, error>`. Passing a dropped handle
+/// or a handle from another script traps. All other failures return `error`.
 ///
-/// Permissions: a script runs with the permissions its document's author is
-/// granted on this peer. A call outside them fails with `permission`. A
-/// resource is checked once, when it is created, and keeps working for as
-/// long as it is held.
+/// Permissions: scripts run with the permissions granted locally to their
+/// document's author. Unauthorized calls fail with `permission`. Resource
+/// handles are checked on creation and remain valid until dropped.
 ///
-/// Results that arrive later are `pending-<noun>` resources: `poll` answers
-/// `none` until the result is ready, then the same result on every later
-/// poll. Dropping one cancels it. A call that can answer at once just
-/// returns.
+/// Async results use `pending-<noun>` resources: `poll` returns `none` until
+/// ready, then returns the same result on subsequent calls. Dropping cancels
+/// the operation.
 ///
-/// Streams are `<noun>-subscription` resources. `drain(max)` takes up to
-/// `max` queued items, oldest first. A queue that overflows drops its oldest
-/// item, and `dropped` counts how many it has lost since it was created.
-/// Draining once per tick is the expected pattern.
+/// Streams use `<noun>-subscription` resources. `drain(max)` pops up to `max`
+/// queued items, oldest first. Full queues drop the oldest item, and `dropped`
+/// returns the cumulative drop count. Drain once per `fixed-update`.
 package wired:core;
 
 interface math {
@@ -40,7 +36,7 @@ interface math {
     z: f32,
   }
 
-  /// A unit quaternion. The identity is `{ x: 0, y: 0, z: 0, w: 1 }`.
+  /// Unit quaternion. Identity is `{ x: 0, y: 0, z: 0, w: 1 }`.
   record quat {
     x: f32,
     y: f32,
@@ -48,7 +44,7 @@ interface math {
     w: f32,
   }
 
-  /// Scale, then rotation, then translation.
+  /// Applied as scale, then rotation, then translation.
   record transform {
     translation: vec3,
     rotation:    quat,
@@ -63,8 +59,8 @@ interface math {
     a: f32,
   }
 
-  /// A half-line in world space. `direction` need not be normalized. A zero
-  /// direction is an invalid argument.
+  /// Half-line in world space. `direction` need not be normalized, but must be
+  /// non-zero.
   record ray {
     origin:    vec3,
     direction: vec3,
@@ -72,109 +68,104 @@ interface math {
 }
 
 interface ids {
-  /// 256 bits naming a document, as four little-endian 64-bit words: the
-  /// first word holds bytes 0..8 of the id.
+  /// 256-bit document ID as four little-endian `u64` words (first word is bytes
+  /// 0..8).
   type document-id = tuple<u64, u64, u64, u64>;
 
-  /// 128 bits naming a prim, unique within its document, in the same word
-  /// order as `document-id`.
+  /// 128-bit prim ID unique within its document, in the same word order as
+  /// `document-id`.
   type prim-id = tuple<u64, u64>;
 
-  /// A prim in some document.
+  /// Reference to a specific prim within a document.
   record prim-ref {
     document: document-id,
     prim:     prim-id,
   }
 
-  /// A user's decentralized identifier, such as `did:key:z6Mk...`.
+  /// Decentralized identifier (e.g. `did:key:z6Mk...`).
   type did = string;
 }
 
 interface error {
-  /// A capability a script's document may be granted. Which ones it holds
-  /// depends on how far this peer trusts the document's author.
+  /// Host capability gated by the local peer's trust level for the document's
+  /// author.
   enum permission {
-    /// Reading the scene and writing documents the script may write.
+    /// Read the scene and write documents the script owns.
     scene,
-    /// Minting new documents.
+    /// Create new documents.
     create-document,
-    /// Making edits durable.
+    /// Commit edits durably to documents.
     commit,
-    /// Sending and receiving messages.
+    /// Send and receive local script messages.
     event,
-    /// Input aimed at prims of a document the script may write.
+    /// Receive pointer input aimed at prims in writable documents.
     input,
-    /// Every input event and pointer of the local user, aimed or not.
+    /// Read all local user input events and pointer states.
     input-device,
-    /// The local user's camera and body.
+    /// Read the local user's camera, avatar pose, and viewport.
     local-agent,
-    /// The local user's identifier.
+    /// Read the local user's DID.
     identity,
-    /// Who authors and holds documents.
+    /// Query document authors and physics holders.
     peer,
-    /// Raycasts and rigid-body state.
+    /// Run raycasts and modify rigid-body state.
     physics,
-    /// Opening and pairing portals.
+    /// Open and pair portals.
     portal,
-    /// Moving the local user to another space.
+    /// Move the local user to another space.
     travel,
-    /// Reading what the local user perceives: portals in range, document
-    /// meta and trust rungs.
+    /// Query nearby portals, agents, profiles, document metadata, and trust
+    /// levels.
     perception,
   }
 
-  /// A budget that refills over time.
+  /// Refilling rate-limit bucket.
   enum rate {
     create-document,
     create-prim,
     emit,
-    /// Large property writes: mesh, collider and image data, shader graphs.
+    /// Large property writes (meshes, colliders, images, shader graphs).
     upload,
     portal,
   }
 
-  /// A ceiling on a held resource. It frees only when that resource is
-  /// released.
+  /// Hard resource ceiling; frees when existing resources are dropped.
   enum limit {
     documents,
     prims,
-    /// Live resource handles of every kind.
+    /// Live resource handles across all types.
     handles,
     subscriptions,
-    /// Bytes of `shared` layer state.
+    /// Bytes stored in the `shared` session layer.
     shared-memory,
-    /// Guest linear memory.
+    /// Guest WebAssembly linear memory.
     memory,
   }
 
   variant error {
-    /// The caller passed something malformed or out of bounds. The string
-    /// says what, for a human.
+    /// Malformed or out-of-range argument, with a diagnostic message.
     invalid-argument(string),
-    /// The target does not exist, or is not loaded on this peer.
+    /// Target does not exist or is not loaded locally.
     not-found,
-    /// The target exists but cannot be used yet, such as a body that has not
-    /// entered the simulation. Retrying on a later tick may succeed.
+    /// Target exists but is not ready yet (e.g. an unspawned physics body).
+    /// Retrying on a later tick may succeed.
     not-ready,
-    /// The script's document lacks this permission.
+    /// Document author lacks the required permission on this peer.
     permission(permission),
-    /// The script may not do this to this target, such as writing a
-    /// document it does not own.
+    /// Operation is disallowed on this target (e.g. writing an unowned
+    /// document).
     forbidden,
-    /// A rate budget is spent. It refills, so a later retry may succeed.
+    /// Rate budget exhausted; retries may succeed once it refills.
     rate-limited(rate),
-    /// A ceiling is reached. Retrying succeeds only after something is
-    /// released.
+    /// Resource ceiling reached; release existing resources before retrying.
     limit-reached(limit),
-    /// The host failed. The string says how, for a human.
+    /// Internal host failure, with a diagnostic message.
     internal(string),
   }
 }
 
 interface time {
-  /// Minutes east of UTC on this peer's clock right now, such as `60` for
-  /// UTC+1 and `-300` for UTC-5, with daylight saving applied as of the
-  /// call. A script has the wall clock but no timezone data, so this is
-  /// what turns it into local time. It can change between calls.
+  /// Current local UTC offset in minutes (e.g. `60` for UTC+1, `-300` for
+  /// UTC-5), including daylight saving time. May change between calls.
   utc-offset: func() -> s32;
 }

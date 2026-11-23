@@ -1,28 +1,24 @@
-/// Messages between scripts on this peer.
+/// Local pub/sub messaging between scripts on the same peer.
 ///
-/// Nothing here crosses the network. Every peer runs the same scripts, so
-/// each peer's copy of a script sends its own messages to the scripts beside
-/// it. Anything that must agree across peers belongs in a `shared` property.
-///
-/// Channels are a flat namespace any script can guess. Name them
-/// `<namespace>:<package>/<name>` to avoid collisions, and filter by sender
-/// where it matters who is speaking.
+/// Messages never cross the network; use `shared` scene properties for state
+/// that must synchronize across peers. Channels share a flat namespace, so
+/// prefix names as `<namespace>:<package>/<name>` and filter by `senders` when
+/// authenticity matters.
 package wired:event;
 
 interface messaging {
   use wired:core/ids.{document-id, prim-ref};
   use wired:core/error.{error};
 
-  /// A sphere around a prim of a document the script may write.
+  /// Sphere centered on a prim in a writable document.
   record spatial {
     origin: prim-ref,
-    /// Meters.
+    /// Radius in meters.
     radius: f32,
   }
 
-  /// Where a message is heard. A spatial message reaches a spatial listener
-  /// only when their spheres overlap, and reaches every global listener. A
-  /// global message reaches global listeners only.
+  /// Delivery scope. Spatial messages reach overlapping spatial listeners and
+  /// all global listeners; global messages reach global listeners only.
   variant scope {
     global,
     spatial(spatial),
@@ -31,21 +27,21 @@ interface messaging {
   record message {
     channel:     string,
     payload:     list<u8>,
-    /// The sending script's document, or `none` for the host.
+    /// Sender document ID, or `none` for host-originated messages.
     sender:      option<document-id>,
-    /// Meters between the two origins, when both were spatial.
+    /// Distance in meters between origins when both sender and listener are
+    /// spatial.
     distance:    option<f32>,
-    /// When it was sent, in seconds on this peer's clock.
+    /// Host clock timestamp in seconds when emitted.
     sent-at:     f64,
-    /// Present when the sender named an audience. Pass it to
-    /// `message-subscription.claim` to take the message from the rest of the
-    /// audience.
+    /// Token set when `audience` was specified; pass to
+    /// `message-subscription.claim` to claim exclusive handling.
     claim-token: option<u64>,
   }
 
-  /// Sends `payload` on `channel` to every matching listener, or only to
-  /// those of the documents in `audience`. A channel is at most 256 bytes, a
-  /// payload 64 KiB, and an audience 64 documents.
+  /// Emits `payload` on `channel` to matching listeners (optionally restricted
+  /// to `audience`). Limits: 256-byte channel, 64 KiB payload, 64 audience
+  /// documents.
   emit: func(
     channel:  string,
     payload:  list<u8>,
@@ -53,22 +49,20 @@ interface messaging {
     scope:    scope,
   ) -> result<_, error>;
 
-  /// Hears `channels`, from any sender or only the documents in `senders`.
-  /// At most 32 channels and 64 senders.
+  /// Subscribes to `channels` (optionally filtered to `senders`). Limits: 32
+  /// channels, 64 senders.
   listen: func(
     channels: list<string>,
     senders:  option<list<document-id>>,
     scope:    scope,
   ) -> result<message-subscription, error>;
 
-  /// Holds up to 64 messages.
+  /// Queues up to 64 messages.
   resource message-subscription {
     drain:   func(max: u32) -> list<message>;
     dropped: func() -> u64;
-    /// Takes a message the sender addressed to an audience, answering
-    /// whether this subscription won it: exactly one listener in the
-    /// audience does. A subscription remembers the tokens of its 256 most
-    /// recent addressed messages. An older one loses.
+    /// Claims an audience-addressed message; returns `true` for the single
+    /// winning listener. Remembers the 256 most recent tokens.
     claim:   func(token: u64) -> bool;
   }
 }

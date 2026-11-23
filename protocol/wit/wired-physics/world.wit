@@ -1,9 +1,7 @@
-/// The rigid-body simulation: raycasts, and the motion of bodies a script
-/// may write.
+/// Rigid-body simulation queries and velocity/force control.
 ///
-/// The simulation runs on every peer. A body's motion is decided by the peer
-/// holding its document and sent to the others, so a write made on any other
-/// peer is overwritten by the holder's.
+/// Every peer runs the simulation locally, while the document's current holder
+/// is authoritative and replicates body motion to other peers.
 package wired:physics;
 
 interface simulation {
@@ -13,42 +11,40 @@ interface simulation {
   use wired:scene/document.{document};
 
   record ray-hit {
-    /// The prim whose collider was hit.
+    /// Hit prim.
     target:   prim-ref,
     point:    vec3,
-    /// Unit length, facing back along the ray.
+    /// Unit surface normal facing back along the ray.
     normal:   vec3,
     distance: f32,
   }
 
-  /// What a raycast passes through.
+  /// Colliders to ignore during a raycast.
   record ray-filter {
-    /// Skips the local user's own body, so a ray from the camera does not
-    /// stop at the head it starts in.
+    /// Exclude the local user's own body.
     exclude-local-agent: bool,
-    /// Skips every collider in these documents. At most 64.
+    /// Exclude all colliders in these documents (max 64).
     exclude-documents:   list<document-id>,
   }
 
-  /// How a body is moving this step, in the calling script's own document
-  /// frame.
+  /// Instantaneous body velocity in the calling script's document frame.
   record body-velocity {
-    /// Meters per second.
+    /// Linear velocity in meters per second.
     linear:  vec3,
-    /// Radians per second about each axis.
+    /// Angular velocity in radians per second about each axis.
     angular: vec3,
   }
 
-  /// The closest collider along `ray` within `max-distance`. The ray and the
-  /// hit are in the calling script's own document frame.
+  /// Casts `ray` up to `max-distance` in the calling script's document frame
+  /// and returns the closest hit.
   raycast: func(ray: ray, max-distance: f32, filter: ray-filter) -> result<option<ray-hit>, error>;
 
-  /// Fails with `not-ready` until the prim's body is in the simulation, and
-  /// `invalid-argument` for a body that is not dynamic.
+  /// Returns a dynamic body's velocity. Fails with `not-ready` before the body
+  /// enters simulation, or `invalid-argument` for non-dynamic bodies.
   velocity: func(document: borrow<document>, prim: prim-id) -> result<body-velocity, error>;
 
-  /// Sets either velocity of a dynamic body, leaving `none` unchanged. Both
-  /// are in the calling script's own document frame.
+  /// Sets linear and/or angular velocity on a dynamic body in the calling
+  /// script's document frame (`none` leaves that component unchanged).
   set-velocity: func(
     document: borrow<document>,
     prim:     prim-id,
@@ -56,7 +52,7 @@ interface simulation {
     angular:  option<vec3>,
   ) -> result<_, error>;
 
-  /// A force the simulation applies every step until it is set again, in the
-  /// calling script's own document frame. Zero clears it.
+  /// Applies a persistent force in the calling script's document frame on every
+  /// physics step until changed; pass zero to clear.
   set-force: func(document: borrow<document>, prim: prim-id, force: vec3) -> result<_, error>;
 }

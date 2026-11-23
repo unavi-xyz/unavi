@@ -1,8 +1,8 @@
-/// Portals between spaces, and travel through them.
+/// Portals between spaces and travel across them.
 ///
-/// A two-way portal is two halves, one in each space, bearing the same
-/// link. Opening one half asks the scripts of the target space for the other:
-/// they hear a `link-intent` and answer it with `pair`.
+/// A two-way portal links two portal prims in separate spaces with the same
+/// `link-id`. Calling `open` emits a `link-intent` in the target space, where a
+/// receiving script completes the connection via `pair`.
 package wired:portal;
 
 interface portals {
@@ -11,64 +11,60 @@ interface portals {
   use wired:scene/document.{document};
   use wired:scene/properties.{link-id};
 
-  /// A portal in `source-space` bearing `link` that nothing in this space
-  /// answers yet.
+  /// Unpaired portal link request originating from `source-space`.
   record link-intent {
     source-space: document-id,
     link:         link-id,
   }
 
-  /// Points the portal on `prim` into `target-space` for this session,
-  /// keeping its size, as a `shared` write. Fails with `invalid-argument`
-  /// on a prim with no portal.
+  /// Opens the portal on `prim` toward `target-space` as a `shared` session
+  /// write, preserving its dimensions. Fails with `invalid-argument` if `prim`
+  /// has no portal property.
   ///
-  /// The link is derived from the prim and the target, so every peer
-  /// opening the same portal states the same one.
+  /// The `link-id` is derived deterministically from `prim` and `target-space`
+  /// so every peer produces the same link.
   open: func(document: borrow<document>, prim: prim-id, target-space: document-id) -> result<_, error>;
 
-  /// Answers `intent` with the portal on `prim`, as a `shared` write.
+  /// Pairs the portal on `prim` with an incoming `intent` as a `shared` write.
   pair: func(document: borrow<document>, prim: prim-id, intent: link-intent) -> result<_, error>;
 
-  /// Drops this peer's own session destination on the portal of `prim`, so
-  /// the layers beneath show through. Closing a portal this peer never
-  /// opened changes nothing it shows. Never takes quota.
+  /// Clears this peer's session destination on `prim`, exposing underlying
+  /// layers. No-op if this peer did not open it; consumes no rate quota.
   close: func(document: borrow<document>, prim: prim-id) -> result<_, error>;
 
-  /// How a portal's destination resolved this frame.
+  /// Resolved link status of a portal this frame.
   enum link-status {
-    /// It leads nowhere.
+    /// No destination set.
     none,
-    /// It leads into a space with no link, so there is no way back.
+    /// Destination set with no `link-id` (one-way).
     one-way,
-    /// It bears a link, and its destination has not resolved yet.
+    /// Destination space is still loading or resolving.
     pending,
-    /// It bears a link, and the destination space holds no portal answering
-    /// it.
+    /// Destination space loaded, but no portal paired with this link.
     unpaired,
-    /// It is glued to the portal answering its link.
+    /// Paired with a matching portal in the destination space.
     paired,
   }
 
-  /// How the portal on `prim` resolved this frame. Fails with `not-ready`
-  /// while the prim has no placed portal.
+  /// Returns the portal's resolved status this frame. Fails with `not-ready` if
+  /// the portal is not placed yet.
   link-state: func(document: borrow<document>, prim: prim-id) -> result<link-status, error>;
 
   /// Moves the local user into `target-space`, loading it if needed.
   travel: func(target-space: document-id) -> result<_, error>;
 
-  /// The space the local user is in now, `none` while they are between
-  /// spaces, such as mid-travel.
+  /// Returns the local user's current space, or `none` while transitioning.
   current-space: func() -> result<option<document-id>, error>;
 
-  /// Hears intents addressed to the script's space, each once.
+  /// Subscribes to incoming pairing intents for the calling script's space.
   intents: func() -> result<intent-subscription, error>;
 
-  /// Holds up to 64 intents.
+  /// Queues up to 64 pairing intents.
   resource intent-subscription {
     drain:   func(max: u32) -> list<link-intent>;
     dropped: func() -> u64;
-    /// Takes `intent` for this script, answering whether it won. Exactly one
-    /// subscriber in the space does.
+    /// Claims `intent` for this script; returns `true` for the single winning
+    /// subscriber in the space.
     claim:   func(intent: link-intent) -> bool;
   }
 }
